@@ -1,5 +1,5 @@
 [workspace]
-members = ["node", "runtime"]
+members = ["node", "runtime", "pallets/*", "offchain/*", "primitives"]
 resolver = "2"
 
 [workspace.package]
@@ -16,7 +16,7 @@ scale-info = { features = ["derive","serde"], version = "2.11.1", default-featur
 frame-executive = { version = "35.0.0", default-features = false }
 frame-support = { features = ["experimental"], version = "35.0.0", default-features = false }
 frame-system = { version = "35.0.0", default-features = false }
-substrate-frame-rpc-system = { version = "35.0.0", default-feature = false }
+substrate-frame-rpc-system = { version = "35.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "33.0.0", default-features = false }
 
 # frame pallets
@@ -28,6 +28,7 @@ pallet-timestamp = { version = "34.0.0", default-features = false }
 pallet-transaction-payment = { version = "35.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "37.0.0", default-features = true }
 pallet-transaction-payment-rpc-runtime-api = { version = "35.0.0", default-features = false }
+pallet-nucleus = { path = "../pallets/nucleus" }
 
 # primitives
 sp-api = { version = "33.0.0", default-features = false }
@@ -48,3 +49,7 @@ sp-genesis-builder = { version = "0.14.0", default-features = false }
 sp-io = { version = "37.0.0", default-features = false }
 sp-keyring = { version = "38.0.0", default-features = false }
 sp-blockchain = { version = "35.0.0", default-features = false }
+
+# wasmtime
+wasmtime = { version = "22.0.0" }
+wasmtime-wasi = { version = "22.0.0" }

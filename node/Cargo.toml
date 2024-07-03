@@ -48,6 +48,7 @@ pallet-transaction-payment = { workspace = true, default-features = true }
 pallet-transaction-payment-rpc = { workspace = true, default-features = true }
 
 vrs-runtime = { path = "../runtime", package = "verisense-runtime" }
+vrs-primitives = { path = "../primitives", package = "verisense-primitives" }
 
 [build-dependencies]
 substrate-build-script-utils = { version = "11.0.0" }

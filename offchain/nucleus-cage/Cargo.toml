@@ -1,0 +1,10 @@
+[package]
+name = "nucleus-cage"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+nucleus-core = { path = "../nucleus-core" }
+wasmtime = { workspace = true }

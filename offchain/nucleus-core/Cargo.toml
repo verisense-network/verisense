@@ -1,0 +1,9 @@
+[package]
+name = "nucleus-core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+tokio = { version = "1", features = ["sync", "macros", "rt", "io-util", "time"] }
+vrs-primitives = { path = "../../primitives", package = "verisense-primitives" }
