@@ -3887,7 +3887,9 @@ dependencies = [
  "glob",
  "libc",
  "libz-sys",
+ "lz4-sys",
  "tikv-jemalloc-sys",
+ "zstd-sys",
 ]
 
 [[package]]
@@ -4681,7 +4683,11 @@ dependencies = [
 name = "nucleus-cage"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
+ "env_logger",
+ "log",
  "nucleus-core",
+ "rocksdb",
  "tokio",
  "wasmtime 22.0.0",
 ]
@@ -4690,8 +4696,10 @@ dependencies = [
 name = "nucleus-core"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "tokio",
  "verisense-primitives",
+ "wasm-bindgen",
 ]
 
 [[package]]

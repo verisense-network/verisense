@@ -6,4 +6,6 @@ edition.workspace = true
 
 [dependencies]
 tokio = { version = "1", features = ["sync", "macros", "rt", "io-util", "time"] }
-vrs-primitives = { path = "../../primitives", package = "verisense-primitives" }
+vrs-primitives = { path = "../../primitives", package = "verisense-primitives", default-features = false }
+anyhow = "1"
+wasm-bindgen = "0.2.92"

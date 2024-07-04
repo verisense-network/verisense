@@ -5,7 +5,7 @@ pub struct WasmInfo {
     pub account: AccountId,
     pub name: String,
     pub version: u32,
-    pub descriptor: WasmDescriptor,
+    // pub descriptor: WasmDescriptor,
     pub code: WasmCodeRef,
 }
 

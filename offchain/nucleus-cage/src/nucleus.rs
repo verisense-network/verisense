@@ -1,11 +1,9 @@
-use crate::{vm::Vm, wasm_code::WasmInfo};
-use nucleus_core::Context;
+use crate::{context::Context, vm::Vm, wasm_code::WasmInfo};
 use std::collections::HashMap;
 use tokio::sync::mpsc::Receiver;
 
 pub(crate) struct Nucleus {
     receiver: Receiver<Gluon>,
-    context: Context,
     vm: Option<Vm>,
 }
 
@@ -31,12 +29,8 @@ pub(crate) enum Gluon {
 impl Nucleus {
     fn new(receiver: Receiver<Gluon>, context: Context, code: WasmInfo) -> Self {
         // TODO
-        let vm = Vm::new_instance(code, context.clone());
-        Nucleus {
-            receiver,
-            context,
-            vm,
-        }
+        let vm = Vm::new_instance(code, context);
+        Nucleus { receiver, vm }
     }
 
     async fn accept(&mut self, msg: Gluon) {
