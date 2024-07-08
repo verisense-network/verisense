@@ -26,6 +26,11 @@ pub fn storage_put(
     let mut val = vec![0u8; v_len as u32 as usize];
     mem.read(&caller, v_ptr as u32 as usize, &mut val)
         .map_err(|e| anyhow::anyhow!(e))?;
+    println!(
+        "key={}, val={}",
+        String::from_utf8_lossy(&key),
+        String::from_utf8_lossy(&val)
+    );
     let db = &caller.data().db;
     db.put_cf(db.cf_handle("avs").unwrap(), &key, &val)
         .map_err(|e| anyhow::anyhow!(e))?;

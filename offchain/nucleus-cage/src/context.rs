@@ -11,7 +11,6 @@ pub struct Context {
 }
 
 impl Context {
-    // TODO
     pub fn init() -> anyhow::Result<Self> {
         Ok(Context {
             db: kvdb::init_rocksdb()?,
@@ -28,4 +27,9 @@ impl Context {
             _ => Err(Trap::HeapMisaligned),
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ContextConfig {
+    db_path: Box<std::path::Path>,
 }

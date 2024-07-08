@@ -5,7 +5,7 @@ pub struct WasmInfo {
     pub account: AccountId,
     pub name: String,
     pub version: u32,
-    // pub descriptor: WasmDescriptor,
+    pub descriptor: WasmDescriptor,
     pub code: WasmCodeRef,
 }
 
@@ -24,6 +24,6 @@ pub struct WasmDescriptor {
 
 #[derive(Debug, Clone)]
 pub struct FunctionDescriptor {
-    name: String,
-    signature: String,
+    pub name: String,
+    pub signature: String,
 }

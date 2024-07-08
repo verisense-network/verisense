@@ -4697,9 +4697,20 @@ name = "nucleus-core"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "nucleus-core-macros",
+ "parity-scale-codec",
  "tokio",
  "verisense-primitives",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "nucleus-core-macros"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "quote",
+ "syn 2.0.68",
 ]
 
 [[package]]
@@ -4707,6 +4718,7 @@ name = "nucleus-examples"
 version = "0.0.1"
 dependencies = [
  "nucleus-core",
+ "parity-scale-codec",
 ]
 
 [[package]]

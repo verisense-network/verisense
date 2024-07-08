@@ -29,7 +29,15 @@ pub(crate) enum Gluon {
 impl Nucleus {
     fn new(receiver: Receiver<Gluon>, context: Context, code: WasmInfo) -> Self {
         // TODO
-        let vm = Vm::new_instance(code, context);
+        let vm = Vm::new_instance(&code, context)
+            .inspect_err(|e| {
+                log::error!(
+                    "fail to create vm instance for AVS {} due to: {:?}",
+                    &code.name,
+                    e
+                )
+            })
+            .ok();
         Nucleus { receiver, vm }
     }
 
