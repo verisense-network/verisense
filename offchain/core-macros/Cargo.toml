@@ -1,5 +1,5 @@
 [package]
-name = "nucleus-core-macros"
+name = "vrs-core-macros"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

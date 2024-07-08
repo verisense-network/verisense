@@ -1,4 +1,4 @@
-use nucleus_core::AccountId;
+use vrs_core_sdk::AccountId;
 
 #[derive(Debug)]
 pub struct WasmInfo {

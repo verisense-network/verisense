@@ -1,4 +1,4 @@
-pub use nucleus_core_macros::*;
+pub use vrs_core_macros::*;
 pub use vrs_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
 
 #[allow(improper_ctypes)]
@@ -15,5 +15,3 @@ pub mod storage {
         Ok(())
     }
 }
-
-

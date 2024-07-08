@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     wasm_code::{FunctionDescriptor, WasmCodeRef, WasmDescriptor, WasmInfo},
 };
-use nucleus_core::AccountId;
+use vrs_core_sdk::AccountId;
 use wasmtime::{Engine, ExternRef, Instance, Module, Rooted, Store, Val, WasmResults};
 
 pub struct Vm {
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     pub fn load_wasm_should_work() {
         env_logger::init();
-        let wasm_path = "../../target/wasm32-unknown-unknown/debug/nucleus_examples.wasm";
+        let wasm_path = "../../target/wasm32-unknown-unknown/debug/vrs_nucleus_examples.wasm";
         let wasm = WasmInfo {
             account: AccountId::new([0u8; 32]),
             name: "avs-dev-demo".to_string(),
@@ -83,6 +83,9 @@ mod tests {
         let context = Context::init().unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
         let encoded_args = vec![0u8, 1u8];
-        assert_eq!(vec![0u8], vm.call_post("post", &encoded_args).unwrap());
+        assert_eq!(
+            vec![0u8],
+            vm.call_post("__nucleus_post_post", encoded_args).unwrap()
+        );
     }
 }

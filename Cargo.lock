@@ -4686,39 +4686,10 @@ dependencies = [
  "anyhow",
  "env_logger",
  "log",
- "nucleus-core",
  "rocksdb",
  "tokio",
+ "vrs-core-sdk",
  "wasmtime 22.0.0",
-]
-
-[[package]]
-name = "nucleus-core"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "nucleus-core-macros",
- "parity-scale-codec",
- "tokio",
- "verisense-primitives",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "nucleus-core-macros"
-version = "0.0.1"
-dependencies = [
- "parity-scale-codec",
- "quote",
- "syn 2.0.68",
-]
-
-[[package]]
-name = "nucleus-examples"
-version = "0.0.1"
-dependencies = [
- "nucleus-core",
- "parity-scale-codec",
 ]
 
 [[package]]
@@ -9768,6 +9739,35 @@ name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
+
+[[package]]
+name = "vrs-core-macros"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "quote",
+ "syn 2.0.68",
+]
+
+[[package]]
+name = "vrs-core-sdk"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "parity-scale-codec",
+ "tokio",
+ "verisense-primitives",
+ "vrs-core-macros",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "vrs-nucleus-examples"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "vrs-core-sdk",
+]
 
 [[package]]
 name = "w3f-bls"

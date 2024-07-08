@@ -1,5 +1,5 @@
 [package]
-name = "nucleus-examples"
+name = "vrs-nucleus-examples"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -8,5 +8,5 @@ edition.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-nucleus-core = { path = "../nucleus-core" }
+vrs-core-sdk = { path = "../core-sdk" }
 codec = { workspace = true }
