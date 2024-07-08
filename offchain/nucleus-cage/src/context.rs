@@ -17,8 +17,14 @@ impl Context {
         })
     }
 
+    // pub(crate) fn inject_host_funcs(store: &mut Store<Context>) -> Vec<Extern> {
+    //     vec![Func::wrap(store, kvdb::storage_put).into()]
+    // }
+    //
+
     pub(crate) fn inject_host_funcs(store: &mut Store<Context>) -> Vec<Extern> {
-        vec![Func::wrap(store, kvdb::storage_put).into()]
+        let signature = kvdb::storage_put_signature(store);
+        vec![Func::new(store, signature, kvdb::storage_put).into()]
     }
 
     pub(crate) fn wasm_mem(caller: &mut Caller<'_, Context>) -> Result<Memory, Trap> {

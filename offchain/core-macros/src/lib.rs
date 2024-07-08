@@ -24,6 +24,7 @@ pub fn init(_attr: TokenStream, func: TokenStream) -> TokenStream {
     let func = parse_macro_input!(func as ItemFn);
     let func_block = &func.block;
     let func_decl = &func.sig;
+    let origin_name = &func_decl.ident;
     let func_generics = &func_decl.generics;
     let func_inputs = &func_decl.inputs;
     let func_output = &func_decl.output;
@@ -47,8 +48,8 @@ pub fn init(_attr: TokenStream, func: TokenStream) -> TokenStream {
         pub fn #func_name(args: std::vec::Vec<u8>) {
             let mut v: &[u8] = args.as_ref();
             let decoded = <(#(#tys,)*) as codec::Decode>::decode(&mut v).unwrap();
-            fn func(args: (#(#tys,)*)) #func_block
-            func(decoded);
+            fn #origin_name(args: (#(#tys,)*)) #func_block
+            #origin_name(decoded);
         }
     };
     expanded.into()
@@ -68,6 +69,7 @@ fn expand(attr: TokenStream, func: TokenStream, rename_prefix: &str) -> TokenStr
     let func = parse_macro_input!(func as ItemFn);
     let func_block = &func.block;
     let func_decl = &func.sig;
+    let origin_name = &func_decl.ident;
     let func_generics = &func_decl.generics;
     let func_inputs = &func_decl.inputs;
     let func_output = &func_decl.output;
@@ -98,8 +100,8 @@ fn expand(attr: TokenStream, func: TokenStream, rename_prefix: &str) -> TokenStr
         pub fn #func_name(args: std::vec::Vec<u8>) -> std::vec::Vec<u8> {
             let mut v: &[u8] = args.as_ref();
             let decoded = <(#(#tys,)*) as codec::Decode>::decode(&mut v).unwrap();
-            fn func(args: (#(#tys,)*)) #func_output #func_block
-            let r = func(decoded);
+            fn #origin_name(args: (#(#tys,)*)) #func_output #func_block
+            let r = #origin_name(decoded);
             <#rty as codec::Encode>::encode(&r)
         }
     };

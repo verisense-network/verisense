@@ -29,13 +29,14 @@ impl Vm {
         })
     }
 
-    pub fn call_post(&mut self, func: &str, args: &[u8]) -> anyhow::Result<Vec<u8>> {
+    pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
         // TODO handle endpoint not found
         let post_fn = self
             .instance
             .get_func(&mut self.space, func)
             .ok_or(anyhow::anyhow!("endpoint not found"))?;
-        post_fn.call(&mut self.space, &[Val::I32(1)], &mut [Val::I32(1)])?;
+        let mut results = vec![Val::I32(0)];
+        post_fn.call(&mut self.space, &[Val::I32(1), Val::I32(2)], &mut results)?;
         Ok(vec![0u8])
     }
 

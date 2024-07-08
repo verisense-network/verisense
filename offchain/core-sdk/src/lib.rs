@@ -5,12 +5,12 @@ pub use vrs_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature
 pub mod storage {
 
     extern "C" {
-        fn storage_put(key: &[u8], value: &[u8]);
+        fn storage_put(key: &[u8], value: &[u8]) -> anyhow::Result<()>;
     }
 
     pub fn put(key: &[u8], value: &[u8]) -> anyhow::Result<()> {
         unsafe {
-            storage_put(key, value);
+            storage_put(key, value)?;
         }
         Ok(())
     }
