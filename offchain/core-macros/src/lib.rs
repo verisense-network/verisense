@@ -97,12 +97,14 @@ fn expand(attr: TokenStream, func: TokenStream, rename_prefix: &str) -> TokenStr
     };
     let expanded = quote! {
         #[no_mangle]
-        pub fn #func_name(args: std::vec::Vec<u8>) -> std::vec::Vec<u8> {
-            let mut v: &[u8] = args.as_ref();
-            let decoded = <(#(#tys,)*) as codec::Decode>::decode(&mut v).unwrap();
+        pub extern "C" fn #func_name(ptr: *const u8, len: usize) -> (std::boxed::Box<Vec<u8>>, usize) {
+            let mut bytes = unsafe { std::slice::from_raw_parts(ptr, len) };
+            let decoded = <(#(#tys,)*) as codec::Decode>::decode(&mut bytes).unwrap();
             fn #origin_name(args: (#(#tys,)*)) #func_output #func_block
             let r = #origin_name(decoded);
-            <#rty as codec::Encode>::encode(&r)
+            let v = <#rty as codec::Encode>::encode(&r);
+            let v_len = v.len();
+            (std::boxed::Box::new(v), v_len)
         }
     };
     expanded.into()

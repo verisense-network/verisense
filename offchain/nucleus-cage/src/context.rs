@@ -29,7 +29,7 @@ impl Context {
 
     pub(crate) fn wasm_mem(caller: &mut Caller<'_, Context>) -> Result<Memory, Trap> {
         match caller.get_export("memory") {
-            Some(wasmtime::Extern::Memory(mem)) => Ok(mem),
+            Some(Extern::Memory(mem)) => Ok(mem),
             _ => Err(Trap::HeapMisaligned),
         }
     }

@@ -7,6 +7,7 @@ edition.workspace = true
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 vrs-core-sdk = { path = "../core-sdk" }
+codec = { workspace = true }
 wasmtime = { workspace = true }
 rocksdb = "0.21.0"
 anyhow = "1"
