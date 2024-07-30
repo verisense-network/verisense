@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 [dependencies]
 vrs-core-sdk = { path = "../core-sdk" }
 codec = { workspace = true }
+wasm-bindgen = "0.2.84"

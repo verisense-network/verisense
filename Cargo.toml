@@ -9,12 +9,19 @@ edition = "2021"
 
 [workspace.dependencies]
 # codec
-codec = { features = ["derive"], package = "parity-scale-codec", version = "3.6.12", default-features = false }
-scale-info = { features = ["derive","serde"], version = "2.11.1", default-features = false }
+codec = { features = [
+    "derive",
+], package = "parity-scale-codec", version = "3.6.12", default-features = false }
+scale-info = { features = [
+    "derive",
+    "serde",
+], version = "2.11.1", default-features = false }
 
 # frame
 frame-executive = { version = "35.0.0", default-features = false }
-frame-support = { features = ["experimental"], version = "35.0.0", default-features = false }
+frame-support = { features = [
+    "experimental",
+], version = "35.0.0", default-features = false }
 frame-system = { version = "35.0.0", default-features = false }
 substrate-frame-rpc-system = { version = "35.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "33.0.0", default-features = false }
@@ -33,18 +40,27 @@ pallet-nucleus = { path = "../pallets/nucleus" }
 # primitives
 sp-api = { version = "33.0.0", default-features = false }
 sp-block-builder = { version = "33.0.0", default-features = false }
-sp-consensus-aura = { features = ["serde"], version = "0.39.0", default-features = false }
-sp-consensus-grandpa = { features = ["serde"], version = "20.0.0", default-features = false }
+sp-consensus-aura = { features = [
+    "serde",
+], version = "0.39.0", default-features = false }
+sp-consensus-grandpa = { features = [
+    "serde",
+], version = "20.0.0", default-features = false }
 sp-core = { features = ["serde"], version = "34.0.0", default-features = false }
 sp-inherents = { version = "33.0.0", default-features = false }
 sp-offchain = { version = "33.0.0", default-features = false }
-sp-runtime = { features = ["serde"], version = "38.0.0", default-features = false }
+sp-runtime = { features = [
+    "std",
+    "serde",
+], version = "39.0.0", default-features = false }
 sp-timestamp = { version = "33.0.0", default-features = false }
 sp-session = { version = "34.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
 sp-storage = { version = "21.0.0", default-features = false }
 sp-transaction-pool = { version = "33.0.0", default-features = false }
-sp-version = { features = ["serde"], version = "36.0.0", default-features = false }
+sp-version = { features = [
+    "serde",
+], version = "36.0.0", default-features = false }
 sp-genesis-builder = { version = "0.14.0", default-features = false }
 sp-io = { version = "37.0.0", default-features = false }
 sp-keyring = { version = "38.0.0", default-features = false }
