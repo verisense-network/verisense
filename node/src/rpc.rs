@@ -17,40 +17,55 @@ use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce};
 pub use sc_rpc_api::DenyUnsafe;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P> {
+pub struct FullDeps<C, P, B> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
+    /// blocks backend
+    pub backend: Arc<B>,
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<C, P>(
-    deps: FullDeps<C, P>,
+pub fn create_full<C, P, B>(
+    deps: FullDeps<C, P, B>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
+    P: TransactionPool + 'static,
+    B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+    B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: Send + Sync + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: BlockBuilder<Block>,
-    P: TransactionPool + 'static,
+    // TODO C::Api satisfies extra RPCs
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     use substrate_frame_rpc_system::{System, SystemApiServer};
+
+    // use beefy_gadget_rpc::{Beefy, BeefyApiServer};
+    // use pallet_mmr_rpc::{Mmr, MmrApiServer};
+    // use sc_consensus_babe_rpc::{Babe, BabeApiServer};
+    // use sc_finality_grandpa_rpc::{Grandpa, GrandpaApiServer};
+    // use sc_rpc::dev::{Dev, DevApiServer};
+    // use sc_rpc_spec_v2::chain_spec::{ChainSpec, ChainSpecApiServer};
+    // use sc_sync_state_rpc::{SyncState, SyncStateApiServer};
 
     let mut module = RpcModule::new(());
     let FullDeps {
         client,
         pool,
+        backend,
         deny_unsafe,
     } = deps;
 
     module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client).into_rpc())?;
+    // module.merge(Nucleus::new(client).into_rpc())?;
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed

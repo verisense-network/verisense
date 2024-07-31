@@ -217,11 +217,12 @@ pub fn new_full<
     let rpc_extensions_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
-
+        let backend = backend.clone();
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: pool.clone(),
+                backend: backend.clone(),
                 deny_unsafe,
             };
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -242,6 +243,12 @@ pub fn new_full<
         config,
         telemetry: telemetry.as_mut(),
     })?;
+
+    if role.is_authority() {
+        task_manager
+            .spawn_essential_handle()
+            .spawn_blocking("nucleus-cage", None, async move {});
+    }
 
     if role.is_authority() {
         let proposer_factory = sc_basic_authorship::ProposerFactory::new(
@@ -339,7 +346,6 @@ pub fn new_full<
             sc_consensus_grandpa::run_grandpa_voter(grandpa_config)?,
         );
     }
-
     network_starter.start_network();
     Ok(task_manager)
 }

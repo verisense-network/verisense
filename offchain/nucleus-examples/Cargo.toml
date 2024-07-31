@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 vrs-core-sdk = { path = "../core-sdk" }
-codec = { workspace = true }
+codec = { workspace = true, default-features = false }

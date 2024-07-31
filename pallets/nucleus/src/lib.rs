@@ -16,18 +16,19 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sp_runtime::traits::Hash;
+    use vrs_primitives::Nucleus;
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Nucleus<AccountId, Hash> {
-        pub name: Vec<u8>,
-        pub account: AccountId,
-        pub wasm_url: Vec<u8>,
-        pub wasm_hash: Hash,
-        pub wasm_version: u32,
-        pub energy: u128,
-        pub current_event: u64,
-        pub root_state: Hash,
-    }
+    // #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    // pub struct Nucleus<AccountId, Hash> {
+    //     pub name: Vec<u8>,
+    //     pub account: AccountId,
+    //     pub wasm_url: Vec<u8>,
+    //     pub wasm_hash: Hash,
+    //     pub wasm_version: u32,
+    //     pub energy: u128,
+    //     pub current_event: u64,
+    //     pub root_state: Hash,
+    // }
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);

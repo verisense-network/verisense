@@ -42,6 +42,7 @@ impl Nucleus {
     }
 
     async fn accept(&mut self, msg: Gluon) {
+        // TODO if token:
         match msg {
             Gluon::CodeUpgrade { id, version } => {
                 // TODO load new module from storage
@@ -61,7 +62,8 @@ impl Nucleus {
                 payload,
                 reply,
             } => {
-                // let vm_result = self.vm.run_func(None, &endpoint, vec![]);
+                // let vm_result = self.vm.run_func(None, &endpoint, payload);
+                // vec![]
             }
         }
     }

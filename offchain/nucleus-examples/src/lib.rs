@@ -24,6 +24,9 @@ pub fn init(e: t::E, u: u32) {
 
 #[post]
 pub fn post(e: E) -> Result<D, ()> {
+    // let a = storage::get(b"hello").unwrap();
+    // let b = storage::get(b"world").unwrap();
+
     storage::put(b"hello", b"world").map_err(|_| ())?;
     Ok(D { b: 1 })
 }

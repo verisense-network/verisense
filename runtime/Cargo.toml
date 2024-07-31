@@ -12,7 +12,7 @@ codec = { features = ["derive"], workspace = true, default-features = false }
 scale-info = { features = ["derive", "serde"], workspace = true, default-features = false }
 
 # frame
-frame-support = { features = ["experimental"], workspace = true, default-features = false }
+frame-support = { workspace = true, default-features = false }
 frame-system = { workspace = true, default-features = false }
 frame-executive = { workspace = true, default-features = false }
 
@@ -23,7 +23,7 @@ pallet-grandpa = { workspace = true, default-features = false }
 pallet-sudo = { workspace = true, default-features = false }
 pallet-timestamp = { workspace = true, default-features = false }
 pallet-transaction-payment = { workspace = true, default-features = false }
-# pallet-nucleus = { path = "../pallets/nucleus" }
+# pallet-nucleus = { workspace = true, default-features = false }
 
 # primitives
 vrs-primitives = { path = "../primitives", package = "verisense-primitives", default-features = false }
@@ -64,7 +64,6 @@ std = [
 	"pallet-balances/std",
 	"pallet-grandpa/std",
 	"pallet-sudo/std",
-	# "pallet-template/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
