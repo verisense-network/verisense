@@ -4688,6 +4688,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "rocksdb",
+ "sp-runtime 39.0.0",
  "tokio",
  "vrs-core-sdk",
  "wasmtime 22.0.0",
@@ -9879,6 +9880,7 @@ name = "vrs-nucleus-examples"
 version = "0.0.1"
 dependencies = [
  "parity-scale-codec",
+ "sp-runtime 39.0.0",
  "vrs-core-sdk",
  "wasm-bindgen",
 ]

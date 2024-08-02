@@ -50,7 +50,7 @@ sp-core = { features = ["serde"], version = "34.0.0", default-features = false }
 sp-inherents = { version = "33.0.0", default-features = false }
 sp-offchain = { version = "33.0.0", default-features = false }
 sp-runtime = { features = [
-    "std",
+    # "std",
     "serde",
 ], version = "39.0.0", default-features = false }
 sp-timestamp = { version = "33.0.0", default-features = false }

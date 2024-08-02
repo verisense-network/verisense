@@ -109,3 +109,68 @@ fn expand(attr: TokenStream, func: TokenStream, rename_prefix: &str) -> TokenStr
     };
     expanded.into()
 }
+
+use syn::Pat;
+#[proc_macro_attribute]
+pub fn foreplay(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input_fn = parse_macro_input!(item as ItemFn);
+    let fn_name = &input_fn.sig.ident;
+    let decoded_fn_name = format_ident!("{}_decoded", fn_name);
+
+    let args = &input_fn.sig.inputs;
+    let return_type = &input_fn.sig.output;
+
+    let (param_names, param_types): (Vec<_>, Vec<_>) = args
+        .iter()
+        .filter_map(|arg| {
+            if let FnArg::Typed(pat_type) = arg {
+                if let Pat::Ident(pat_ident) = &*pat_type.pat {
+                    let ident = &pat_ident.ident;
+                    let ty = &*pat_type.ty;
+                    Some((ident, ty))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .unzip();
+
+    let decode_params = param_names.iter().zip(param_types.iter()).map(|(param, param_type)| {
+        let len_ident = format_ident!("len_{}", param);
+        let ptr_ident = format_ident!("ptr_{}", param);
+        let bytes_ident = format_ident!("bytes_{}", param);
+        let decoded_ident = format_ident!("decoded_{}", param);
+
+        quote! {
+            let (#len_ident, #ptr_ident) = split(#param);
+            let mut #bytes_ident = unsafe { std::slice::from_raw_parts(#ptr_ident, #len_ident as usize) };
+            let #decoded_ident: #param_type = codec::Decode::decode(&mut #bytes_ident)
+                .expect(concat!("Failed to decode parameter ", stringify!(#param)));
+        }
+    });
+
+    let call_params = param_names.iter().map(|param| {
+        let decoded_ident = format_ident!("decoded_{}", param);
+        quote! { #decoded_ident }
+    });
+
+    let expanded = quote! {
+        #input_fn
+
+        #[no_mangle]
+        pub fn #decoded_fn_name(#(#param_names: *const u8),*) -> *const u8 {
+            use codec::{Decode, Encode};
+
+            #(#decode_params)*
+
+            let result = #fn_name(#(#call_params),*);
+
+            let encoded_result = result.encode();
+            merge(encoded_result.len() as u32, encoded_result.as_ptr())
+        }
+    };
+
+    TokenStream::from(expanded)
+}

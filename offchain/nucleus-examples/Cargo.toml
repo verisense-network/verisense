@@ -8,6 +8,10 @@ edition.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+sp-runtime = { features = [
+    # "std",
+    "serde",
+], version = "39.0.0", default-features = false }
 vrs-core-sdk = { path = "../core-sdk" }
 codec = { workspace = true }
 wasm-bindgen = "0.2.84"

@@ -5,6 +5,10 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+sp-runtime = { features = [
+    "std",
+    "serde",
+], version = "39.0.0", default-features = false }
 tokio = { version = "1", features = ["full"] }
 vrs-core-sdk = { path = "../core-sdk" }
 codec = { workspace = true }
