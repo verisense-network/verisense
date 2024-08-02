@@ -3,7 +3,7 @@ use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
-    MultiSignature,
+    AccountId32, MultiSignature,
 };
 use sp_std::vec::Vec;
 
@@ -26,8 +26,10 @@ pub type Nonce = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
+pub type NucleusId = AccountId32;
+
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-pub struct Nucleus<AccountId, Hash> {
+pub struct NucleusEquation<AccountId, Hash> {
     pub name: Vec<u8>,
     pub account: AccountId,
     pub wasm_url: Vec<u8>,
@@ -36,4 +38,5 @@ pub struct Nucleus<AccountId, Hash> {
     pub energy: u128,
     pub current_event: u64,
     pub root_state: Hash,
+    pub capacity: u8,
 }

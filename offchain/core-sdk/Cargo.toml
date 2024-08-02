@@ -6,7 +6,7 @@ edition.workspace = true
 
 [dependencies]
 tokio = { version = "1", features = ["sync", "macros", "rt", "io-util", "time"] }
-vrs-primitives = { path = "../../primitives", package = "verisense-primitives", default-features = false }
+vrs-primitives = { path = "../../primitives", default-features = false }
 vrs-core-macros = { path = "../core-macros" }
 anyhow = { version = "1", default-features = false }
 codec = { workspace = true, default-features = false }

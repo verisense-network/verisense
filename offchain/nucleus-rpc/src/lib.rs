@@ -1,39 +1,32 @@
 use async_trait::async_trait;
 use constants::*;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
+use nucleus_cage::{Gluon, NucleusResponse};
 use tokio::sync::mpsc::Sender;
-use tokio::sync::oneshot::{self, Receiver, Sender as ReplyHandle};
+use tokio::sync::oneshot::{self, Receiver};
+use vrs_primitives::NucleusId;
 
 #[rpc(server)]
 pub trait NucleusRpc {
     #[method(name = "nucleus_post")]
-    async fn post(&self, nucleus: String, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>>;
+    async fn post(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>>;
 
     #[method(name = "nucleus_get")]
-    async fn get(&self, nucleus: String, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>>;
-}
-
-pub type NucleusResponse = Result<Vec<u8>, (i32, String)>;
-pub type ReplyTo = ReplyHandle<NucleusResponse>;
-
-#[derive(Debug)]
-pub enum NucleusRequest {
-    Post(ReplyTo, String, String, Vec<u8>),
-    Get(ReplyTo, String, String, Vec<u8>),
+    async fn get(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>>;
 }
 
 pub struct NucleusEntry {
-    sender: Sender<NucleusRequest>,
+    sender: Sender<(NucleusId, Gluon)>,
 }
 
 impl NucleusEntry {
-    pub fn new(sender: Sender<NucleusRequest>) -> Self {
+    pub fn new(sender: Sender<(NucleusId, Gluon)>) -> Self {
         Self { sender }
     }
 
     async fn reply(
         &self,
-        req: NucleusRequest,
+        req: (NucleusId, Gluon),
         rx: Receiver<NucleusResponse>,
     ) -> RpcResult<Vec<u8>> {
         self.sender.send(req).await.map_err(|_| {
@@ -56,15 +49,29 @@ impl NucleusEntry {
 
 #[async_trait]
 impl NucleusRpcServer for NucleusEntry {
-    async fn post(&self, nucleus: String, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>> {
+    async fn post(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>> {
         let (tx, rx) = oneshot::channel();
-        let req = NucleusRequest::Post(tx, nucleus, op, payload);
+        let req = (
+            nucleus,
+            Gluon::PostRequest {
+                endpoint: op,
+                payload,
+                reply_to: Some(tx),
+            },
+        );
         self.reply(req, rx).await
     }
 
-    async fn get(&self, nucleus: String, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>> {
+    async fn get(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>> {
         let (tx, rx) = oneshot::channel();
-        let req = NucleusRequest::Get(tx, nucleus, op, payload);
+        let req = (
+            nucleus,
+            Gluon::GetRequest {
+                endpoint: op,
+                payload,
+                reply_to: Some(tx),
+            },
+        );
         self.reply(req, rx).await
     }
 }

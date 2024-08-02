@@ -1,5 +1,5 @@
 [package]
-name = "vrs-nucleus-rpc"
+name = "nucleus-rpc"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -13,3 +13,5 @@ async-trait  = { version = "0.1.81" }
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.10"
+nucleus-cage = { path = "../nucleus-cage" }
+vrs-primitives = { path = "../../primitives" }

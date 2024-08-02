@@ -26,7 +26,7 @@ pallet-transaction-payment = { workspace = true, default-features = false }
 # pallet-nucleus = { workspace = true, default-features = false }
 
 # primitives
-vrs-primitives = { path = "../primitives", package = "verisense-primitives", default-features = false }
+vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
 sp-block-builder = { workspace = true, default-features = false }
 sp-consensus-aura = { features = ["serde"], workspace = true, default-features = false }

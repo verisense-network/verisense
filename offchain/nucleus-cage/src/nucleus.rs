@@ -1,33 +1,32 @@
-use crate::{context::Context, vm::Vm, wasm_code::WasmInfo};
+use crate::{context::Context, vm::Vm, wasm_code::WasmInfo, ReplyTo};
 use std::collections::HashMap;
 use tokio::sync::mpsc::Receiver;
 
 pub(crate) struct Nucleus {
-    receiver: Receiver<Gluon>,
+    receiver: Receiver<(u64, Gluon)>,
     vm: Option<Vm>,
 }
 
-#[derive(Clone, Debug)]
-pub(crate) enum Gluon {
+#[derive(Debug)]
+pub enum Gluon {
     CodeUpgrade {
-        id: u64,
+        // TODO
         version: u32,
     },
     PostRequest {
-        id: u64,
         endpoint: String,
         payload: Vec<u8>,
-        reply: Option<u64>,
+        reply_to: Option<ReplyTo>,
     },
     GetRequest {
         endpoint: String,
         payload: Vec<u8>,
-        reply: u64,
+        reply_to: Option<ReplyTo>,
     },
 }
 
 impl Nucleus {
-    fn new(receiver: Receiver<Gluon>, context: Context, code: WasmInfo) -> Self {
+    fn new(receiver: Receiver<(u64, Gluon)>, context: Context, code: WasmInfo) -> Self {
         // TODO
         let vm = Vm::new_instance(&code, context)
             .inspect_err(|e| {
@@ -44,23 +43,22 @@ impl Nucleus {
     async fn accept(&mut self, msg: Gluon) {
         // TODO if token:
         match msg {
-            Gluon::CodeUpgrade { id, version } => {
+            Gluon::CodeUpgrade { version } => {
                 // TODO load new module from storage
                 // TODO handle errors
             }
             Gluon::GetRequest {
                 endpoint,
                 payload,
-                reply,
+                reply_to,
             } => {
                 // TODO resolve parameters
                 // let vm_result = self.vm.run_func(None, &endpoint, vec![]);
             }
             Gluon::PostRequest {
-                id,
                 endpoint,
                 payload,
-                reply,
+                reply_to,
             } => {
                 // let vm_result = self.vm.run_func(None, &endpoint, payload);
                 // vec![]
@@ -70,8 +68,8 @@ impl Nucleus {
 }
 
 // TODO spawn a task to run
-pub async fn run(mut nucleus: Nucleus) {
-    while let Some(msg) = nucleus.receiver.recv().await {
-        nucleus.accept(msg).await;
-    }
-}
+// pub async fn run(mut nucleus: Nucleus) {
+//     while let Some(msg) = nucleus.receiver.recv().await {
+//         nucleus.accept(msg).await;
+//     }
+// }

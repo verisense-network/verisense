@@ -26,6 +26,9 @@ pub struct FullDeps<C, P, B> {
     pub backend: Arc<B>,
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
+    /// Nucleus requests relayer
+    pub nucleus_req_relayer:
+        tokio::sync::mpsc::Sender<(vrs_primitives::NucleusId, nucleus_cage::Gluon)>,
 }
 
 /// Instantiate all full RPC extensions.
@@ -44,6 +47,7 @@ where
     C::Api: BlockBuilder<Block>,
     // TODO C::Api satisfies extra RPCs
 {
+    use nucleus_rpc::{NucleusEntry, NucleusRpcServer};
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     use substrate_frame_rpc_system::{System, SystemApiServer};
 
@@ -61,11 +65,12 @@ where
         pool,
         backend,
         deny_unsafe,
+        nucleus_req_relayer,
     } = deps;
 
     module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client).into_rpc())?;
-    // module.merge(Nucleus::new(client).into_rpc())?;
+    module.merge(NucleusEntry::new(nucleus_req_relayer).into_rpc())?;
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed
