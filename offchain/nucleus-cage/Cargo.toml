@@ -7,10 +7,12 @@ edition.workspace = true
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 vrs-core-sdk = { path = "../core-sdk" }
-nucleus-rpc = { path = "../nucleus-rpc" }
+vrs-nucleus-rpc = { path = "../nucleus-rpc" }
 codec = { workspace = true }
 wasmtime = { workspace = true }
 rocksdb = "0.21.0"
 anyhow = "1"
 log = "0.4"
 env_logger = "0.10"
+futures = { features = ["thread-pool"], version = "0.3.30" }
+dashmap = "6.0.1"

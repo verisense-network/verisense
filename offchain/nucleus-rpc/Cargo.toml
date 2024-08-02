@@ -1,5 +1,5 @@
 [package]
-name = "nucleus-rpc"
+name = "vrs-nucleus-rpc"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

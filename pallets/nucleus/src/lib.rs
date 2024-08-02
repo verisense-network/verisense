@@ -83,7 +83,7 @@ pub mod pallet {
             let author = ensure_signed(origin)?;
             ensure!(name.len() <= 80, "Name too long");
             ensure!(wasm_url.len() <= 256, "Wasm URL too long");
-            let hash = T::Hashing::hash(&(author.clone(), name.clone()).encode());
+            let hash = T::Hashing::hash_of(&(author.clone(), name.clone()));
             ensure!(!Nuclei::<T>::contains_key(&hash), "Nucleus already exists");
             Nuclei::<T>::insert(
                 &hash,
