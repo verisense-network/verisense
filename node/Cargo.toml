@@ -13,22 +13,22 @@ targets = ["x86_64-unknown-linux-gnu"]
 clap = { features = ["derive"], version = "4.5.3" }
 futures = { features = ["thread-pool"], version = "0.3.30" }
 serde_json = { version = "1.0" }
-jsonrpsee = { features = ["server"], version = "0.22" }
+jsonrpsee = { features = ["server"], version = "0.23.2" }
 
-sc-cli = { version = "0.43.0" }
+sc-cli = { version = "0.44.0" }
 sc-executor = { version = "0.39.0" }
-sc-network = { version = "0.41.0" }
-sc-service = { version = "0.42.0" }
-sc-telemetry = { version = "21.0.0" }
+sc-network = { version = "0.42.0" }
+sc-service = { version = "0.43.0" }
+sc-telemetry = { version = "22.0.0" }
 sc-transaction-pool = { version = "35.0.0" }
 sc-transaction-pool-api = { version = "35.0.0" }
-sc-offchain = { version = "36.0.0" }
-sc-consensus-aura = { version = "0.41.0" }
-sc-consensus = { version = "0.40.0" }
-sc-consensus-grandpa = { version = "0.26.0" }
+sc-offchain = { version = "37.0.0" }
+sc-consensus-aura = { version = "0.42.0" }
+sc-consensus = { version = "0.41.0" }
+sc-consensus-grandpa = { version = "0.27.0" }
 sc-client-api = { version = "35.0.0" }
-sc-rpc-api = { version = "0.40.0" }
-sc-basic-authorship = { version = "0.41.0" }
+sc-rpc-api = { version = "0.41.0" }
+sc-basic-authorship = { version = "0.42.0" }
 
 sp-core = { workspace = true, default-features = true }
 sp-consensus-aura = { workspace = true, default-features = true }
@@ -41,6 +41,7 @@ sp-keyring = { workspace = true, default-features = true }
 sp-api = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
 sp-block-builder = { workspace = true, default-features = true }
+#sp-state-machine = { workspace = true, default-features = true }
 
 frame-system = { workspace = true, default-features = true }
 substrate-frame-rpc-system = { workspace = true, default-features = true }
@@ -48,7 +49,10 @@ pallet-transaction-payment = { workspace = true, default-features = true }
 pallet-transaction-payment-rpc = { workspace = true, default-features = true }
 
 vrs-runtime = { path = "../runtime", package = "verisense-runtime" }
-vrs-primitives = { path = "../primitives", package = "verisense-primitives" }
+vrs-primitives = { path = "../primitives" }
+nucleus-rpc = { path = "../offchain/nucleus-rpc" }
+nucleus-cage = { path = "../offchain/nucleus-cage" }
+tokio = { version = "1", features = ["full"] }
 
 [build-dependencies]
 substrate-build-script-utils = { version = "11.0.0" }

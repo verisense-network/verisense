@@ -141,6 +141,7 @@ mod tests {
         assert_eq!(result, Ok("abababababababababab".to_string()));
 
         let input = <String as codec::Encode>::encode(&"aaaaaaaaaa".to_string());
+        //jsonrpc: {method: AVS_{AVSNAME}_{METHODNAME}, params: [], id: 1}
         let result = vm.call_post("cc", input);
         println!("result: {:?}", result);
 
