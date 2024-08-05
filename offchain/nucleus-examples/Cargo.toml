@@ -22,7 +22,3 @@ default-features = false
 default = ["std"]
 std = ["vrs-core-sdk/std"]
 no-std = []
-
-[target.'cfg(not(feature = "no-std"))'.dependencies.vrs-core-sdk]
-path = "../core-sdk"
-default-features = false
