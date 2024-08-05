@@ -1,0 +1,18 @@
+[package]
+name = "nucleus-rpc"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+codec = { workspace = true, default-features = true }
+jsonrpsee = { features = ["server", "macros"], version = "0.23" }
+futures = { features = ["thread-pool"], version = "0.3.30" }
+serde_json = { version = "1.0" }
+async-trait  = { version = "0.1.81" }
+tokio = { version = "1", features = ["full"] }
+log = "0.4"
+env_logger = "0.10"
+hex = "0.4"
+nucleus-cage = { path = "../nucleus-cage" }
+vrs-primitives = { path = "../../primitives" }

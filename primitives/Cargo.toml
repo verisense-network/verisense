@@ -1,5 +1,5 @@
 [package]
-name = "verisense-primitives"
+name = "vrs-primitives"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

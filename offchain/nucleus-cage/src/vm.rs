@@ -104,6 +104,7 @@ mod tests {
         let encoded_args = e.encode();
         assert_eq!(
             vec![0u8],
+            //jsonrpc: {method: AVS_{AVSNAME}_{METHODNAME}, params: [], id: 1}
             vm.call_post("__nucleus_post_post", encoded_args).unwrap()
         );
     }
