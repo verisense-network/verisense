@@ -23,7 +23,7 @@ pallet-grandpa = { workspace = true, default-features = false }
 pallet-sudo = { workspace = true, default-features = false }
 pallet-timestamp = { workspace = true, default-features = false }
 pallet-transaction-payment = { workspace = true, default-features = false }
-# pallet-nucleus = { workspace = true, default-features = false }
+pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 
 # primitives
 vrs-primitives = { path = "../primitives", default-features = false }

@@ -1,11 +1,12 @@
 use crate::{nucleus::Nucleus, Gluon, NucleusResponse};
+use codec::Decode;
 use futures::{prelude::*, select};
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use std::collections::HashMap;
 use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver, Sender};
-use vrs_primitives::{AccountId, NucleusEquation, NucleusId};
+use vrs_primitives::{AccountId, Hash, NucleusEquation, NucleusId};
 
 pub struct CageParameters<B, C, BN> {
     pub rx: Receiver<(NucleusId, Gluon)>,
@@ -71,10 +72,10 @@ where
             }
         });
         //////////////////////////////////////////////////////
-
+        log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
-                nucleus = monitor_nucleus_registry(client.clone(), controller.clone()) => {
+                nucleus = nucleus_instance_updates(client.clone(), controller.clone()) => {
                     // start_nucleus(nucleus);
                 },
                 req = rx.recv() => {
@@ -87,6 +88,7 @@ where
                 },
                 // TODO replace this with token received
                 token = token_rx.recv() => {
+                    log::info!("mocking monadring: token received.")
                     // nuclei.get_mut(&token).map(|nucleus| nucleus.drain());
                 }
             }
@@ -104,21 +106,57 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
     }
 }
 
-async fn monitor_nucleus_registry<B, BN, C>(runtime_storage: Arc<C>, controller: AccountId)
+// TODO move this to pallet-nucleus
+async fn nucleus_instance_updates<B, BN, C>(
+    runtime_storage: Arc<C>,
+    controller: AccountId,
+) -> Option<Vec<NucleusEquation<AccountId, Hash>>>
 where
     B: sp_runtime::traits::Block,
     BN: Backend<B>,
     C: BlockBackend<B> + StorageProvider<B, BN> + BlockchainEvents<B> + 'static,
 {
-    let storage_key = blake2_128concat_storage_key(b"nucleus", b"RegisteredCages", controller);
-    // TODO
-    let new_val = runtime_storage
+    let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Instances", controller);
+    let updates = runtime_storage
         .storage_changes_notification_stream(Some(&[storage_key]), None)
-        .expect("fail to get storage changes notification stream")
-        // .map(|c| c.changes.iter().collect::<Vec<_>>())
+        .ok()?
         .next()
-        .await;
-    println!("{:?}", new_val);
+        .await?;
+    let storage = updates
+        .changes
+        .iter()
+        .map(|(_, _, v)| v)
+        .take(1)
+        .next()?
+        .clone();
+
+    let instances = storage.and_then(|v| {
+        let mut buf = v.0.as_ref();
+        let decoded = <Vec<NucleusId>>::decode(&mut buf).ok()?;
+        Some(decoded)
+    })?;
+    log::info!(
+        "💡Detecting instances update at block {}: {:?}",
+        updates.block,
+        instances,
+    );
+    let instances = instances
+        .into_iter()
+        .filter_map(|id| {
+            let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Nuclei", id);
+            runtime_storage
+                .storage(updates.block, &storage_key)
+                .ok()
+                .flatten()
+                .map(|v| {
+                    let mut buf = v.0.as_ref();
+                    let decoded = <NucleusEquation<AccountId, Hash>>::decode(&mut buf).ok()?;
+                    Some(decoded)
+                })
+                .flatten()
+        })
+        .collect::<Vec<_>>();
+    Some(instances)
 }
 
 fn blake2_128concat_storage_key<K: codec::Encode>(

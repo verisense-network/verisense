@@ -1,6 +1,10 @@
 use async_trait::async_trait;
 use constants::*;
-use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
+use jsonrpsee::{
+    core::RpcResult,
+    proc_macros::rpc,
+    types::error::{ErrorCode, ErrorObjectOwned},
+};
 use nucleus_cage::{Gluon, NucleusResponse};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::{self, Receiver};
@@ -9,10 +13,10 @@ use vrs_primitives::NucleusId;
 #[rpc(server)]
 pub trait NucleusRpc {
     #[method(name = "nucleus_post")]
-    async fn post(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>>;
+    async fn post(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>>;
 
     #[method(name = "nucleus_get")]
-    async fn get(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>>;
+    async fn get(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>>;
 }
 
 pub struct NucleusEntry {
@@ -49,7 +53,9 @@ impl NucleusEntry {
 
 #[async_trait]
 impl NucleusRpcServer for NucleusEntry {
-    async fn post(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>> {
+    async fn post(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>> {
+        let payload =
+            hex::decode(payload.trim_start_matches("0x")).map_err(|_| ErrorCode::InvalidParams)?;
         let (tx, rx) = oneshot::channel();
         let req = (
             nucleus,
@@ -62,7 +68,9 @@ impl NucleusRpcServer for NucleusEntry {
         self.reply(req, rx).await
     }
 
-    async fn get(&self, nucleus: NucleusId, op: String, payload: Vec<u8>) -> RpcResult<Vec<u8>> {
+    async fn get(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>> {
+        let payload =
+            hex::decode(payload.trim_start_matches("0x")).map_err(|_| ErrorCode::InvalidParams)?;
         let (tx, rx) = oneshot::channel();
         let req = (
             nucleus,

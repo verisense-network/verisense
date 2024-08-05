@@ -16,6 +16,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sp_runtime::traits::{Hash, MaybeDisplay};
+    use sp_runtime::Vec;
     use vrs_primitives::NucleusEquation;
 
     #[pallet::pallet]
@@ -48,7 +49,7 @@ pub mod pallet {
     // TODO we need to use FHE to hide the real account
     #[pallet::storage]
     #[pallet::unbounded]
-    pub type RegisteredCages<T: Config> = StorageMap<
+    pub type Instances<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::AccountId,
         Value = Vec<T::NucleusId>,
@@ -68,7 +69,7 @@ pub mod pallet {
             energy: u128,
             capacity: u8,
         },
-        CageRegistered {
+        InstanceRegistered {
             controller_account: T::AccountId,
             nucleus_id: T::NucleusId,
         },
@@ -83,7 +84,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::do_something())]
+        #[pallet::weight(T::WeightInfo::create_nucleus())]
         pub fn create_nucleus(
             origin: OriginFor<T>,
             name: Vec<u8>,
@@ -128,14 +129,14 @@ pub mod pallet {
 
         // TODO just for testing
         #[pallet::call_index(1)]
-        #[pallet::weight(1_000_000)]
+        #[pallet::weight(T::WeightInfo::mock_register())]
         pub fn mock_register(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult {
             let controller_account = ensure_signed(origin)?;
-            RegisteredCages::<T>::mutate(&controller_account, |cages| {
+            Instances::<T>::mutate(&controller_account, |cages| {
                 // TODO
                 cages.push(nucleus_id.clone());
             });
-            Self::deposit_event(Event::CageRegistered {
+            Self::deposit_event(Event::InstanceRegistered {
                 controller_account,
                 nucleus_id,
             });
