@@ -57,7 +57,7 @@ impl Nucleus {
                 Some(ref mut vm) => {
                     let vm_result = vm.call_get(&endpoint, payload).map_err(|e| {
                         log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
-                        (VM_ERROR, e.to_string())
+                        (VM_ERROR << 10 + e.to_error_code(), e.to_string())
                     });
                     if let Some(reply_to) = reply_to {
                         if let Err(err) = reply_to.send(vm_result) {
@@ -79,8 +79,12 @@ impl Nucleus {
                 match self.vm {
                     Some(ref mut vm) => {
                         let vm_result = vm.call_post(&endpoint, payload).map_err(|e| {
-                            log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
-                            (VM_ERROR, e.to_string())
+                            log::error!(
+                                "fail to call post endpoint: {} due to: {:?}",
+                                &endpoint,
+                                e
+                            );
+                            (VM_ERROR << 10 + e.to_error_code(), e.to_string())
                         });
                         if let Some(reply_to) = reply_to {
                             if let Err(err) = reply_to.send(vm_result) {
@@ -149,7 +153,18 @@ mod tests {
         };
         sender.send((1, post_msg)).await.unwrap();
 
-        for _ in 0..2 {
+        let (tx_post, rx_post1) = oneshot::channel();
+        let post_msg = Gluon::PostRequest {
+            endpoint: "bc".to_string(),
+            payload: vec![
+                40, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 40, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+                98,
+            ],
+            reply_to: Some(tx_post),
+        };
+        sender.send((1, post_msg)).await.unwrap();
+
+        for _ in 0..3 {
             let (_, msg) = nucleus.receiver.recv().await.unwrap();
             nucleus.accept(msg);
         }
@@ -164,6 +179,8 @@ mod tests {
             post_result,
             Result::<String, String>::Ok("abababababababababab".to_owned())
         );
+        let post_result = rx_post1.await.unwrap();
+        assert_eq!(post_result, Err((1024, "Endpoint not found".to_owned())))
     }
 }
 

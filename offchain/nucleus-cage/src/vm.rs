@@ -45,6 +45,21 @@ pub enum WasmCallError {
     #[error("Wasm internal error: {0}")]
     WasmInternalError(String),
 }
+impl WasmCallError {
+    pub fn to_error_code(&self) -> u32 {
+        match self {
+            WasmCallError::EndpointNotFound => 0,
+            WasmCallError::NoMemoryExported => 1,
+            WasmCallError::ArgumentsSizeExceeded => 2,
+            WasmCallError::ResultSizeExceeded => 3,
+            WasmCallError::ResultPointerError => 4,
+            WasmCallError::MemoryError(_) => 5,
+            WasmCallError::FunctionCallError(_) => 6,
+            WasmCallError::DecodeError(_) => 7,
+            WasmCallError::WasmInternalError(_) => 8,
+        }
+    }
+}
 
 impl Vm {
     pub fn new_instance(wasm: &WasmInfo, context: Context) -> anyhow::Result<Self> {
