@@ -5,14 +5,45 @@ use crate::{
     wasm_code::{FunctionDescriptor, WasmCodeRef, WasmDescriptor, WasmInfo},
 };
 use anyhow::anyhow;
+use codec::Decode;
 use sp_runtime::traits::Member;
+use thiserror::Error;
 use vrs_core_sdk::AccountId;
-use wasmtime::{Engine, ExternRef, ExternType, Instance, Module, Rooted, Store, Val, WasmResults};
-
+use wasmtime::{Caller, Func, Memory, Trap, Val};
+use wasmtime::{Engine, ExternRef, ExternType, Instance, Module, Rooted, Store, WasmResults};
 pub struct Vm {
     space: Store<Context>,
     instance: Instance,
     __call_param_ptr: i32,
+}
+#[derive(Error, Debug, PartialEq)]
+pub enum WasmCallError {
+    #[error("Endpoint not found")]
+    EndpointNotFound,
+
+    #[error("No memory exported")]
+    NoMemoryExported,
+
+    #[error("Arguments size exceeds 64KB limit")]
+    ArgumentsSizeExceeded,
+
+    #[error("Result size exceeds 64KB limit")]
+    ResultSizeExceeded,
+
+    #[error("Result pointer error")]
+    ResultPointerError,
+
+    #[error("Memory error: {0}")]
+    MemoryError(String),
+
+    #[error("Function call error: {0}")]
+    FunctionCallError(String),
+
+    #[error("Decode error: {0}")]
+    DecodeError(#[from] codec::Error),
+
+    #[error("Wasm internal error: {0}")]
+    WasmInternalError(String),
 }
 
 impl Vm {
@@ -46,90 +77,128 @@ impl Vm {
             __call_param_ptr: ptr,
         })
     }
-
-    pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
-        let post_fn = self
+    pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+        let func = self
             .instance
-            .get_func(&mut self.space, format!("__nucleus_get_{}", func).as_str())
-            .ok_or(anyhow::anyhow!("endpoint not found"))?;
+            .get_func(&mut self.space, &format!("__nucleus_get_{}", func))
+            .ok_or(WasmCallError::EndpointNotFound)?;
 
         let memory = self
             .instance
             .get_memory(&mut self.space, "memory")
-            .ok_or(anyhow::anyhow!("no memory exported"))?;
-        let mut result = vec![Val::I32(0)];
-        //check args size < 64k
+            .ok_or(WasmCallError::NoMemoryExported)?;
+
         if args.len() > 65536 {
-            return Err(anyhow::anyhow!("args size should be less than 64k"));
+            return Err(WasmCallError::ArgumentsSizeExceeded);
         }
+
+        // Write args to memory
         memory
-            .write(&mut self.space, self.__call_param_ptr as usize, &args[..])
-            .unwrap();
-        post_fn.call(
+            .write(&mut self.space, self.__call_param_ptr as usize, &args)
+            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+
+        let mut result = vec![Val::I32(0)];
+        // Call the function
+        func.call(
             &mut self.space,
             &[
                 Val::I32(self.__call_param_ptr as i32),
                 Val::I32(args.len() as i32),
             ],
             &mut result,
-        )?;
+        )
+        .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
+
         log::info!("results: {:?}", result);
-        let result_ptr = result[0].i32().ok_or(anyhow!("result ptr error"))? as usize;
-        let mut result_len = vec![0u8; 4];
-        memory.read(&self.space, result_ptr, &mut result_len)?;
-        let result_len =
-            u32::from_ne_bytes([result_len[0], result_len[1], result_len[2], result_len[3]]);
+
+        let result_ptr = result[0].i32().ok_or(WasmCallError::ResultPointerError)? as usize;
+
+        // Read result length
+        let mut result_len_bytes = [0u8; 4];
+        memory
+            .read(&mut self.space, result_ptr, &mut result_len_bytes)
+            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+        let result_len = u32::from_le_bytes(result_len_bytes);
+
         if result_len > 65536 {
-            return Err(anyhow::anyhow!("result size should be less than 64k"));
+            return Err(WasmCallError::ResultSizeExceeded);
         }
-        let mut result: Vec<u8> = vec![0u8; result_len as usize];
-        memory.read(&self.space, result_ptr + 4, &mut result)?;
-        log::debug!("result {:?}", result);
-        let result = <Result<Vec<u8>, String> as codec::Decode>::decode(&mut result.as_slice())?
-            .map_err(|e| anyhow!("wasm call error {:?}", e))?;
-        return Ok(result);
+
+        // Read result data
+        let mut result_data = vec![0u8; result_len as usize];
+        memory
+            .read(&mut self.space, result_ptr + 4, &mut result_data)
+            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+
+        log::debug!("result {:?}", result_data);
+
+        // Decode the result
+        let result = <Result<Vec<u8>, String> as Decode>::decode(&mut result_data.as_slice())?
+            .map_err(|e| WasmCallError::WasmInternalError(e))?;
+
+        Ok(result)
     }
 
-    pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
-        let post_fn = self
+    pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+        let func = self
             .instance
-            .get_func(&mut self.space, format!("__nucleus_post_{}", func).as_str())
-            .ok_or(anyhow::anyhow!("endpoint not found"))?;
+            .get_func(&mut self.space, &format!("__nucleus_post_{}", func))
+            .ok_or(WasmCallError::EndpointNotFound)?;
 
         let memory = self
             .instance
             .get_memory(&mut self.space, "memory")
-            .ok_or(anyhow::anyhow!("no memory exported"))?;
-        let mut result = vec![Val::I32(0)];
-        //check args size < 64k
+            .ok_or(WasmCallError::NoMemoryExported)?;
+
         if args.len() > 65536 {
-            return Err(anyhow::anyhow!("args size should be less than 64k"));
+            return Err(WasmCallError::ArgumentsSizeExceeded);
         }
+
+        // Write args to memory
         memory
-            .write(&mut self.space, self.__call_param_ptr as usize, &args[..])
-            .unwrap();
-        post_fn.call(
+            .write(&mut self.space, self.__call_param_ptr as usize, &args)
+            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+
+        let mut result = vec![Val::I32(0)];
+        // Call the function
+        func.call(
             &mut self.space,
             &[
                 Val::I32(self.__call_param_ptr as i32),
                 Val::I32(args.len() as i32),
             ],
             &mut result,
-        )?;
+        )
+        .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
+
         log::info!("results: {:?}", result);
-        let result_ptr = result[0].i32().ok_or(anyhow!("result ptr error"))? as usize;
-        let mut result_len = vec![0u8; 4];
-        memory.read(&self.space, result_ptr, &mut result_len)?;
-        let result_len =
-            u32::from_ne_bytes([result_len[0], result_len[1], result_len[2], result_len[3]]);
+
+        let result_ptr = result[0].i32().ok_or(WasmCallError::ResultPointerError)? as usize;
+
+        // Read result length
+        let mut result_len_bytes = [0u8; 4];
+        memory
+            .read(&mut self.space, result_ptr, &mut result_len_bytes)
+            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+        let result_len = u32::from_le_bytes(result_len_bytes);
+
         if result_len > 65536 {
-            return Err(anyhow::anyhow!("result size should be less than 64k"));
+            return Err(WasmCallError::ResultSizeExceeded);
         }
-        let mut result: Vec<u8> = vec![0u8; result_len as usize];
-        memory.read(&self.space, result_ptr + 4, &mut result)?;
-        let result = <Result<Vec<u8>, String> as codec::Decode>::decode(&mut result.as_slice())?
-            .map_err(|e| anyhow!("wasm call error {:?}", e))?;
-        return Ok(result);
+
+        // Read result data
+        let mut result_data = vec![0u8; result_len as usize];
+        memory
+            .read(&mut self.space, result_ptr + 4, &mut result_data)
+            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+
+        log::debug!("result {:?}", result_data);
+
+        // Decode the result
+        let result = <Result<Vec<u8>, String> as Decode>::decode(&mut result_data.as_slice())?
+            .map_err(|e| WasmCallError::WasmInternalError(e))?;
+
+        Ok(result)
     }
 }
 fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
@@ -161,9 +230,21 @@ mod tests {
             "aaaaaaaaaa".to_string(),
             "bbbbbbbbbb".to_string(),
         ));
-        println!("input: {:?}", input);
+        assert_eq!(
+            input,
+            vec![
+                40, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 40, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+                98
+            ]
+        );
         let result = vm.call_post("cc", input).unwrap();
-        println!("encoded_result: {:?}", result);
+        assert_eq!(
+            result,
+            vec![
+                0, 80, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97,
+                98
+            ]
+        );
         let result =
             <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
         assert_eq!(result, Ok("abababababababababab".to_string()));
@@ -171,20 +252,31 @@ mod tests {
         let input = <String as codec::Encode>::encode(&"aaaaaaaaaa".to_string());
         //jsonrpc: {method: AVS_{AVSNAME}_{METHODNAME}, params: [], id: 1}
         let result = vm.call_post("cc", input);
-        println!("result: {:?}", result);
+        assert_eq!(
+            result,
+            Err(WasmCallError::WasmInternalError(
+                "Failed to decode arguments tuple".to_owned()
+            ))
+        );
 
         let input = <(String, String) as codec::Encode>::encode(&(
             "aaaaaaaaaa".to_string(),
             "bbbbbbbbbb".to_string(),
         ));
         let result = vm.call_post("cc", input).unwrap();
-        println!("encoded_result: {:?}", result);
+        assert_eq!(
+            result,
+            vec![
+                0, 80, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97,
+                98
+            ]
+        );
         let result =
             <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
         assert_eq!(result, Ok("abababababababababab".to_string()));
 
         let result = vm.call_get("get", vec![]).unwrap();
-        println!("encoded_result: {:?}", result);
+        assert_eq!(result, vec![5, 0, 0, 0]);
         // assert_eq!(
         //     vec![0u8],
         //     vm.call_post("__nucleus_post_post", encoded_args).unwrap()
@@ -244,7 +336,7 @@ mod tests {
         memory.write(&mut store, ptr as usize, &input[..]).unwrap();
 
         let call_example: wasmtime::Func = instance
-            .get_func(&mut store, "__nucleus_decoded_cc")
+            .get_func(&mut store, "__nucleus_post_cc")
             .expect("function not found");
         let mut result = vec![Val::I32(0)];
         call_example
