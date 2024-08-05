@@ -32,7 +32,7 @@ impl Vm {
         let injects = Context::inject_host_funcs(&mut store);
         let instance = Instance::new(&mut store, &module, &injects)?;
         instance.exports(&mut store).for_each(|export| {
-            println!("export1: {}", export.name());
+            log::debug!("export1: {}", export.name());
         });
         let memory = instance
             .get_memory(&mut store, "memory")
@@ -46,14 +46,10 @@ impl Vm {
             __call_param_ptr: ptr,
         })
     }
-
-    pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+    pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
         let post_fn = self
             .instance
-            .get_func(
-                &mut self.space,
-                format!("__nucleus_decoded_{}", func).as_str(),
-            )
+            .get_func(&mut self.space, format!("__nucleus_get_{}", func).as_str())
             .ok_or(anyhow::anyhow!("endpoint not found"))?;
 
         let memory = self
@@ -76,7 +72,6 @@ impl Vm {
             ],
             &mut result,
         )?;
-        println!("results: {:?}", result);
         log::info!("results: {:?}", result);
         let result_ptr = result[0].i32().ok_or(anyhow!("result ptr error"))? as usize;
         let mut result_len = vec![0u8; 4];
@@ -88,22 +83,52 @@ impl Vm {
         }
         let mut result: Vec<u8> = vec![0u8; result_len as usize];
         memory.read(&self.space, result_ptr + 4, &mut result)?;
-        println!("123");
+        log::debug!("result {:?}", result);
         let result = <Result<Vec<u8>, String> as codec::Decode>::decode(&mut result.as_slice())?
             .map_err(|e| anyhow!("wasm call error {:?}", e))?;
         return Ok(result);
     }
+    pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+        let post_fn = self
+            .instance
+            .get_func(&mut self.space, format!("__nucleus_post_{}", func).as_str())
+            .ok_or(anyhow::anyhow!("endpoint not found"))?;
 
-    // pub fn call_init(&mut self, func: &str, args: Vec<u8>)
-    // pub fn call_query(&mut self, func: &str, args: Vec<u8>)
-    // TODO
-    // pub fn call_post(&mut self, func: &str, args: u32) -> u32 {
-    //     let post_fn = self
-    //         .instance
-    //         .get_typed_func::<(u32,), u32>(&mut self.space, func)
-    //         .unwrap();
-    //     post_fn.call(&mut self.space, (args,)).unwrap()
-    // }
+        let memory = self
+            .instance
+            .get_memory(&mut self.space, "memory")
+            .ok_or(anyhow::anyhow!("no memory exported"))?;
+        let mut result = vec![Val::I32(0)];
+        //check args size < 64k
+        if args.len() > 65536 {
+            return Err(anyhow::anyhow!("args size should be less than 64k"));
+        }
+        memory
+            .write(&mut self.space, self.__call_param_ptr as usize, &args[..])
+            .unwrap();
+        post_fn.call(
+            &mut self.space,
+            &[
+                Val::I32(self.__call_param_ptr as i32),
+                Val::I32(args.len() as i32),
+            ],
+            &mut result,
+        )?;
+        log::info!("results: {:?}", result);
+        let result_ptr = result[0].i32().ok_or(anyhow!("result ptr error"))? as usize;
+        let mut result_len = vec![0u8; 4];
+        memory.read(&self.space, result_ptr, &mut result_len)?;
+        let result_len =
+            u32::from_ne_bytes([result_len[0], result_len[1], result_len[2], result_len[3]]);
+        if result_len > 65536 {
+            return Err(anyhow::anyhow!("result size should be less than 64k"));
+        }
+        let mut result: Vec<u8> = vec![0u8; result_len as usize];
+        memory.read(&self.space, result_ptr + 4, &mut result)?;
+        let result = <Result<Vec<u8>, String> as codec::Decode>::decode(&mut result.as_slice())?
+            .map_err(|e| anyhow!("wasm call error {:?}", e))?;
+        return Ok(result);
+    }
 }
 fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
     let mut b = a.clone();
@@ -134,6 +159,7 @@ mod tests {
             "aaaaaaaaaa".to_string(),
             "bbbbbbbbbb".to_string(),
         ));
+        println!("input: {:?}", input);
         let result = vm.call_post("cc", input).unwrap();
         println!("encoded_result: {:?}", result);
         let result =
@@ -154,6 +180,9 @@ mod tests {
         let result =
             <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
         assert_eq!(result, Ok("abababababababababab".to_string()));
+
+        let result = vm.call_get("get", vec![]).unwrap();
+        println!("encoded_result: {:?}", result);
         // assert_eq!(
         //     vec![0u8],
         //     vm.call_post("__nucleus_post_post", encoded_args).unwrap()

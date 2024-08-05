@@ -19,3 +19,4 @@ futures = { features = ["thread-pool"], version = "0.3.30" }
 sp-core = { workspace = true }
 sc-client-api = { version = "35.0.0" }
 hex = { version = "0.4" }
+thiserror = "1.0.24"

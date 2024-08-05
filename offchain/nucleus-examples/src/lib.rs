@@ -1,7 +1,7 @@
 use std::default;
 
 use t::{D, E};
-use vrs_core_sdk::{foreplay, get, init, post, storage};
+use vrs_core_sdk::{get, init, post, storage};
 
 pub mod t {
     use codec::{Decode, Encode};
@@ -24,13 +24,13 @@ pub fn init(e: t::E, u: u32) {
     storage::put(b"hello", b"world").unwrap();
 }
 
-#[post]
-pub fn post(e: E, s: String) -> Result<D, ()> {
-    storage::put(b"hello", b"world").map_err(|_| ())?;
-    Ok(D { b: 1582 })
-}
+// #[post]
+// pub fn post(e: E, s: String) -> Result<D, ()> {
+//     storage::put(b"hello", b"world").map_err(|_| ())?;
+//     Ok(D { b: 1582 })
+// }
 
-#[foreplay]
+#[post]
 pub fn cc(a: String, b: String) -> Result<String, String> {
     // cross char in a and char in b to  gernerate c
     if a.len() != b.len() {
@@ -53,79 +53,73 @@ pub fn cc(a: String, b: String) -> Result<String, String> {
     Ok(c)
 }
 
-//1. must put the length of the string before the string
-//2. host must knew the type of input and output
-// preserve two
-#[no_mangle]
-pub fn cross_string_decoded(a: *const u8, b: *const u8) -> *const u8 {
-    fn split(ptr: *const u8) -> (u32, *const u8) {
-        unsafe {
-            let length = u32::from_ne_bytes(*(ptr as *const [u8; 4]));
-            (length, ptr.add(4))
-        }
-    }
-    fn merge(len: u32, a: *const u8) -> *const u8 {
-        unsafe {
-            let mut v = Vec::with_capacity(4 + len as usize);
-            v.extend_from_slice(&len.to_ne_bytes());
-            v.extend_from_slice(std::slice::from_raw_parts(a, len as usize));
-            let p = v.as_ptr();
-            std::mem::forget(v);
-            p
-        }
-    }
-    let back = a.clone();
-    let mut bytes_a = unsafe { std::slice::from_raw_parts(a, 100) };
-    println!("{:?}", bytes_a);
-    // cross char in a and char in b to  gernerate c
-    let (lena, a) = split(a);
-    let (lenb, b) = split(b);
-    println!("lena: {:?}, lenb: {:?}", lena, lenb);
-    let mut bytes_a = unsafe { std::slice::from_raw_parts(a, lena as usize) };
-    println!("bytes_a: {:?}", bytes_a);
-    let decoded_a = <String as codec::Decode>::decode(&mut bytes_a).unwrap();
+// //1. must put the length of the string before the string
+// //2. host must knew the type of input and output
+// // preserve two
+// #[no_mangle]
+// pub fn cross_string_decoded(a: *const u8, b: *const u8) -> *const u8 {
+//     fn split(ptr: *const u8) -> (u32, *const u8) {
+//         unsafe {
+//             let length = u32::from_ne_bytes(*(ptr as *const [u8; 4]));
+//             (length, ptr.add(4))
+//         }
+//     }
+//     fn merge(len: u32, a: *const u8) -> *const u8 {
+//         unsafe {
+//             let mut v = Vec::with_capacity(4 + len as usize);
+//             v.extend_from_slice(&len.to_ne_bytes());
+//             v.extend_from_slice(std::slice::from_raw_parts(a, len as usize));
+//             let p = v.as_ptr();
+//             std::mem::forget(v);
+//             p
+//         }
+//     }
+//     let back = a.clone();
+//     let mut bytes_a = unsafe { std::slice::from_raw_parts(a, 100) };
+//     println!("{:?}", bytes_a);
+//     // cross char in a and char in b to  gernerate c
+//     let (lena, a) = split(a);
+//     let (lenb, b) = split(b);
+//     println!("lena: {:?}, lenb: {:?}", lena, lenb);
+//     let mut bytes_a = unsafe { std::slice::from_raw_parts(a, lena as usize) };
+//     println!("bytes_a: {:?}", bytes_a);
+//     let decoded_a = <String as codec::Decode>::decode(&mut bytes_a).unwrap();
 
-    let mut bytes_b = unsafe { std::slice::from_raw_parts(b, lenb as usize) };
-    let decoded_b = <String as codec::Decode>::decode(&mut bytes_b).unwrap();
+//     let mut bytes_b = unsafe { std::slice::from_raw_parts(b, lenb as usize) };
+//     let decoded_b = <String as codec::Decode>::decode(&mut bytes_b).unwrap();
 
-    let a = decoded_a;
-    let b = decoded_b;
-    if a.len() != b.len() {
-        let new_c: Vec<u8> = <Result<String, String> as codec::Encode>::encode(&Err(
-            "a and b should have the same length".to_string(),
-        ));
+//     let a = decoded_a;
+//     let b = decoded_b;
+//     if a.len() != b.len() {
+//         let new_c: Vec<u8> = <Result<String, String> as codec::Encode>::encode(&Err(
+//             "a and b should have the same length".to_string(),
+//         ));
 
-        return merge(new_c.len() as u32, new_c.as_ptr());
-    };
-    let mut c = String::new();
-    let mut a_iter = a.chars();
-    let mut b_iter = b.chars();
-    loop {
-        match (a_iter.next(), b_iter.next()) {
-            (Some(a), Some(b)) => {
-                c.push(a);
-                c.push(b);
-            }
-            default => {
-                break;
-            }
-        }
-    }
-    //encdoe string to bytes
-    let new_c = <Result<String, String> as codec::Encode>::encode(&Ok(c));
-    let p = new_c.as_ptr();
-    merge(new_c.len() as u32, p)
-    // back
-}
-#[post("postOne")]
-pub fn post1(e: E) {
-    storage::put(b"hello", b"world").unwrap();
-}
-
+//         return merge(new_c.len() as u32, new_c.as_ptr());
+//     };
+//     let mut c = String::new();
+//     let mut a_iter = a.chars();
+//     let mut b_iter = b.chars();
+//     loop {
+//         match (a_iter.next(), b_iter.next()) {
+//             (Some(a), Some(b)) => {
+//                 c.push(a);
+//                 c.push(b);
+//             }
+//             default => {
+//                 break;
+//             }
+//         }
+//     }
+//     //encdoe string to bytes
+//     let new_c = <Result<String, String> as codec::Encode>::encode(&Ok(c));
+//     let p = new_c.as_ptr();
+//     merge(new_c.len() as u32, p)
+//     // back
+// }
 #[get]
-pub fn get(e: E) -> D {
-    storage::put(b"hello", b"world").unwrap();
-    D { b: 1 }
+pub fn get() -> i32 {
+    5
 }
 #[test]
 pub fn test_cross_string() {
