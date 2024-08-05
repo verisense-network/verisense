@@ -8,14 +8,21 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-# sp-runtime = { features = [
-#     # "std",
-#     "serde",
-# ], version = "39.0.0", default-features = false }
-vrs-core-sdk = { path = "../core-sdk", default-features = false, features = [
-    "std", # use for expand
-] }
 codec = { features = [
     "derive",
 ], package = "parity-scale-codec", version = "3.6.12", default-features = false }
 wasm-bindgen = "0.2.84"
+
+[dependencies.vrs-core-sdk]
+path = "../core-sdk"
+default-features = false
+# features = ["std"]
+
+[features]
+default = ["std"]
+std = ["vrs-core-sdk/std"]
+no-std = []
+
+[target.'cfg(not(feature = "no-std"))'.dependencies.vrs-core-sdk]
+path = "../core-sdk"
+default-features = false

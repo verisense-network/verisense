@@ -52,6 +52,14 @@ pub fn cc(a: String, b: String) -> Result<String, String> {
     }
     Ok(c)
 }
+#[post] //i1o1
+pub fn i1o1(a: String) -> String {
+    a
+}
+#[post] //i0o0
+pub fn i0o0() {}
+#[post] //i1o0
+pub fn i1o0(a: String) {}
 
 // //1. must put the length of the string before the string
 // //2. host must knew the type of input and output

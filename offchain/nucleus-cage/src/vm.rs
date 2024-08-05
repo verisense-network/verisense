@@ -46,6 +46,7 @@ impl Vm {
             __call_param_ptr: ptr,
         })
     }
+
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
         let post_fn = self
             .instance
@@ -88,6 +89,7 @@ impl Vm {
             .map_err(|e| anyhow!("wasm call error {:?}", e))?;
         return Ok(result);
     }
+
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> anyhow::Result<Vec<u8>> {
         let post_fn = self
             .instance
@@ -138,7 +140,7 @@ fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
 }
 #[cfg(test)]
 mod tests {
-    use codec::Decode;
+    use codec::{Decode, Encode};
 
     use super::*;
 
@@ -187,6 +189,30 @@ mod tests {
         //     vec![0u8],
         //     vm.call_post("__nucleus_post_post", encoded_args).unwrap()
         // );
+    }
+    #[test]
+    pub fn test_encode() {
+        let a = ();
+        let b = ("123".to_string(),);
+        let c = ("123".to_string(), 123.to_string());
+        env_logger::init();
+        let wasm_path = "../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let context = Context::init().unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+
+        let result = vm.call_post("i0o0", vec![]).unwrap();
+        assert_eq!(result, a.encode());
+        let result = vm.call_post("i1o0", b.encode()).unwrap();
+        assert_eq!(result, a.encode());
+        let result = vm.call_post("i1o1", b.encode()).unwrap();
+        assert_eq!(result, b.encode());
     }
     #[test]
     pub fn call_post_should_work_for_general() {
