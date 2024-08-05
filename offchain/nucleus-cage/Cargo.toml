@@ -5,10 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-sp-runtime = { features = [
-    "std",
-    "serde",
-], version = "39.0.0", default-features = false }
+sp-runtime = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 vrs-core-sdk = { path = "../core-sdk" }
 vrs-primitives = { path = "../../primitives" }

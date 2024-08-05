@@ -1,5 +1,6 @@
 [workspace]
 members = ["node", "runtime", "pallets/*", "offchain/*", "primitives"]
+exclude = ["offchain/nucleus-examples"]
 resolver = "2"
 
 [workspace.package]
@@ -50,7 +51,7 @@ sp-offchain = { version = "33.0.0", default-features = false }
 sp-runtime = { features = [
     # "std",
     "serde",
-], version = "39.0.0", default-features = false }
+], version = "38.0.0", default-features = false }
 sp-timestamp = { version = "33.0.0", default-features = false }
 sp-session = { version = "34.0.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }

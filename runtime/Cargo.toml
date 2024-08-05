@@ -42,7 +42,7 @@ sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-inherents = { workspace = true, default-features = false }
 sp-offchain = { workspace = true, default-features = false }
 sp-runtime = { features = [
-	"std",
+	# "std",
 	"serde",
 ], workspace = true, default-features = false }
 sp-session = { workspace = true, default-features = false }
