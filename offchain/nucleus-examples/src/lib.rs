@@ -25,7 +25,7 @@ pub fn init(e: t::E, u: u32) {
 }
 
 #[post]
-pub fn post(e: E) -> Result<D, ()> {
+pub fn post(e: E, s: String) -> Result<D, ()> {
     storage::put(b"hello", b"world").map_err(|_| ())?;
     Ok(D { b: 1582 })
 }
@@ -53,27 +53,27 @@ pub fn cc(a: String, b: String) -> Result<String, String> {
     Ok(c)
 }
 
-fn split(ptr: *const u8) -> (u32, *const u8) {
-    unsafe {
-        let length = u32::from_ne_bytes(*(ptr as *const [u8; 4]));
-        (length, ptr.add(4))
-    }
-}
-fn merge(len: u32, a: *const u8) -> *const u8 {
-    unsafe {
-        let mut v = Vec::with_capacity(4 + len as usize);
-        v.extend_from_slice(&len.to_ne_bytes());
-        v.extend_from_slice(std::slice::from_raw_parts(a, len as usize));
-        let p = v.as_ptr();
-        std::mem::forget(v);
-        p
-    }
-}
 //1. must put the length of the string before the string
 //2. host must knew the type of input and output
 // preserve two
 #[no_mangle]
 pub fn cross_string_decoded(a: *const u8, b: *const u8) -> *const u8 {
+    fn split(ptr: *const u8) -> (u32, *const u8) {
+        unsafe {
+            let length = u32::from_ne_bytes(*(ptr as *const [u8; 4]));
+            (length, ptr.add(4))
+        }
+    }
+    fn merge(len: u32, a: *const u8) -> *const u8 {
+        unsafe {
+            let mut v = Vec::with_capacity(4 + len as usize);
+            v.extend_from_slice(&len.to_ne_bytes());
+            v.extend_from_slice(std::slice::from_raw_parts(a, len as usize));
+            let p = v.as_ptr();
+            std::mem::forget(v);
+            p
+        }
+    }
     let back = a.clone();
     let mut bytes_a = unsafe { std::slice::from_raw_parts(a, 100) };
     println!("{:?}", bytes_a);

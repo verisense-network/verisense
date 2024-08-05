@@ -1,7 +1,10 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, FnArg, ItemFn, LitStr, Result, ReturnType, Type, TypeTuple};
+use syn::{
+    parse_macro_input, FnArg, Index, ItemFn, LitStr, Result, ReturnType, Type, TypeTuple,
+    Visibility,
+};
 
 #[derive(Debug)]
 struct RenameFuncAttributeInput {
@@ -110,65 +113,76 @@ fn expand(attr: TokenStream, func: TokenStream, rename_prefix: &str) -> TokenStr
     expanded.into()
 }
 
-use syn::Pat;
 #[proc_macro_attribute]
 pub fn foreplay(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input_fn = parse_macro_input!(item as ItemFn);
+    let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = &input_fn.sig.ident;
-    let decoded_fn_name = format_ident!("{}_decoded", fn_name);
+    let decoded_fn_name = format_ident!("__nucleus_decoded_{}", fn_name);
+
+    // Remove the visibility modifier from the original function
+    input_fn.vis = Visibility::Inherited;
 
     let args = &input_fn.sig.inputs;
     let return_type = &input_fn.sig.output;
 
-    let (param_names, param_types): (Vec<_>, Vec<_>) = args
+    let param_types: Vec<_> = args
         .iter()
         .filter_map(|arg| {
             if let FnArg::Typed(pat_type) = arg {
-                if let Pat::Ident(pat_ident) = &*pat_type.pat {
-                    let ident = &pat_ident.ident;
-                    let ty = &*pat_type.ty;
-                    Some((ident, ty))
-                } else {
-                    None
-                }
+                Some(&*pat_type.ty)
             } else {
                 None
             }
         })
-        .unzip();
+        .collect();
+    let tuple_type = quote! { (#(#param_types),*) };
+    let output_type = match return_type {
+        ReturnType::Default => quote! { () },
+        ReturnType::Type(_, ty) => quote! { #ty },
+    };
 
-    let decode_params = param_names.iter().zip(param_types.iter()).map(|(param, param_type)| {
-        let len_ident = format_ident!("len_{}", param);
-        let ptr_ident = format_ident!("ptr_{}", param);
-        let bytes_ident = format_ident!("bytes_{}", param);
-        let decoded_ident = format_ident!("decoded_{}", param);
-
-        quote! {
-            let (#len_ident, #ptr_ident) = split(#param);
-            let mut #bytes_ident = unsafe { std::slice::from_raw_parts(#ptr_ident, #len_ident as usize) };
-            let #decoded_ident: #param_type = codec::Decode::decode(&mut #bytes_ident)
-                .expect(concat!("Failed to decode parameter ", stringify!(#param)));
-        }
-    });
-
-    let call_params = param_names.iter().map(|param| {
-        let decoded_ident = format_ident!("decoded_{}", param);
-        quote! { #decoded_ident }
-    });
+    let arg_indices: Vec<Index> = (0..param_types.len()).map(|i| Index::from(i)).collect();
 
     let expanded = quote! {
-        #input_fn
-
         #[no_mangle]
-        pub fn #decoded_fn_name(#(#param_names: *const u8),*) -> *const u8 {
+        pub fn #decoded_fn_name(__ptr: *const u8, __len: usize) -> *const u8 {
             use codec::{Decode, Encode};
 
-            #(#decode_params)*
+            fn encode_result<T: Encode>(result: T) -> *const u8 {
+                let encoded = result.encode();
+                let len = encoded.len() as u32;
+                let mut output = Vec::with_capacity(4 + len as usize);
+                output.extend_from_slice(&len.to_ne_bytes());
+                output.extend_from_slice(&encoded);
+                let ptr = output.as_ptr();
+                std::mem::forget(output);
+                ptr
+            }
 
-            let result = #fn_name(#(#call_params),*);
+            fn encode_error(error: String) -> *const u8 {
+                encode_result(Err::<Vec<u8>, String>(error))
+            }
 
-            let encoded_result = result.encode();
-            merge(encoded_result.len() as u32, encoded_result.as_ptr())
+            // Place the original function inside the decoded function
+            #input_fn
+
+            // Decode the tuple of arguments
+            let mut args_bytes = unsafe { std::slice::from_raw_parts(__ptr, __len) };
+            let args: #tuple_type = match Decode::decode(&mut args_bytes) {
+                Ok(tuple) => tuple,
+                Err(_) => return encode_error("Failed to decode arguments tuple".to_string()),
+            };
+
+            // Extract individual parameters from the tuple
+            // #(#extract_params)*
+
+            // Call the original function and handle the result
+            let result = #fn_name(#(args.#arg_indices),*);
+            let encoded = result.encode();
+
+            let wrapped_result: Result<Vec<u8>, String> = Ok(encoded);
+
+            encode_result(wrapped_result)
         }
     };
 
