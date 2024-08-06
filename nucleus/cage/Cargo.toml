@@ -17,6 +17,9 @@ log = "0.4"
 env_logger = "0.10"
 futures = { features = ["thread-pool"], version = "0.3.30" }
 sp-core = { workspace = true }
+sp-api = { workspace = true }
+sp-blockchain = { workspace = true }
 sc-client-api = { version = "35.0.0" }
 hex = { version = "0.4" }
-thiserror = "1.0.24"
+thiserror = "1"
+vrs-metadata = { path = "../../metadata" }

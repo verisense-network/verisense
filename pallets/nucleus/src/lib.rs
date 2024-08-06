@@ -51,8 +51,8 @@ pub mod pallet {
     #[pallet::unbounded]
     pub type Instances<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
-        Key = T::AccountId,
-        Value = Vec<T::NucleusId>,
+        Key = T::NucleusId,
+        Value = Vec<T::AccountId>,
         QueryKind = ValueQuery,
     >;
 
@@ -70,8 +70,8 @@ pub mod pallet {
             capacity: u8,
         },
         InstanceRegistered {
-            controller_account: T::AccountId,
             nucleus_id: T::NucleusId,
+            controller_account: T::AccountId,
         },
     }
 
@@ -96,7 +96,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let author = ensure_signed(origin)?;
             ensure!(name.len() <= 80, "Name too long");
-            ensure!(wasm_url.len() <= 256, "Wasm URL too long");
+            ensure!(wasm_url.len() <= 512, "Wasm URL too long");
             let hash = T::Hashing::hash_of(&(author.clone(), name.clone(), wasm_url.clone()));
             let id = <T::NucleusId>::decode(&mut &hash.as_ref()[..]).expect("qed;");
             ensure!(!Nuclei::<T>::contains_key(&id), "Nucleus already exists");
@@ -132,13 +132,13 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::mock_register())]
         pub fn mock_register(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult {
             let controller_account = ensure_signed(origin)?;
-            Instances::<T>::mutate(&controller_account, |cages| {
+            Instances::<T>::mutate(&nucleus_id, |cages| {
                 // TODO
-                cages.push(nucleus_id.clone());
+                cages.push(controller_account.clone());
             });
             Self::deposit_event(Event::InstanceRegistered {
-                controller_account,
                 nucleus_id,
+                controller_account,
             });
             Ok(())
         }

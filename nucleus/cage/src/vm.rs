@@ -92,6 +92,7 @@ impl Vm {
             __call_param_ptr: ptr,
         })
     }
+
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         let func = self
             .instance
