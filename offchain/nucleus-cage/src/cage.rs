@@ -105,16 +105,16 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
         _ => {}
     }
 }
-
+use sp_runtime::traits::Block as BlockT;
 // TODO move this to pallet-nucleus
-async fn nucleus_instance_updates<B, BN, C>(
+async fn nucleus_instance_updates<B, D, C>(
     runtime_storage: Arc<C>,
     controller: AccountId,
 ) -> Option<Vec<NucleusEquation<AccountId, Hash>>>
 where
-    B: sp_runtime::traits::Block,
-    BN: Backend<B>,
-    C: BlockBackend<B> + StorageProvider<B, BN> + BlockchainEvents<B> + 'static,
+    B: BlockT,
+    D: Backend<B>,
+    C: BlockBackend<B> + StorageProvider<B, D> + BlockchainEvents<B> + 'static,
 {
     let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Instances", controller);
     let updates = runtime_storage

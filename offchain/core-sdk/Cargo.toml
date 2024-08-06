@@ -4,9 +4,21 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+
+[features]
+default = ["std"]
+std = ["vrs-primitives/std"]
+no-std = ["vrs-primitives/no-std"]
+
 [dependencies]
-tokio = { version = "1", features = ["sync", "macros", "rt", "io-util", "time"] }
 vrs-primitives = { path = "../../primitives", default-features = false }
+tokio = { version = "1", features = [
+    "sync",
+    "macros",
+    "rt",
+    "io-util",
+    "time",
+] }
 vrs-core-macros = { path = "../core-macros" }
 anyhow = { version = "1", default-features = false }
 codec = { workspace = true, default-features = false }

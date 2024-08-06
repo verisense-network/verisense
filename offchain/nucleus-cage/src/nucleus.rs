@@ -24,6 +24,8 @@ pub enum Gluon {
         reply_to: Option<ReplyTo>,
     },
 }
+// define VM error type id
+const VM_ERROR: i32 = 0x00000001;
 
 impl Nucleus {
     fn new(receiver: Receiver<(u64, Gluon)>, context: Context, code: WasmInfo) -> Self {
@@ -40,7 +42,7 @@ impl Nucleus {
         Nucleus { receiver, vm }
     }
 
-    async fn accept(&mut self, msg: Gluon) {
+    fn accept(&mut self, msg: Gluon) {
         // TODO if token:
         match msg {
             Gluon::CodeUpgrade { version } => {
@@ -51,19 +53,134 @@ impl Nucleus {
                 endpoint,
                 payload,
                 reply_to,
-            } => {
-                // TODO resolve parameters
-                // let vm_result = self.vm.run_func(None, &endpoint, vec![]);
-            }
+            } => match self.vm {
+                Some(ref mut vm) => {
+                    let vm_result = vm.call_get(&endpoint, payload).map_err(|e| {
+                        log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
+                        (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                    });
+                    if let Some(reply_to) = reply_to {
+                        if let Err(err) = reply_to.send(vm_result) {
+                            log::error!("fail to send reply to: {:?}", err);
+                        }
+                    } else {
+                        log::error!("reply_to not found");
+                    }
+                }
+                None => {
+                    log::error!("vm not initialized");
+                }
+            },
             Gluon::PostRequest {
                 endpoint,
                 payload,
                 reply_to,
             } => {
+                match self.vm {
+                    Some(ref mut vm) => {
+                        let vm_result = vm.call_post(&endpoint, payload).map_err(|e| {
+                            log::error!(
+                                "fail to call post endpoint: {} due to: {:?}",
+                                &endpoint,
+                                e
+                            );
+                            (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                        });
+                        if let Some(reply_to) = reply_to {
+                            if let Err(err) = reply_to.send(vm_result) {
+                                log::error!("fail to send reply to: {:?}", err);
+                            }
+                        } else {
+                            log::error!("reply_to not found");
+                        }
+                    }
+                    None => {
+                        log::error!("vm not initialized");
+                    }
+                }
                 // let vm_result = self.vm.run_func(None, &endpoint, payload);
                 // vec![]
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::wasm_code::WasmCodeRef;
+
+    use super::*;
+    use codec::Decode;
+    use tokio::sync::mpsc;
+    use tokio::sync::oneshot;
+    use vrs_core_sdk::AccountId;
+
+    #[tokio::test]
+    async fn test_nucleus_accept() {
+        let wasm_path = "../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let context = Context::init().unwrap();
+        let vm = Vm::new_instance(&wasm, context).unwrap();
+
+        let (sender, receiver) = mpsc::channel(100);
+        let mut nucleus = Nucleus {
+            receiver,
+            vm: Some(vm),
+        };
+
+        let (tx_get, rx_get) = oneshot::channel();
+        let get_msg = Gluon::GetRequest {
+            endpoint: "get".to_string(),
+            payload: vec![],
+            reply_to: Some(tx_get),
+        };
+        sender.send((0, get_msg)).await.unwrap();
+
+        let (tx_post, rx_post) = oneshot::channel();
+        let post_msg = Gluon::PostRequest {
+            endpoint: "cc".to_string(),
+            payload: vec![
+                40, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 40, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+                98,
+            ],
+            reply_to: Some(tx_post),
+        };
+        sender.send((1, post_msg)).await.unwrap();
+
+        let (tx_post, rx_post1) = oneshot::channel();
+        let post_msg = Gluon::PostRequest {
+            endpoint: "bc".to_string(),
+            payload: vec![
+                40, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 40, 98, 98, 98, 98, 98, 98, 98, 98, 98,
+                98,
+            ],
+            reply_to: Some(tx_post),
+        };
+        sender.send((1, post_msg)).await.unwrap();
+
+        for _ in 0..3 {
+            let (_, msg) = nucleus.receiver.recv().await.unwrap();
+            nucleus.accept(msg);
+        }
+
+        let get_result = rx_get.await.unwrap().unwrap();
+        let get_result = <i32 as Decode>::decode(&mut &get_result[..]).unwrap();
+        assert_eq!(get_result, 5);
+        let post_result = rx_post.await.unwrap().unwrap();
+        let post_result =
+            <Result<String, String> as Decode>::decode(&mut &post_result[..]).unwrap();
+        assert_eq!(
+            post_result,
+            Result::<String, String>::Ok("abababababababababab".to_owned())
+        );
+        let post_result = rx_post1.await.unwrap();
+        assert_eq!(post_result, Err((1024, "Endpoint not found".to_owned())))
     }
 }
 

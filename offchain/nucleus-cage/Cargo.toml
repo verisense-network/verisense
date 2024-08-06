@@ -5,6 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+sp-runtime = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 vrs-core-sdk = { path = "../core-sdk" }
 vrs-primitives = { path = "../../primitives" }
@@ -15,7 +16,7 @@ anyhow = "1"
 log = "0.4"
 env_logger = "0.10"
 futures = { features = ["thread-pool"], version = "0.3.30" }
-sp-runtime = { workspace = true }
 sp-core = { workspace = true }
 sc-client-api = { version = "35.0.0" }
 hex = { version = "0.4" }
+thiserror = "1.0.24"

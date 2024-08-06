@@ -9,7 +9,10 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 codec = { features = ["derive"], workspace = true, default-features = false }
-scale-info = { features = ["derive", "serde"], workspace = true, default-features = false }
+scale-info = { features = [
+	"derive",
+	"serde",
+], workspace = true, default-features = false }
 
 # frame
 frame-support = { workspace = true, default-features = false }
@@ -29,17 +32,26 @@ pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
 sp-block-builder = { workspace = true, default-features = false }
-sp-consensus-aura = { features = ["serde"], workspace = true, default-features = false }
-sp-consensus-grandpa = { features = ["serde"], workspace = true, default-features = false }
+sp-consensus-aura = { features = [
+	"serde",
+], workspace = true, default-features = false }
+sp-consensus-grandpa = { features = [
+	"serde",
+], workspace = true, default-features = false }
 sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-inherents = { workspace = true, default-features = false }
 sp-offchain = { workspace = true, default-features = false }
-sp-runtime = { features = ["serde"], workspace = true, default-features = false }
+sp-runtime = { features = [
+	# "std",
+	"serde",
+], workspace = true, default-features = false }
 sp-session = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 sp-storage = { workspace = true, default-features = false }
 sp-transaction-pool = { workspace = true, default-features = false }
-sp-version = { features = ["serde"], workspace = true, default-features = false }
+sp-version = { features = [
+	"serde",
+], workspace = true, default-features = false }
 sp-genesis-builder = { workspace = true, default-features = false }
 
 # RPC related
@@ -47,7 +59,7 @@ frame-system-rpc-runtime-api = { workspace = true, default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true, default-features = false }
 
 [build-dependencies]
-substrate-wasm-builder = { optional = true, version = "23.0.0" }
+substrate-wasm-builder = { optional = true, version = "24.0.0" }
 
 [features]
 default = ["std"]
