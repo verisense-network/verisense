@@ -1,6 +1,6 @@
 [workspace]
-members = ["node", "runtime", "pallets/*", "offchain/*", "primitives"]
-exclude = ["offchain/nucleus-examples"]
+members = ["node", "runtime", "pallets/*", "nucleus/*", "primitives"]
+exclude = ["nucleus-examples"]
 resolver = "2"
 
 [workspace.package]
@@ -34,7 +34,7 @@ pallet-timestamp = { version = "35.0.0", default-features = false }
 pallet-transaction-payment = { version = "36.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "38.0.0", default-features = true }
 pallet-transaction-payment-rpc-runtime-api = { version = "36.0.0", default-features = false }
-pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
+# pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 
 # primitives
 sp-api = { version = "33.0.0", default-features = false }

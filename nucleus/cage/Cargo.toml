@@ -1,5 +1,5 @@
 [package]
-name = "nucleus-cage"
+name = "vrs-nucleus-cage"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

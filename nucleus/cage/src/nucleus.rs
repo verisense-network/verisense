@@ -1,6 +1,5 @@
 use crate::{context::Context, vm::Vm, wasm_code::WasmInfo, ReplyTo};
-use std::collections::HashMap;
-use tokio::sync::mpsc::Receiver;
+use std::sync::mpsc::Receiver;
 
 pub(crate) struct Nucleus {
     receiver: Receiver<(u64, Gluon)>,
@@ -28,7 +27,7 @@ pub enum Gluon {
 const VM_ERROR: i32 = 0x00000001;
 
 impl Nucleus {
-    fn new(receiver: Receiver<(u64, Gluon)>, context: Context, code: WasmInfo) -> Self {
+    pub(crate) fn new(receiver: Receiver<(u64, Gluon)>, context: Context, code: WasmInfo) -> Self {
         // TODO
         let vm = Vm::new_instance(&code, context)
             .inspect_err(|e| {

@@ -1,5 +1,5 @@
 [package]
-name = "verisense-runtime"
+name = "vrs-runtime"
 version.workspace = true
 edition.workspace = true
 publish = false
@@ -42,7 +42,6 @@ sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-inherents = { workspace = true, default-features = false }
 sp-offchain = { workspace = true, default-features = false }
 sp-runtime = { features = [
-	# "std",
 	"serde",
 ], workspace = true, default-features = false }
 sp-session = { workspace = true, default-features = false }

@@ -4876,44 +4876,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nucleus-cage"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "env_logger",
- "futures",
- "hex",
- "log",
- "parity-scale-codec",
- "rocksdb",
- "sc-client-api",
- "sp-core",
- "sp-runtime",
- "thiserror",
- "tokio",
- "vrs-core-sdk",
- "vrs-primitives",
- "wasmtime 22.0.0",
-]
-
-[[package]]
-name = "nucleus-rpc"
-version = "0.0.1"
-dependencies = [
- "async-trait",
- "env_logger",
- "futures",
- "hex",
- "jsonrpsee",
- "log",
- "nucleus-cage",
- "parity-scale-codec",
- "serde_json",
- "tokio",
- "vrs-primitives",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9855,15 +9817,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
-name = "verisense-node"
+name = "verisense"
 version = "0.0.1"
 dependencies = [
  "clap",
  "frame-system",
  "futures",
  "jsonrpsee",
- "nucleus-cage",
- "nucleus-rpc",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
@@ -9895,44 +9855,10 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "tokio",
- "verisense-runtime",
+ "vrs-nucleus-cage",
+ "vrs-nucleus-rpc-proxy",
  "vrs-primitives",
-]
-
-[[package]]
-name = "verisense-runtime"
-version = "0.0.1"
-dependencies = [
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-rpc-runtime-api",
- "pallet-aura",
- "pallet-balances",
- "pallet-grandpa",
- "pallet-nucleus",
- "pallet-sudo",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "parity-scale-codec",
- "scale-info",
- "sp-api",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-consensus-grandpa",
- "sp-core",
- "sp-genesis-builder",
- "sp-inherents",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-storage",
- "sp-transaction-pool",
- "sp-version",
- "substrate-wasm-builder",
- "vrs-primitives",
+ "vrs-runtime",
 ]
 
 [[package]]
@@ -9968,6 +9894,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrs-nucleus-cage"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "env_logger",
+ "futures",
+ "hex",
+ "log",
+ "parity-scale-codec",
+ "rocksdb",
+ "sc-client-api",
+ "sp-core",
+ "sp-runtime",
+ "thiserror",
+ "tokio",
+ "vrs-core-sdk",
+ "vrs-primitives",
+ "wasmtime 22.0.0",
+]
+
+[[package]]
+name = "vrs-nucleus-rpc-proxy"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "env_logger",
+ "futures",
+ "hex",
+ "jsonrpsee",
+ "log",
+ "parity-scale-codec",
+ "serde_json",
+ "tokio",
+ "vrs-nucleus-cage",
+ "vrs-primitives",
+]
+
+[[package]]
 name = "vrs-primitives"
 version = "0.0.1"
 dependencies = [
@@ -9976,6 +9940,42 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "vrs-runtime"
+version = "0.0.1"
+dependencies = [
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "pallet-aura",
+ "pallet-balances",
+ "pallet-grandpa",
+ "pallet-nucleus",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-consensus-grandpa",
+ "sp-core",
+ "sp-genesis-builder",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-storage",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder",
+ "vrs-primitives",
 ]
 
 [[package]]

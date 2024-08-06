@@ -12,6 +12,9 @@ use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use tokio::sync::mpsc::Sender;
+use vrs_nucleus_cage::Gluon;
+use vrs_primitives::NucleusId;
 use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce};
 
 pub use sc_rpc_api::DenyUnsafe;
@@ -27,8 +30,7 @@ pub struct FullDeps<C, P, B> {
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
     /// Nucleus requests relayer
-    pub nucleus_req_relayer:
-        tokio::sync::mpsc::Sender<(vrs_primitives::NucleusId, nucleus_cage::Gluon)>,
+    pub nucleus_req_relayer: Sender<(NucleusId, Gluon)>,
 }
 
 /// Instantiate all full RPC extensions.
@@ -47,9 +49,9 @@ where
     C::Api: BlockBuilder<Block>,
     // TODO C::Api satisfies extra RPCs
 {
-    use nucleus_rpc::{NucleusEntry, NucleusRpcServer};
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     use substrate_frame_rpc_system::{System, SystemApiServer};
+    use vrs_nucleus_rpc_proxy::{NucleusEntry, NucleusRpcServer};
 
     // use beefy_gadget_rpc::{Beefy, BeefyApiServer};
     // use pallet_mmr_rpc::{Mmr, MmrApiServer};

@@ -1,11 +1,11 @@
-use crate::{nucleus::Nucleus, Gluon, NucleusResponse};
+use crate::{nucleus::Nucleus, Context, Gluon, NucleusResponse, WasmCodeRef, WasmInfo};
 use codec::Decode;
-use futures::{prelude::*, select};
+use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use std::collections::HashMap;
 use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::mpsc::{self, Receiver};
 use vrs_primitives::{AccountId, Hash, NucleusEquation, NucleusId};
 
 pub struct CageParameters<B, C, BN> {
@@ -61,14 +61,16 @@ where
     } = params;
     async move {
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
-        // TODO init nucleus already registered
         // TODO mock monadring
         //////////////////////////////////////////////////////
-        let (token_tx, mut token_rx) = mpsc::unbounded_channel::<String>();
+        let (token_tx, mut token_rx) = mpsc::unbounded_channel::<NucleusId>();
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                let _ = token_tx.send("".to_string());
+                match token_tx.send(NucleusId::from([0u8; 32])) {
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
             }
         });
         //////////////////////////////////////////////////////
@@ -76,7 +78,8 @@ where
         loop {
             tokio::select! {
                 nucleus = nucleus_instance_updates(client.clone(), controller.clone()) => {
-                    // start_nucleus(nucleus);
+                    println!("{:?}", nucleus);
+                    // TODO diff to start & stop
                 },
                 req = rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
@@ -88,7 +91,8 @@ where
                 },
                 // TODO replace this with token received
                 token = token_rx.recv() => {
-                    log::info!("mocking monadring: token received.")
+                    log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
+                    // TODO only drain the nucleus that token
                     // nuclei.get_mut(&token).map(|nucleus| nucleus.drain());
                 }
             }
@@ -105,14 +109,14 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
         _ => {}
     }
 }
-use sp_runtime::traits::Block as BlockT;
+
 // TODO move this to pallet-nucleus
 async fn nucleus_instance_updates<B, D, C>(
     runtime_storage: Arc<C>,
     controller: AccountId,
-) -> Option<Vec<NucleusEquation<AccountId, Hash>>>
+) -> Option<Vec<(NucleusId, NucleusEquation<AccountId, Hash>)>>
 where
-    B: BlockT,
+    B: sp_runtime::traits::Block,
     D: Backend<B>,
     C: BlockBackend<B> + StorageProvider<B, D> + BlockchainEvents<B> + 'static,
 {
@@ -143,7 +147,7 @@ where
     let instances = instances
         .into_iter()
         .filter_map(|id| {
-            let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Nuclei", id);
+            let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Nuclei", id.clone());
             runtime_storage
                 .storage(updates.block, &storage_key)
                 .ok()
@@ -154,6 +158,7 @@ where
                     Some(decoded)
                 })
                 .flatten()
+                .map(|v| (id, v))
         })
         .collect::<Vec<_>>();
     Some(instances)
@@ -177,4 +182,33 @@ fn blake2_128concat_storage_key<K: codec::Encode>(
     sp_core::storage::StorageKey(bytes)
 }
 
-// fn start_nucleus(nucleus: NucleusEquation) {}
+// TODO
+fn start_nucleus(
+    id: NucleusId,
+    config: NucleusEquation<AccountId, Hash>,
+) -> anyhow::Result<SyncSender<(u64, Gluon)>> {
+    let NucleusEquation {
+        name,
+        account,
+        wasm_url,
+        wasm_hash,
+        wasm_version,
+        energy,
+        current_event,
+        root_state,
+        capacity,
+    } = config;
+    let name = String::from_utf8(name)?;
+    let url = String::from_utf8(wasm_url)?;
+    let wasm = WasmInfo {
+        account,
+        name,
+        version: 0,
+        code: WasmCodeRef::File(url),
+    };
+    // TODO
+    let context = Context::init().unwrap();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let nucleus = Nucleus::new(rx, context, wasm);
+    Ok(tx)
+}

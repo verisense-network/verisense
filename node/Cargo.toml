@@ -1,5 +1,5 @@
 [package]
-name = "verisense-node"
+name = "verisense"
 version.workspace = true
 edition.workspace = true
 publish = false
@@ -48,10 +48,10 @@ substrate-frame-rpc-system = { workspace = true, default-features = true }
 pallet-transaction-payment = { workspace = true, default-features = true }
 pallet-transaction-payment-rpc = { workspace = true, default-features = true }
 
-vrs-runtime = { path = "../runtime", package = "verisense-runtime" }
+vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
-nucleus-rpc = { path = "../offchain/nucleus-rpc" }
-nucleus-cage = { path = "../offchain/nucleus-cage" }
+vrs-nucleus-rpc-proxy = { path = "../nucleus/rpc-proxy" }
+vrs-nucleus-cage = { path = "../nucleus/cage" }
 tokio = { version = "1", features = ["full"] }
 
 [build-dependencies]

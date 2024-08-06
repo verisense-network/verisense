@@ -248,7 +248,7 @@ pub fn new_full<
     })?;
 
     if role.is_authority() {
-        let params = nucleus_cage::CageParameters {
+        let params = vrs_nucleus_cage::CageParameters {
             rx,
             client: client.clone(),
             // TODO
@@ -258,7 +258,7 @@ pub fn new_full<
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-cage",
             None,
-            nucleus_cage::start_nucleus_cage(params),
+            vrs_nucleus_cage::start_nucleus_cage(params),
         );
     }
 
@@ -284,10 +284,10 @@ pub fn new_full<
                     let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                     let slot =
-						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-							*timestamp,
-							slot_duration,
-						);
+                        sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+                            *timestamp,
+                            slot_duration,
+                        );
 
                     Ok((slot, timestamp))
                 },

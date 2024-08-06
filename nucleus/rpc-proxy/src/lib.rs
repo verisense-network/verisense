@@ -5,9 +5,9 @@ use jsonrpsee::{
     proc_macros::rpc,
     types::error::{ErrorCode, ErrorObjectOwned},
 };
-use nucleus_cage::{Gluon, NucleusResponse};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::{self, Receiver};
+use vrs_nucleus_cage::{Gluon, NucleusResponse};
 use vrs_primitives::NucleusId;
 
 #[rpc(server)]
