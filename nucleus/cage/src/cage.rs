@@ -118,7 +118,7 @@ where
                 token = token_rx.recv() => {
                     log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
                     // TODO only drain the nucleus that token
-                    // nuclei.get_mut(&token).map(|nucleus| nucleus.drain());
+                    nuclei.values_mut().for_each(|nucleus| nucleus.drain());
                 }
             }
         }
