@@ -10947,6 +10947,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrs-nucleus-examples"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "vrs-core-sdk",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "vrs-nucleus-rpc-proxy"
 version = "0.0.1"
 dependencies = [
