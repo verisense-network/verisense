@@ -1,8 +1,6 @@
-use std::any::Any;
-
 use crate::{
     context::Context,
-    wasm_code::{FunctionDescriptor, WasmCodeRef, WasmDescriptor, WasmInfo},
+    wasm_code::{WasmCodeRef, WasmInfo},
 };
 use anyhow::anyhow;
 use codec::Decode;
@@ -240,7 +238,7 @@ mod tests {
             code: WasmCodeRef::File(wasm_path.to_string()),
         };
 
-        let context = Context::init().unwrap();
+        let context = Context::init("/tmp").unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
         let input = <(String, String) as codec::Encode>::encode(&(
             "aaaaaaaaaa".to_string(),
@@ -312,7 +310,7 @@ mod tests {
             code: WasmCodeRef::File(wasm_path.to_string()),
         };
 
-        let context = Context::init().unwrap();
+        let context = Context::init("/tmp").unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
 
         let result = vm.call_post("i0o0", vec![]).unwrap();
@@ -335,7 +333,7 @@ mod tests {
             }
             _ => {}
         });
-        let mut store = Store::new(&engine, Context::init().unwrap());
+        let mut store = Store::new(&engine, Context::init("/tmp").unwrap());
         let injects = Context::inject_host_funcs(&mut store);
         let instance = Instance::new(&mut store, &module, &injects).unwrap();
         let memory = instance
@@ -395,7 +393,7 @@ mod tests {
             }
             _ => {}
         });
-        let mut store = Store::new(&engine, Context::init().unwrap());
+        let mut store = Store::new(&engine, Context::init("/tmp").unwrap());
         let injects = Context::inject_host_funcs(&mut store);
         let instance = Instance::new(&mut store, &module, &injects).unwrap();
         let memory = instance
