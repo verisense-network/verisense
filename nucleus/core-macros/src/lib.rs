@@ -94,23 +94,8 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
         ReturnType::Type(_, ty) => quote! { #ty },
     };
 
-    let function_call = if param_types.is_empty() {
-        quote! {
-            let result = #fn_name();
-        }
-    } else if param_types.len() == 1 {
-        quote! {
-            // Decode the single argument
-            let mut args_bytes = unsafe { std::slice::from_raw_parts(__ptr, __len) };
-            let args: #(#param_types)* = match Decode::decode(&mut args_bytes) {
-                Ok(arg) => arg,
-                Err(_) => return encode_error("Failed to decode argument".to_string()),
-            };
-            // Call the original function with the single parameter
-            let result = #fn_name(args);
-        }
-    } else {
-        let tuple_type = quote! { (#(#param_types),*) };
+    let function_call = {
+        let tuple_type = quote! { (#(#param_types,)*) };
         let arg_indices: Vec<Index> = (0..param_types.len()).map(|i| Index::from(i)).collect();
         quote! {
             // Decode the tuple of arguments
