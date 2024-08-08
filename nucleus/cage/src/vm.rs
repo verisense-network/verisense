@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::{Context, ContextConfig},
     wasm_code::{WasmCodeRef, WasmInfo},
 };
 use anyhow::anyhow;
@@ -223,14 +223,13 @@ fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
 }
 #[cfg(test)]
 mod tests {
-    use codec::{Decode, Encode};
-
     use super::*;
+    use codec::{Decode, Encode};
+    use temp_dir::TempDir;
 
     #[test]
     pub fn load_wasm_should_work() {
-        env_logger::init();
-        let wasm_path = "../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
         let wasm = WasmInfo {
             account: AccountId::new([0u8; 32]),
             name: "avs-dev-demo".to_string(),
@@ -238,7 +237,11 @@ mod tests {
             code: WasmCodeRef::File(wasm_path.to_string()),
         };
 
-        let context = Context::init("/tmp").unwrap();
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("1").into_boxed_path(),
+        })
+        .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
         let input = <(String, String) as codec::Encode>::encode(&(
             "aaaaaaaaaa".to_string(),
@@ -296,13 +299,13 @@ mod tests {
         //     vm.call_post("__nucleus_post_post", encoded_args).unwrap()
         // );
     }
+
     #[test]
     pub fn test_encode() {
         let a = ();
         let b = ("123".to_string(),);
         let c = ("123".to_string(), 123.to_string());
-        env_logger::init();
-        let wasm_path = "../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
         let wasm = WasmInfo {
             account: AccountId::new([0u8; 32]),
             name: "avs-dev-demo".to_string(),
@@ -310,7 +313,11 @@ mod tests {
             code: WasmCodeRef::File(wasm_path.to_string()),
         };
 
-        let context = Context::init("/tmp").unwrap();
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("2").into_boxed_path(),
+        })
+        .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
 
         let result = vm.call_post("i0o0", vec![]).unwrap();
@@ -320,10 +327,10 @@ mod tests {
         let result = vm.call_post("i1o1", b.encode()).unwrap();
         assert_eq!(result, b.encode());
     }
+
     #[test]
     pub fn call_post_should_work_for_general() {
-        env_logger::init();
-        let wasm_path = "../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
 
         let engine = Engine::default();
         let module = Module::from_file(&engine, wasm_path).unwrap();
@@ -333,7 +340,13 @@ mod tests {
             }
             _ => {}
         });
-        let mut store = Store::new(&engine, Context::init("/tmp").unwrap());
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("3").into_boxed_path(),
+        })
+        .unwrap();
+        let mut store = Store::new(&engine, context);
         let injects = Context::inject_host_funcs(&mut store);
         let instance = Instance::new(&mut store, &module, &injects).unwrap();
         let memory = instance
@@ -380,9 +393,9 @@ mod tests {
         let result = <Result<String, String> as codec::Decode>::decode(&mut s.as_slice()).unwrap();
         assert_eq!(result, Ok("abababababababababab".to_string()));
     }
+
     #[test]
     pub fn call_post_should_fail_for_general() {
-        env_logger::init();
         let wasm_path = "../../target/wasm32-unknown-unknown/debug/vrs_nucleus_examples.wasm";
 
         let engine = Engine::default();
@@ -393,7 +406,13 @@ mod tests {
             }
             _ => {}
         });
-        let mut store = Store::new(&engine, Context::init("/tmp").unwrap());
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("4").into_boxed_path(),
+        })
+        .unwrap();
+        let mut store = Store::new(&engine, context);
         let injects = Context::inject_host_funcs(&mut store);
         let instance = Instance::new(&mut store, &module, &injects).unwrap();
         let memory = instance
@@ -407,7 +426,7 @@ mod tests {
         memory.write(&mut store, ptr as usize, &input[..]).unwrap();
 
         let call_example: wasmtime::Func = instance
-            .get_func(&mut store, "__nucleus_decoded_cc")
+            .get_func(&mut store, "__nucleus_get_get")
             .expect("function not found");
         let mut result = vec![Val::I32(0)];
         call_example

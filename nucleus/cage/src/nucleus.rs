@@ -1,4 +1,9 @@
-use crate::{context::Context, vm::Vm, wasm_code::WasmInfo, ReplyTo};
+use crate::{
+    context::{Context, ContextConfig},
+    vm::Vm,
+    wasm_code::WasmInfo,
+    ReplyTo,
+};
 use std::sync::mpsc::Receiver;
 
 pub(crate) struct Nucleus {
@@ -116,13 +121,15 @@ mod tests {
 
     use super::*;
     use codec::Decode;
-    use tokio::sync::mpsc;
+    use temp_dir::TempDir;
+    // use tokio::sync::mpsc;
+    use std::sync::mpsc;
     use tokio::sync::oneshot;
     use vrs_core_sdk::AccountId;
 
     #[tokio::test]
     async fn test_nucleus_accept() {
-        let wasm_path = "../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
         let wasm = WasmInfo {
             account: AccountId::new([0u8; 32]),
             name: "avs-dev-demo".to_string(),
@@ -130,10 +137,14 @@ mod tests {
             code: WasmCodeRef::File(wasm_path.to_string()),
         };
 
-        let context = Context::init().unwrap();
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("0").into_boxed_path(),
+        })
+        .unwrap();
         let vm = Vm::new_instance(&wasm, context).unwrap();
 
-        let (sender, receiver) = mpsc::channel(100);
+        let (sender, receiver) = mpsc::channel();
         let mut nucleus = Nucleus {
             receiver,
             vm: Some(vm),
@@ -145,7 +156,7 @@ mod tests {
             payload: vec![],
             reply_to: Some(tx_get),
         };
-        sender.send((0, get_msg)).await.unwrap();
+        sender.send((0, get_msg)).unwrap();
 
         let (tx_post, rx_post) = oneshot::channel();
         let post_msg = Gluon::PostRequest {
@@ -156,7 +167,7 @@ mod tests {
             ],
             reply_to: Some(tx_post),
         };
-        sender.send((1, post_msg)).await.unwrap();
+        sender.send((1, post_msg)).unwrap();
 
         let (tx_post, rx_post1) = oneshot::channel();
         let post_msg = Gluon::PostRequest {
@@ -167,10 +178,10 @@ mod tests {
             ],
             reply_to: Some(tx_post),
         };
-        sender.send((1, post_msg)).await.unwrap();
+        sender.send((1, post_msg)).unwrap();
 
         for _ in 0..3 {
-            let (_, msg) = nucleus.receiver.recv().await.unwrap();
+            let (_, msg) = nucleus.receiver.recv().unwrap();
             nucleus.accept(msg);
         }
 
@@ -188,10 +199,3 @@ mod tests {
         assert_eq!(post_result, Err((1024, "Endpoint not found".to_owned())))
     }
 }
-
-// TODO spawn a task to run
-// pub async fn run(mut nucleus: Nucleus) {
-//     while let Some(msg) = nucleus.receiver.recv().await {
-//         nucleus.accept(msg).await;
-//     }
-// }
