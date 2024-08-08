@@ -7,7 +7,7 @@ members = [
     "primitives",
     "metadata",
 ]
-exclude = ["nuclues/nucleus-examples"]
+exclude = ["nucleus-examples"]
 resolver = "2"
 
 [workspace.package]

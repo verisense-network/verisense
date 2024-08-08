@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use super::*;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use wasmtime::{Caller, FuncType, Val, ValType};
@@ -10,14 +12,13 @@ pub(crate) fn init_rocksdb(path: impl AsRef<std::path::Path>) -> anyhow::Result<
     db_opts.create_if_missing(true);
     DB::open_cf_descriptors(&db_opts, path, vec![avs_cf, seq_cf]).map_err(|e| anyhow::anyhow!(e))
 }
-
 pub fn storage_put(
     mut caller: Caller<'_, Context>,
     params: &[Val],
-    result: &mut [Val],
+    results: &mut [Val],
 ) -> anyhow::Result<()> {
     if caller.data().is_get_method() {
-        result[0] = Val::I32(1); // Error code for not allowed in GET method
+        results[0] = Val::I32(1); // Error code for not allowed in GET method
         return Ok(());
     }
     let mem = Context::wasm_mem(&mut caller).map_err(|e| anyhow::anyhow!(e))?;
@@ -30,7 +31,7 @@ pub fn storage_put(
     if (k_ptr as u64 + k_len as u64) > mem.data_size(&caller) as u64
         || (v_ptr as u64 + v_len as u64) > mem.data_size(&caller) as u64
     {
-        result[0] = Val::I32(2); // Error code for out of bounds
+        results[0] = Val::I32(2); // Error code for out of bounds
         return Ok(());
     }
 
@@ -44,9 +45,13 @@ pub fn storage_put(
     );
 
     let db = &caller.data().db;
-    db.put_cf(db.cf_handle("avs").unwrap(), &key, &val)
-        .map_err(|e| anyhow::anyhow!(e))?;
-    result[0] = Val::I32(0);
+    if let Err(e) = db.put_cf(db.cf_handle("avs").unwrap(), &key, &val) {
+        log::error!("Database error: {}", e);
+        results[0] = Val::I32(3); // Error code for database error
+        return Ok(());
+    }
+
+    results[0] = Val::I32(0); // Success
     Ok(())
 }
 

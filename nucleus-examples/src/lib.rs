@@ -52,6 +52,14 @@ pub fn get(a: String, b: String) -> Result<String, String> {
     }
     Ok(c)
 }
+#[get]
+pub fn should_not_call_put() -> Result<(), String> {
+    storage::put(b"1", b"2").map_err(|e| e.to_string())
+}
+#[post]
+pub fn should_not_call_put() -> Result<(), String> {
+    storage::put(b"1", b"2").map_err(|e| e.to_string())
+}
 #[post] //i1o1
 pub fn i1o1(a: String) -> String {
     a
@@ -60,6 +68,10 @@ pub fn i1o1(a: String) -> String {
 pub fn i0o0() {}
 #[post] //i1o0
 pub fn i1o0(a: String) {}
+#[post]
+pub fn i0o1() -> String {
+    "123".to_string()
+}
 
 // //1. must put the length of the string before the string
 // //2. host must knew the type of input and output

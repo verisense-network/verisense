@@ -1,5 +1,7 @@
 mod kvdb;
 
+use std::cell::Cell;
+
 use rocksdb::DB;
 use std::sync::Arc;
 use wasmtime::{Caller, Extern, Func, Memory, Store, Trap};
