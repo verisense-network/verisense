@@ -25,17 +25,6 @@ pub fn init(e: t::E, u: u32) {
 }
 
 #[post]
-pub fn post(e: E, s: String) -> Result<D, ()> {
-    storage::put(b"hello", b"world").map_err(|_| ())?;
-    Ok(D { b: 1582 })
-}
-
-#[get]
-pub fn get() -> i32 {
-    5
-}
-
-#[post]
 pub fn cc(a: String, b: String) -> Result<String, String> {
     // cross char in a and char in b to  gernerate c
     if a.len() != b.len() {
@@ -57,6 +46,14 @@ pub fn cc(a: String, b: String) -> Result<String, String> {
     }
     Ok(c)
 }
+#[get]
+pub fn should_not_call_put() -> Result<(), String> {
+    storage::put(b"1", b"2").map_err(|e| e.to_string())
+}
+#[post]
+pub fn should_not_call_put() -> Result<(), String> {
+    storage::put(b"1", b"2").map_err(|e| e.to_string())
+}
 #[post] //i1o1
 pub fn i1o1(a: String) -> String {
     a
@@ -65,67 +62,74 @@ pub fn i1o1(a: String) -> String {
 pub fn i0o0() {}
 #[post] //i1o0
 pub fn i1o0(a: String) {}
-
-#[test]
-pub fn test_cross_string() {
-    use codec::{Decode, Encode};
-
-    #[derive(Debug, Decode, Encode)]
-    struct B {
-        pub s: String,
-        pub c: String,
-    }
-    #[derive(Debug, Decode, Encode)]
-    struct A {
-        pub s: String,
-        pub b: B,
-        pub c: String,
-    }
-    let new_c = <A as codec::Encode>::encode(&A {
-        s: "1".to_string(),
-        b: B {
-            s: "2".to_string(),
-            c: "3".to_string(),
-        },
-        c: "1".to_string(),
-    });
-    // let new_c = <Result<u8, u8> as codec::Encode>::encode(&Err(1));
-    println!("new_c: {:?}", new_c);
-    let mut c = String::new();
-    let a = "111111".to_owned();
-    let b = "222222".to_owned();
-    println!(
-        "{}{}",
-        hex::encode(<String>::encode(&a)),
-        hex::encode(<String>::encode(&b))
-    );
-    assert!(false);
-    let mut a_iter = a.chars();
-    let mut b_iter = b.chars();
-    loop {
-        match (a_iter.next(), b_iter.next()) {
-            (Some(a), Some(b)) => {
-                c.push(a);
-                c.push(b);
-            }
-            default => {
-                break;
-            }
-        }
-    }
-    println!("c: {:?}", c);
-    let encode_a = <String as codec::Encode>::encode(&a);
-    // insert length before encode_a as ne bytes
-    let mut v = Vec::with_capacity(4 + encode_a.len());
-    v.extend_from_slice(&(encode_a.len() as u32).to_ne_bytes());
-    v.extend_from_slice(encode_a.as_slice());
-    println!("v: {:?}", v);
-    let encode_b = <String as codec::Encode>::encode(&b);
-    let mut t = Vec::with_capacity(4 + encode_b.len());
-    t.extend_from_slice(&(encode_b.len() as u32).to_ne_bytes());
-    t.extend_from_slice(&encode_b.as_slice());
-    // let r = cross_string_decoded(v.as_ptr(), t.as_ptr());
-    // pointer to vec
-    // let mut bytes = unsafe { std::slice::from_raw_parts(r, 4 + 14) };
-    // println!("bytes: {:?}", bytes);
+#[post]
+pub fn i0o1() -> String {
+    "123".to_string()
 }
+#[get]
+pub fn get() -> i32 {
+    5
+}
+// #[test]
+// pub fn test_cross_string() {
+//     use codec::{Decode, Encode};
+
+//     #[derive(Debug, Decode, Encode)]
+//     struct B {
+//         pub s: String,
+//         pub c: String,
+//     }
+//     #[derive(Debug, Decode, Encode)]
+//     struct A {
+//         pub s: String,
+//         pub b: B,
+//         pub c: String,
+//     }
+//     let new_c = <A as codec::Encode>::encode(&A {
+//         s: "1".to_string(),
+//         b: B {
+//             s: "2".to_string(),
+//             c: "3".to_string(),
+//         },
+//         c: "1".to_string(),
+//     });
+//     // let new_c = <Result<u8, u8> as codec::Encode>::encode(&Err(1));
+//     println!("new_c: {:?}", new_c);
+//     let mut c = String::new();
+//     let a = "111111".to_owned();
+//     let b = "222222".to_owned();
+//     println!(
+//         "{}{}",
+//         hex::encode(<String>::encode(&a)),
+//         hex::encode(<String>::encode(&b))
+//     );
+//     assert!(false);
+//     let mut a_iter = a.chars();
+//     let mut b_iter = b.chars();
+//     loop {
+//         match (a_iter.next(), b_iter.next()) {
+//             (Some(a), Some(b)) => {
+//                 c.push(a);
+//                 c.push(b);
+//             }
+//             default => {
+//                 break;
+//             }
+//         }
+//     }
+//     println!("c: {:?}", c);
+//     let encode_a = <String as codec::Encode>::encode(&a);
+//     // insert length before encode_a as ne bytes
+//     let mut v = Vec::with_capacity(4 + encode_a.len());
+//     v.extend_from_slice(&(encode_a.len() as u32).to_ne_bytes());
+//     v.extend_from_slice(encode_a.as_slice());
+//     println!("v: {:?}", v);
+//     let encode_b = <String as codec::Encode>::encode(&b);
+//     let mut t = Vec::with_capacity(4 + encode_b.len());
+//     t.extend_from_slice(&(encode_b.len() as u32).to_ne_bytes());
+//     t.extend_from_slice(&encode_b.as_slice());
+//     // let r = cross_string_decoded(v.as_ptr(), t.as_ptr());
+//     // pointer to vec
+//     // let mut bytes = unsafe { std::slice::from_raw_parts(r, 4 + 14) };
+//     // println!("bytes: {:?}", bytes);
+// }
