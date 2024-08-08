@@ -11,12 +11,15 @@ crate-type = ["cdylib"]
 codec = { features = [
     "derive",
 ], package = "parity-scale-codec", version = "3.6.12", default-features = false }
-wasm-bindgen = "0.2.84"
+# wasm-bindgen = "0.2.84"
 
 [dependencies.vrs-core-sdk]
 path = "../nucleus/core-sdk"
 default-features = false
 # features = ["std"]
+
+[dev-dependencies]
+hex = "0.4"
 
 [features]
 default = ["std"]

@@ -13,10 +13,10 @@ use vrs_primitives::NucleusId;
 #[rpc(server)]
 pub trait NucleusRpc {
     #[method(name = "nucleus_post")]
-    async fn post(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>>;
+    async fn post(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<String>;
 
     #[method(name = "nucleus_get")]
-    async fn get(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>>;
+    async fn get(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<String>;
 }
 
 pub struct NucleusEntry {
@@ -32,14 +32,14 @@ impl NucleusEntry {
         &self,
         req: (NucleusId, Gluon),
         rx: Receiver<NucleusResponse>,
-    ) -> RpcResult<Vec<u8>> {
+    ) -> RpcResult<String> {
         self.sender.send(req).await.map_err(|_| {
             ErrorObjectOwned::owned(NUCLEUS_OFFLINE_CODE, NUCLEUS_OFFLINE_MSG, None::<()>)
         })?;
         tokio::select! {
             reply = rx => {
                 match reply {
-                    Ok(Ok(r)) => Ok(r),
+                    Ok(Ok(r)) => Ok(hex::encode(r)),
                     Ok(Err(e)) => Err(ErrorObjectOwned::owned(e.0, e.1, None::<()>)),
                     Err(_) => Err(ErrorObjectOwned::owned(NUCLEUS_OFFLINE_CODE, NUCLEUS_OFFLINE_MSG, None::<()>)),
                 }
@@ -53,7 +53,7 @@ impl NucleusEntry {
 
 #[async_trait]
 impl NucleusRpcServer for NucleusEntry {
-    async fn post(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>> {
+    async fn post(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<String> {
         let payload =
             hex::decode(payload.trim_start_matches("0x")).map_err(|_| ErrorCode::InvalidParams)?;
         let (tx, rx) = oneshot::channel();
@@ -68,7 +68,7 @@ impl NucleusRpcServer for NucleusEntry {
         self.reply(req, rx).await
     }
 
-    async fn get(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<Vec<u8>> {
+    async fn get(&self, nucleus: NucleusId, op: String, payload: String) -> RpcResult<String> {
         let payload =
             hex::decode(payload.trim_start_matches("0x")).map_err(|_| ErrorCode::InvalidParams)?;
         let (tx, rx) = oneshot::channel();

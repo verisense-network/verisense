@@ -24,14 +24,14 @@ pub fn init(e: t::E, u: u32) {
     storage::put(b"hello", b"world").unwrap();
 }
 
-// #[post]
-// pub fn post(e: E, s: String) -> Result<D, ()> {
-//     storage::put(b"hello", b"world").map_err(|_| ())?;
-//     Ok(D { b: 1582 })
-// }
+#[post]
+pub fn post(e: E, s: String) -> Result<D, ()> {
+    storage::put(b"hello", b"world").map_err(|_| ())?;
+    Ok(D { b: 1582 })
+}
 
 #[get]
-pub fn cc(a: String, b: String) -> Result<String, String> {
+pub fn get(a: String, b: String) -> Result<String, String> {
     // cross char in a and char in b to  gernerate c
     if a.len() != b.len() {
         return Err("a and b should have the same length".to_string());
@@ -125,10 +125,10 @@ pub fn i1o0(a: String) {}
 //     merge(new_c.len() as u32, p)
 //     // back
 // }
-#[get]
-pub fn get() -> i32 {
-    5
-}
+// #[get]
+// pub fn get() -> i32 {
+//     5
+// }
 #[test]
 pub fn test_cross_string() {
     use codec::{Decode, Encode};
@@ -157,6 +157,12 @@ pub fn test_cross_string() {
     let mut c = String::new();
     let a = "111111".to_owned();
     let b = "222222".to_owned();
+    println!(
+        "{}{}",
+        hex::encode(<String>::encode(&a)),
+        hex::encode(<String>::encode(&b))
+    );
+    assert!(false);
     let mut a_iter = a.chars();
     let mut b_iter = b.chars();
     loop {
@@ -181,8 +187,8 @@ pub fn test_cross_string() {
     let mut t = Vec::with_capacity(4 + encode_b.len());
     t.extend_from_slice(&(encode_b.len() as u32).to_ne_bytes());
     t.extend_from_slice(&encode_b.as_slice());
-    let r = cross_string_decoded(v.as_ptr(), t.as_ptr());
+    // let r = cross_string_decoded(v.as_ptr(), t.as_ptr());
     // pointer to vec
-    let mut bytes = unsafe { std::slice::from_raw_parts(r, 4 + 14) };
-    println!("bytes: {:?}", bytes);
+    // let mut bytes = unsafe { std::slice::from_raw_parts(r, 4 + 14) };
+    // println!("bytes: {:?}", bytes);
 }
