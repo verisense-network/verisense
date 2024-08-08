@@ -16,17 +16,33 @@ pub fn storage_put(
     params: &[Val],
     result: &mut [Val],
 ) -> anyhow::Result<()> {
+    if caller.data().is_get_method() {
+        result[0] = Val::I32(1); // Error code for not allowed in GET method
+        return Ok(());
+    }
     let mem = Context::wasm_mem(&mut caller).map_err(|e| anyhow::anyhow!(e))?;
-    let k_ptr = params[0].unwrap_i32();
-    let k_len = params[1].unwrap_i32();
-    let v_ptr = params[2].unwrap_i32();
-    let v_len = params[3].unwrap_i32();
-    let mut key = vec![0u8; k_len as u32 as usize];
-    mem.read(&caller, k_ptr as u32 as usize, &mut key)
-        .map_err(|e| anyhow::anyhow!(e))?;
-    let mut val = vec![0u8; v_len as u32 as usize];
-    mem.read(&caller, v_ptr as u32 as usize, &mut val)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let k_ptr = params[0].unwrap_i32() as u32;
+    let k_len = params[1].unwrap_i32() as u32;
+    let v_ptr = params[2].unwrap_i32() as u32;
+    let v_len = params[3].unwrap_i32() as u32;
+
+    // Boundary check
+    if (k_ptr as u64 + k_len as u64) > mem.data_size(&caller) as u64
+        || (v_ptr as u64 + v_len as u64) > mem.data_size(&caller) as u64
+    {
+        result[0] = Val::I32(2); // Error code for out of bounds
+        return Ok(());
+    }
+
+    let key = mem.data(&caller)[k_ptr as usize..(k_ptr + k_len) as usize].to_vec();
+    let val = mem.data(&caller)[v_ptr as usize..(v_ptr + v_len) as usize].to_vec();
+
+    log::debug!(
+        "Storing key={}, val={}",
+        String::from_utf8_lossy(&key),
+        String::from_utf8_lossy(&val)
+    );
+
     let db = &caller.data().db;
     db.put_cf(db.cf_handle("avs").unwrap(), &key, &val)
         .map_err(|e| anyhow::anyhow!(e))?;
