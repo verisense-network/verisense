@@ -1,0 +1,15 @@
+[package]
+name = "vrs-metadata"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+subxt = "0.37.0"
+subxt-core = "0.37.0"
+
+[build-dependencies]
+vrs-runtime = { path = "../runtime" }
+subxt-codegen = "0.37.0"
+subxt-metadata = "0.37.0"
+codec = { workspace = true }

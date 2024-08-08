@@ -1,0 +1,13 @@
+[package]
+name = "vrs-core-macros"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "2.0"
+quote = "1.0"
+codec = { workspace = true, default-features = false }

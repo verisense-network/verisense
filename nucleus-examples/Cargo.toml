@@ -1,0 +1,27 @@
+[package]
+name = "vrs-nucleus-examples"
+version = "0.0.1"
+authors = ["Verisense Team"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+codec = { features = [
+    "derive",
+], package = "parity-scale-codec", version = "3.6.12", default-features = false }
+# wasm-bindgen = "0.2.84"
+
+[dependencies.vrs-core-sdk]
+path = "../nucleus/core-sdk"
+default-features = false
+# features = ["std"]
+
+[dev-dependencies]
+hex = "0.4"
+
+[features]
+default = ["std"]
+std = ["vrs-core-sdk/std"]
+no-std = []
