@@ -8,7 +8,6 @@ use anyhow::anyhow;
 use codec::Decode;
 use sp_runtime::traits::Member;
 use thiserror::Error;
-use vrs_core_sdk::AccountId;
 use wasmtime::{Caller, Func, Memory, Trap, Val};
 use wasmtime::{Engine, ExternRef, ExternType, Instance, Module, Rooted, Store, WasmResults};
 pub struct Vm {
@@ -60,7 +59,6 @@ impl WasmCallError {
         }
     }
 }
-
 impl Vm {
     pub fn new_instance(wasm: &WasmInfo, context: Context) -> anyhow::Result<Self> {
         let engine = Engine::default();
@@ -70,7 +68,7 @@ impl Vm {
         };
         module.exports().for_each(|ty| match ty.ty() {
             ExternType::Func(func) => {
-                log::info!("export: {} {}", func.to_string(), ty.name());
+                println!("export: {} {}", func.to_string(), ty.name());
             }
             _ => {}
         });
@@ -93,11 +91,27 @@ impl Vm {
         })
     }
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+        self.space.data_mut().set_is_get_method(true);
+        let result = self.call_method(func, args, true);
+        self.space.data_mut().set_is_get_method(false);
+        result
+    }
+
+    fn call_method(
+        &mut self,
+        func: &str,
+        args: Vec<u8>,
+        is_get: bool,
+    ) -> Result<Vec<u8>, WasmCallError> {
+        let func_name = if is_get {
+            format!("__nucleus_get_{}", func)
+        } else {
+            format!("__nucleus_post_{}", func)
+        };
         let func = self
             .instance
-            .get_func(&mut self.space, &format!("__nucleus_get_{}", func))
+            .get_func(&mut self.space, &func_name)
             .ok_or(WasmCallError::EndpointNotFound)?;
-
         let memory = self
             .instance
             .get_memory(&mut self.space, "memory")
@@ -153,67 +167,10 @@ impl Vm {
 
         Ok(result)
     }
-
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
-        let func = self
-            .instance
-            .get_func(&mut self.space, &format!("__nucleus_post_{}", func))
-            .ok_or(WasmCallError::EndpointNotFound)?;
+        self.space.data_mut().set_is_get_method(false);
 
-        let memory = self
-            .instance
-            .get_memory(&mut self.space, "memory")
-            .ok_or(WasmCallError::NoMemoryExported)?;
-
-        if args.len() > 65536 {
-            return Err(WasmCallError::ArgumentsSizeExceeded);
-        }
-
-        // Write args to memory
-        memory
-            .write(&mut self.space, self.__call_param_ptr as usize, &args)
-            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
-
-        let mut result = vec![Val::I32(0)];
-        // Call the function
-        func.call(
-            &mut self.space,
-            &[
-                Val::I32(self.__call_param_ptr as i32),
-                Val::I32(args.len() as i32),
-            ],
-            &mut result,
-        )
-        .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
-
-        log::info!("results: {:?}", result);
-
-        let result_ptr = result[0].i32().ok_or(WasmCallError::ResultPointerError)? as usize;
-
-        // Read result length
-        let mut result_len_bytes = [0u8; 4];
-        memory
-            .read(&mut self.space, result_ptr, &mut result_len_bytes)
-            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
-        let result_len = u32::from_le_bytes(result_len_bytes);
-
-        if result_len > 65536 {
-            return Err(WasmCallError::ResultSizeExceeded);
-        }
-
-        // Read result data
-        let mut result_data = vec![0u8; result_len as usize];
-        memory
-            .read(&mut self.space, result_ptr + 4, &mut result_data)
-            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
-
-        log::debug!("result {:?}", result_data);
-
-        // Decode the result
-        let result = <Result<Vec<u8>, String> as Decode>::decode(&mut result_data.as_slice())?
-            .map_err(|e| WasmCallError::WasmInternalError(e))?;
-
-        Ok(result)
+        self.call_method(func, args, false)
     }
 }
 fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
@@ -227,7 +184,7 @@ mod tests {
     use codec::{Decode, Encode};
 
     use super::*;
-
+    use vrs_core_sdk::AccountId;
     #[test]
     pub fn load_wasm_should_work() {
         env_logger::init();
@@ -298,6 +255,30 @@ mod tests {
         // );
     }
     #[test]
+    pub fn test_should_not_call_put() {
+        env_logger::init();
+        let wasm_path = "../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let context = Context::init().unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+
+        let result = vm.call_get("should_not_call_put", vec![]).unwrap();
+        let result = <Result<(), String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
+        assert_eq!(
+            result,
+            Err("Operation not allowed in GET method".to_string())
+        );
+        let result = vm.call_post("should_not_call_put", vec![]).unwrap();
+        let result = <Result<(), String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
+        assert_eq!(result, Ok(()));
+    }
+    #[test]
     pub fn test_encode() {
         let a = ();
         let b = ("123".to_string(),);
@@ -319,6 +300,8 @@ mod tests {
         let result = vm.call_post("i1o0", b.encode()).unwrap();
         assert_eq!(result, a.encode());
         let result = vm.call_post("i1o1", b.encode()).unwrap();
+        assert_eq!(result, b.encode());
+        let result = vm.call_post("i0o1", vec![]).unwrap();
         assert_eq!(result, b.encode());
     }
     #[test]
