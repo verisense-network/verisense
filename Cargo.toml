@@ -1,5 +1,13 @@
 [workspace]
-members = ["node", "runtime", "pallets/*", "nucleus/*", "primitives", "metadata"]
+members = [
+    "node",
+    "runtime",
+    "pallets/*",
+    "nucleus/*",
+    "primitives",
+    "metadata",
+]
+exclude = ["nucleus-examples"]
 resolver = "2"
 
 [workspace.package]
