@@ -258,6 +258,7 @@ mod tests {
         //     vm.call_post("__nucleus_post_post", encoded_args).unwrap()
         // );
     }
+
     #[test]
     pub fn test_should_not_call_put() {
         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
