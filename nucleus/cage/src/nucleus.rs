@@ -49,7 +49,6 @@ impl Nucleus {
     }
 
     fn accept(&mut self, msg: Gluon) {
-        // TODO if token:
         match msg {
             Gluon::CodeUpgrade { version } => {
                 // TODO load new module from storage

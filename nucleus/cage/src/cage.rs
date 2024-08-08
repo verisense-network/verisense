@@ -1,10 +1,11 @@
-use crate::{nucleus::Nucleus, Context, Gluon, NucleusResponse, WasmCodeRef, WasmInfo};
+use crate::{
+    nucleus::Nucleus, Context, ContextConfig, Gluon, NucleusResponse, ReplyTo, WasmCodeRef,
+    WasmInfo,
+};
 use codec::{Decode, Encode};
 use futures::prelude::*;
-use sc_client_api::{
-    notifications::StorageNotification, Backend, BlockBackend, BlockchainEvents,
-    StorageNotifications, StorageProvider,
-};
+use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use std::collections::HashMap;
@@ -21,33 +22,78 @@ pub struct CageParameters<B, C, BN> {
     pub rx: Receiver<(NucleusId, Gluon)>,
     pub client: Arc<C>,
     pub controller: AccountId,
+    pub nucleus_home_dir: std::path::PathBuf,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
 struct NucleusCage {
+    nucleus_id: NucleusId,
     tunnel: SyncSender<(u64, Gluon)>,
-    pending_requests: Vec<Gluon>,
+    pending_requests: Vec<(String, Vec<u8>, Option<ReplyTo>)>,
     event_id: u64,
+    db: Arc<DB>,
     // TODO monadring-related
     // TODO kvdb
 }
 
 impl NucleusCage {
-    fn drain(&mut self) {
-        for req in self.pending_requests.drain(..) {
-            self.event_id += 1;
-            // TODO
-            let _ = self.tunnel.send((self.event_id, req));
+    fn validate_token(&self) -> bool {
+        true
+    }
+
+    fn pre_commit(&self, id: u64, msg: &[u8]) -> anyhow::Result<()> {
+        let handle = self.db.cf_handle("seq").unwrap();
+        self.db.put_cf(handle, &id.to_be_bytes(), msg)?;
+        Ok(())
+    }
+
+    fn drain(&mut self, imports: Vec<(String, Vec<u8>)>) {
+        for import in imports.into_iter() {
+            self.pending_requests.push((import.0, import.1, None));
         }
+        let pipe = self.pending_requests.drain(..).collect::<Vec<_>>();
+        for gluon in pipe.into_iter() {
+            self.event_id += 1;
+            let event = Self::merge_payload(&gluon.0, &gluon.1);
+            if let Err(e) = self.pre_commit(self.event_id, &event) {
+                log::error!(
+                    "couldn't save event {} of nucleus {}: {:?}",
+                    self.event_id,
+                    self.nucleus_id,
+                    e
+                );
+                if let Some(reply_to) = gluon.2 {
+                    let _ = reply_to.send(Err((-42000, "Event persistence failed.".to_string())));
+                }
+            } else {
+                let _ = self.tunnel.send((
+                    self.event_id,
+                    Gluon::PostRequest {
+                        endpoint: gluon.0,
+                        payload: gluon.1,
+                        reply_to: gluon.2,
+                    },
+                ));
+            }
+        }
+    }
+
+    fn merge_payload(endpoint: &String, payload: &[u8]) -> Vec<u8> {
+        let mut buf = <String>::encode(endpoint);
+        buf.extend(payload);
+        buf
     }
 
     fn forward(&mut self, gluon: Gluon) {
         match gluon {
-            Gluon::PostRequest { .. } => {
-                self.pending_requests.push(gluon);
+            Gluon::PostRequest {
+                endpoint,
+                payload,
+                reply_to,
+            } => {
+                self.pending_requests.push((endpoint, payload, reply_to));
             }
             Gluon::GetRequest { .. } => {
-                // TODO we consumed reply_to of gluon, so we can do nothing even the sending failed
                 let _ = self.tunnel.send((0, gluon));
             }
             // TODO
@@ -72,12 +118,14 @@ where
         mut rx,
         client,
         controller,
+        nucleus_home_dir,
         _phantom,
     } = params;
     async move {
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
+        log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
+        let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
         // TODO what if our node is far behind the best block?
-        let current_block = client.info().best_hash;
         let metadata =
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
         let mut registry_monitor = client.every_import_notification_stream();
@@ -102,7 +150,8 @@ where
                     // TODO handle deregister as well
                     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
                         for (id, config) in instances {
-                            start_nucleus::<B>(id, config, &mut nuclei).expect("fail to start nucleus");
+                            let db_path = nucleus_home_dir.join(id.to_string());
+                            start_nucleus::<B>(id, config, db_path, &mut nuclei).expect("fail to start nucleus");
                         }
                     }
                 },
@@ -118,7 +167,7 @@ where
                 token = token_rx.recv() => {
                     log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
                     // TODO only drain the nucleus that token
-                    nuclei.values_mut().for_each(|nucleus| nucleus.drain());
+                    nuclei.values_mut().for_each(|nucleus| nucleus.drain(vec![]));
                 }
             }
         }
@@ -198,7 +247,8 @@ fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
 // TODO
 fn start_nucleus<B>(
     id: NucleusId,
-    config: NucleusEquation<AccountId, B::Hash>,
+    equation: NucleusEquation<AccountId, B::Hash>,
+    db_path: std::path::PathBuf,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
 ) -> anyhow::Result<()>
 where
@@ -214,7 +264,7 @@ where
         current_event,
         root_state,
         capacity,
-    } = config;
+    } = equation;
     let name = String::from_utf8(name)?;
     let url = String::from_utf8(wasm_url)?;
     let wasm = WasmInfo {
@@ -223,19 +273,25 @@ where
         version: 0,
         code: WasmCodeRef::File(url),
     };
+    let config = ContextConfig {
+        db_path: db_path.into_boxed_path(),
+    };
     // TODO
-    let context = Context::init().unwrap();
+    let context = Context::init(config)?;
+    let db = context.db.clone();
     let (tx, rx) = std::sync::mpsc::channel();
     let mut nucleus = Nucleus::new(rx, context, wasm);
     std::thread::spawn(move || {
         nucleus.run();
     });
     nuclei.insert(
-        id,
+        id.clone(),
         NucleusCage {
+            nucleus_id: id,
             tunnel: tx,
             pending_requests: vec![],
             event_id: 0,
+            db,
         },
     );
     Ok(())

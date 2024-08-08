@@ -13,16 +13,3 @@ pub enum WasmCodeRef {
     File(String),
     Blob(Vec<u8>),
 }
-
-#[derive(Debug, Clone)]
-pub struct WasmDescriptor {
-    pub init: FunctionDescriptor,
-    pub get: Vec<FunctionDescriptor>,
-    pub post: Vec<FunctionDescriptor>,
-}
-
-#[derive(Debug, Clone)]
-pub struct FunctionDescriptor {
-    pub name: String,
-    pub signature: String,
-}
