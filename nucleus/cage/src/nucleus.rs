@@ -41,8 +41,14 @@ impl Nucleus {
         Nucleus { receiver, vm }
     }
 
+    pub(crate) fn run(&mut self) {
+        while let Ok((id, msg)) = self.receiver.recv() {
+            // TODO save msg with id to rocksdb
+            self.accept(msg);
+        }
+    }
+
     fn accept(&mut self, msg: Gluon) {
-        // TODO if token:
         match msg {
             Gluon::CodeUpgrade { version } => {
                 // TODO load new module from storage

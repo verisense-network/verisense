@@ -83,8 +83,8 @@ pub fn new_partial(config: &Configuration) -> Result<Service, ServiceError> {
     )?;
 
     let cidp_client = client.clone();
-    let import_queue =
-        sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _>(ImportQueueParams {
+    let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _>(
+        ImportQueueParams {
             block_import: grandpa_block_import.clone(),
             justification_import: Some(Box::new(grandpa_block_import.clone())),
             client: client.clone(),
@@ -98,10 +98,10 @@ pub fn new_partial(config: &Configuration) -> Result<Service, ServiceError> {
                     let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                     let slot =
-						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-							*timestamp,
-							slot_duration,
-						);
+                        sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+                            *timestamp,
+                            slot_duration,
+                        );
 
                     Ok((slot, timestamp))
                 }
@@ -111,7 +111,8 @@ pub fn new_partial(config: &Configuration) -> Result<Service, ServiceError> {
             check_for_equivocation: Default::default(),
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             compatibility_mode: Default::default(),
-        })?;
+        },
+    )?;
 
     Ok(sc_service::PartialComponents {
         client,
@@ -215,6 +216,7 @@ pub fn new_full<
     let prometheus_registry = config.prometheus_registry().cloned();
     // TODO
     let (tx, rx) = tokio::sync::mpsc::channel(10000);
+    let nucleus_home_dir = config.base_path.path().join("nucleus");
 
     let rpc_extensions_builder = {
         let client = client.clone();
@@ -251,7 +253,7 @@ pub fn new_full<
         let params = vrs_nucleus_cage::CageParameters {
             rx,
             client: client.clone(),
-            // TODO
+            nucleus_home_dir,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             _phantom: std::marker::PhantomData,
         };

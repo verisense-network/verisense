@@ -30,7 +30,7 @@ pub fn init(e: t::E, u: u32) {
 //     Ok(D { b: 1582 })
 // }
 
-#[post]
+#[get]
 pub fn cc(a: String, b: String) -> Result<String, String> {
     // cross char in a and char in b to  gernerate c
     if a.len() != b.len() {
