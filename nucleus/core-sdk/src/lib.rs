@@ -1,7 +1,6 @@
 pub use vrs_core_macros::*;
 pub use vrs_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
 
-use std::cell::Cell;
 #[allow(improper_ctypes)]
 pub mod storage {
     #[link(wasm_import_module = "env")]

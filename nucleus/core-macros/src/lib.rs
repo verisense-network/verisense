@@ -1,26 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::parse::{Parse, ParseStream};
-use syn::{
-    parse_macro_input, FnArg, Index, ItemFn, LitStr, Result, ReturnType, Type, TypeTuple,
-    Visibility,
-};
-
-#[derive(Debug)]
-struct RenameFuncAttributeInput {
-    pub rename_to: Option<LitStr>,
-}
-
-impl Parse for RenameFuncAttributeInput {
-    fn parse(input: ParseStream) -> Result<Self> {
-        match <LitStr as Parse>::parse(input) {
-            Ok(rename_to) => Ok(Self {
-                rename_to: Some(rename_to),
-            }),
-            Err(_) => Ok(Self { rename_to: None }),
-        }
-    }
-}
+use syn::{parse_macro_input, FnArg, Index, ItemFn, ReturnType, Visibility};
 
 #[proc_macro_attribute]
 pub fn init(_attr: TokenStream, func: TokenStream) -> TokenStream {
@@ -43,7 +23,7 @@ pub fn init(_attr: TokenStream, func: TokenStream) -> TokenStream {
         .iter()
         .map(|i| match i {
             FnArg::Typed(ref val) => val.ty.clone(),
-            _ => unreachable!(""),
+            _ => unreachable!(),
         })
         .collect();
     let expanded = quote! {
@@ -67,6 +47,7 @@ pub fn post(attr: TokenStream, func: TokenStream) -> TokenStream {
 pub fn get(attr: TokenStream, func: TokenStream) -> TokenStream {
     expand(attr, func, "get")
 }
+
 fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenStream {
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = &input_fn.sig.ident;
@@ -75,8 +56,13 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
     // Remove the visibility modifier from the original function
     input_fn.vis = Visibility::Inherited;
 
-    let args = &input_fn.sig.inputs;
     let return_type = &input_fn.sig.output;
+    let args = &input_fn.sig.inputs;
+
+    let output_type = match return_type {
+        ReturnType::Default => quote! { () },
+        ReturnType::Type(_, ty) => quote! { #ty },
+    };
 
     let param_types: Vec<_> = args
         .iter()
@@ -89,33 +75,26 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
         })
         .collect();
 
-    let output_type = match return_type {
-        ReturnType::Default => quote! { () },
-        ReturnType::Type(_, ty) => quote! { #ty },
-    };
-
     let function_call = {
         let tuple_type = quote! { (#(#param_types,)*) };
         let arg_indices: Vec<Index> = (0..param_types.len()).map(|i| Index::from(i)).collect();
         quote! {
             // Decode the tuple of arguments
             let mut args_bytes = unsafe { std::slice::from_raw_parts(__ptr, __len) };
-            let args: #tuple_type = match Decode::decode(&mut args_bytes) {
+            let args: #tuple_type = match codec::Decode::decode(&mut args_bytes) {
                 Ok(tuple) => tuple,
                 Err(_) => return encode_error("Failed to decode arguments tuple".to_string()),
             };
             // Call the original function with extracted parameters
-            let result = #fn_name(#(args.#arg_indices),*);
+            let result = #fn_name(#(args.#arg_indices,)*);
         }
     };
 
     let expanded = quote! {
         #[no_mangle]
         pub fn #decoded_fn_name(__ptr: *const u8, __len: usize) -> *const u8 {
-            use codec::{Decode, Encode};
-
-            fn encode_result<T: Encode>(result: T) -> *const u8 {
-                let encoded = result.encode();
+            fn encode_result<T: codec::Encode>(result: T) -> *const u8 {
+                let encoded = <T as codec::Encode>::encode(&result);
                 let len = encoded.len() as u32;
                 let mut output = Vec::with_capacity(4 + len as usize);
                 output.extend_from_slice(&len.to_ne_bytes());
@@ -135,7 +114,7 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
             // Call the function based on whether it has parameters or not
             #function_call
 
-            let encoded = result.encode();
+            let encoded = <#output_type as codec::Encode>::encode(&result);
             let wrapped_result: Result<Vec<u8>, String> = Ok(encoded);
             encode_result(wrapped_result)
         }
