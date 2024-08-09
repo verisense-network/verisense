@@ -383,7 +383,7 @@ mod tests {
 
     #[test]
     pub fn call_post_should_fail_for_general() {
-        let wasm_path = "../../target/wasm32-unknown-unknown/debug/vrs_nucleus_examples.wasm";
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
 
         let engine = Engine::default();
         let module = Module::from_file(&engine, wasm_path).unwrap();
@@ -413,7 +413,7 @@ mod tests {
         memory.write(&mut store, ptr as usize, &input[..]).unwrap();
 
         let call_example: wasmtime::Func = instance
-            .get_func(&mut store, "__nucleus_get_get")
+            .get_func(&mut store, "__nucleus_post_cc")
             .expect("function not found");
         let mut result = vec![Val::I32(0)];
         call_example
