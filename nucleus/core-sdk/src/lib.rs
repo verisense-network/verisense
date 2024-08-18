@@ -1,4 +1,4 @@
-pub use vrs_core_macros::*;
+pub use codec;
 pub use vrs_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
 
 #[allow(improper_ctypes)]
@@ -11,6 +11,8 @@ pub mod storage {
             value_ptr: *const u8,
             value_len: usize,
         ) -> i32;
+
+        fn storage_get(key_ptr: *const u8, key_len: usize) -> *const u8;
     }
 
     pub fn put(key: &[u8], value: &[u8]) -> anyhow::Result<()> {
@@ -22,5 +24,9 @@ pub mod storage {
             3 => Err(anyhow::anyhow!("Database error")),
             _ => Err(anyhow::anyhow!("Unknown error")),
         }
+    }
+
+    pub fn get(key: &[u8]) -> anyhow::Result<Vec<u8>> {
+        Ok(vec![])
     }
 }

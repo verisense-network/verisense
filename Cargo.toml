@@ -41,7 +41,6 @@ pallet-timestamp = { version = "35.0.0", default-features = false }
 pallet-transaction-payment = { version = "36.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "38.0.0", default-features = true }
 pallet-transaction-payment-rpc-runtime-api = { version = "36.0.0", default-features = false }
-# pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 
 # primitives
 sp-api = { version = "33.0.0", default-features = false }
@@ -56,7 +55,6 @@ sp-core = { features = ["serde"], version = "34.0.0", default-features = false }
 sp-inherents = { version = "33.0.0", default-features = false }
 sp-offchain = { version = "33.0.0", default-features = false }
 sp-runtime = { features = [
-    # "std",
     "serde",
 ], version = "38.0.0", default-features = false }
 sp-timestamp = { version = "33.0.0", default-features = false }

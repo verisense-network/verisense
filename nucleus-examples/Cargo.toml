@@ -8,15 +8,9 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-codec = { features = [
-    "derive",
-], package = "parity-scale-codec", version = "3.6.12", default-features = false }
-# wasm-bindgen = "0.2.84"
-
-[dependencies.vrs-core-sdk]
-path = "../nucleus/core-sdk"
-default-features = false
-# features = ["std"]
+vrs-core-sdk = { path = "../nucleus/core-sdk", default-features = false }
+vrs-core-macros = { path = "../nucleus/core-macros", default-features = false }
+parity-scale-codec = { version = "3.6", default-features = false }
 
 [dev-dependencies]
 hex = "0.4"

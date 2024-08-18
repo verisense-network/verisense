@@ -4,7 +4,7 @@ mod nucleus;
 mod vm;
 mod wasm_code;
 
-pub use cage::{start_nucleus_cage, CageParameters};
+pub use cage::{start_nucleus_cage, CageParams};
 pub use context::{Context, ContextConfig};
 pub use nucleus::Gluon;
 pub use wasm_code::{WasmCodeRef, WasmInfo};

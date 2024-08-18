@@ -1,0 +1,18 @@
+[package]
+name = "vrs-runtime-api"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+sp-api = { workspace = true }
+sp-runtime = { workspace = true }
+vrs-primitives = { path = "../../primitives", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "sp-runtime/std",
+    "sp-api/std",
+    "vrs-primitives/std",
+]

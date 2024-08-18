@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use super::*;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use wasmtime::{Caller, FuncType, Val, ValType};
@@ -12,6 +10,7 @@ pub(crate) fn init_rocksdb(path: impl AsRef<std::path::Path>) -> anyhow::Result<
     db_opts.create_if_missing(true);
     DB::open_cf_descriptors(&db_opts, path, vec![avs_cf, seq_cf]).map_err(|e| anyhow::anyhow!(e))
 }
+
 pub fn storage_put(
     mut caller: Caller<'_, Context>,
     params: &[Val],
@@ -38,7 +37,7 @@ pub fn storage_put(
     let key = mem.data(&caller)[k_ptr as usize..(k_ptr + k_len) as usize].to_vec();
     let val = mem.data(&caller)[v_ptr as usize..(v_ptr + v_len) as usize].to_vec();
 
-    log::debug!(
+    println!(
         "Storing key={}, val={}",
         String::from_utf8_lossy(&key),
         String::from_utf8_lossy(&val)
@@ -63,13 +62,26 @@ pub fn storage_put_signature(store: &Store<Context>) -> FuncType {
     )
 }
 
-// pub fn storage_get(context: &Context, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-//     let value = context
-//         .db
-//         .get_cf(context.db.cf_handle("avs").unwrap(), key)
-//         .map_err(|e| StorageError(e.to_string()))?;
-//     Ok(value)
-// }
+pub fn storage_get(
+    mut caller: Caller<'_, Context>,
+    params: &[Val],
+    result: &mut [Val],
+) -> anyhow::Result<()> {
+    let mem = Context::wasm_mem(&mut caller).map_err(|e| anyhow::anyhow!(e))?;
+    let k_ptr = params[0].unwrap_i32() as u32;
+    let k_len = params[1].unwrap_i32() as u32;
+    let key = mem.data(&caller)[k_ptr as usize..(k_ptr + k_len) as usize].to_vec();
+    let db = &caller.data().db;
+    if let Ok(value) = db.get_cf(db.cf_handle("avs").unwrap(), &key) {
+        if value.is_none() {
+            result[0] = Val::I32(0);
+        }
+        Ok(())
+    } else {
+        result[0] = Val::I32(3);
+        Ok(())
+    }
+}
 
 // pub fn storage_delete(context: &Context, key: &[u8]) -> Result<(), StorageError> {
 //     context

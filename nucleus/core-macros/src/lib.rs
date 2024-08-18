@@ -30,7 +30,7 @@ pub fn init(_attr: TokenStream, func: TokenStream) -> TokenStream {
         #[no_mangle]
         pub fn #func_name(args: std::vec::Vec<u8>) {
             let mut v: &[u8] = args.as_ref();
-            let decoded = <(#(#tys,)*) as codec::Decode>::decode(&mut v).unwrap();
+            let decoded = <(#(#tys,)*) as ::vrs_core_sdk::codec::Decode>::decode(&mut v).unwrap();
             fn #origin_name(args: (#(#tys,)*)) #func_block
             #origin_name(decoded);
         }
@@ -81,7 +81,7 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
         quote! {
             // Decode the tuple of arguments
             let mut args_bytes = unsafe { std::slice::from_raw_parts(__ptr, __len) };
-            let args: #tuple_type = match codec::Decode::decode(&mut args_bytes) {
+            let args: #tuple_type = match ::vrs_core_sdk::codec::Decode::decode(&mut args_bytes) {
                 Ok(tuple) => tuple,
                 Err(_) => return encode_error("Failed to decode arguments tuple".to_string()),
             };
@@ -93,8 +93,8 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
     let expanded = quote! {
         #[no_mangle]
         pub fn #decoded_fn_name(__ptr: *const u8, __len: usize) -> *const u8 {
-            fn encode_result<T: codec::Encode>(result: T) -> *const u8 {
-                let encoded = <T as codec::Encode>::encode(&result);
+            fn encode_result<T: ::vrs_core_sdk::codec::Encode>(result: T) -> *const u8 {
+                let encoded = <T as ::vrs_core_sdk::codec::Encode>::encode(&result);
                 let len = encoded.len() as u32;
                 let mut output = Vec::with_capacity(4 + len as usize);
                 output.extend_from_slice(&len.to_ne_bytes());
@@ -114,7 +114,7 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
             // Call the function based on whether it has parameters or not
             #function_call
 
-            let encoded = <#output_type as codec::Encode>::encode(&result);
+            let encoded = <#output_type as ::vrs_core_sdk::codec::Encode>::encode(&result);
             let wrapped_result: Result<Vec<u8>, String> = Ok(encoded);
             encode_result(wrapped_result)
         }

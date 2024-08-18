@@ -1,10 +1,12 @@
 use std::default;
 
 use t::{D, E};
-use vrs_core_sdk::{get, init, post, storage};
+use vrs_core_macros::{get, init, post};
+use vrs_core_sdk::storage;
 
 pub mod t {
-    use codec::{Decode, Encode};
+    // use vrs_core_sdk::codec::{Decode, Encode};
+    use parity_scale_codec::{Decode, Encode};
 
     #[derive(Debug, Decode)]
     pub struct E {
@@ -48,11 +50,13 @@ pub fn cc(a: String, b: String) -> Result<String, String> {
 }
 #[get]
 pub fn should_not_call_put() -> Result<(), String> {
-    storage::put(b"1", b"2").map_err(|e| e.to_string())
+    let vec = vec![0u8; 65536 * 4];
+    storage::put(b"aaaaaaaaaaaaaaaaaaaaa", &vec).map_err(|e| e.to_string())
 }
 #[post]
 pub fn should_not_call_put() -> Result<(), String> {
-    storage::put(b"1", b"2").map_err(|e| e.to_string())
+    let vec = vec![0u8; 65536 * 4];
+    storage::put(b"bbbbbbbbbbbbbbbbbbbbb", &vec).map_err(|e| e.to_string())
 }
 #[post] //i1o1
 pub fn i1o1(a: String) -> String {

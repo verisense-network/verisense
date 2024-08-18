@@ -228,6 +228,7 @@ impl pallet_sudo::Config for Runtime {
 
 impl pallet_nucleus::Config for Runtime {
     type NucleusId = NucleusId;
+    type PeerId = PeerId;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_nucleus::weights::SubstrateWeight<Runtime>;
 }
@@ -476,6 +477,24 @@ impl_runtime_apis! {
         }
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl vrs_runtime_api::NucleusApi<Block> for Runtime {
+        fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<NucleusWasmInfo> {
+            if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
+                nucleus_id,
+                to,
+                hash,
+            }) = uxt.function {
+                Some(NucleusWasmInfo {
+                    nucleus_id,
+                    wasm_hash: hash,
+                    wasm_location: to,
+                })
+            } else {
+                None
+            }
         }
     }
 

@@ -7,8 +7,8 @@ edition.workspace = true
 
 [features]
 default = ["std"]
-std = ["vrs-primitives/std"]
-no-std = ["vrs-primitives/no-std"]
+std = ["vrs-primitives/std", "codec/std"]
+# no-std = ["vrs-primitives/no-std"]
 
 [dependencies]
 vrs-primitives = { path = "../../primitives", default-features = false }
@@ -19,6 +19,6 @@ tokio = { version = "1", features = [
     "io-util",
     "time",
 ] }
-vrs-core-macros = { path = "../core-macros" }
+# vrs-core-macros = { path = "../core-macros" }
 anyhow = { version = "1", default-features = false }
-codec = { workspace = true, default-features = false }
+codec = { workspace = true, features = ["derive"], default-features = false }

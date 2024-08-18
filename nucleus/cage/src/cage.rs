@@ -13,13 +13,14 @@ use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver};
 use vrs_metadata::{
-    codegen, config::SubstrateConfig, events, metadata, storage, Metadata as RuntimeMetadata,
+    codegen, codegen::runtime_types::pallet_nucleus::pallet::NucleusEquation,
+    config::SubstrateConfig, events, metadata, storage, Metadata as RuntimeMetadata,
     METADATA_BYTES,
 };
-use vrs_primitives::{AccountId, Hash, NucleusEquation, NucleusId};
+use vrs_primitives::{AccountId, Hash, NucleusId};
 
-pub struct CageParameters<B, C, BN> {
-    pub rx: Receiver<(NucleusId, Gluon)>,
+pub struct CageParams<B, C, BN> {
+    pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
     pub client: Arc<C>,
     pub controller: AccountId,
     pub nucleus_home_dir: std::path::PathBuf,
@@ -102,7 +103,7 @@ impl NucleusCage {
     }
 }
 
-pub fn start_nucleus_cage<B, C, BN>(params: CageParameters<B, C, BN>) -> impl Future<Output = ()>
+pub fn start_nucleus_cage<B, C, BN>(params: CageParams<B, C, BN>) -> impl Future<Output = ()>
 where
     B: sp_runtime::traits::Block,
     BN: Backend<B>,
@@ -114,8 +115,8 @@ where
         + 'static,
     C::Api: Metadata<B>,
 {
-    let CageParameters {
-        mut rx,
+    let CageParams {
+        mut nucleus_rpc_rx,
         client,
         controller,
         nucleus_home_dir,
@@ -155,7 +156,7 @@ where
                         }
                     }
                 },
-                req = rx.recv() => {
+                req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
                     if let Some(nucleus) = nuclei.get_mut(&module) {
                         nucleus.forward(gluon);
@@ -203,7 +204,7 @@ where
     let instances = events
         .find::<codegen::nucleus::events::InstanceRegistered>()
         .filter_map(|ev| {
-            let id = ev.ok()?.nucleus_id.clone();
+            let id = ev.ok()?.id.clone();
             let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Nuclei", id.clone());
             runtime_storage
                 .storage(hash, &storage_key)

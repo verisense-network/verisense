@@ -13,11 +13,26 @@ pub use weights::*;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::pallet_prelude::*;
+    use codec::{Decode, Encode};
+    use frame_support::{dispatch::GetDispatchInfo, pallet_prelude::*};
     use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::{Hash, MaybeDisplay};
-    use sp_runtime::Vec;
-    use vrs_primitives::NucleusEquation;
+    use sp_core::OpaquePeerId;
+    use sp_std::prelude::*;
+
+    use sp_runtime::traits::{Dispatchable, Hash, MaybeDisplay};
+
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    pub struct NucleusEquation<AccountId, Hash, PeerId> {
+        pub name: Vec<u8>,
+        pub manager: AccountId,
+        pub wasm_hash: Hash,
+        pub wasm_version: u32,
+        pub wasm_location: Option<PeerId>,
+        pub energy: u128,
+        pub current_event: u64,
+        pub root_state: Hash,
+        pub capacity: u8,
+    }
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -33,8 +48,9 @@ pub mod pallet {
             + MaybeSerializeDeserialize
             + core::fmt::Debug
             + MaybeDisplay
-            + Ord
             + MaxEncodedLen;
+
+        type PeerId: Parameter + Member + MaybeSerializeDeserialize + core::fmt::Debug;
     }
 
     #[pallet::storage]
@@ -42,7 +58,7 @@ pub mod pallet {
     pub type Nuclei<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = NucleusEquation<T::AccountId, T::Hash>,
+        Value = NucleusEquation<T::AccountId, T::Hash, T::PeerId>,
         QueryKind = OptionQuery,
     >;
 
@@ -52,7 +68,7 @@ pub mod pallet {
     pub type Instances<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = Vec<T::AccountId>,
+        Value = Vec<(T::AccountId, T::PeerId)>,
         QueryKind = ValueQuery,
     >;
 
@@ -62,23 +78,30 @@ pub mod pallet {
         NucleusCreated {
             id: T::NucleusId,
             name: Vec<u8>,
-            account: T::AccountId,
-            wasm_url: Vec<u8>,
+            manager: T::AccountId,
             wasm_hash: T::Hash,
             wasm_version: u32,
             energy: u128,
             capacity: u8,
         },
+        NucleusUpgraded {
+            id: T::NucleusId,
+            wasm_hash: T::Hash,
+            wasm_version: u32,
+            wasm_location: T::PeerId,
+        },
         InstanceRegistered {
-            nucleus_id: T::NucleusId,
-            controller_account: T::AccountId,
+            id: T::NucleusId,
+            node_controller: T::AccountId,
+            node_id: T::PeerId,
         },
     }
 
     #[pallet::error]
     pub enum Error<T> {
-        NoneValue,
-        StorageOverflow,
+        NucleusIdAlreadyExists,
+        NucleusNotFound,
+        NotAuthorized,
     }
 
     #[pallet::call]
@@ -88,26 +111,26 @@ pub mod pallet {
         pub fn create_nucleus(
             origin: OriginFor<T>,
             name: Vec<u8>,
-            wasm_url: Vec<u8>,
             wasm_hash: T::Hash,
-            // TODO deduction from the author's account
             energy: Option<u128>,
             capacity: u8,
         ) -> DispatchResult {
-            let author = ensure_signed(origin)?;
+            let manager = ensure_signed(origin)?;
             ensure!(name.len() <= 80, "Name too long");
-            ensure!(wasm_url.len() <= 512, "Wasm URL too long");
-            let hash = T::Hashing::hash_of(&(author.clone(), name.clone(), wasm_url.clone()));
+            let hash = T::Hashing::hash_of(&(manager.clone(), name.clone(), wasm_hash.clone()));
             let id = <T::NucleusId>::decode(&mut &hash.as_ref()[..]).expect("qed;");
-            ensure!(!Nuclei::<T>::contains_key(&id), "Nucleus already exists");
+            ensure!(
+                !Nuclei::<T>::contains_key(&id),
+                Error::<T>::NucleusIdAlreadyExists
+            );
             Nuclei::<T>::insert(
                 &id,
                 NucleusEquation {
                     name: name.clone(),
-                    account: author.clone(),
-                    wasm_url: wasm_url.clone(),
+                    manager: manager.clone(),
                     wasm_hash,
                     wasm_version: 0,
+                    wasm_location: None,
                     energy: energy.unwrap_or_default(),
                     current_event: 0,
                     root_state: T::Hash::default(),
@@ -117,8 +140,7 @@ pub mod pallet {
             Self::deposit_event(Event::NucleusCreated {
                 id,
                 name,
-                account: author,
-                wasm_url,
+                manager,
                 wasm_hash,
                 wasm_version: 0,
                 energy: energy.unwrap_or_default(),
@@ -127,20 +149,49 @@ pub mod pallet {
             Ok(())
         }
 
-        // TODO just for testing
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::mock_register())]
-        pub fn mock_register(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult {
-            let controller_account = ensure_signed(origin)?;
-            Instances::<T>::mutate(&nucleus_id, |cages| {
-                // TODO
-                cages.push(controller_account.clone());
-            });
-            Self::deposit_event(Event::InstanceRegistered {
-                nucleus_id,
-                controller_account,
-            });
+        #[pallet::weight(T::WeightInfo::create_nucleus())]
+        pub fn upload_nucleus_wasm(
+            origin: OriginFor<T>,
+            nucleus_id: T::NucleusId,
+            to: T::PeerId,
+            hash: T::Hash,
+        ) -> DispatchResult {
+            let manager = ensure_signed(origin)?;
+            let id = nucleus_id.clone();
+            Nuclei::<T>::try_mutate_exists(&nucleus_id, |nucleus| -> DispatchResult {
+                let nucleus = nucleus.as_mut().ok_or(Error::<T>::NucleusNotFound)?;
+                ensure!(nucleus.manager == manager, Error::<T>::NotAuthorized);
+                if nucleus.wasm_hash != hash {
+                    nucleus.wasm_version += 1;
+                    nucleus.wasm_hash = hash;
+                }
+                nucleus.wasm_location = Some(to.clone());
+                Self::deposit_event(Event::NucleusUpgraded {
+                    id,
+                    wasm_hash: hash,
+                    wasm_version: nucleus.wasm_version,
+                    wasm_location: to,
+                });
+                Ok(())
+            })?;
             Ok(())
         }
+
+        // TODO just for testing
+        // #[pallet::call_index(2)]
+        // #[pallet::weight(T::WeightInfo::mock_register())]
+        // pub fn mock_register(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult {
+        //     let controller_account = ensure_signed(origin)?;
+        //     Instances::<T>::mutate(&nucleus_id, |cages| {
+        //         // TODO
+        //         cages.push(controller_account.clone());
+        //     });
+        //     Self::deposit_event(Event::InstanceRegistered {
+        //         nucleus_id,
+        //         controller_account,
+        //     });
+        //     Ok(())
+        // }
     }
 }

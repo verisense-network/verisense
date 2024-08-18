@@ -5,7 +5,6 @@ use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
 };
-use sp_std::vec::Vec;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -31,15 +30,11 @@ pub type Address = MultiAddress<AccountId, ()>;
 
 pub type NucleusId = AccountId32;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-pub struct NucleusEquation<AccountId, Hash> {
-    pub name: Vec<u8>,
-    pub account: AccountId,
-    pub wasm_url: Vec<u8>,
+pub type PeerId = sp_core::OpaquePeerId;
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
+pub struct NucleusWasmInfo {
+    pub nucleus_id: NucleusId,
     pub wasm_hash: Hash,
-    pub wasm_version: u32,
-    pub energy: u128,
-    pub current_event: u64,
-    pub root_state: Hash,
-    pub capacity: u8,
+    pub wasm_location: PeerId,
 }

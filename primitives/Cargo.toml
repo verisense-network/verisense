@@ -25,4 +25,3 @@ std = [
     "sp-std/std",
 ]
 default = ["std"]
-no-std = ["codec/std", "scale-info/std", "sp-core/std", "sp-std/std"]

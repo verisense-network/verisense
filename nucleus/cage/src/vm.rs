@@ -9,11 +9,16 @@ use thiserror::Error;
 use vrs_core_sdk::AccountId;
 use wasmtime::{Caller, Func, Memory, Trap, Val};
 use wasmtime::{Engine, ExternRef, ExternType, Instance, Module, Rooted, Store, WasmResults};
+
 pub struct Vm {
     space: Store<Context>,
     instance: Instance,
     __call_param_ptr: i32,
+    // __host_func_param_ptr: i32,
 }
+
+pub const MAX_PARAM_SIZE: usize = 65536;
+
 #[derive(Error, Debug, PartialEq)]
 pub enum WasmCallError {
     #[error("Endpoint not found")]
@@ -43,6 +48,7 @@ pub enum WasmCallError {
     #[error("Wasm internal error: {0}")]
     WasmInternalError(String),
 }
+
 impl WasmCallError {
     pub fn to_error_code(&self) -> u32 {
         match self {
@@ -68,16 +74,13 @@ impl Vm {
         };
         module.exports().for_each(|ty| match ty.ty() {
             ExternType::Func(func) => {
-                log::info!("export: {} {}", func.to_string(), ty.name());
+                log::info!("user wasm export: {} {}", func.to_string(), ty.name());
             }
             _ => {}
         });
         let mut store = Store::new(&engine, context);
         let injects = Context::inject_host_funcs(&mut store);
         let instance = Instance::new(&mut store, &module, &injects)?;
-        instance.exports(&mut store).for_each(|export| {
-            log::debug!("export1: {}", export.name());
-        });
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or(anyhow::anyhow!("no memory exported"))?;
@@ -97,6 +100,7 @@ impl Vm {
         self.space.data_mut().set_is_get_method(false);
         result
     }
+
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_is_get_method(false);
 
@@ -144,8 +148,6 @@ impl Vm {
         )
         .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
 
-        log::info!("results: {:?}", result);
-
         let result_ptr = result[0].i32().ok_or(WasmCallError::ResultPointerError)? as usize;
 
         // Read result length
@@ -165,8 +167,6 @@ impl Vm {
             .read(&mut self.space, result_ptr + 4, &mut result_data)
             .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
 
-        log::debug!("result {:?}", result_data);
-
         // Decode the result
         let result = <Result<Vec<u8>, String> as Decode>::decode(&mut result_data.as_slice())?
             .map_err(|e| WasmCallError::WasmInternalError(e))?;
@@ -174,12 +174,14 @@ impl Vm {
         Ok(result)
     }
 }
+
 fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
     let mut b = a.clone();
     let c = u32::from_ne_bytes([b[0], b[1], b[2], b[3]]);
     b.drain(0..4);
     (c, b)
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -275,7 +277,7 @@ mod tests {
         })
         .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-
+        println!("__call_ptr={}", vm.__call_param_ptr);
         let result = vm.call_get("should_not_call_put", vec![]).unwrap();
         let result = <Result<(), String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
         assert_eq!(

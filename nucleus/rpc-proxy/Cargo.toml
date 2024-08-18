@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-codec = { workspace = true, default-features = true }
+codec = { workspace = true }
 jsonrpsee = { features = ["server", "macros"], version = "0.23" }
 futures = { features = ["thread-pool"], version = "0.3.30" }
 serde_json = { version = "1.0" }
