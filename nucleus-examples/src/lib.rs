@@ -58,6 +58,16 @@ pub fn should_not_call_put() -> Result<(), String> {
     let vec = vec![0u8; 65536 * 4];
     storage::put(b"bbbbbbbbbbbbbbbbbbbbb", &vec).map_err(|e| e.to_string())
 }
+#[post]
+pub fn test_put_get() -> Result<String, String> {
+    storage::put(b"test", b"test_value").map_err(|e| e.to_string())?;
+    let res = storage::get(b"test").map_err(|e| e.to_string())?;
+    let s = String::from_utf8(res).unwrap();
+    if s != "test_value" {
+        return Err("test_value not equal".to_string());
+    }
+    Ok(s)
+}
 #[post] //i1o1
 pub fn i1o1(a: String) -> String {
     a

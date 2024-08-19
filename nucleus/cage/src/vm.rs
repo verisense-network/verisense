@@ -79,8 +79,8 @@ impl Vm {
             _ => {}
         });
         let mut store = Store::new(&engine, context);
-        let injects = Context::inject_host_funcs(&mut store);
-        let instance = Instance::new(&mut store, &module, &injects)?;
+        let linker = Context::inject_host_funcs(&engine);
+        let instance = linker.instantiate(&mut store, &module).unwrap();
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or(anyhow::anyhow!("no memory exported"))?;
@@ -280,6 +280,7 @@ mod tests {
         println!("__call_ptr={}", vm.__call_param_ptr);
         let result = vm.call_get("should_not_call_put", vec![]).unwrap();
         let result = <Result<(), String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
+        println!("{:?}", result);
         assert_eq!(
             result,
             Err("Operation not allowed in GET method".to_string())
@@ -314,6 +315,7 @@ mod tests {
         let result = vm.call_post("i1o0", b.encode()).unwrap();
         assert_eq!(result, a.encode());
         let result = vm.call_post("i1o1", b.encode()).unwrap();
+
         assert_eq!(result, b.encode());
     }
 
@@ -336,8 +338,8 @@ mod tests {
         })
         .unwrap();
         let mut store = Store::new(&engine, context);
-        let injects = Context::inject_host_funcs(&mut store);
-        let instance = Instance::new(&mut store, &module, &injects).unwrap();
+        let linker = Context::inject_host_funcs(&engine);
+        let instance = linker.instantiate(&mut store, &module).unwrap();
         let memory = instance
             .get_memory(&mut store, "memory")
             .expect("Failed to get memory");
@@ -402,8 +404,8 @@ mod tests {
         })
         .unwrap();
         let mut store = Store::new(&engine, context);
-        let injects = Context::inject_host_funcs(&mut store);
-        let instance = Instance::new(&mut store, &module, &injects).unwrap();
+        let linker = Context::inject_host_funcs(&engine);
+        let instance = linker.instantiate(&mut store, &module).unwrap();
         let memory = instance
             .get_memory(&mut store, "memory")
             .expect("Failed to get memory");
@@ -441,5 +443,27 @@ mod tests {
         log::info!("results: {:?}", result);
         let s = <Result<Vec<u8>, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
         assert_eq!(s, Err("Failed to decode arguments tuple".to_string()));
+    }
+    #[test]
+    pub fn test_put_get() {
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("2").into_boxed_path(),
+        })
+        .unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+        let result = vm.call_post("test_put_get", vec![]).unwrap();
+        let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
+            .unwrap()
+            .unwrap();
+        assert_eq!(s, "test_value".to_string());
     }
 }
