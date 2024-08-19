@@ -228,7 +228,7 @@ pub fn new_full<
                 pool: pool.clone(),
                 backend: backend.clone(),
                 deny_unsafe,
-                nucleus_req_relayer: tx.clone(),
+                nucleus_req_relayer: nucleus_rpc_tx.clone(),
             };
             crate::rpc::create_full(deps).map_err(Into::into)
         })

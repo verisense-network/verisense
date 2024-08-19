@@ -5,7 +5,13 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-codec = { workspace = true }
+codec = { workspace = true, default-features = true }
+sp-api = { workspace = true, default-features = true }
+sp-core = { workspace = true, default-features = true }
+sp-runtime = { workspace = true, default-features = true }
+sp-blockchain = { workspace = true, default-features = true }
+sc-transaction-pool-api = "35.0.0"
+
 jsonrpsee = { features = ["server", "macros"], version = "0.23" }
 futures = { features = ["thread-pool"], version = "0.3.30" }
 serde_json = { version = "1.0" }

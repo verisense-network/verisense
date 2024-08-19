@@ -146,16 +146,16 @@ where
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
-                block = registry_monitor.next() => {
-                    let hash = block.expect("block importing error").hash;
-                    // TODO handle deregister as well
-                    if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
-                        for (id, config) in instances {
-                            let db_path = nucleus_home_dir.join(id.to_string());
-                            start_nucleus::<B>(id, config, db_path, &mut nuclei).expect("fail to start nucleus");
-                        }
-                    }
-                },
+                // block = registry_monitor.next() => {
+                //     let hash = block.expect("block importing error").hash;
+                //     // TODO handle deregister as well
+                //     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
+                //         for (id, config) in instances {
+                //             let db_path = nucleus_home_dir.join(id.to_string());
+                //             start_nucleus::<B>(id, config, db_path, &mut nuclei).expect("fail to start nucleus");
+                //         }
+                //     }
+                // },
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
                     if let Some(nucleus) = nuclei.get_mut(&module) {
@@ -185,41 +185,41 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
     }
 }
 
-fn map_to_nucleus<B, D, C>(
-    runtime_storage: Arc<C>,
-    hash: B::Hash,
-    metadata: RuntimeMetadata,
-) -> Option<Vec<(NucleusId, NucleusEquation<AccountId, B::Hash>)>>
-where
-    B: sp_runtime::traits::Block,
-    D: Backend<B>,
-    C: BlockBackend<B> + StorageProvider<B, D> + BlockchainEvents<B> + 'static,
-{
-    let storage_key = storage_key(b"System", b"Events");
-    let events = runtime_storage
-        .storage(hash, &storage_key)
-        .ok()
-        .flatten()
-        .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
-    let instances = events
-        .find::<codegen::nucleus::events::InstanceRegistered>()
-        .filter_map(|ev| {
-            let id = ev.ok()?.id.clone();
-            let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Nuclei", id.clone());
-            runtime_storage
-                .storage(hash, &storage_key)
-                .ok()
-                .flatten()
-                .map(|v| {
-                    let mut buf = v.0.as_ref();
-                    let decoded = <NucleusEquation<AccountId, B::Hash>>::decode(&mut buf).ok()?;
-                    Some((NucleusId::new(id.0), decoded))
-                })
-                .flatten()
-        })
-        .collect::<Vec<_>>();
-    Some(instances)
-}
+// fn map_to_nucleus<B, D, C>(
+//     runtime_storage: Arc<C>,
+//     hash: B::Hash,
+//     metadata: RuntimeMetadata,
+// ) -> Option<Vec<(NucleusId, NucleusEquation<AccountId, B::Hash>)>>
+// where
+//     B: sp_runtime::traits::Block,
+//     D: Backend<B>,
+//     C: BlockBackend<B> + StorageProvider<B, D> + BlockchainEvents<B> + 'static,
+// {
+//     let storage_key = storage_key(b"System", b"Events");
+//     let events = runtime_storage
+//         .storage(hash, &storage_key)
+//         .ok()
+//         .flatten()
+//         .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
+//     let instances = events
+//         .find::<codegen::nucleus::events::InstanceRegistered>()
+//         .filter_map(|ev| {
+//             let id = ev.ok()?.id.clone();
+//             let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Nuclei", id.clone());
+//             runtime_storage
+//                 .storage(hash, &storage_key)
+//                 .ok()
+//                 .flatten()
+//                 .map(|v| {
+//                     let mut buf = v.0.as_ref();
+//                     let decoded = <NucleusEquation<AccountId, B::Hash>>::decode(&mut buf).ok()?;
+//                     Some((NucleusId::new(id.0), decoded))
+//                 })
+//                 .flatten()
+//         })
+//         .collect::<Vec<_>>();
+//     Some(instances)
+// }
 
 fn blake2_128concat_storage_key<K: codec::Encode>(
     module: &[u8],
@@ -246,54 +246,54 @@ fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
 }
 
 // TODO
-fn start_nucleus<B>(
-    id: NucleusId,
-    equation: NucleusEquation<AccountId, B::Hash>,
-    db_path: std::path::PathBuf,
-    nuclei: &mut HashMap<NucleusId, NucleusCage>,
-) -> anyhow::Result<()>
-where
-    B: sp_runtime::traits::Block,
-{
-    let NucleusEquation {
-        name,
-        account,
-        wasm_url,
-        wasm_hash,
-        wasm_version,
-        energy,
-        current_event,
-        root_state,
-        capacity,
-    } = equation;
-    let name = String::from_utf8(name)?;
-    let url = String::from_utf8(wasm_url)?;
-    let wasm = WasmInfo {
-        account,
-        name,
-        version: 0,
-        code: WasmCodeRef::File(url),
-    };
-    let config = ContextConfig {
-        db_path: db_path.into_boxed_path(),
-    };
-    // TODO
-    let context = Context::init(config)?;
-    let db = context.db.clone();
-    let (tx, rx) = std::sync::mpsc::channel();
-    let mut nucleus = Nucleus::new(rx, context, wasm);
-    std::thread::spawn(move || {
-        nucleus.run();
-    });
-    nuclei.insert(
-        id.clone(),
-        NucleusCage {
-            nucleus_id: id,
-            tunnel: tx,
-            pending_requests: vec![],
-            event_id: 0,
-            db,
-        },
-    );
-    Ok(())
-}
+// fn start_nucleus<B>(
+//     id: NucleusId,
+//     equation: NucleusEquation<AccountId, B::Hash>,
+//     db_path: std::path::PathBuf,
+//     nuclei: &mut HashMap<NucleusId, NucleusCage>,
+// ) -> anyhow::Result<()>
+// where
+//     B: sp_runtime::traits::Block,
+// {
+//     let NucleusEquation {
+//         name,
+//         account,
+//         wasm_url,
+//         wasm_hash,
+//         wasm_version,
+//         energy,
+//         current_event,
+//         root_state,
+//         capacity,
+//     } = equation;
+//     let name = String::from_utf8(name)?;
+//     let url = String::from_utf8(wasm_url)?;
+//     let wasm = WasmInfo {
+//         account,
+//         name,
+//         version: 0,
+//         code: WasmCodeRef::File(url),
+//     };
+//     let config = ContextConfig {
+//         db_path: db_path.into_boxed_path(),
+//     };
+//     // TODO
+//     let context = Context::init(config)?;
+//     let db = context.db.clone();
+//     let (tx, rx) = std::sync::mpsc::channel();
+//     let mut nucleus = Nucleus::new(rx, context, wasm);
+//     std::thread::spawn(move || {
+//         nucleus.run();
+//     });
+//     nuclei.insert(
+//         id.clone(),
+//         NucleusCage {
+//             nucleus_id: id,
+//             tunnel: tx,
+//             pending_requests: vec![],
+//             event_id: 0,
+//             db,
+//         },
+//     );
+//     Ok(())
+// }

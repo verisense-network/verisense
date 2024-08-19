@@ -38,7 +38,7 @@ pub fn create_full<C, P, B>(
     deps: FullDeps<C, P, B>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
-    P: TransactionPool + 'static,
+    P: TransactionPool<Block = Block, Hash = <Block as sp_runtime::traits::Block>::Hash> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
     B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
     C: ProvideRuntimeApi<Block>,
@@ -70,9 +70,9 @@ where
         nucleus_req_relayer,
     } = deps;
 
-    module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-    module.merge(TransactionPayment::new(client).into_rpc())?;
-    module.merge(NucleusEntry::new(nucleus_req_relayer).into_rpc())?;
+    module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+    module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
+    module.merge(NucleusEntry::new(nucleus_req_relayer, client, pool).into_rpc())?;
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed
