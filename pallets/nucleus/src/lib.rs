@@ -14,20 +14,18 @@ pub use weights::*;
 pub mod pallet {
     use super::*;
     use codec::{Decode, Encode};
-    use frame_support::{dispatch::GetDispatchInfo, pallet_prelude::*};
+    use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_core::OpaquePeerId;
+    use sp_runtime::traits::{Hash, MaybeDisplay};
     use sp_std::prelude::*;
 
-    use sp_runtime::traits::{Dispatchable, Hash, MaybeDisplay};
-
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct NucleusEquation<AccountId, Hash, PeerId> {
+    pub struct NucleusEquation<AccountId, Hash, NodeAddress> {
         pub name: Vec<u8>,
         pub manager: AccountId,
         pub wasm_hash: Hash,
         pub wasm_version: u32,
-        pub wasm_location: Option<PeerId>,
+        pub wasm_location: Option<NodeAddress>,
         pub energy: u128,
         pub current_event: u64,
         pub root_state: Hash,
@@ -50,7 +48,7 @@ pub mod pallet {
             + MaybeDisplay
             + MaxEncodedLen;
 
-        type PeerId: Parameter + Member + MaybeSerializeDeserialize + core::fmt::Debug;
+        type NodeAddress: Parameter + Member + core::fmt::Debug;
     }
 
     #[pallet::storage]
@@ -58,7 +56,7 @@ pub mod pallet {
     pub type Nuclei<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = NucleusEquation<T::AccountId, T::Hash, T::PeerId>,
+        Value = NucleusEquation<T::AccountId, T::Hash, T::NodeAddress>,
         QueryKind = OptionQuery,
     >;
 
@@ -68,7 +66,7 @@ pub mod pallet {
     pub type Instances<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = Vec<(T::AccountId, T::PeerId)>,
+        Value = Vec<(T::AccountId, T::NodeAddress)>,
         QueryKind = ValueQuery,
     >;
 
@@ -88,12 +86,12 @@ pub mod pallet {
             id: T::NucleusId,
             wasm_hash: T::Hash,
             wasm_version: u32,
-            wasm_location: T::PeerId,
+            wasm_location: T::NodeAddress,
         },
         InstanceRegistered {
             id: T::NucleusId,
             node_controller: T::AccountId,
-            node_id: T::PeerId,
+            node_id: T::NodeAddress,
         },
     }
 
@@ -154,7 +152,7 @@ pub mod pallet {
         pub fn upload_nucleus_wasm(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
-            to: T::PeerId,
+            to: T::NodeAddress,
             hash: T::Hash,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;

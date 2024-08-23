@@ -50,6 +50,7 @@ pallet-transaction-payment-rpc = { workspace = true, default-features = true }
 
 vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
+vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api" }
 vrs-nucleus-rpc-proxy = { path = "../nucleus/rpc-proxy" }
 vrs-nucleus-cage = { path = "../nucleus/cage" }
 tokio = { version = "1", features = ["full"] }

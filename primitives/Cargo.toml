@@ -5,6 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+# serde = { version = "1", features = ["derive"] }
 codec = { features = ["derive"], workspace = true, default-features = false }
 scale-info = { features = [
     "derive",
@@ -15,6 +16,7 @@ sp-runtime = { features = [
 ], workspace = true, default-features = false }
 sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
+sc-network-types = { version = "0.12.1", optional = true }
 
 [features]
 std = [
@@ -23,5 +25,6 @@ std = [
     "sp-runtime/std",
     "sp-core/std",
     "sp-std/std",
+    "sc-network-types",
 ]
 default = ["std"]

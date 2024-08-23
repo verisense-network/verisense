@@ -5,9 +5,10 @@
 
 #![warn(missing_docs)]
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use jsonrpsee::RpcModule;
+use sc_network::config::MultiaddrWithPeerId;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
@@ -27,14 +28,17 @@ pub struct FullDeps<C, P, B> {
     pub pool: Arc<P>,
     /// blocks backend
     pub backend: Arc<B>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
     /// Nucleus requests relayer
     pub nucleus_req_relayer: Sender<(NucleusId, Gluon)>,
+    /// listening p2p addresses
+    pub exposed_p2p_addresses: Vec<MultiaddrWithPeerId>,
+    /// nucleus dir
+    pub nucleus_home_dir: PathBuf,
 }
 
 /// Instantiate all full RPC extensions.
 pub fn create_full<C, P, B>(
+    deny_unsafe: DenyUnsafe,
     deps: FullDeps<C, P, B>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
@@ -44,10 +48,10 @@ where
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: Send + Sync + 'static,
-    C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
-    C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-    C::Api: BlockBuilder<Block>,
-    // TODO C::Api satisfies extra RPCs
+    C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce> + 'static,
+    C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> + 'static,
+    C::Api: vrs_nucleus_runtime_api::NucleusApi<Block>,
+    C::Api: BlockBuilder<Block> + 'static,
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -65,14 +69,24 @@ where
     let FullDeps {
         client,
         pool,
-        backend,
-        deny_unsafe,
+        backend: _backend,
         nucleus_req_relayer,
+        exposed_p2p_addresses,
+        nucleus_home_dir,
     } = deps;
 
     module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-    module.merge(NucleusEntry::new(nucleus_req_relayer, client, pool).into_rpc())?;
+    module.merge(
+        NucleusEntry::new(
+            nucleus_req_relayer,
+            client,
+            pool,
+            exposed_p2p_addresses,
+            nucleus_home_dir,
+        )
+        .into_rpc(),
+    )?;
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed

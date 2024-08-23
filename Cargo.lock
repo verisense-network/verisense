@@ -10874,6 +10874,7 @@ dependencies = [
  "tokio",
  "vrs-nucleus-cage",
  "vrs-nucleus-rpc-proxy",
+ "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "vrs-runtime",
 ]
@@ -10957,6 +10958,7 @@ dependencies = [
  "jsonrpsee 0.23.2",
  "log",
  "parity-scale-codec",
+ "sc-network",
  "sc-transaction-pool-api",
  "serde_json",
  "sp-api",
@@ -10965,6 +10967,18 @@ dependencies = [
  "sp-runtime",
  "tokio",
  "vrs-nucleus-cage",
+ "vrs-nucleus-runtime-api",
+ "vrs-primitives",
+]
+
+[[package]]
+name = "vrs-nucleus-runtime-api"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-runtime",
  "vrs-primitives",
 ]
 
@@ -10973,6 +10987,7 @@ name = "vrs-primitives"
 version = "0.0.1"
 dependencies = [
  "parity-scale-codec",
+ "sc-network-types",
  "scale-info",
  "sp-core",
  "sp-runtime",
@@ -11012,16 +11027,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
- "vrs-primitives",
- "vrs-runtime-api",
-]
-
-[[package]]
-name = "vrs-runtime-api"
-version = "0.0.1"
-dependencies = [
- "sp-api",
- "sp-runtime",
+ "vrs-nucleus-runtime-api",
  "vrs-primitives",
 ]
 
