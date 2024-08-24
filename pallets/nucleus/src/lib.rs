@@ -20,12 +20,12 @@ pub mod pallet {
     use sp_std::prelude::*;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct NucleusEquation<AccountId, Hash, NodeAddress> {
+    pub struct NucleusEquation<AccountId, Hash, NodeId> {
         pub name: Vec<u8>,
         pub manager: AccountId,
         pub wasm_hash: Hash,
         pub wasm_version: u32,
-        pub wasm_location: Option<NodeAddress>,
+        pub wasm_location: Option<NodeId>,
         pub energy: u128,
         pub current_event: u64,
         pub root_state: Hash,
@@ -48,7 +48,7 @@ pub mod pallet {
             + MaybeDisplay
             + MaxEncodedLen;
 
-        type NodeAddress: Parameter + Member + core::fmt::Debug;
+        type NodeId: Parameter + Member + core::fmt::Debug;
     }
 
     #[pallet::storage]
@@ -56,7 +56,7 @@ pub mod pallet {
     pub type Nuclei<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = NucleusEquation<T::AccountId, T::Hash, T::NodeAddress>,
+        Value = NucleusEquation<T::AccountId, T::Hash, T::NodeId>,
         QueryKind = OptionQuery,
     >;
 
@@ -66,7 +66,7 @@ pub mod pallet {
     pub type Instances<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = Vec<(T::AccountId, T::NodeAddress)>,
+        Value = Vec<(T::AccountId, T::NodeId)>,
         QueryKind = ValueQuery,
     >;
 
@@ -86,12 +86,13 @@ pub mod pallet {
             id: T::NucleusId,
             wasm_hash: T::Hash,
             wasm_version: u32,
-            wasm_location: T::NodeAddress,
+            wasm_location: T::NodeId,
         },
+        // TODO
         InstanceRegistered {
             id: T::NucleusId,
             node_controller: T::AccountId,
-            node_id: T::NodeAddress,
+            node_id: T::NodeId,
         },
     }
 
@@ -152,7 +153,7 @@ pub mod pallet {
         pub fn upload_nucleus_wasm(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
-            to: T::NodeAddress,
+            to: T::NodeId,
             hash: T::Hash,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;

@@ -227,7 +227,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl pallet_nucleus::Config for Runtime {
-    type NodeAddress = NodeAddress;
+    type NodeId = NodeId;
     type NucleusId = NucleusId;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_nucleus::weights::SubstrateWeight<Runtime>;
@@ -490,7 +490,7 @@ impl_runtime_apis! {
                 Some(vrs_nucleus_runtime_api::NucleusWasmInfo {
                     nucleus_id,
                     wasm_hash: hash,
-                    node_addr: to,
+                    node_id: to,
                 })
             } else {
                 None

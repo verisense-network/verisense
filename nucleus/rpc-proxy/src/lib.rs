@@ -3,7 +3,7 @@ use codec::Decode;
 use constants::*;
 use futures::prelude::*;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
-use sc_network::config::MultiaddrWithPeerId;
+use sc_network_types::PeerId;
 use sc_transaction_pool_api::{BlockHash, TransactionPool, TransactionSource, TransactionStatus};
 use sp_api::{ApiExt, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
@@ -33,7 +33,7 @@ pub struct NucleusEntry<P, C> {
     sender: Sender<(NucleusId, Gluon)>,
     client: Arc<C>,
     pool: Arc<P>,
-    exposed_addresses: Vec<MultiaddrWithPeerId>,
+    node_id: PeerId,
     nucleus_home_dir: PathBuf,
 }
 
@@ -42,14 +42,14 @@ impl<P, C> NucleusEntry<P, C> {
         sender: Sender<(NucleusId, Gluon)>,
         client: Arc<C>,
         pool: Arc<P>,
-        exposed_addresses: Vec<MultiaddrWithPeerId>,
+        node_id: PeerId,
         nucleus_home_dir: PathBuf,
     ) -> Self {
         Self {
             sender,
             client,
             pool,
-            exposed_addresses,
+            node_id,
             nucleus_home_dir,
         }
     }
@@ -141,16 +141,15 @@ where
                 NUCLEUS_UPGRADE_TX_ERR_MSG,
                 None::<()>,
             ))?;
-        String::from_utf8(wasm_info.node_addr.0)
+        PeerId::from_bytes(&wasm_info.node_id.0)
             .ok()
-            .map(|s: String| -> Option<MultiaddrWithPeerId> { s.parse().ok() })
-            .flatten()
-            .filter(|addr| self.exposed_addresses.contains(addr))
+            .filter(|id| self.node_id == *id)
             .ok_or(ErrorObjectOwned::owned(
                 INVALID_NODE_ADDRESS_CODE,
                 INVALID_NODE_ADDRESS_MSG,
                 None::<()>,
             ))?;
+
         let mut submit = self
             .pool
             .submit_and_watch(best_block_hash, TransactionSource::External, xt)
@@ -173,6 +172,7 @@ where
                         .nucleus_home_dir
                         .as_path()
                         .join(wasm_info.nucleus_id.to_string());
+                    // TODO rename the previous wasm file
                     std::fs::create_dir_all(&dir)
                         .and_then(|_| std::fs::File::create(dir.join("code.wasm")))
                         .and_then(|mut f| f.write_all(&wasm.0))

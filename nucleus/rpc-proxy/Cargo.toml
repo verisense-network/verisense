@@ -12,6 +12,7 @@ sp-runtime = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
 sc-transaction-pool-api = "35.0.0"
 sc-network = "0.42.0"
+sc-network-types = "0.12.1"
 
 jsonrpsee = { features = ["server", "macros"], version = "0.23" }
 futures = { features = ["thread-pool"], version = "0.3.30" }

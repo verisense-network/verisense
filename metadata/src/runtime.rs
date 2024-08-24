@@ -4158,7 +4158,7 @@ pub mod codegen {
                 pub mod upload_nucleus_wasm {
                     use super::runtime_types;
                     pub type NucleusId = ::subxt::ext::subxt_core::utils::AccountId32;
-                    pub type To = runtime_types::vrs_primitives::NodeAddress;
+                    pub type To = runtime_types::sp_core::OpaquePeerId;
                     pub type Hash = ::subxt::ext::subxt_core::utils::H256;
                 }
                 impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for UploadNucleusWasm {
@@ -4275,7 +4275,7 @@ pub mod codegen {
                 pub type Id = ::subxt::ext::subxt_core::utils::AccountId32;
                 pub type WasmHash = ::subxt::ext::subxt_core::utils::H256;
                 pub type WasmVersion = ::core::primitive::u32;
-                pub type WasmLocation = runtime_types::vrs_primitives::NodeAddress;
+                pub type WasmLocation = runtime_types::sp_core::OpaquePeerId;
             }
             impl ::subxt::ext::subxt_core::events::StaticEvent for NucleusUpgraded {
                 const EVENT: &'static str = "NucleusUpgraded";
@@ -4300,7 +4300,7 @@ pub mod codegen {
                 use super::runtime_types;
                 pub type Id = ::subxt::ext::subxt_core::utils::AccountId32;
                 pub type NodeController = ::subxt::ext::subxt_core::utils::AccountId32;
-                pub type NodeId = runtime_types::vrs_primitives::NodeAddress;
+                pub type NodeId = runtime_types::sp_core::OpaquePeerId;
             }
             impl ::subxt::ext::subxt_core::events::StaticEvent for InstanceRegistered {
                 const EVENT: &'static str = "InstanceRegistered";
@@ -4316,7 +4316,7 @@ pub mod codegen {
                     pub type Nuclei = runtime_types::pallet_nucleus::pallet::NucleusEquation<
                         ::subxt::ext::subxt_core::utils::AccountId32,
                         ::subxt::ext::subxt_core::utils::H256,
-                        runtime_types::vrs_primitives::NodeAddress,
+                        runtime_types::sp_core::OpaquePeerId,
                     >;
                     pub type Param0 = ::subxt::ext::subxt_core::utils::AccountId32;
                 }
@@ -4324,7 +4324,7 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type Instances = ::subxt::ext::subxt_core::alloc::vec::Vec<(
                         ::subxt::ext::subxt_core::utils::AccountId32,
-                        runtime_types::vrs_primitives::NodeAddress,
+                        runtime_types::sp_core::OpaquePeerId,
                     )>;
                     pub type Param0 = ::subxt::ext::subxt_core::utils::AccountId32;
                 }
@@ -5623,7 +5623,7 @@ pub mod codegen {
                     #[codec(index = 1)]
                     upload_nucleus_wasm {
                         nucleus_id: ::subxt::ext::subxt_core::utils::AccountId32,
-                        to: runtime_types::vrs_primitives::NodeAddress,
+                        to: runtime_types::sp_core::OpaquePeerId,
                         hash: ::subxt::ext::subxt_core::utils::H256,
                     },
                 }
@@ -5679,13 +5679,13 @@ pub mod codegen {
                         id: ::subxt::ext::subxt_core::utils::AccountId32,
                         wasm_hash: ::subxt::ext::subxt_core::utils::H256,
                         wasm_version: ::core::primitive::u32,
-                        wasm_location: runtime_types::vrs_primitives::NodeAddress,
+                        wasm_location: runtime_types::sp_core::OpaquePeerId,
                     },
                     #[codec(index = 2)]
                     InstanceRegistered {
                         id: ::subxt::ext::subxt_core::utils::AccountId32,
                         node_controller: ::subxt::ext::subxt_core::utils::AccountId32,
-                        node_id: runtime_types::vrs_primitives::NodeAddress,
+                        node_id: runtime_types::sp_core::OpaquePeerId,
                     },
                 }
                 #[derive(
@@ -6061,6 +6061,19 @@ pub mod codegen {
         }
         pub mod sp_core {
             use super::runtime_types;
+            #[derive(
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
+            pub struct OpaquePeerId(
+                pub ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+            );
             #[derive(
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
                 :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
@@ -6852,22 +6865,6 @@ pub mod codegen {
                 pub read: ::core::primitive::u64,
                 pub write: ::core::primitive::u64,
             }
-        }
-        pub mod vrs_primitives {
-            use super::runtime_types;
-            #[derive(
-                :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
-                :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
-                :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
-            pub struct NodeAddress(
-                pub ::subxt::ext::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-            );
         }
         pub mod vrs_runtime {
             use super::runtime_types;

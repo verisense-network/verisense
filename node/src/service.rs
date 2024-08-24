@@ -148,24 +148,15 @@ pub fn new_full<
         <Block as sp_runtime::traits::Block>::Hash,
         N,
     >::new(&config.network);
-    let exposed_p2p_addresses = config
+    let node_id = config
         .network
-        .listen_addresses
-        .iter()
-        .map(|addr| sc_network::config::MultiaddrWithPeerId {
-            multiaddr: addr.clone(),
-            peer_id: config
-                .network
-                .node_key
-                .clone()
-                .into_keypair()
-                .unwrap()
-                .public()
-                .to_peer_id(),
-        })
-        .collect::<Vec<_>>();
+        .node_key
+        .clone()
+        .into_keypair()
+        .unwrap()
+        .public()
+        .to_peer_id();
     let metrics = N::register_notification_metrics(config.prometheus_registry());
-
     let peer_store_handle = net_config.peer_store_handle();
     let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
         &client
@@ -232,12 +223,7 @@ pub fn new_full<
     let prometheus_registry = config.prometheus_registry().cloned();
     // TODO config?
     let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
-    let nucleus_home_dir = config
-        .base_path
-        .path()
-        .join("chains")
-        .join(config.chain_spec.id())
-        .join("nucleus");
+    let nucleus_home_dir = config.data_path.as_path().join("nucleus");
 
     let rpc_extensions_builder = {
         let client = client.clone();
@@ -250,7 +236,7 @@ pub fn new_full<
                 pool: transaction_pool.clone(),
                 backend: backend.clone(),
                 nucleus_req_relayer: nucleus_rpc_tx.clone(),
-                exposed_p2p_addresses: exposed_p2p_addresses.clone(),
+                node_id,
                 nucleus_home_dir: nucleus_home_dir.clone(),
             };
             crate::rpc::create_full(deny_unsafe, deps).map_err(Into::into)

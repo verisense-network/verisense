@@ -1,10 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate alloc;
-
-use alloc::vec::Vec;
-use codec::{Decode, Encode};
-use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
@@ -34,7 +29,4 @@ pub type Address = MultiAddress<AccountId, ()>;
 
 pub type NucleusId = AccountId32;
 
-#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, TypeInfo)]
-pub struct NodeAddress(pub Vec<u8>);
-
-// impl MaybeSerializeDeserialize for NodeAddress {}
+pub type NodeId = sp_core::OpaquePeerId;

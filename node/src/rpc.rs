@@ -8,7 +8,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use jsonrpsee::RpcModule;
-use sc_network::config::MultiaddrWithPeerId;
+use sc_network_types::PeerId;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
@@ -30,8 +30,8 @@ pub struct FullDeps<C, P, B> {
     pub backend: Arc<B>,
     /// Nucleus requests relayer
     pub nucleus_req_relayer: Sender<(NucleusId, Gluon)>,
-    /// listening p2p addresses
-    pub exposed_p2p_addresses: Vec<MultiaddrWithPeerId>,
+    /// PeerId of the node
+    pub node_id: PeerId,
     /// nucleus dir
     pub nucleus_home_dir: PathBuf,
 }
@@ -71,21 +71,14 @@ where
         pool,
         backend: _backend,
         nucleus_req_relayer,
-        exposed_p2p_addresses,
+        node_id,
         nucleus_home_dir,
     } = deps;
 
     module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
     module.merge(
-        NucleusEntry::new(
-            nucleus_req_relayer,
-            client,
-            pool,
-            exposed_p2p_addresses,
-            nucleus_home_dir,
-        )
-        .into_rpc(),
+        NucleusEntry::new(nucleus_req_relayer, client, pool, node_id, nucleus_home_dir).into_rpc(),
     )?;
 
     // Extend this RPC with a custom API by using the following syntax.
