@@ -13,11 +13,11 @@ use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver};
 use vrs_metadata::{
-    codegen, codegen::runtime_types::pallet_nucleus::pallet::NucleusEquation,
-    config::SubstrateConfig, events, metadata, storage, Metadata as RuntimeMetadata,
+    codegen, config::SubstrateConfig, events, metadata, storage, Metadata as RuntimeMetadata,
     METADATA_BYTES,
 };
-use vrs_primitives::{AccountId, Hash, NucleusId};
+use vrs_nucleus_runtime_api::NucleusApi;
+use vrs_primitives::{AccountId, Hash, NodeId, NucleusId, NucleusInfo};
 
 pub struct CageParams<B, C, BN> {
     pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
@@ -113,7 +113,8 @@ where
         + ProvideRuntimeApi<B>
         + HeaderBackend<B>
         + 'static,
-    C::Api: Metadata<B>,
+    C::Api: Metadata<B> + 'static,
+    C::Api: NucleusApi<B> + 'static,
 {
     let CageParams {
         mut nucleus_rpc_rx,
@@ -151,8 +152,8 @@ where
                 //     // TODO handle deregister as well
                 //     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
                 //         for (id, config) in instances {
-                //             let db_path = nucleus_home_dir.join(id.to_string());
-                //             start_nucleus::<B>(id, config, db_path, &mut nuclei).expect("fail to start nucleus");
+                //             let nucleus_path = nucleus_home_dir.join(id.to_string());
+                //             start_nucleus::<B>(id, config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
                 //         }
                 //     }
                 // },
@@ -404,38 +405,35 @@ mod tests {
 // }
 
 // fn map_to_nucleus<B, D, C>(
-//     runtime_storage: Arc<C>,
+//     client: Arc<C>,
 //     hash: B::Hash,
 //     metadata: RuntimeMetadata,
-// ) -> Option<Vec<(NucleusId, NucleusEquation<AccountId, B::Hash>)>>
+// ) -> Option<Vec<(NucleusId, NucleusInfo<AccountId, B::Hash, NodeId>)>>
 // where
 //     B: sp_runtime::traits::Block,
 //     D: Backend<B>,
-//     C: BlockBackend<B> + StorageProvider<B, D> + BlockchainEvents<B> + 'static,
+//     C: BlockBackend<B>
+//         + StorageProvider<B, D>
+//         + BlockchainEvents<B>
+//         + ProvideRuntimeApi<B>
+//         + 'static,
+//     C::Api: NucleusApi<B> + 'static,
 // {
 //     let storage_key = storage_key(b"System", b"Events");
-//     let events = runtime_storage
+//     let events = client
 //         .storage(hash, &storage_key)
 //         .ok()
 //         .flatten()
 //         .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
+
+//     let api = client.runtime_api();
 //     let instances = events
 //         .find::<codegen::nucleus::events::InstanceRegistered>()
 //         .filter_map(|ev| {
 //             let id = ev.ok()?.id.clone();
-//             let storage_key = blake2_128concat_storage_key(b"Nucleus", b"Nuclei", id.clone());
-//             runtime_storage
-//                 .storage(hash, &storage_key)
+//             api.get_nucleus_info(hash, id.clone())
+//                 .map(|info| (id, info))
 //                 .ok()
-//                 .flatten()
-//                 .map(|v| {
-//                     let mut buf = v.0.as_ref();
-//                     let decoded =
-//                         <NucleusEquation<AccountId, B::Hash, NodeAddress>>::decode(&mut buf)
-//                             .ok()?;
-//                     Some((NucleusId::new(id.0), decoded))
-//                 })
-//                 .flatten()
 //         })
 //         .collect::<Vec<_>>();
 //     Some(instances)
@@ -459,61 +457,63 @@ mod tests {
 //     sp_core::storage::StorageKey(bytes)
 // }
 
-// fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
-//     let mut bytes = sp_core::twox_128(module).to_vec();
-//     bytes.extend(&sp_core::twox_128(storage)[..]);
-//     sp_core::storage::StorageKey(bytes)
+fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
+    let mut bytes = sp_core::twox_128(module).to_vec();
+    bytes.extend(&sp_core::twox_128(storage)[..]);
+    sp_core::storage::StorageKey(bytes)
+}
+
+// fn init_nucleus<B>() -> anyhow::Result<()> {
+//     Ok(())
 // }
 
 // TODO
-// fn start_nucleus<B>(
-//     id: NucleusId,
-//     equation: NucleusEquation<AccountId, B::Hash>,
-//     db_path: std::path::PathBuf,
-//     nuclei: &mut HashMap<NucleusId, NucleusCage>,
-// ) -> anyhow::Result<()>
-// where
-//     B: sp_runtime::traits::Block,
-// {
-//     let NucleusEquation {
-//         name,
-//         account,
-//         wasm_url,
-//         wasm_hash,
-//         wasm_version,
-//         energy,
-//         current_event,
-//         root_state,
-//         capacity,
-//     } = equation;
-//     let name = String::from_utf8(name)?;
-//     let url = String::from_utf8(wasm_url)?;
-//     let wasm = WasmInfo {
-//         account,
-//         name,
-//         version: 0,
-//         code: WasmCodeRef::File(url),
-//     };
-//     let config = ContextConfig {
-//         db_path: db_path.into_boxed_path(),
-//     };
-//     // TODO
-//     let context = Context::init(config)?;
-//     let db = context.db.clone();
-//     let (tx, rx) = std::sync::mpsc::channel();
-//     let mut nucleus = Nucleus::new(rx, context, wasm);
-//     std::thread::spawn(move || {
-//         nucleus.run();
-//     });
-//     nuclei.insert(
-//         id.clone(),
-//         NucleusCage {
-//             nucleus_id: id,
-//             tunnel: tx,
-//             pending_requests: vec![],
-//             event_id: 0,
-//             db,
-//         },
-//     );
-//     Ok(())
-// }
+fn start_nucleus<B>(
+    id: NucleusId,
+    nucleus_info: NucleusInfo<AccountId, B::Hash, NodeId>,
+    nucleus_path: std::path::PathBuf,
+    nuclei: &mut HashMap<NucleusId, NucleusCage>,
+) -> anyhow::Result<()>
+where
+    B: sp_runtime::traits::Block,
+{
+    let NucleusInfo {
+        name,
+        manager,
+        wasm_location,
+        wasm_hash,
+        wasm_version,
+        current_event,
+        root_state,
+        peers,
+    } = nucleus_info;
+    let name = String::from_utf8(name)?;
+
+    let wasm = WasmInfo {
+        account: manager,
+        name,
+        version: wasm_version,
+        code: WasmCodeRef::File(nucleus_path.join("code.wasm")),
+    };
+    let config = ContextConfig {
+        db_path: nucleus_path.join("db").into_boxed_path(),
+    };
+    let context = Context::init(config)?;
+    let db = context.db.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let mut nucleus = Nucleus::new(rx, context, wasm);
+    std::thread::spawn(move || {
+        nucleus.run();
+    });
+    nuclei.insert(
+        id.clone(),
+        NucleusCage {
+            nucleus_id: id,
+            tunnel: tx,
+            pending_requests: vec![],
+            event_id: current_event,
+            db,
+        },
+    );
+    Ok(())
+}

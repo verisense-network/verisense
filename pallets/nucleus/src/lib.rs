@@ -16,8 +16,9 @@ pub mod pallet {
     use codec::{Decode, Encode};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::{Hash, MaybeDisplay};
+    use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, StaticLookup};
     use sp_std::prelude::*;
+    use vrs_primitives::NucleusInfo;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NucleusEquation<AccountId, Hash, NodeId> {
@@ -49,6 +50,8 @@ pub mod pallet {
             + MaxEncodedLen;
 
         type NodeId: Parameter + Member + core::fmt::Debug;
+
+        type ControllerLookup: StaticLookup<Source = Self::AccountId, Target = Self::NodeId>;
     }
 
     #[pallet::storage]
@@ -60,13 +63,22 @@ pub mod pallet {
         QueryKind = OptionQuery,
     >;
 
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub type NodeControllers<T: Config> = StorageMap<
+        Hasher = Blake2_128Concat,
+        Key = T::AccountId,
+        Value = T::NodeId,
+        QueryKind = OptionQuery,
+    >;
+
     // TODO we need to use FHE to hide the real account
     #[pallet::storage]
     #[pallet::unbounded]
     pub type Instances<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = Vec<(T::AccountId, T::NodeId)>,
+        Value = Vec<T::AccountId>,
         QueryKind = ValueQuery,
     >;
 
@@ -91,8 +103,8 @@ pub mod pallet {
         // TODO
         InstanceRegistered {
             id: T::NucleusId,
-            node_controller: T::AccountId,
-            node_id: T::NodeId,
+            controller: T::AccountId,
+            node_id: Option<T::NodeId>,
         },
     }
 
@@ -178,19 +190,59 @@ pub mod pallet {
         }
 
         // TODO just for testing
-        // #[pallet::call_index(2)]
-        // #[pallet::weight(T::WeightInfo::mock_register())]
-        // pub fn mock_register(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult {
-        //     let controller_account = ensure_signed(origin)?;
-        //     Instances::<T>::mutate(&nucleus_id, |cages| {
-        //         // TODO
-        //         cages.push(controller_account.clone());
-        //     });
-        //     Self::deposit_event(Event::InstanceRegistered {
-        //         nucleus_id,
-        //         controller_account,
-        //     });
-        //     Ok(())
-        // }
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::mock_register())]
+        pub fn mock_register(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult {
+            let controller = ensure_signed(origin)?;
+            Instances::<T>::mutate(&nucleus_id, |cages| {
+                // TODO
+                cages.push(controller.clone());
+            });
+            let node_id = T::ControllerLookup::lookup(controller.clone()).ok();
+            Self::deposit_event(Event::InstanceRegistered {
+                id: nucleus_id,
+                controller,
+                node_id,
+            });
+            Ok(())
+        }
+    }
+
+    // TODO
+    impl<T: Config> StaticLookup for Pallet<T> {
+        type Source = T::AccountId;
+        type Target = T::NodeId;
+
+        fn lookup(a: Self::Source) -> Result<Self::Target, LookupError> {
+            NodeControllers::<T>::get(&a).ok_or(LookupError)
+        }
+
+        fn unlookup(_n: Self::Target) -> Self::Source {
+            unimplemented!()
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn get_nucleus_info(
+            nucleus_id: &T::NucleusId,
+        ) -> Option<NucleusInfo<T::AccountId, T::Hash, T::NodeId>> {
+            let eqution = Nuclei::<T>::get(nucleus_id)?;
+            let peers = Instances::<T>::get(nucleus_id);
+            let peers = peers
+                .iter()
+                .filter_map(|p| T::ControllerLookup::lookup(p.clone()).ok())
+                .collect();
+            Some(NucleusInfo {
+                name: eqution.name,
+                manager: eqution.manager,
+                wasm_hash: eqution.wasm_hash,
+                wasm_version: eqution.wasm_version,
+                wasm_location: eqution.wasm_location,
+                // energy: eqution.energy,
+                current_event: eqution.current_event,
+                root_state: eqution.root_state,
+                peers,
+            })
+        }
     }
 }

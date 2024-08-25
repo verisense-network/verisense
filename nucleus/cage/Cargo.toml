@@ -9,6 +9,7 @@ sp-runtime = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 vrs-core-sdk = { path = "../core-sdk" }
 vrs-primitives = { path = "../../primitives" }
+vrs-nucleus-runtime-api = { path = "../runtime-api" }
 codec = { workspace = true }
 wasmtime = { workspace = true }
 rocksdb = "0.21.0"

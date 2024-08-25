@@ -10,6 +10,6 @@ pub struct WasmInfo {
 
 #[derive(Debug)]
 pub enum WasmCodeRef {
-    File(String),
+    File(std::path::PathBuf),
     Blob(Vec<u8>),
 }
