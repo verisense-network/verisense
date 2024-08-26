@@ -29,6 +29,7 @@ sc-consensus-grandpa = { version = "0.27.0" }
 sc-client-api = { version = "35.0.0" }
 sc-rpc-api = { version = "0.41.0" }
 sc-basic-authorship = { version = "0.42.0" }
+sc-network-types = "0.12.1"
 
 sp-core = { workspace = true, default-features = true }
 sp-consensus-aura = { workspace = true, default-features = true }
@@ -50,6 +51,7 @@ pallet-transaction-payment-rpc = { workspace = true, default-features = true }
 
 vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
+vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api" }
 vrs-nucleus-rpc-proxy = { path = "../nucleus/rpc-proxy" }
 vrs-nucleus-cage = { path = "../nucleus/cage" }
 tokio = { version = "1", features = ["full"] }

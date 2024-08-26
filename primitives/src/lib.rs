@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-use codec::{Decode, Encode};
-use scale_info::TypeInfo;
+
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
@@ -30,11 +29,4 @@ pub type Address = MultiAddress<AccountId, ()>;
 
 pub type NucleusId = AccountId32;
 
-pub type PeerId = sp_core::OpaquePeerId;
-
-#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
-pub struct NucleusWasmInfo {
-    pub nucleus_id: NucleusId,
-    pub wasm_hash: Hash,
-    pub wasm_location: PeerId,
-}
+pub type NodeId = sp_core::OpaquePeerId;

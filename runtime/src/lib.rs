@@ -227,8 +227,8 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl pallet_nucleus::Config for Runtime {
+    type NodeId = NodeId;
     type NucleusId = NucleusId;
-    type PeerId = PeerId;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_nucleus::weights::SubstrateWeight<Runtime>;
 }
@@ -480,17 +480,17 @@ impl_runtime_apis! {
         }
     }
 
-    impl vrs_runtime_api::NucleusApi<Block> for Runtime {
-        fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<NucleusWasmInfo> {
+    impl vrs_nucleus_runtime_api::NucleusApi<Block> for Runtime {
+        fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusWasmInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
                 nucleus_id,
                 to,
                 hash,
             }) = uxt.function {
-                Some(NucleusWasmInfo {
+                Some(vrs_nucleus_runtime_api::NucleusWasmInfo {
                     nucleus_id,
                     wasm_hash: hash,
-                    wasm_location: to,
+                    node_id: to,
                 })
             } else {
                 None

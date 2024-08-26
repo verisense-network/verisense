@@ -1,28 +1,24 @@
 use async_trait::async_trait;
 use codec::Decode;
 use constants::*;
-use jsonrpsee::{
-    core::RpcResult,
-    proc_macros::rpc,
-    types::error::{ErrorCode, ErrorObjectOwned},
-};
-use sc_transaction_pool_api::{
-    error::IntoPoolError, BlockHash, InPoolTransaction, TransactionFor, TransactionPool,
-    TransactionSource, TxHash,
-};
+use futures::prelude::*;
+use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
+use sc_network_types::PeerId;
+use sc_transaction_pool_api::{BlockHash, TransactionPool, TransactionSource, TransactionStatus};
 use sp_api::{ApiExt, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use sp_core::Bytes;
-use std::sync::Arc;
+use std::{io::Write, path::PathBuf, sync::Arc};
 use tokio::sync::{
     mpsc::Sender,
     oneshot::{self, Receiver},
 };
 use vrs_nucleus_cage::{Gluon, NucleusResponse};
+use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::NucleusId;
 
 #[rpc(server)]
-pub trait NucleusRpc<Hash, BlockHash> {
+pub trait NucleusRpc<Hash> {
     #[method(name = "nucleus_post")]
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String>;
 
@@ -37,14 +33,24 @@ pub struct NucleusEntry<P, C> {
     sender: Sender<(NucleusId, Gluon)>,
     client: Arc<C>,
     pool: Arc<P>,
+    node_id: PeerId,
+    nucleus_home_dir: PathBuf,
 }
 
 impl<P, C> NucleusEntry<P, C> {
-    pub fn new(sender: Sender<(NucleusId, Gluon)>, client: Arc<C>, pool: Arc<P>) -> Self {
+    pub fn new(
+        sender: Sender<(NucleusId, Gluon)>,
+        client: Arc<C>,
+        pool: Arc<P>,
+        node_id: PeerId,
+        nucleus_home_dir: PathBuf,
+    ) -> Self {
         Self {
             sender,
             client,
             pool,
+            node_id,
+            nucleus_home_dir,
         }
     }
 
@@ -79,14 +85,12 @@ impl<P, C> NucleusEntry<P, C> {
 }
 
 #[async_trait]
-impl<P, C> NucleusRpcServer<TxHash<P>, BlockHash<P>> for NucleusEntry<P, C>
+impl<P, C> NucleusRpcServer<BlockHash<P>> for NucleusEntry<P, C>
 where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    // C::Api: SessionKeys<P::Block>,
-    // P::Hash: Unpin,
-    // <P::Block as sp_runtime::traits::Block>::Hash: Unpin,
+    C::Api: NucleusApi<P::Block> + 'static,
 {
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
         let (tx, rx) = oneshot::channel();
@@ -114,30 +118,88 @@ where
         self.reply(req, rx).await
     }
 
-    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<TxHash<P>> {
+    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<BlockHash<P>> {
+        let api = self.client.runtime_api();
         let xt: <P::Block as sp_runtime::traits::Block>::Extrinsic =
             match Decode::decode(&mut &tx[..]) {
                 Ok(xt) => xt,
                 Err(_) => {
                     return Err(ErrorObjectOwned::owned(
-                        DECODE_TX_ERROR_CODE,
-                        DECODE_TX_ERROR_MSG,
+                        NUCLEUS_UPGRADE_TX_ERR_CODE,
+                        NUCLEUS_UPGRADE_TX_ERR_MSG,
                         None::<()>,
                     ))
                 }
             };
-
         let best_block_hash = self.client.info().best_hash;
-        self.pool
-            .submit_one(best_block_hash, TransactionSource::External, xt)
+        let wasm_info = api
+            .resolve_deploy_tx(best_block_hash, xt.clone())
+            .ok()
+            .flatten()
+            .ok_or(ErrorObjectOwned::owned(
+                NUCLEUS_UPGRADE_TX_ERR_CODE,
+                NUCLEUS_UPGRADE_TX_ERR_MSG,
+                None::<()>,
+            ))?;
+        PeerId::from_bytes(&wasm_info.node_id.0)
+            .ok()
+            .filter(|id| self.node_id == *id)
+            .ok_or(ErrorObjectOwned::owned(
+                INVALID_NODE_ADDRESS_CODE,
+                INVALID_NODE_ADDRESS_MSG,
+                None::<()>,
+            ))?;
+
+        let mut submit = self
+            .pool
+            .submit_and_watch(best_block_hash, TransactionSource::External, xt)
             .await
             .map_err(|e| {
                 ErrorObjectOwned::owned(
                     TX_POOL_ERROR_CODE,
-                    format!("Couldn't submit tx, caused by {:?}", e),
+                    format!("Couldn't accept the transaction, caused by {:?}", e),
                     None::<()>,
                 )
-            })
+            })?;
+        loop {
+            match submit.next().await.ok_or(ErrorObjectOwned::owned(
+                TX_POOL_ERROR_CODE,
+                "Transaction is not included in the block.",
+                None::<()>,
+            ))? {
+                TransactionStatus::Finalized((block, _)) => {
+                    let dir = self
+                        .nucleus_home_dir
+                        .as_path()
+                        .join(wasm_info.nucleus_id.to_string());
+                    // TODO rename the previous wasm file
+                    std::fs::create_dir_all(&dir)
+                        .and_then(|_| std::fs::File::create(dir.join("code.wasm")))
+                        .and_then(|mut f| f.write_all(&wasm.0))
+                        .map_err(|e| {
+                            ErrorObjectOwned::owned(
+                                OS_ERR_CODE,
+                                format!("Couldn't write the wasm file, caused by {:?}", e),
+                                None::<()>,
+                            )
+                        })?;
+                    return Ok(block);
+                }
+                TransactionStatus::FinalityTimeout(_)
+                | TransactionStatus::Usurped(_)
+                | TransactionStatus::Invalid
+                | TransactionStatus::Dropped => {
+                    break Err(ErrorObjectOwned::owned(
+                        TX_POOL_ERROR_CODE,
+                        "Transaction is not included in the block.",
+                        None::<()>,
+                    ));
+                }
+                _ => {
+                    continue;
+                }
+            }
+        }
     }
 }
 
@@ -146,7 +208,10 @@ mod constants {
     pub const NUCLEUS_OFFLINE_MSG: &str = "The nucleus is offline.";
     pub const NUCLEUS_TIMEOUT_CODE: i32 = -40002;
     pub const NUCLEUS_TIMEOUT_MSG: &str = "The nucleus is not responding.";
-    pub const DECODE_TX_ERROR_CODE: i32 = -40003;
-    pub const DECODE_TX_ERROR_MSG: &str = "Failed to decode transaction.";
     pub const TX_POOL_ERROR_CODE: i32 = -40010;
+    pub const NUCLEUS_UPGRADE_TX_ERR_CODE: i32 = -40011;
+    pub const NUCLEUS_UPGRADE_TX_ERR_MSG: &str = "The nucleus upgrading transaction is invalid.";
+    pub const INVALID_NODE_ADDRESS_CODE: i32 = -40012;
+    pub const INVALID_NODE_ADDRESS_MSG: &str = "Invalid node address.";
+    pub const OS_ERR_CODE: i32 = -42000;
 }

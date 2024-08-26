@@ -40,6 +40,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
     )
     .with_name("Development")
     .with_id("dev")
+    .with_protocol_id("vrs")
     .with_chain_type(ChainType::Development)
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities

@@ -212,7 +212,9 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
 //                 .flatten()
 //                 .map(|v| {
 //                     let mut buf = v.0.as_ref();
-//                     let decoded = <NucleusEquation<AccountId, B::Hash>>::decode(&mut buf).ok()?;
+//                     let decoded =
+//                         <NucleusEquation<AccountId, B::Hash, NodeAddress>>::decode(&mut buf)
+//                             .ok()?;
 //                     Some((NucleusId::new(id.0), decoded))
 //                 })
 //                 .flatten()
@@ -221,29 +223,29 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
 //     Some(instances)
 // }
 
-fn blake2_128concat_storage_key<K: codec::Encode>(
-    module: &[u8],
-    storage: &[u8],
-    key: K,
-) -> sp_core::storage::StorageKey {
-    let mut bytes = sp_core::twox_128(module).to_vec();
-    bytes.extend(&sp_core::twox_128(storage)[..]);
-    let encoded = key.encode();
-    let x: &[u8] = encoded.as_slice();
-    let v = sp_core::blake2_128(x)
-        .iter()
-        .chain(x.iter())
-        .cloned()
-        .collect::<Vec<_>>();
-    bytes.extend(v);
-    sp_core::storage::StorageKey(bytes)
-}
+// fn blake2_128concat_storage_key<K: codec::Encode>(
+//     module: &[u8],
+//     storage: &[u8],
+//     key: K,
+// ) -> sp_core::storage::StorageKey {
+//     let mut bytes = sp_core::twox_128(module).to_vec();
+//     bytes.extend(&sp_core::twox_128(storage)[..]);
+//     let encoded = key.encode();
+//     let x: &[u8] = encoded.as_slice();
+//     let v = sp_core::blake2_128(x)
+//         .iter()
+//         .chain(x.iter())
+//         .cloned()
+//         .collect::<Vec<_>>();
+//     bytes.extend(v);
+//     sp_core::storage::StorageKey(bytes)
+// }
 
-fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
-    let mut bytes = sp_core::twox_128(module).to_vec();
-    bytes.extend(&sp_core::twox_128(storage)[..]);
-    sp_core::storage::StorageKey(bytes)
-}
+// fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
+//     let mut bytes = sp_core::twox_128(module).to_vec();
+//     bytes.extend(&sp_core::twox_128(storage)[..]);
+//     sp_core::storage::StorageKey(bytes)
+// }
 
 // TODO
 // fn start_nucleus<B>(

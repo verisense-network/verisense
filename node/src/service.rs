@@ -148,8 +148,15 @@ pub fn new_full<
         <Block as sp_runtime::traits::Block>::Hash,
         N,
     >::new(&config.network);
+    let node_id = config
+        .network
+        .node_key
+        .clone()
+        .into_keypair()
+        .unwrap()
+        .public()
+        .to_peer_id();
     let metrics = N::register_notification_metrics(config.prometheus_registry());
-
     let peer_store_handle = net_config.peer_store_handle();
     let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
         &client
@@ -214,23 +221,25 @@ pub fn new_full<
     let name = config.network.node_name.clone();
     let enable_grandpa = !config.disable_grandpa;
     let prometheus_registry = config.prometheus_registry().cloned();
-    // TODO
+    // TODO config?
     let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
-    let nucleus_home_dir = config.base_path.path().join("nucleus");
+    let nucleus_home_dir = config.data_path.as_path().join("nucleus");
 
     let rpc_extensions_builder = {
         let client = client.clone();
-        let pool = transaction_pool.clone();
+        let transaction_pool = transaction_pool.clone();
         let backend = backend.clone();
+        let nucleus_home_dir = nucleus_home_dir.clone();
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
-                pool: pool.clone(),
+                pool: transaction_pool.clone(),
                 backend: backend.clone(),
-                deny_unsafe,
                 nucleus_req_relayer: nucleus_rpc_tx.clone(),
+                node_id,
+                nucleus_home_dir: nucleus_home_dir.clone(),
             };
-            crate::rpc::create_full(deps).map_err(Into::into)
+            crate::rpc::create_full(deny_unsafe, deps).map_err(Into::into)
         })
     };
 
