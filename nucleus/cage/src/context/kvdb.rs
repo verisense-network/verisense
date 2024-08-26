@@ -93,20 +93,20 @@ pub fn storage_put_split(
     0 // Success
 }
 
-pub fn storage_put_signature(store: &Store<Context>) -> FuncType {
-    FuncType::new(
-        store.engine(),
-        [ValType::I32, ValType::I32, ValType::I32, ValType::I32],
-        [ValType::I32],
-    )
-}
-pub fn storage_get_signature(store: &Store<Context>) -> FuncType {
-    FuncType::new(
-        store.engine(),
-        [ValType::I32, ValType::I32, ValType::I32, ValType::I32], // k_ptr, k_len, v_ptr, v_len_ptr
-        [ValType::I32],                                           // status
-    )
-}
+// pub fn storage_put_signature(store: &Store<Context>) -> FuncType {
+//     FuncType::new(
+//         store.engine(),
+//         [ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+//         [ValType::I32],
+//     )
+// }
+// pub fn storage_get_signature(store: &Store<Context>) -> FuncType {
+//     FuncType::new(
+//         store.engine(),
+//         [ValType::I32, ValType::I32, ValType::I32, ValType::I32], // k_ptr, k_len, v_ptr, v_len_ptr
+//         [ValType::I32],                                           // status
+//     )
+// }
 // pub fn storage_get(
 //     mut caller: Caller<'_, Context>,
 //     params: &[Val],
@@ -205,7 +205,42 @@ pub fn storage_get_split(
         Err(_) => 2, // Error status for database error
     }
 }
+pub fn storage_get_split_len(
+    mut caller: Caller<'_, Context>,
+    k_ptr: i32,
+    k_len: i32,
+    v_len_ptr: i32,
+) -> Result<Vec<u8>, i32> {
+    let memory = match caller.get_export("memory").and_then(|e| e.into_memory()) {
+        Some(mem) => mem,
+        None => return Err(3), // Error code for memory export not found
+    };
 
+    // Read the key from WebAssembly memory
+    let mut key = vec![0u8; k_len as usize];
+    if memory.read(&caller, k_ptr as usize, &mut key).is_err() {
+        return Err(4); // Error code for memory read failure
+    }
+    let db = &caller.data().db;
+
+    match db.get_cf(db.cf_handle("avs").unwrap(), &key) {
+        Ok(Some(value)) => {
+            let value_len = value.len() as i32;
+
+            // Write the length of the value
+            if memory
+                .write(&mut caller, v_len_ptr as usize, &value_len.to_le_bytes())
+                .is_err()
+            {
+                return Err(5); // Error code for memory write failure
+            }
+
+            Ok(value)
+        }
+        Ok(None) => Err(1), // Not found status
+        Err(_) => Err(2),   // Error status for database error
+    }
+}
 // pub fn storage_delete(context: &Context, key: &[u8]) -> Result<(), StorageError> {
 //     context
 //         .db

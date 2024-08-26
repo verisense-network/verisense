@@ -68,6 +68,16 @@ pub fn test_put_get() -> Result<String, String> {
     }
     Ok(s)
 }
+#[post]
+pub fn test_put_get_dynamic() -> Result<String, String> {
+    storage::put(b"test", b"test_value").map_err(|e| e.to_string())?;
+    let res = storage::get_dynamic(b"test").map_err(|e| e.to_string())?;
+    let s = String::from_utf8(res).unwrap();
+    if s != "test_value" {
+        return Err("test_value not equal".to_string());
+    }
+    Ok(s)
+}
 #[post] //i1o1
 pub fn i1o1(a: String) -> String {
     a
