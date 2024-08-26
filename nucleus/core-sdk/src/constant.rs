@@ -20,6 +20,7 @@ impl From<i32> for StorageError {
         }
     }
 }
+
 impl core::fmt::Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

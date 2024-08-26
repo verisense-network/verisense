@@ -461,7 +461,7 @@ mod tests {
         })
         .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-        let result = vm.call_post("test_put_get_dynamic", vec![]).unwrap();
+        let result = vm.call_post("test_put_get", vec![]).unwrap();
         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
             .unwrap()
             .unwrap();
