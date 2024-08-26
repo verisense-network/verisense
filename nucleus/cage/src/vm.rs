@@ -155,11 +155,12 @@ impl Vm {
         memory
             .read(&mut self.space, result_ptr, &mut result_len_bytes)
             .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+        // println!("{:?}", result_len_bytes);
         let result_len = u32::from_le_bytes(result_len_bytes);
 
-        if result_len > 65536 {
-            return Err(WasmCallError::ResultSizeExceeded);
-        }
+        // if result_len > 65536 * 128 {
+        //     return Err(WasmCallError::ResultSizeExceeded);
+        // }
 
         // Read result data
         let mut result_data = vec![0u8; result_len as usize];
@@ -445,7 +446,7 @@ mod tests {
         assert_eq!(s, Err("Failed to decode arguments tuple".to_string()));
     }
     #[test]
-    pub fn test_put_get() {
+    pub fn test_put_get_dynamic() {
         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
         let wasm = WasmInfo {
             account: AccountId::new([0u8; 32]),
@@ -460,10 +461,54 @@ mod tests {
         })
         .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-        let result = vm.call_post("test_put_get_dynamic", vec![]).unwrap();
+        let result = vm.call_post("test_put_get", vec![]).unwrap();
         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
             .unwrap()
             .unwrap();
-        assert_eq!(s, "test_value".to_string());
+        assert_eq!(s, "1".repeat(65536 * 16));
+    }
+    #[test]
+    pub fn test_not_found() {
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("2").into_boxed_path(),
+        })
+        .unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+        let result = vm.call_post("test_get_not_found", vec![]).unwrap();
+        let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
+            .unwrap()
+            .unwrap();
+        assert_eq!(s, "");
+    }
+    #[test]
+    pub fn test_put_get_static() {
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("2").into_boxed_path(),
+        })
+        .unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+        let result = vm.call_post("test_put_get_static", vec![]).unwrap();
+        let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
+            .unwrap()
+            .unwrap();
+        assert_eq!(s, "test_value");
     }
 }
