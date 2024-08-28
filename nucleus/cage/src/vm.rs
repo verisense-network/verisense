@@ -1,6 +1,9 @@
+use std::{hash::DefaultHasher, rc::Rc, sync::atomic::AtomicU64, thread};
+
 use crate::{
     context::{Context, ContextConfig},
     wasm_code::{WasmCodeRef, WasmInfo},
+    CallerInfo, TimerEntry,
 };
 use anyhow::anyhow;
 use codec::Decode;
@@ -64,6 +67,16 @@ impl WasmCallError {
         }
     }
 }
+use std::sync::atomic::Ordering;
+static THREAD_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+thread_local! {
+    static THREAD_ID: u64 = THREAD_COUNTER.fetch_add(1, Ordering::SeqCst);
+}
+
+fn get_thread_id() -> u64 {
+    THREAD_ID.with(|&id| id)
+}
 
 impl Vm {
     pub fn new_instance(wasm: &WasmInfo, context: Context) -> anyhow::Result<Self> {
@@ -96,17 +109,28 @@ impl Vm {
 
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_is_get_method(true);
+        self.space.data_mut().push_caller_info(CallerInfo {
+            func: func.to_string(),
+            thread_id: get_thread_id(),
+            caller_type: crate::CallerType::Get,
+        });
         let result = self.call_method(func, args, true);
         self.space.data_mut().set_is_get_method(false);
+        self.space.data_mut().pop_caller_info();
         result
     }
 
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_is_get_method(false);
-
-        self.call_method(func, args, false)
+        self.space.data_mut().push_caller_info(CallerInfo {
+            func: func.to_string(),
+            thread_id: get_thread_id(),
+            caller_type: crate::CallerType::Post,
+        });
+        let result = self.call_method(func, args, false);
+        self.space.data_mut().pop_caller_info();
+        return result;
     }
-
     fn call_method(
         &mut self,
         func: &str,
@@ -174,6 +198,9 @@ impl Vm {
 
         Ok(result)
     }
+    pub fn pop_pending_timer(&mut self) -> Option<TimerEntry> {
+        self.space.data_mut().pop_timer_entry()
+    }
 }
 
 fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
@@ -188,7 +215,6 @@ mod tests {
     use super::*;
     use codec::{Decode, Encode};
     use temp_dir::TempDir;
-
     #[test]
     pub fn load_wasm_should_work() {
         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";

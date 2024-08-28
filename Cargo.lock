@@ -10907,6 +10907,7 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "parity-scale-codec",
+ "paste",
  "tokio",
  "vrs-primitives",
 ]
@@ -10928,6 +10929,7 @@ name = "vrs-nucleus-cage"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "chrono",
  "env_logger",
  "futures",
  "hex",

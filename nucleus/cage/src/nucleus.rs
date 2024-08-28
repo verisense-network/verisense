@@ -1,10 +1,12 @@
+use chrono::{DateTime, Duration, Utc};
+
 use crate::{
     context::{Context, ContextConfig},
     vm::Vm,
     wasm_code::WasmInfo,
     ReplyTo,
 };
-use std::sync::mpsc::Receiver;
+use std::{sync::mpsc::Receiver, thread::sleep};
 
 pub(crate) struct Nucleus {
     receiver: Receiver<(u64, Gluon)>,
@@ -102,6 +104,25 @@ impl Nucleus {
                             }
                         } else {
                             log::error!("reply_to not found");
+                        }
+                        //todo revise carefully
+                        while let Some(timer_entry) = vm.pop_pending_timer() {
+                            let now = chrono::Utc::now();
+                            while timer_entry.timestamp > now {
+                                let duration: Duration = timer_entry.timestamp - now;
+                                sleep(duration.to_std().unwrap());
+                            }
+                            let vm_result = vm
+                                .call_post(&timer_entry.func_name, timer_entry.func_params)
+                                .map_err(|e| {
+                                    log::error!(
+                                        "fail to call post endpoint: {} due to: {:?}",
+                                        &endpoint,
+                                        e
+                                    );
+                                    (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                                });
+                            //todo reply not only once
                         }
                     }
                     None => {

@@ -2,7 +2,7 @@ use std::default;
 
 use t::{D, E};
 use vrs_core_macros::{get, init, post};
-use vrs_core_sdk::storage;
+use vrs_core_sdk::{set_timer, storage};
 
 pub mod t {
     // use vrs_core_sdk::codec::{Decode, Encode};
@@ -105,6 +105,20 @@ pub fn i0o1() -> String {
 #[get]
 pub fn get() -> i32 {
     5
+}
+#[get]
+pub fn get_data(key: String) -> Result<String, String> {
+    storage::get(key.as_bytes()).map_err(|e| e.to_string())
+}
+#[post]
+pub fn test_delay(a: String, b: i32) {
+    storage::put(b"delay", format!("delay_complete {} {}", a, b)).unwrap();
+}
+#[post]
+pub fn test_set_timer() {
+    let a = "abc".to_string();
+    let b = 123;
+    set_timer!(10, test_delay, a, b)?;
 }
 // #[test]
 // pub fn test_cross_string() {

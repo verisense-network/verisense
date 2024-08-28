@@ -23,6 +23,7 @@ sc-client-api = { version = "35.0.0" }
 hex = { version = "0.4" }
 thiserror = "1"
 vrs-metadata = { path = "../../metadata" }
+chrono = { version = "0.4" }
 
 [dev-dependencies]
 temp-dir = "0.1.13"

@@ -1,8 +1,11 @@
 // pub use vrs_core_macros::*
 pub use codec;
-pub use constant::MAX_GET_RETURN_SIZE;
+pub use paste::paste as macro_paste;
 pub use vrs_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
 mod constant;
+pub use constant::*;
+mod timer;
+pub use timer::timer::_set_timer;
 
 #[allow(improper_ctypes)]
 pub mod storage {
@@ -21,7 +24,6 @@ pub mod storage {
         fn storage_get_len(key_ptr: *const u8, key_len: u32, value_len_ptr: *mut u32) -> i32;
 
         fn storage_get(k_ptr: *const u8, k_len: u32, v_ptr: *mut u8, v_len_ptr: *mut u32) -> i32;
-
     }
 
     pub fn put(key: &[u8], value: &[u8]) -> anyhow::Result<()> {

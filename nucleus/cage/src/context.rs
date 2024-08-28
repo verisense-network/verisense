@@ -1,12 +1,17 @@
 mod kvdb;
 
-use std::cell::{Cell, RefCell};
+use std::{
+    cell::{Cell, RefCell}, cmp::Ordering, rc::Rc, sync::Mutex
+};
 
+use chrono::{DateTime, Utc};
 use rocksdb::DB;
 use std::sync::Arc;
 use thiserror::Error;
 use wasmtime::{Caller, Engine, Extern, Func, FuncType, Linker, Memory, Store, Trap, Val, ValType};
+use std::collections::BinaryHeap;
 
+use crate::{CallerInfo, TimerEntry, TimerQueue};
 struct Cache {
     key: Vec<u8>,
     value: Vec<u8>,
@@ -15,8 +20,10 @@ struct Cache {
 pub struct Context {
     pub(crate) db: Arc<DB>,
     is_get_method: bool,
+    caller_info:Vec<CallerInfo>,
     //todo: cache
     cache: Arc<Option<Cache>>,
+    timer: Arc<Mutex<TimerQueue>>,
     // 1. we need runtime storage to read
     // 3. we need http manager
     // 4. we need timer
@@ -33,8 +40,18 @@ impl Context {
         Ok(Context {
             db: Arc::new(kvdb::init_rocksdb(config.db_path)?),
             is_get_method: false,
+            caller_info:vec![],
             cache: Arc::new(None),
+            timer: Arc::new(Mutex::new(TimerQueue::new())),
         })
+    }
+
+    pub fn push_caller_info(&mut self, caller_info: CallerInfo) {
+        self.caller_info.push(caller_info);
+    }
+
+    pub fn pop_caller_info(&mut self) -> Option<CallerInfo> {
+        self.caller_info.pop()
     }
 
     pub fn is_get_method(&self) -> bool {
@@ -43,6 +60,23 @@ impl Context {
 
     pub fn set_is_get_method(&mut self, value: bool) {
         self.is_get_method = value;
+    }
+
+    pub fn pop_timer_entry(&mut self) -> Option<TimerEntry> {
+        self.timer.lock().unwrap().pop()
+    }
+
+    pub fn fetch_all_timer_entries(&self) -> Vec<TimerEntry> {
+        let mut timer = self.timer.lock().unwrap();
+        let mut entries = Vec::new();
+        while let Some(entry) = timer.pop() {
+            entries.push(entry);
+        }
+        entries
+    }
+
+    pub fn push_timer_entry(&self, entry: TimerEntry){
+        self.timer.lock().unwrap().push(entry);
     }
 
     pub(crate) fn inject_host_funcs(engine: &Engine) -> Linker<Context> {
@@ -221,6 +255,53 @@ impl Context {
                 },
             )
             .unwrap();
+        // for set_time
+        linker
+            .func_new(
+                "env",
+                "set_time_delay",
+                FuncType::new(
+                    &engine,
+                    [
+                        ValType::I32,
+                        ValType::I32,
+                        ValType::I32,
+                        ValType::I32,
+                        ValType::I32,
+                    ],
+                    [ValType::I32],
+                ),
+                |mut caller: Caller<'_, Context>, params, results| {
+                    if caller.data().is_get_method() {
+                        results[0] = Val::I32(1);
+                        return Ok(());
+                    }
+                    if let [Val::I32(delay), Val::I32(func_ptr), Val::I32(func_len), Val::I32(params_ptr), Val::I32(params_len)] = params {
+                        results[0] = Val::I32(3);
+                        let func_params = Context::read_bytes_from_memory(&mut caller, *params_ptr, *params_len)?;
+                        let func_name = Context::read_bytes_from_memory(&mut caller, *func_ptr, *func_len)?;
+                
+                        let timestamp = Utc::now() + std::time::Duration::from_secs(*delay as u64);
+
+                        let entry = TimerEntry {
+                            timestamp,
+                            func_name:String::from_utf8(func_name)?,
+                            caller_info: caller.data().caller_info.clone(),
+                            func_params,
+                        };
+                
+                        let mut timer = caller.data().timer.lock().unwrap();
+                        timer.push(entry);
+                
+                        results[0] = Val::I32(0);
+                    } else {
+                        results[0] = Val::I32(2);
+                    }
+                
+                    Ok(())
+                },
+            )
+            .unwrap();
         // linker
         //     .func_new(
         //         "env",
@@ -312,6 +393,23 @@ impl Context {
             Some(Extern::Memory(mem)) => Ok(mem),
             _ => Err(Trap::HeapMisaligned),
         }
+    }
+    pub(crate) fn read_bytes_from_memory(
+        caller: &mut Caller<'_, Context>,
+        ptr: i32,
+        len: i32,
+    ) -> Result<Vec<u8>, Trap> {
+        let mem = match caller.get_export("memory") {
+            Some(Extern::Memory(mem)) => Ok(mem),
+            _ => Err(Trap::HeapMisaligned),
+        }?;
+        // Boundary check
+        if (ptr as u64 + len as u64) > mem.data_size(&caller) as u64 {
+            return Err(Trap::MemoryOutOfBounds);
+        }
+        let data = mem.data(&caller)[ptr as usize..(ptr + len) as usize].to_vec();
+        
+        Ok(data)
     }
 }
 
