@@ -1,10 +1,11 @@
 use chrono::{DateTime, Duration, Utc};
+use tokio::time;
 
 use crate::{
     context::{Context, ContextConfig},
     vm::Vm,
     wasm_code::WasmInfo,
-    ReplyTo,
+    CallerInfo, ReplyTo,
 };
 use std::{sync::mpsc::Receiver, thread::sleep};
 
@@ -90,14 +91,25 @@ impl Nucleus {
             } => {
                 match self.vm {
                     Some(ref mut vm) => {
-                        let vm_result = vm.call_post(&endpoint, payload).map_err(|e| {
-                            log::error!(
-                                "fail to call post endpoint: {} due to: {:?}",
+                        let vm_result = vm
+                            .call_post(
                                 &endpoint,
-                                e
-                            );
-                            (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                        });
+                                payload.clone(),
+                                vec![CallerInfo {
+                                    func: "Gluon::PostRequest".to_string(),
+                                    params: payload,
+                                    thread_id: 0,
+                                    caller_type: crate::CallerType::Entry,
+                                }],
+                            )
+                            .map_err(|e| {
+                                log::error!(
+                                    "fail to call post endpoint: {} due to: {:?}",
+                                    &endpoint,
+                                    e
+                                );
+                                (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                            });
                         if let Some(reply_to) = reply_to {
                             if let Err(err) = reply_to.send(vm_result) {
                                 log::error!("fail to send reply to: {:?}", err);
@@ -112,8 +124,13 @@ impl Nucleus {
                                 let duration: Duration = timer_entry.timestamp - now;
                                 sleep(duration.to_std().unwrap());
                             }
+                            let mut caller_infos = timer_entry.caller_infos;
                             let vm_result = vm
-                                .call_post(&timer_entry.func_name, timer_entry.func_params)
+                                .call_post(
+                                    &timer_entry.func_name,
+                                    timer_entry.func_params,
+                                    caller_infos,
+                                )
                                 .map_err(|e| {
                                     log::error!(
                                         "fail to call post endpoint: {} due to: {:?}",

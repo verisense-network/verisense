@@ -111,6 +111,7 @@ impl Vm {
         self.space.data_mut().set_is_get_method(true);
         self.space.data_mut().push_caller_info(CallerInfo {
             func: func.to_string(),
+            params: args.clone(),
             thread_id: get_thread_id(),
             caller_type: crate::CallerType::Get,
         });
@@ -120,13 +121,24 @@ impl Vm {
         result
     }
 
-    pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+    pub fn call_post(
+        &mut self,
+        func: &str,
+        args: Vec<u8>,
+        caller_infos: Vec<CallerInfo>,
+    ) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_is_get_method(false);
-        self.space.data_mut().push_caller_info(CallerInfo {
-            func: func.to_string(),
-            thread_id: get_thread_id(),
-            caller_type: crate::CallerType::Post,
-        });
+        let new_caller_infos = vec![
+            caller_infos,
+            vec![CallerInfo {
+                func: func.to_string(),
+                params: args.clone(),
+                thread_id: get_thread_id(),
+                caller_type: crate::CallerType::Post,
+            }],
+        ]
+        .concat();
+        self.space.data_mut().replace_caller_infos(new_caller_infos);
         let result = self.call_method(func, args, false);
         self.space.data_mut().pop_caller_info();
         return result;
@@ -213,8 +225,10 @@ fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Duration;
     use codec::{Decode, Encode};
     use temp_dir::TempDir;
+    use thread::sleep;
     #[test]
     pub fn load_wasm_should_work() {
         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
@@ -242,7 +256,7 @@ mod tests {
                 98
             ]
         );
-        let result = vm.call_post("cc", input).unwrap();
+        let result = vm.call_post("cc", input, vec![]).unwrap();
         assert_eq!(
             result,
             vec![
@@ -256,7 +270,7 @@ mod tests {
 
         let input = <String as codec::Encode>::encode(&"aaaaaaaaaa".to_string());
         //jsonrpc: {method: AVS_{AVSNAME}_{METHODNAME}, params: [], id: 1}
-        let result = vm.call_post("cc", input);
+        let result = vm.call_post("cc", input, vec![]);
         assert_eq!(
             result,
             Err(WasmCallError::WasmInternalError(
@@ -268,7 +282,7 @@ mod tests {
             "aaaaaaaaaa".to_string(),
             "bbbbbbbbbb".to_string(),
         ));
-        let result = vm.call_post("cc", input).unwrap();
+        let result = vm.call_post("cc", input, vec![]).unwrap();
         assert_eq!(
             result,
             vec![
@@ -286,6 +300,60 @@ mod tests {
         //     vec![0u8],
         //     vm.call_post("__nucleus_post_post", encoded_args).unwrap()
         // );
+    }
+    #[test]
+    pub fn test_set_time_delay() {
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("1").into_boxed_path(),
+        })
+        .unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+
+        let result = vm.call_post("test_set_timer", vec![], vec![]).unwrap();
+        let result = vm
+            .call_get(
+                "get_data",
+                <String as codec::Encode>::encode(&"delay".to_string()),
+            )
+            .unwrap();
+        let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
+        assert_eq!(r.unwrap(), "init");
+        while let Some(timer_entry) = vm.pop_pending_timer() {
+            let mut now = chrono::Utc::now();
+            if timer_entry.timestamp > now {
+                let duration: Duration = timer_entry.timestamp - now;
+                sleep(duration.to_std().unwrap());
+            }
+            let vm_result = vm
+                .call_post(&timer_entry.func_name, timer_entry.func_params, vec![])
+                .map_err(|e| {
+                    log::error!(
+                        "fail to call post endpoint: {} due to: {:?}",
+                        &timer_entry.func_name,
+                        e
+                    );
+                    (1000000 << 10 + e.to_error_code(), e.to_string())
+                });
+            let result = vm
+                .call_get(
+                    "get_data",
+                    <String as codec::Encode>::encode(&"delay".to_string()),
+                )
+                .unwrap();
+            let r =
+                <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
+
+            assert_eq!(r.unwrap(), "delay_complete abc 123");
+        }
     }
 
     #[test]
@@ -312,7 +380,7 @@ mod tests {
             result,
             Err("Operation not allowed in GET method".to_string())
         );
-        let result = vm.call_post("should_not_call_put", vec![]).unwrap();
+        let result = vm.call_post("should_call_put", vec![], vec![]).unwrap();
         let result = <Result<(), String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
         assert_eq!(result, Ok(()));
     }
@@ -337,11 +405,11 @@ mod tests {
         .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
 
-        let result = vm.call_post("i0o0", vec![]).unwrap();
+        let result = vm.call_post("i0o0", vec![], vec![]).unwrap();
         assert_eq!(result, a.encode());
-        let result = vm.call_post("i1o0", b.encode()).unwrap();
+        let result = vm.call_post("i1o0", b.encode(), vec![]).unwrap();
         assert_eq!(result, a.encode());
-        let result = vm.call_post("i1o1", b.encode()).unwrap();
+        let result = vm.call_post("i1o1", b.encode(), vec![]).unwrap();
 
         assert_eq!(result, b.encode());
     }
@@ -487,7 +555,7 @@ mod tests {
         })
         .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-        let result = vm.call_post("test_put_get", vec![]).unwrap();
+        let result = vm.call_post("test_put_get", vec![], vec![]).unwrap();
         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
             .unwrap()
             .unwrap();
@@ -509,7 +577,7 @@ mod tests {
         })
         .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-        let result = vm.call_post("test_get_not_found", vec![]).unwrap();
+        let result = vm.call_post("test_get_not_found", vec![], vec![]).unwrap();
         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
             .unwrap()
             .unwrap();
@@ -531,10 +599,180 @@ mod tests {
         })
         .unwrap();
         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-        let result = vm.call_post("test_put_get_static", vec![]).unwrap();
+        let result = vm.call_post("test_put_get_static", vec![], vec![]).unwrap();
         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
             .unwrap()
             .unwrap();
         assert_eq!(s, "test_value");
+    }
+    #[test]
+    pub fn test_multiple_set_time_delay() {
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("1").into_boxed_path(),
+        })
+        .unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+
+        let result = vm
+            .call_post("test_set_tree_mod_timer", vec![], vec![])
+            .unwrap();
+        let result = vm
+            .call_get(
+                "get_data",
+                <String as codec::Encode>::encode(&"delay".to_string()),
+            )
+            .unwrap();
+        let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
+        assert_eq!(r.unwrap(), "delay_complete init 0");
+        let mut ord = 0;
+        while let Some(timer_entry) = vm.pop_pending_timer() {
+            ord += 1;
+            // println!("{:?}", timer_entry);
+            let mut now = chrono::Utc::now();
+            if timer_entry.timestamp > now {
+                let duration: Duration = timer_entry.timestamp - now;
+                sleep(duration.to_std().unwrap());
+            }
+            let vm_result = vm
+                .call_post(&timer_entry.func_name, timer_entry.func_params, vec![])
+                .map_err(|e| {
+                    log::error!(
+                        "fail to call post endpoint: {} due to: {:?}",
+                        &timer_entry.func_name,
+                        e
+                    );
+                    (1000000 << 10 + e.to_error_code(), e.to_string())
+                });
+            let result = vm
+                .call_get(
+                    "get_data",
+                    <String as codec::Encode>::encode(&"delay".to_string()),
+                )
+                .unwrap();
+            let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
+                .unwrap()
+                .unwrap();
+            assert_eq!(r, format!("delay_complete abc {}", ord));
+        }
+    }
+    #[test]
+    pub fn test_tree_set_time_delay() {
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
+
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("1").into_boxed_path(),
+        })
+        .unwrap();
+        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+        let input = <(i32, i32) as codec::Encode>::encode(&(1, 0));
+        let result = vm
+            .call_post(
+                "test_set_perfect_tree_mod_timer",
+                input,
+                vec![CallerInfo {
+                    func: "test_tree_set_time_delay".to_string(),
+                    thread_id: 0,
+                    params: vec![],
+                    caller_type: crate::CallerType::Entry,
+                }],
+            )
+            .unwrap();
+        let result = vm
+            .call_get(
+                "get_data",
+                <String as codec::Encode>::encode(&"delay".to_string()),
+            )
+            .unwrap();
+        let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
+
+        let mut s = format!("{}", r.unwrap());
+        let mut ord = 0;
+        while let Some(timer_entry) = vm.pop_pending_timer() {
+            ord += 1;
+
+            // println!("{:#?}", timer_entry);
+            let mut now = chrono::Utc::now();
+            if timer_entry.timestamp > now {
+                let duration: Duration = timer_entry.timestamp - now;
+                sleep(duration.to_std().unwrap());
+            }
+
+            let vm_result = vm
+                .call_post(
+                    &timer_entry.func_name,
+                    timer_entry.func_params,
+                    timer_entry.caller_infos,
+                )
+                .map_err(|e| {
+                    log::error!(
+                        "fail to call post endpoint: {} due to: {:?}",
+                        &timer_entry.func_name,
+                        e
+                    );
+                    (1000000 << 10 + e.to_error_code(), e.to_string())
+                });
+
+            let result = vm
+                .call_get(
+                    "get_data",
+                    <String as codec::Encode>::encode(&"delay".to_string()),
+                )
+                .unwrap();
+            let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
+                .unwrap()
+                .unwrap();
+            s = s + &format!("\n{}", r);
+        }
+        let mut nodes: Vec<(u32, u32)> = vec![]; // Start with (1, 0) for "init"
+
+        nodes.extend(
+            s.lines() // Skip the "init" line
+                .filter_map(|line| {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() == 5 {
+                        Some((parts[1].parse().ok()?, parts[4].parse().ok()?))
+                    } else {
+                        None
+                    }
+                }),
+        );
+        let mut right = vec![0; 100];
+        let mut last = 0;
+        for data in nodes {
+            assert!(data.1 >= last);
+            last = data.1;
+            right[data.0 as usize] = data.1
+        }
+        assert!(right[1] == 0);
+        assert!(right[2] == 1);
+        assert!(right[3] == 2);
+        assert!(right[4] == 2);
+        assert!(right[5] == 3);
+        assert!(right[6] == 3);
+        assert!(right[7] == 4);
+        assert!(right[8] == 3);
+        assert!(right[9] == 4);
+        assert!(right[10] == 4);
+        assert!(right[11] == 5);
+        assert!(right[12] == 4);
+        assert!(right[13] == 5);
+        assert!(right[14] == 5);
+        assert!(right[15] == 6);
     }
 }

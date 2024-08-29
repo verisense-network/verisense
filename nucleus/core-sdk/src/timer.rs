@@ -53,6 +53,6 @@ macro_rules! set_timer {
             let __params: [<_NUCLEUS_POST_PARAMS_TYPE_ $func_name>] = ($($param,)*);
             let __params_bytes = <[<_NUCLEUS_POST_PARAMS_TYPE_ $func_name>] as ::vrs_core_sdk::codec::Encode>::encode(&__params);
         }
-        ::vrs_core_sdk::_set_timer(__duration, __func_bytes, __params_bytes)
+        ::vrs_core_sdk::_set_timer(__duration, __func_bytes, __params_bytes.as_slice())
     }};
 }

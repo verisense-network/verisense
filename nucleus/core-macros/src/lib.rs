@@ -100,6 +100,8 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
     };
     let expanded = quote! {
         #type_def
+        // Place the original function inside the decoded function
+        #input_fn
         #[no_mangle]
         pub fn #decoded_fn_name(__ptr: *const u8, __len: usize) -> *const u8 {
             fn encode_result<T: ::vrs_core_sdk::codec::Encode>(result: T) -> *const u8 {
@@ -117,11 +119,11 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
                 encode_result(Err::<Vec<u8>, String>(error))
             }
 
-            // Place the original function inside the decoded function
-            #input_fn
 
-            // Call the function based on whether it has parameters or not
+
             #function_call
+            // Call the function based on whether it has parameters or not
+
 
             let encoded = <#output_type as ::vrs_core_sdk::codec::Encode>::encode(&result);
             let wrapped_result: Result<Vec<u8>, String> = Ok(encoded);

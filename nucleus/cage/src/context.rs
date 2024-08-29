@@ -20,7 +20,7 @@ struct Cache {
 pub struct Context {
     pub(crate) db: Arc<DB>,
     is_get_method: bool,
-    caller_info:Vec<CallerInfo>,
+    caller_infos:Vec<CallerInfo>,
     //todo: cache
     cache: Arc<Option<Cache>>,
     timer: Arc<Mutex<TimerQueue>>,
@@ -40,18 +40,21 @@ impl Context {
         Ok(Context {
             db: Arc::new(kvdb::init_rocksdb(config.db_path)?),
             is_get_method: false,
-            caller_info:vec![],
+            caller_infos:vec![],
             cache: Arc::new(None),
             timer: Arc::new(Mutex::new(TimerQueue::new())),
         })
     }
 
     pub fn push_caller_info(&mut self, caller_info: CallerInfo) {
-        self.caller_info.push(caller_info);
+        self.caller_infos.push(caller_info);
     }
 
     pub fn pop_caller_info(&mut self) -> Option<CallerInfo> {
-        self.caller_info.pop()
+        self.caller_infos.pop()
+    }
+    pub fn replace_caller_infos(&mut self, caller_infos: Vec<CallerInfo>) {
+        self.caller_infos = caller_infos;
     }
 
     pub fn is_get_method(&self) -> bool {
@@ -259,7 +262,7 @@ impl Context {
         linker
             .func_new(
                 "env",
-                "set_time_delay",
+                "timer_set_delay",
                 FuncType::new(
                     &engine,
                     [
@@ -286,7 +289,7 @@ impl Context {
                         let entry = TimerEntry {
                             timestamp,
                             func_name:String::from_utf8(func_name)?,
-                            caller_info: caller.data().caller_info.clone(),
+                            caller_infos: caller.data().caller_infos.clone(),
                             func_params,
                         };
                 
