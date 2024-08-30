@@ -3,16 +3,20 @@ use tokio::time;
 
 use crate::{
     context::{Context, ContextConfig},
+    scheduler,
     vm::Vm,
     wasm_code::WasmInfo,
-    CallerInfo, ReplyTo, TimerEntry,
+    CallerInfo, ReplyTo, Scheduler, TimerEntry, WrappedScheduler, WrappedSchedulerSync,
 };
-use std::{sync::mpsc::Receiver, thread::sleep};
+use std::{
+    sync::{mpsc::Receiver, Arc},
+    thread::{self, sleep},
+};
 use tokio::sync::mpsc::Sender;
 
 pub(crate) struct Nucleus {
     receiver: Receiver<(u64, Gluon)>,
-    scheduler_timer_sender: Sender<TimerEntry>,
+    scheduler: Arc<WrappedSchedulerSync>,
     vm: Option<Vm>,
 }
 
@@ -39,7 +43,7 @@ const VM_ERROR: i32 = 0x00000001;
 impl Nucleus {
     pub(crate) fn new(
         receiver: Receiver<(u64, Gluon)>,
-        scheduler_timer_sender: Sender<TimerEntry>,
+        scheduler: Arc<WrappedSchedulerSync>,
         context: Context,
         code: WasmInfo,
     ) -> Self {
@@ -56,12 +60,13 @@ impl Nucleus {
         Nucleus {
             receiver,
             vm,
-            scheduler_timer_sender,
+            scheduler,
         }
     }
 
     pub(crate) fn run(&mut self) {
         while let Ok((id, msg)) = self.receiver.recv() {
+            println!("123");
             // TODO save msg with id to rocksdb
             self.accept(msg);
         }
@@ -122,22 +127,21 @@ impl Nucleus {
                                 );
                                 (VM_ERROR << 10 + e.to_error_code(), e.to_string())
                             });
-                        if let Some(reply_to) = reply_to {
-                            if let Err(err) = reply_to.send(vm_result) {
-                                log::error!("fail to send reply to: {:?}", err);
-                            }
-                        } else {
-                            log::error!("reply_to not found");
-                        }
                         while let Some(entry) = vm.pop_pending_timer() {
-                            let entry = entry.clone();
-                            let sender = self.scheduler_timer_sender.clone();
-                            tokio::spawn(async move {
-                                if let Err(err) = sender.send(entry).await {
-                                    log::error!("fail to send timer entry: {:?}", err);
-                                }
-                            });
+                            println!("{:?}", entry);
+                            self.scheduler.push_thread(entry);
                         }
+                        thread::spawn(move || {
+                            if let Some(reply_to) = reply_to {
+                                if let Err(err) = reply_to.send(vm_result) {
+                                    println!("fail to send reply to: {:?}", err);
+                                    log::error!("fail to send reply to: {:?}", err);
+                                }
+                            } else {
+                                println!("423");
+                                log::error!("reply_to not found");
+                            }
+                        });
                     }
                     None => {
                         log::error!("vm not initialized");
@@ -180,11 +184,10 @@ mod tests {
         let vm = Vm::new_instance(&wasm, context).unwrap();
 
         let (sender, receiver) = mpsc::channel();
-        let (sender1, receiver1) = tokio::sync::mpsc::channel(123);
         let mut nucleus = Nucleus {
             receiver,
             vm: Some(vm),
-            scheduler_timer_sender: sender1,
+            scheduler: Arc::new(WrappedSchedulerSync::new().0),
         };
 
         let (tx_get, rx_get) = oneshot::channel();
