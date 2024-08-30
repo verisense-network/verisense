@@ -1,9 +1,11 @@
 mod cage;
 mod context;
 mod nucleus;
+mod scheduler;
 mod timer_entry;
 mod vm;
 mod wasm_code;
+pub(crate) use scheduler::*;
 pub use timer_entry::*;
 
 pub use cage::{start_nucleus_cage, CageParams};

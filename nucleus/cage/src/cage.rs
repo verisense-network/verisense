@@ -184,7 +184,81 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
         _ => {}
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{nucleus::Nucleus, vm::Vm, Scheduler};
+    use codec::Decode;
+    use rocksdb::Options;
+    use std::{sync::Arc, time::Duration};
+    use temp_dir::TempDir;
+    use tokio::{sync::mpsc, task, time};
+    use vrs_core_sdk::AccountId;
+    #[tokio::test]
+    async fn test_scheduler() {
+        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
+        let wasm = WasmInfo {
+            account: AccountId::new([0u8; 32]),
+            name: "avs-dev-demo".to_string(),
+            version: 0,
+            code: WasmCodeRef::File(wasm_path.to_string()),
+        };
 
+        let tmp_dir = TempDir::new().unwrap();
+        let context = Context::init(ContextConfig {
+            db_path: tmp_dir.child("0").into_boxed_path(),
+        })
+        .unwrap();
+        let (sender_cage, receiver_cage) = std::sync::mpsc::channel();
+        let (sender_nucleus, receiver_nucleus) = tokio::sync::mpsc::channel(123);
+        let mut nucleus = Nucleus::new(receiver_cage, sender_nucleus, context, wasm);
+        let scheduler = Scheduler::new(receiver_nucleus);
+        let sender_cage_clone = sender_cage.clone();
+        task::spawn_blocking(move || {
+            nucleus.run();
+        });
+        tokio::spawn(async move {
+            scheduler
+                .start(move |entry| {
+                    let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+                    println!("call {} with {:?}", entry.func_name, entry.func_params);
+                    sender_cage_clone
+                        .send((
+                            0,
+                            Gluon::PostRequest {
+                                endpoint: entry.func_name.clone(),
+                                payload: entry.func_params,
+                                reply_to: Some(sender_reply),
+                            },
+                        ))
+                        .unwrap();
+                    println!("send {} to set_timer ", entry.func_name.clone());
+                    task::spawn(async move {
+                        let reply = receiver_reply.await.unwrap();
+                        let result = reply.unwrap();
+                        println!("reply {} to set_timer {:?}", entry.func_name, result);
+                    });
+                })
+                .await;
+        });
+
+        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        tokio::spawn(async move {
+            let send_r = sender_cage.send((
+                0,
+                Gluon::PostRequest {
+                    endpoint: "test_set_perfect_tree_mod_timer".to_owned(),
+                    payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
+                    reply_to: Some(sender_reply),
+                },
+            ));
+            println!("reply to original: {:?}", send_r);
+        });
+        let reply = receiver_reply.await.unwrap();
+        println!("{:?}", reply);
+        tokio::time::sleep(Duration::from_secs(5)).await;
+    }
+}
 // fn map_to_nucleus<B, D, C>(
 //     runtime_storage: Arc<C>,
 //     hash: B::Hash,

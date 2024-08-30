@@ -5,12 +5,14 @@ use crate::{
     context::{Context, ContextConfig},
     vm::Vm,
     wasm_code::WasmInfo,
-    CallerInfo, ReplyTo,
+    CallerInfo, ReplyTo, TimerEntry,
 };
 use std::{sync::mpsc::Receiver, thread::sleep};
+use tokio::sync::mpsc::Sender;
 
 pub(crate) struct Nucleus {
     receiver: Receiver<(u64, Gluon)>,
+    scheduler_timer_sender: Sender<TimerEntry>,
     vm: Option<Vm>,
 }
 
@@ -35,7 +37,12 @@ pub enum Gluon {
 const VM_ERROR: i32 = 0x00000001;
 
 impl Nucleus {
-    pub(crate) fn new(receiver: Receiver<(u64, Gluon)>, context: Context, code: WasmInfo) -> Self {
+    pub(crate) fn new(
+        receiver: Receiver<(u64, Gluon)>,
+        scheduler_timer_sender: Sender<TimerEntry>,
+        context: Context,
+        code: WasmInfo,
+    ) -> Self {
         // TODO
         let vm = Vm::new_instance(&code, context)
             .inspect_err(|e| {
@@ -46,7 +53,11 @@ impl Nucleus {
                 )
             })
             .ok();
-        Nucleus { receiver, vm }
+        Nucleus {
+            receiver,
+            vm,
+            scheduler_timer_sender,
+        }
     }
 
     pub(crate) fn run(&mut self) {
@@ -84,6 +95,7 @@ impl Nucleus {
                     log::error!("vm not initialized");
                 }
             },
+
             Gluon::PostRequest {
                 endpoint,
                 payload,
@@ -117,29 +129,14 @@ impl Nucleus {
                         } else {
                             log::error!("reply_to not found");
                         }
-                        //todo revise carefully
-                        while let Some(timer_entry) = vm.pop_pending_timer() {
-                            let now = chrono::Utc::now();
-                            while timer_entry.timestamp > now {
-                                let duration: Duration = timer_entry.timestamp - now;
-                                sleep(duration.to_std().unwrap());
-                            }
-                            let mut caller_infos = timer_entry.caller_infos;
-                            let vm_result = vm
-                                .call_post(
-                                    &timer_entry.func_name,
-                                    timer_entry.func_params,
-                                    caller_infos,
-                                )
-                                .map_err(|e| {
-                                    log::error!(
-                                        "fail to call post endpoint: {} due to: {:?}",
-                                        &endpoint,
-                                        e
-                                    );
-                                    (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                                });
-                            //todo reply not only once
+                        while let Some(entry) = vm.pop_pending_timer() {
+                            let entry = entry.clone();
+                            let sender = self.scheduler_timer_sender.clone();
+                            tokio::spawn(async move {
+                                if let Err(err) = sender.send(entry).await {
+                                    log::error!("fail to send timer entry: {:?}", err);
+                                }
+                            });
                         }
                     }
                     None => {
@@ -183,9 +180,11 @@ mod tests {
         let vm = Vm::new_instance(&wasm, context).unwrap();
 
         let (sender, receiver) = mpsc::channel();
+        let (sender1, receiver1) = tokio::sync::mpsc::channel(123);
         let mut nucleus = Nucleus {
             receiver,
             vm: Some(vm),
+            scheduler_timer_sender: sender1,
         };
 
         let (tx_get, rx_get) = oneshot::channel();

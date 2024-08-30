@@ -1,4 +1,5 @@
 use core::fmt;
+use std::cmp::Reverse;
 use std::hash::{Hash, Hasher};
 use std::{cmp::Ordering, collections::BinaryHeap, hash::DefaultHasher, rc::Rc};
 
@@ -48,7 +49,7 @@ pub struct TimerEntry {
     pub func_params: Vec<u8>,
 }
 pub(crate) struct TimerQueue {
-    heap: BinaryHeap<TimerEntry>,
+    heap: BinaryHeap<Reverse<TimerEntry>>,
 }
 impl TimerEntry {
     pub fn hash_u64(&self) -> u64 {
@@ -92,7 +93,7 @@ impl PartialOrd for TimerEntry {
 
 impl Ord for TimerEntry {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.timestamp.cmp(&self.timestamp)
+        self.timestamp.cmp(&other.timestamp)
     }
 }
 impl Eq for TimerEntry {}
@@ -105,10 +106,53 @@ impl TimerQueue {
     }
 
     pub fn push(&mut self, entry: TimerEntry) {
-        self.heap.push(entry);
+        self.heap.push(Reverse(entry));
     }
 
     pub fn pop(&mut self) -> Option<TimerEntry> {
-        self.heap.pop()
+        self.heap.pop().map(|Reverse(entry)| entry)
+    }
+
+    pub fn peek(&self) -> Option<&TimerEntry> {
+        self.heap.peek().map(|Reverse(entry)| entry)
+    }
+    pub fn is_empty(&self) -> bool {
+        self.heap.is_empty()
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+    use std::time::Duration;
+
+    #[test]
+    fn test_timer_queue() {
+        let mut timer_queue = TimerQueue::new();
+        let entry = TimerEntry {
+            caller_infos: vec![CallerInfo {
+                func: "test".to_string(),
+                params: vec![1, 2, 3],
+                thread_id: 1,
+                caller_type: CallerType::Entry,
+            }],
+            timestamp: Utc::now() + Duration::from_secs(1),
+            func_name: "test".to_string(),
+            func_params: vec![1, 2, 3],
+        };
+        timer_queue.push(entry.clone());
+        let entry = TimerEntry {
+            caller_infos: vec![CallerInfo {
+                func: "test".to_string(),
+                params: vec![3, 2, 1],
+                thread_id: 1,
+                caller_type: CallerType::Entry,
+            }],
+            timestamp: Utc::now() + Duration::from_secs(2),
+            func_name: "test".to_string(),
+            func_params: vec![3, 2, 1],
+        };
+        timer_queue.push(entry.clone());
+        assert_eq!(timer_queue.pop().unwrap().func_params, vec![1, 2, 3]);
     }
 }
