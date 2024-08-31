@@ -289,6 +289,7 @@ impl Context {
                         let entry = TimerEntry {
                             timestamp,
                             func_name:String::from_utf8(func_name)?,
+                            triggered_time:None,
                             caller_infos: caller.data().caller_infos.clone(),
                             func_params,
                         };

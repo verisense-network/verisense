@@ -1,14 +1,21 @@
 use crate::{TimerEntry, TimerQueue};
 use chrono::{DateTime, Utc};
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver as SyncReceiver;
 use std::sync::mpsc::Sender as SyncSender;
+use std::sync::Arc;
+use std::task::Poll;
 use std::thread;
 use std::time::Duration;
+use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::task;
-use tokio::time::{self, Instant, Sleep};
+use tokio::sync::Mutex;
+use tokio::sync::RwLock;
+use tokio::time::Sleep;
+use tokio::time::{self, Instant};
 pub struct WrappedScheduler {
     sender: Sender<TimerEntry>,
 }
@@ -16,11 +23,58 @@ pub struct WrappedScheduler {
 pub struct WrappedSchedulerSync {
     sender: SyncSender<TimerEntry>,
 }
+pub struct SchedulerAsync {
+    tx: UnboundedSender<TimerEntry>,
+    rx: Arc<Mutex<UnboundedReceiver<TimerEntry>>>,
+}
+
+impl SchedulerAsync {
+    pub fn new() -> Self {
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        SchedulerAsync {
+            tx,
+            rx: Arc::new(Mutex::new(rx)),
+        }
+    }
+
+    pub async fn pop(&self) -> Option<TimerEntry> {
+        let mut rx = self.rx.lock().await;
+        rx.recv().await
+    }
+
+    pub fn push(&self, entry: TimerEntry) {
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let now = Utc::now();
+            if entry.timestamp > now {
+                tokio::time::sleep((entry.timestamp - now).to_std().unwrap()).await;
+            }
+            let mut entry = entry;
+            entry.triggered_time = Some(Utc::now());
+            let _ = tx.send(entry);
+        });
+    }
+}
+impl futures::Stream for SchedulerAsync {
+    type Item = TimerEntry;
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        let rx = self.rx.try_lock();
+        match rx {
+            Ok(mut rx) => rx.poll_recv(cx),
+            Err(_) => {
+                return Poll::Pending;
+            }
+        }
+    }
+}
 
 impl WrappedScheduler {
     pub fn new() -> (Self, Receiver<(DateTime<Utc>, TimerEntry)>) {
-        let (sender_nucleus, mut receiver_nucleus) = tokio::sync::mpsc::channel(100);
         let (sender_cage, receiver_cage) = tokio::sync::mpsc::channel(100);
+        let (sender_nucleus, mut receiver_nucleus) = tokio::sync::mpsc::channel(100);
         tokio::spawn(async move {
             let mut timer = Box::pin(time::sleep(time::Duration::from_secs(0)));
             let mut timer_queue = TimerQueue::new();
@@ -217,6 +271,7 @@ mod tests {
     use super::*;
     use crate::{CallerInfo, CallerType};
     use chrono::{Duration, Utc};
+    use futures::StreamExt;
     use std::{sync::Arc, time::Duration as StdDuration};
     use tokio::sync::mpsc;
 
@@ -302,6 +357,7 @@ mod tests {
                 thread_id: 1,
                 caller_type: CallerType::Entry,
             }],
+            triggered_time: None,
             timestamp: Utc::now() + Duration::seconds(seconds),
             func_name: "test".to_string(),
             func_params: vec![3, 2, 1],
@@ -356,6 +412,57 @@ mod tests {
 
             let expected_trigger_time = start_time + Duration::seconds(i as i64 + 1);
             let time_difference = (*trigger_time - expected_trigger_time)
+                .num_milliseconds()
+                .abs();
+            assert!(
+                time_difference < 100,
+                "Entry {} was not triggered at the expected time. Difference: {} ms",
+                i,
+                time_difference
+            );
+        }
+    }
+    #[tokio::test]
+    async fn test_scheduler_async() {
+        let mut scheduler = SchedulerAsync::new();
+
+        // Create test TimerEntries
+        let start_time = Utc::now();
+        let entries = vec![
+            create_timer_entry(6),
+            create_timer_entry(5),
+            create_timer_entry(4),
+            create_timer_entry(3),
+            create_timer_entry(2),
+            create_timer_entry(1),
+        ];
+        scheduler.push(entries[0].clone());
+        scheduler.push(entries[1].clone());
+        scheduler.push(entries[2].clone());
+        scheduler.push(entries[3].clone());
+        scheduler.push(entries[4].clone());
+        scheduler.push(entries[5].clone());
+        let mut triggered_entries = Vec::new();
+        triggered_entries.push(scheduler.next().await.unwrap());
+        triggered_entries.push(scheduler.pop().await.unwrap());
+        triggered_entries.push(scheduler.next().await.unwrap());
+        triggered_entries.push(scheduler.pop().await.unwrap());
+        triggered_entries.push(scheduler.next().await.unwrap());
+        triggered_entries.push(scheduler.pop().await.unwrap());
+
+        // // Sort entries by timestamp for comparison
+        let mut sorted_entries = entries.clone();
+        sorted_entries.sort_by_key(|e| e.timestamp);
+
+        for (i, entry) in triggered_entries.iter().enumerate() {
+            assert_eq!(
+                entry.timestamp, sorted_entries[i].timestamp,
+                "Entry {} was not triggered in the correct order",
+                i
+            );
+
+            let expected_trigger_time = start_time + Duration::seconds(i as i64 + 1);
+            let time_difference = (entry.triggered_time.unwrap() - expected_trigger_time)
                 .num_milliseconds()
                 .abs();
             assert!(

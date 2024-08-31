@@ -46,12 +46,27 @@ pub struct TimerEntry {
     pub caller_infos: Vec<CallerInfo>,
     pub timestamp: DateTime<Utc>,
     pub func_name: String,
+    pub triggered_time: Option<DateTime<Utc>>,
     pub func_params: Vec<u8>,
 }
 pub(crate) struct TimerQueue {
     heap: BinaryHeap<Reverse<TimerEntry>>,
 }
 impl TimerEntry {
+    pub fn new(
+        caller_infos: Vec<CallerInfo>,
+        timestamp: DateTime<Utc>,
+        func_name: String,
+        func_params: Vec<u8>,
+    ) -> Self {
+        TimerEntry {
+            caller_infos,
+            timestamp,
+            func_name,
+            triggered_time: None,
+            func_params,
+        }
+    }
     pub fn hash_u64(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
@@ -64,6 +79,7 @@ impl fmt::Debug for TimerEntry {
         f.debug_struct("TimerEntry")
             .field("caller_infos", &self.caller_infos)
             .field("timestamp", &self.timestamp)
+            .field("triggered_time", &self.triggered_time)
             .field("func_name", &self.func_name)
             .field("func_params", &self.func_params)
             .field("hash", &format!("{:016x}", self.hash_u64()))
@@ -129,29 +145,41 @@ mod tests {
     #[test]
     fn test_timer_queue() {
         let mut timer_queue = TimerQueue::new();
-        let entry = TimerEntry {
-            caller_infos: vec![CallerInfo {
+        let entry = TimerEntry::new(
+            vec![CallerInfo {
                 func: "test".to_string(),
                 params: vec![1, 2, 3],
                 thread_id: 1,
                 caller_type: CallerType::Entry,
             }],
-            timestamp: Utc::now() + Duration::from_secs(1),
-            func_name: "test".to_string(),
-            func_params: vec![1, 2, 3],
-        };
+            Utc::now() + Duration::from_secs(1),
+            "test".to_string(),
+            vec![1, 2, 3],
+        );
         timer_queue.push(entry.clone());
-        let entry = TimerEntry {
-            caller_infos: vec![CallerInfo {
+        let entry = TimerEntry::new(
+            vec![CallerInfo {
                 func: "test".to_string(),
                 params: vec![3, 2, 1],
                 thread_id: 1,
                 caller_type: CallerType::Entry,
             }],
-            timestamp: Utc::now() + Duration::from_secs(2),
-            func_name: "test".to_string(),
-            func_params: vec![3, 2, 1],
-        };
+            Utc::now() + Duration::from_secs(2),
+            "test".to_string(),
+            vec![3, 2, 1],
+        );
+        timer_queue.push(entry.clone());
+        let entry = TimerEntry::new(
+            vec![CallerInfo {
+                func: "test".to_string(),
+                params: vec![3, 2, 1],
+                thread_id: 1,
+                caller_type: CallerType::Entry,
+            }],
+            Utc::now() + Duration::from_secs(3),
+            "test".to_string(),
+            vec![3, 2, 1],
+        );
         timer_queue.push(entry.clone());
         assert_eq!(timer_queue.pop().unwrap().func_params, vec![1, 2, 3]);
     }
