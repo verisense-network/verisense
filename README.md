@@ -1,3 +1,4 @@
 # Verisense Node
 
-[Verisense](https://verisense.network) node for running inside AVS. 
+> [Verisense](https://verisense.network) node for running AVS inside. 
+
