@@ -19,6 +19,7 @@ tokio = { version = "1", features = [
     "io-util",
     "time",
 ] }
+paste = "1.0"
 # vrs-core-macros = { path = "../core-macros" }
 anyhow = { version = "1", default-features = false }
 codec = { workspace = true, features = ["derive"], default-features = false }

@@ -1,13 +1,23 @@
+use chrono::{DateTime, Duration, Utc};
+use tokio::{sync::RwLock, time};
+
 use crate::{
     context::{Context, ContextConfig},
+    scheduler,
     vm::Vm,
     wasm_code::WasmInfo,
-    ReplyTo,
+    CallerInfo, ReplyTo, Scheduler, SchedulerAsync, TimerEntry, WrappedScheduler,
+    WrappedSchedulerSync,
 };
-use std::sync::mpsc::Receiver;
+use std::{
+    sync::{mpsc::Receiver, Arc},
+    thread::{self, sleep},
+};
+use tokio::sync::mpsc::Sender;
 
 pub(crate) struct Nucleus {
     receiver: Receiver<(u64, Gluon)>,
+    scheduler: Arc<SchedulerAsync>,
     vm: Option<Vm>,
 }
 
@@ -32,7 +42,12 @@ pub enum Gluon {
 const VM_ERROR: i32 = 0x00000001;
 
 impl Nucleus {
-    pub(crate) fn new(receiver: Receiver<(u64, Gluon)>, context: Context, code: WasmInfo) -> Self {
+    pub(crate) fn new(
+        receiver: Receiver<(u64, Gluon)>,
+        scheduler: Arc<SchedulerAsync>,
+        context: Context,
+        code: WasmInfo,
+    ) -> Self {
         // TODO
         let vm = Vm::new_instance(&code, context)
             .inspect_err(|e| {
@@ -43,7 +58,11 @@ impl Nucleus {
                 )
             })
             .ok();
-        Nucleus { receiver, vm }
+        Nucleus {
+            receiver,
+            vm,
+            scheduler,
+        }
     }
 
     pub(crate) fn run(&mut self) {
@@ -81,6 +100,7 @@ impl Nucleus {
                     log::error!("vm not initialized");
                 }
             },
+
             Gluon::PostRequest {
                 endpoint,
                 payload,
@@ -88,16 +108,32 @@ impl Nucleus {
             } => {
                 match self.vm {
                     Some(ref mut vm) => {
-                        let vm_result = vm.call_post(&endpoint, payload).map_err(|e| {
-                            log::error!(
-                                "fail to call post endpoint: {} due to: {:?}",
+                        let vm_result = vm
+                            .call_post(
                                 &endpoint,
-                                e
-                            );
-                            (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                        });
+                                payload.clone(),
+                                vec![CallerInfo {
+                                    func: "Gluon::PostRequest".to_string(),
+                                    params: payload,
+                                    thread_id: 0,
+                                    caller_type: crate::CallerType::Entry,
+                                }],
+                            )
+                            .map_err(|e| {
+                                log::error!(
+                                    "fail to call post endpoint: {} due to: {:?}",
+                                    &endpoint,
+                                    e
+                                );
+                                (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                            });
+                        while let Some(entry) = vm.pop_pending_timer() {
+                            // println!("{:?}", entry);
+                            self.scheduler.push(entry);
+                        }
                         if let Some(reply_to) = reply_to {
                             if let Err(err) = reply_to.send(vm_result) {
+                                println!("fail to send reply to: {:?}", err);
                                 log::error!("fail to send reply to: {:?}", err);
                             }
                         } else {
@@ -148,6 +184,7 @@ mod tests {
         let mut nucleus = Nucleus {
             receiver,
             vm: Some(vm),
+            scheduler: Arc::new(SchedulerAsync::new()),
         };
 
         let (tx_get, rx_get) = oneshot::channel();

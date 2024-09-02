@@ -1,12 +1,16 @@
 // pub use vrs_core_macros::*
 pub use codec;
+pub use paste::paste as macro_paste;
 pub use vrs_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
 mod constant;
 pub use constant::*;
+mod timer;
+pub use timer::timer::_set_timer;
+
 #[allow(improper_ctypes)]
 pub mod storage {
-
-    use crate::{StorageError, MAX_GET_RETURN_SIZE};
+    use crate::constant::StorageError;
+    use crate::MAX_GET_RETURN_SIZE;
 
     #[link(wasm_import_module = "env")]
     extern "C" {
@@ -16,19 +20,10 @@ pub mod storage {
             value_ptr: *const u8,
             value_len: usize,
         ) -> i32;
-    }
 
-    #[link(wasm_import_module = "env")]
-    extern "C" {
         fn storage_get_len(key_ptr: *const u8, key_len: u32, value_len_ptr: *mut u32) -> i32;
-        // fn storage_get_data(
-        //     k_ptr: *const u8,
-        //     k_len: u32,
-        //     v_ptr: *mut u8,
-        //     v_len_ptr: *mut u32,
-        // ) -> i32;
-        fn storage_get(k_ptr: *const u8, k_len: u32, v_ptr: *mut u8, v_len_ptr: *mut u32) -> i32;
 
+        fn storage_get(k_ptr: *const u8, k_len: u32, v_ptr: *mut u8, v_len_ptr: *mut u32) -> i32;
     }
 
     pub fn put(key: &[u8], value: &[u8]) -> anyhow::Result<()> {
@@ -39,6 +34,7 @@ pub mod storage {
             Ok(())
         }
     }
+
     pub fn get_static(key: &[u8]) -> anyhow::Result<Option<Vec<u8>>> {
         let mut value = vec![0u8; MAX_GET_RETURN_SIZE];
         let mut value_len: u32 = 0;
@@ -62,6 +58,7 @@ pub mod storage {
             Ok(Some(value[..value_len as usize].to_vec()))
         }
     }
+
     pub fn get(key: &[u8]) -> anyhow::Result<Option<Vec<u8>>> {
         let mut value_len: u32 = 0;
         let status =

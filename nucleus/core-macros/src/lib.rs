@@ -47,7 +47,6 @@ pub fn post(attr: TokenStream, func: TokenStream) -> TokenStream {
 pub fn get(attr: TokenStream, func: TokenStream) -> TokenStream {
     expand(attr, func, "get")
 }
-
 fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenStream {
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = &input_fn.sig.ident;
@@ -75,8 +74,8 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
         })
         .collect();
 
+    let tuple_type = quote! { (#(#param_types,)*) };
     let function_call = {
-        let tuple_type = quote! { (#(#param_types,)*) };
         let arg_indices: Vec<Index> = (0..param_types.len()).map(|i| Index::from(i)).collect();
         quote! {
             // Decode the tuple of arguments
@@ -90,7 +89,19 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
         }
     };
 
+    let type_name = quote::format_ident!(
+        "_NUCLEUS_{}_PARAMS_TYPE_{}",
+        rename_prefix.to_uppercase(),
+        fn_name
+    );
+    let type_def = quote! {
+        #[allow(non_camel_case_types)]
+        type #type_name = #tuple_type;
+    };
     let expanded = quote! {
+        #type_def
+        // Place the original function inside the decoded function
+        #input_fn
         #[no_mangle]
         pub fn #decoded_fn_name(__ptr: *const u8, __len: usize) -> *const u8 {
             fn encode_result<T: ::vrs_core_sdk::codec::Encode>(result: T) -> *const u8 {
@@ -108,11 +119,11 @@ fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenSt
                 encode_result(Err::<Vec<u8>, String>(error))
             }
 
-            // Place the original function inside the decoded function
-            #input_fn
 
-            // Call the function based on whether it has parameters or not
+
             #function_call
+            // Call the function based on whether it has parameters or not
+
 
             let encoded = <#output_type as ::vrs_core_sdk::codec::Encode>::encode(&result);
             let wrapped_result: Result<Vec<u8>, String> = Ok(encoded);
