@@ -259,6 +259,19 @@ pub fn new_full<
     })?;
 
     if role.is_authority() {
+        let params = vrs_nucleus_p2p::P2pParams {
+            nucleus_rpc_rx,
+            client: client.clone(),
+            nucleus_home_dir,
+            controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
+            _phantom: std::marker::PhantomData,
+        };
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "nucleus-p2p",
+            None,
+            vrs_nucleus_p2p::start_nucleus_p2p(params),
+        );
+
         let params = vrs_nucleus_cage::CageParams {
             nucleus_rpc_rx,
             client: client.clone(),
