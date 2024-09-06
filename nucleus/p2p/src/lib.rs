@@ -44,9 +44,23 @@ where
         loop {
             tokio::select! {
                 // poll the msg from another p2p peer
-                Ok(msg) = reqres_receiver.recv() => {
-                    println!("ImcomingRequest msg: {:?}", msg);
+                // The msg type is: sc_network::request_responses::IncomingRequest
+                // pub struct IncomingRequest {
+                //     pub peer: PeerId,
+                //     pub payload: Vec<u8>,
+                //     pub pending_response: Sender<OutgoingResponse>,
+                // }
+                Ok(request) = reqres_receiver.recv() => {
+                    println!("IncomingRequest msg: {:?}", request);
                     // do stuff
+                    // use request.pending_response to send oneshot OutgoingResponse back
+
+                    // API: anywhere you want to send request, use like:
+                    // let network_worker = ...;
+                    // let service = network_worker.service();
+                    // let res: (Vec<u8>, ProtocolName) = service.request(peer_id, ProtocolName::Static("xxxx"), vec_u8_payload, None, IfDisconnected::ImmediateError).await?;
+                    // here the res is the data sent above by request.pending_response, just simple as that
+
                 }
             }
         }
