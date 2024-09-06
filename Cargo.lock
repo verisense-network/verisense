@@ -10837,6 +10837,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 name = "verisense"
 version = "0.0.1"
 dependencies = [
+ "async-channel 1.9.0",
  "clap",
  "frame-system",
  "futures",
@@ -10874,6 +10875,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "tokio",
  "vrs-nucleus-cage",
+ "vrs-nucleus-p2p",
  "vrs-nucleus-rpc-proxy",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
@@ -10948,6 +10950,24 @@ dependencies = [
  "vrs-metadata",
  "vrs-primitives",
  "wasmtime 22.0.0",
+]
+
+[[package]]
+name = "vrs-nucleus-p2p"
+version = "0.0.1"
+dependencies = [
+ "async-channel 1.9.0",
+ "futures",
+ "log",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-network",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "tokio",
+ "vrs-primitives",
 ]
 
 [[package]]

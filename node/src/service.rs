@@ -180,6 +180,19 @@ pub fn new_full<
         Vec::default(),
     ));
 
+    // --- add nucleus-p2p subprotocol
+    let (reqres_sender, reqres_receiver) = async_channel::bounded(1024);
+    let nuclues_p2p_reqres_config = N::request_response_config(
+        sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
+        vec![],
+        1024 * 1024,
+        16 * 1024 * 1024,
+        Duration::from_secs(20),
+        Some(reqres_sender),
+    );
+    net_config.add_request_response_protocol(nuclues_p2p_reqres_config);
+    // ^^--- add nucleus-p2p subprotocol
+
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
@@ -260,9 +273,8 @@ pub fn new_full<
 
     if role.is_authority() {
         let params = vrs_nucleus_p2p::P2pParams {
-            nucleus_rpc_rx,
+            reqres_receiver,
             client: client.clone(),
-            nucleus_home_dir,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             _phantom: std::marker::PhantomData,
         };

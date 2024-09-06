@@ -54,7 +54,10 @@ vrs-primitives = { path = "../primitives" }
 vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api" }
 vrs-nucleus-rpc-proxy = { path = "../nucleus/rpc-proxy" }
 vrs-nucleus-cage = { path = "../nucleus/cage" }
+vrs-nucleus-p2p = { path = "../nucleus/p2p" }
 tokio = { version = "1", features = ["full"] }
+async-channel = "1.8.0"
+
 
 [build-dependencies]
 substrate-build-script-utils = { version = "11.0.0" }
