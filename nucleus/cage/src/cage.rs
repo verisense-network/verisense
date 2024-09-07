@@ -131,6 +131,7 @@ where
         let metadata =
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
         let mut registry_monitor = client.every_import_notification_stream();
+        let timer_scheduler = Arc::new(crate::SchedulerAsync::new());
         // TODO mock monadring
         //////////////////////////////////////////////////////
         let (token_tx, mut token_rx) = mpsc::unbounded_channel::<NucleusId>();
@@ -147,16 +148,16 @@ where
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
-                // block = registry_monitor.next() => {
-                //     let hash = block.expect("block importing error").hash;
-                //     // TODO handle deregister as well
-                //     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
-                //         for (id, config) in instances {
-                //             let nucleus_path = nucleus_home_dir.join(id.to_string());
-                //             start_nucleus::<B>(id, config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
-                //         }
-                //     }
-                // },
+                block = registry_monitor.next() => {
+                    let hash = block.expect("block importing error").hash;
+                    // TODO handle deregister as well
+                    if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
+                        for (id, config) in instances {
+                            let nucleus_path = nucleus_home_dir.join(id.to_string());
+                            start_nucleus::<B>(id, timer_scheduler.clone(), config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
+                        }
+                    }
+                },
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
                     if let Some(nucleus) = nuclei.get_mut(&module) {
@@ -404,58 +405,40 @@ mod tests {
 //     }
 // }
 
-// fn map_to_nucleus<B, D, C>(
-//     client: Arc<C>,
-//     hash: B::Hash,
-//     metadata: RuntimeMetadata,
-// ) -> Option<Vec<(NucleusId, NucleusInfo<AccountId, B::Hash, NodeId>)>>
-// where
-//     B: sp_runtime::traits::Block,
-//     D: Backend<B>,
-//     C: BlockBackend<B>
-//         + StorageProvider<B, D>
-//         + BlockchainEvents<B>
-//         + ProvideRuntimeApi<B>
-//         + 'static,
-//     C::Api: NucleusApi<B> + 'static,
-// {
-//     let storage_key = storage_key(b"System", b"Events");
-//     let events = client
-//         .storage(hash, &storage_key)
-//         .ok()
-//         .flatten()
-//         .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
+fn map_to_nucleus<B, D, C>(
+    client: Arc<C>,
+    hash: B::Hash,
+    metadata: RuntimeMetadata,
+) -> Option<Vec<(NucleusId, NucleusInfo<AccountId, Hash, NodeId>)>>
+where
+    B: sp_runtime::traits::Block,
+    D: Backend<B>,
+    C: BlockBackend<B>
+        + StorageProvider<B, D>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + 'static,
+    C::Api: NucleusApi<B> + 'static,
+{
+    let storage_key = storage_key(b"System", b"Events");
+    let events = client
+        .storage(hash, &storage_key)
+        .ok()
+        .flatten()
+        .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
 
-//     let api = client.runtime_api();
-//     let instances = events
-//         .find::<codegen::nucleus::events::InstanceRegistered>()
-//         .filter_map(|ev| {
-//             let id = ev.ok()?.id.clone();
-//             api.get_nucleus_info(hash, id.clone())
-//                 .map(|info| (id, info))
-//                 .ok()
-//         })
-//         .collect::<Vec<_>>();
-//     Some(instances)
-// }
-
-// fn blake2_128concat_storage_key<K: codec::Encode>(
-//     module: &[u8],
-//     storage: &[u8],
-//     key: K,
-// ) -> sp_core::storage::StorageKey {
-//     let mut bytes = sp_core::twox_128(module).to_vec();
-//     bytes.extend(&sp_core::twox_128(storage)[..]);
-//     let encoded = key.encode();
-//     let x: &[u8] = encoded.as_slice();
-//     let v = sp_core::blake2_128(x)
-//         .iter()
-//         .chain(x.iter())
-//         .cloned()
-//         .collect::<Vec<_>>();
-//     bytes.extend(v);
-//     sp_core::storage::StorageKey(bytes)
-// }
+    let api = client.runtime_api();
+    let instances = events
+        .find::<codegen::nucleus::events::InstanceRegistered>()
+        .filter_map(|ev| {
+            let id = ev.ok()?.id.0;
+            api.get_nucleus_info(hash, NucleusId::from(id))
+                .ok()?
+                .map(|info| (NucleusId::from(id), info))
+        })
+        .collect::<Vec<_>>();
+    Some(instances)
+}
 
 fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
     let mut bytes = sp_core::twox_128(module).to_vec();
@@ -470,7 +453,8 @@ fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
 // TODO
 fn start_nucleus<B>(
     id: NucleusId,
-    nucleus_info: NucleusInfo<AccountId, B::Hash, NodeId>,
+    timer_scheduler: Arc<crate::SchedulerAsync>,
+    nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
     nucleus_path: std::path::PathBuf,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
 ) -> anyhow::Result<()>
@@ -501,7 +485,7 @@ where
     let context = Context::init(config)?;
     let db = context.db.clone();
     let (tx, rx) = std::sync::mpsc::channel();
-    let mut nucleus = Nucleus::new(rx, context, wasm);
+    let mut nucleus = Nucleus::new(rx, timer_scheduler, context, wasm);
     std::thread::spawn(move || {
         nucleus.run();
     });

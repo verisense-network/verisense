@@ -167,7 +167,7 @@ where
                 "Transaction is not included in the block.",
                 None::<()>,
             ))? {
-                TransactionStatus::Finalized((block, _)) => {
+                TransactionStatus::InBlock((block, _)) => {
                     let dir = self
                         .nucleus_home_dir
                         .as_path()
@@ -195,9 +195,13 @@ where
                         None::<()>,
                     ));
                 }
-                _ => {
+                TransactionStatus::Future
+                | TransactionStatus::Ready
+                | TransactionStatus::Retracted(_)
+                | TransactionStatus::Broadcast(_) => {
                     continue;
                 }
+                TransactionStatus::Finalized(_) => unreachable!(),
             }
         }
     }
