@@ -227,6 +227,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl pallet_nucleus::Config for Runtime {
+    type ControllerLookup = Nucleus;
     type NodeId = NodeId;
     type NucleusId = NucleusId;
     type RuntimeEvent = RuntimeEvent;
@@ -481,13 +482,13 @@ impl_runtime_apis! {
     }
 
     impl vrs_nucleus_runtime_api::NucleusApi<Block> for Runtime {
-        fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusWasmInfo> {
+        fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
                 nucleus_id,
                 to,
                 hash,
             }) = uxt.function {
-                Some(vrs_nucleus_runtime_api::NucleusWasmInfo {
+                Some(vrs_nucleus_runtime_api::NucleusUpgradingTxInfo {
                     nucleus_id,
                     wasm_hash: hash,
                     node_id: to,
@@ -495,6 +496,10 @@ impl_runtime_apis! {
             } else {
                 None
             }
+        }
+
+        fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>> {
+            Nucleus::get_nucleus_info(&nucleus_id)
         }
     }
 
