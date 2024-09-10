@@ -1,4 +1,3 @@
-// pub use vrs_core_macros::*
 pub use codec;
 pub use paste::paste as macro_paste;
 pub use vrs_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
@@ -6,6 +5,7 @@ mod constant;
 pub use constant::*;
 mod timer;
 pub use timer::timer::_set_timer;
+pub mod http;
 
 #[allow(improper_ctypes)]
 pub mod storage {

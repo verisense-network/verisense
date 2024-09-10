@@ -8,6 +8,7 @@ edition.workspace = true
 [features]
 default = ["std"]
 std = ["vrs-primitives/std", "codec/std"]
+host = ["http_type"]
 # no-std = ["vrs-primitives/no-std"]
 
 [dependencies]
@@ -23,3 +24,4 @@ paste = "1.0"
 # vrs-core-macros = { path = "../core-macros" }
 anyhow = { version = "1", default-features = false }
 codec = { workspace = true, features = ["derive"], default-features = false }
+http_type = { version = "1.1", package = "http", optional = true }
