@@ -100,34 +100,8 @@ impl Context {
                         results[0] = Val::I32(1);
                         return Ok(());
                     }
-                    let mem = match Context::wasm_mem(&mut caller) {
-                        Ok(mem) => mem,
-                        Err(_) => {
-                            results[0] = Val::I32(2);
-                            return Ok(());
-                        } // Error code for memory access failure
-                    };
-                    let k_ptr = params[0].unwrap_i32();
-                    let k_len = params[1].unwrap_i32();
-                    let v_ptr = params[2].unwrap_i32();
-                    let v_len = params[3].unwrap_i32();
-
-                    // Boundary check
-                    if (k_ptr as u64 + k_len as u64) > mem.data_size(&caller) as u64
-                        || (v_ptr as u64 + v_len as u64) > mem.data_size(&caller) as u64
-                    {
-                        results[0] = Val::I32(2);
-                        return Ok(());
-                    }
-
-                    let key = mem.data(&caller)[k_ptr as usize..(k_ptr + k_len) as usize].to_vec();
-                    let val = mem.data(&caller)[v_ptr as usize..(v_ptr + v_len) as usize].to_vec();
-
-                    // println!(
-                    //     "Storing split key={}, val={}",
-                    //     String::from_utf8_lossy(&key),
-                    //     String::from_utf8_lossy(&val)
-                    // );
+                    let key = Context::read_bytes_from_memory(&mut caller, params[0].unwrap_i32(), params[1].unwrap_i32())?;
+                    let val = Context::read_bytes_from_memory(&mut caller, params[2].unwrap_i32(), params[3].unwrap_i32())?;
 
                     if let Err(e) = kvdb::storage_put_db(&caller.data().db, &key, &val) {
                         log::error!("Database error: {}", e);
@@ -302,6 +276,28 @@ impl Context {
                         results[0] = Val::I32(2);
                     }
                 
+                    Ok(())
+                },
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "http_request",
+                FuncType::new(
+                    &engine,
+                    [ValType::I32, ValType::I32],
+                    [ValType::I32],
+                ),
+                |mut caller: Caller<'_, Context>, params, results| {
+                    results[0] = Val::I32(0);
+                    let req = Context::read_bytes_from_memory(&mut caller, params[0].unwrap_i32(), params[1].unwrap_i32())?;
+                    // todo: call some http host function
+                    // if let Err(e) = http::request(&caller.data().db, &req) {
+                    //     log::error!("Request error: {}", e);
+                    //     results[0] = Val::I32(3);
+                    //     return Ok(());
+                    // }
                     Ok(())
                 },
             )
