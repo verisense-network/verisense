@@ -1,3 +1,4 @@
+use crate::error::RuntimeError;
 use codec::{Decode, Encode};
 use std::collections::BTreeMap;
 
@@ -66,7 +67,7 @@ impl Into<http_type::Method> for HttpMethod {
 }
 
 extern "C" {
-    fn http_request(req_ptr: *const u8, req_len: i32) -> i32;
+    fn http_request(req_ptr: *const u8, req_len: u32, return_ptr: *mut u8) -> i32;
 }
 
 /// make a http request and return the request_id;
@@ -78,8 +79,18 @@ extern "C" {
 ///     // handle response
 /// }
 /// ```
-pub fn request(request: Request) -> anyhow::Result<u64> {
+pub fn request(request: Request) -> Result<u64, RuntimeError> {
     let bytes = request.encode();
-    let id = unsafe { http_request(bytes.as_ptr(), bytes.len() as i32) };
-    Ok(id as u64)
+    let mut return_bytes = crate::allocate_buffer();
+    let status = unsafe {
+        http_request(
+            bytes.as_ptr(),
+            bytes.len() as u32,
+            return_bytes.as_mut_ptr(),
+        )
+    };
+    // we don't expect an asynchronous response more than 64k
+    assert!(status == crate::NO_MORE_DATA);
+    Result::<u64, RuntimeError>::decode(&mut &return_bytes[..])
+        .map_err(|_| RuntimeError::DecodeReturnValueError)?
 }

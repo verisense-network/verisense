@@ -5,7 +5,7 @@ pub const MAX_PARAMS_SIZE: usize = 1024 * 1024;
 pub const MAX_FUNC_SIZE: usize = 1024;
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) enum StorageError {
+pub enum StorageError {
     CannotPutInGetMethod,
     MemoryAccessOutOfBounds,
     DatabaseError,

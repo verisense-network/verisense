@@ -255,7 +255,7 @@ impl Context {
                 },
             )
             .unwrap();
-        // for set_time
+        // for set_timer
         linker
             .func_new(
                 "env",
@@ -314,16 +314,12 @@ impl Context {
         ptr: i32,
         len: i32,
     ) -> Result<Vec<u8>, Trap> {
-        let mem = match caller.get_export("memory") {
-            Some(Extern::Memory(mem)) => Ok(mem),
-            _ => Err(Trap::HeapMisaligned),
-        }?;
+        let mem = Self::wasm_mem(caller)?;
         // Boundary check
         if (ptr as u64 + len as u64) > mem.data_size(&caller) as u64 {
             return Err(Trap::MemoryOutOfBounds);
         }
         let data = mem.data(&caller)[ptr as usize..(ptr + len) as usize].to_vec();
-
         Ok(data)
     }
 }
