@@ -187,6 +187,99 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
     }
 }
 
+fn map_to_nucleus<B, D, C>(
+    client: Arc<C>,
+    hash: B::Hash,
+    metadata: RuntimeMetadata,
+) -> Option<Vec<(NucleusId, NucleusInfo<AccountId, Hash, NodeId>)>>
+where
+    B: sp_runtime::traits::Block,
+    D: Backend<B>,
+    C: BlockBackend<B>
+        + StorageProvider<B, D>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + 'static,
+    C::Api: NucleusApi<B> + 'static,
+{
+    let storage_key = storage_key(b"System", b"Events");
+    let events = client
+        .storage(hash, &storage_key)
+        .ok()
+        .flatten()
+        .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
+
+    let api = client.runtime_api();
+    let instances = events
+        .find::<codegen::nucleus::events::InstanceRegistered>()
+        .filter_map(|ev| {
+            let id = ev.ok()?.id.0;
+            api.get_nucleus_info(hash, NucleusId::from(id))
+                .ok()?
+                .map(|info| (NucleusId::from(id), info))
+        })
+        .collect::<Vec<_>>();
+    Some(instances)
+}
+
+fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
+    let mut bytes = sp_core::twox_128(module).to_vec();
+    bytes.extend(&sp_core::twox_128(storage)[..]);
+    sp_core::storage::StorageKey(bytes)
+}
+
+// TODO
+fn start_nucleus<B>(
+    id: NucleusId,
+    timer_scheduler: Arc<crate::SchedulerAsync>,
+    nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
+    nucleus_path: std::path::PathBuf,
+    nuclei: &mut HashMap<NucleusId, NucleusCage>,
+) -> anyhow::Result<()>
+where
+    B: sp_runtime::traits::Block,
+{
+    let NucleusInfo {
+        name,
+        manager,
+        wasm_location,
+        wasm_hash,
+        wasm_version,
+        current_event,
+        root_state,
+        peers,
+    } = nucleus_info;
+    let name = String::from_utf8(name)?;
+
+    let wasm = WasmInfo {
+        account: manager,
+        name,
+        version: wasm_version,
+        code: WasmCodeRef::File(nucleus_path.join("code.wasm")),
+    };
+    let config = ContextConfig {
+        db_path: nucleus_path.join("db").into_boxed_path(),
+    };
+    let context = Context::init(config)?;
+    let db = context.db.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let mut nucleus = Nucleus::new(rx, timer_scheduler, context, wasm);
+    std::thread::spawn(move || {
+        nucleus.run();
+    });
+    nuclei.insert(
+        id.clone(),
+        NucleusCage {
+            nucleus_id: id,
+            tunnel: tx,
+            pending_requests: vec![],
+            event_id: current_event,
+            db,
+        },
+    );
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -404,100 +497,3 @@ mod tests {
 //         std::thread::sleep(Duration::from_secs(12));
 //     }
 // }
-
-fn map_to_nucleus<B, D, C>(
-    client: Arc<C>,
-    hash: B::Hash,
-    metadata: RuntimeMetadata,
-) -> Option<Vec<(NucleusId, NucleusInfo<AccountId, Hash, NodeId>)>>
-where
-    B: sp_runtime::traits::Block,
-    D: Backend<B>,
-    C: BlockBackend<B>
-        + StorageProvider<B, D>
-        + BlockchainEvents<B>
-        + ProvideRuntimeApi<B>
-        + 'static,
-    C::Api: NucleusApi<B> + 'static,
-{
-    let storage_key = storage_key(b"System", b"Events");
-    let events = client
-        .storage(hash, &storage_key)
-        .ok()
-        .flatten()
-        .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
-
-    let api = client.runtime_api();
-    let instances = events
-        .find::<codegen::nucleus::events::InstanceRegistered>()
-        .filter_map(|ev| {
-            let id = ev.ok()?.id.0;
-            api.get_nucleus_info(hash, NucleusId::from(id))
-                .ok()?
-                .map(|info| (NucleusId::from(id), info))
-        })
-        .collect::<Vec<_>>();
-    Some(instances)
-}
-
-fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
-    let mut bytes = sp_core::twox_128(module).to_vec();
-    bytes.extend(&sp_core::twox_128(storage)[..]);
-    sp_core::storage::StorageKey(bytes)
-}
-
-// fn init_nucleus<B>() -> anyhow::Result<()> {
-//     Ok(())
-// }
-
-// TODO
-fn start_nucleus<B>(
-    id: NucleusId,
-    timer_scheduler: Arc<crate::SchedulerAsync>,
-    nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
-    nucleus_path: std::path::PathBuf,
-    nuclei: &mut HashMap<NucleusId, NucleusCage>,
-) -> anyhow::Result<()>
-where
-    B: sp_runtime::traits::Block,
-{
-    let NucleusInfo {
-        name,
-        manager,
-        wasm_location,
-        wasm_hash,
-        wasm_version,
-        current_event,
-        root_state,
-        peers,
-    } = nucleus_info;
-    let name = String::from_utf8(name)?;
-
-    let wasm = WasmInfo {
-        account: manager,
-        name,
-        version: wasm_version,
-        code: WasmCodeRef::File(nucleus_path.join("code.wasm")),
-    };
-    let config = ContextConfig {
-        db_path: nucleus_path.join("db").into_boxed_path(),
-    };
-    let context = Context::init(config)?;
-    let db = context.db.clone();
-    let (tx, rx) = std::sync::mpsc::channel();
-    let mut nucleus = Nucleus::new(rx, timer_scheduler, context, wasm);
-    std::thread::spawn(move || {
-        nucleus.run();
-    });
-    nuclei.insert(
-        id.clone(),
-        NucleusCage {
-            nucleus_id: id,
-            tunnel: tx,
-            pending_requests: vec![],
-            event_id: current_event,
-            db,
-        },
-    );
-    Ok(())
-}

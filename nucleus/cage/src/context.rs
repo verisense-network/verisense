@@ -1,17 +1,19 @@
 mod kvdb;
 
-use std::{
-    cell::{Cell, RefCell}, cmp::Ordering, rc::Rc, sync::Mutex
-};
-
 use chrono::{DateTime, Utc};
 use rocksdb::DB;
-use std::sync::Arc;
+use std::collections::BinaryHeap;
+use std::{
+    cell::{Cell, RefCell},
+    cmp::Ordering,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 use thiserror::Error;
 use wasmtime::{Caller, Engine, Extern, Func, FuncType, Linker, Memory, Store, Trap, Val, ValType};
-use std::collections::BinaryHeap;
 
 use crate::{CallerInfo, TimerEntry, TimerQueue};
+
 struct Cache {
     key: Vec<u8>,
     value: Vec<u8>,
@@ -20,7 +22,7 @@ struct Cache {
 pub struct Context {
     pub(crate) db: Arc<DB>,
     is_get_method: bool,
-    caller_infos:Vec<CallerInfo>,
+    caller_infos: Vec<CallerInfo>,
     //todo: cache
     cache: Arc<Option<Cache>>,
     timer: Arc<Mutex<TimerQueue>>,
@@ -28,19 +30,13 @@ pub struct Context {
     // 3. we need http manager
     // 4. we need timer
 }
-// pub enum StorageError {
-//     CannotPutInGetMethod = 1,
-//     MemoryAccessOutOfBounds = 2,
-//     DatabaseError = 3,
-//     KeyNotFound = 4,
-//     UnknownError,
-// }
+
 impl Context {
     pub fn init(config: ContextConfig) -> anyhow::Result<Self> {
         Ok(Context {
             db: Arc::new(kvdb::init_rocksdb(config.db_path)?),
             is_get_method: false,
-            caller_infos:vec![],
+            caller_infos: vec![],
             cache: Arc::new(None),
             timer: Arc::new(Mutex::new(TimerQueue::new())),
         })
@@ -53,6 +49,7 @@ impl Context {
     pub fn pop_caller_info(&mut self) -> Option<CallerInfo> {
         self.caller_infos.pop()
     }
+
     pub fn replace_caller_infos(&mut self, caller_infos: Vec<CallerInfo>) {
         self.caller_infos = caller_infos;
     }
@@ -78,7 +75,7 @@ impl Context {
         entries
     }
 
-    pub fn push_timer_entry(&self, entry: TimerEntry){
+    pub fn push_timer_entry(&self, entry: TimerEntry) {
         self.timer.lock().unwrap().push(entry);
     }
 
@@ -283,7 +280,6 @@ impl Context {
                         results[0] = Val::I32(3);
                         let func_params = Context::read_bytes_from_memory(&mut caller, *params_ptr, *params_len)?;
                         let func_name = Context::read_bytes_from_memory(&mut caller, *func_ptr, *func_len)?;
-                
                         let timestamp = Utc::now() + std::time::Duration::from_secs(*delay as u64);
 
                         let entry = TimerEntry {
@@ -293,102 +289,16 @@ impl Context {
                             caller_infos: caller.data().caller_infos.clone(),
                             func_params,
                         };
-                
                         let mut timer = caller.data().timer.lock().unwrap();
                         timer.push(entry);
-                
                         results[0] = Val::I32(0);
                     } else {
                         results[0] = Val::I32(2);
                     }
-                
                     Ok(())
                 },
             )
             .unwrap();
-        // linker
-        //     .func_new(
-        //         "env",
-        //         "storage_get_data",
-        //         FuncType::new(
-        //             &engine,
-        //             [ValType::I32, ValType::I32, ValType::I32, ValType::I32],
-        //             [ValType::I32],
-        //         ),
-        //         |mut caller: Caller<'_, Context>, params, results| {
-        //             let key_ptr = params[0].unwrap_i32();
-        //             let key_len = params[1].unwrap_i32();
-        //             let value_ptr = params[2].unwrap_i32();
-        //             let value_len_ptr = params[3].unwrap_i32();
-
-        //             // Get memory
-        //             let memory = match caller.get_export("memory").and_then(|e| e.into_memory()) {
-        //                 Some(mem) => mem,
-        //                 None => {
-        //                     results[0] = Val::I32(3); // Error code for memory export not found
-        //                     return Ok(());
-        //                 }
-        //             };
-
-        //             // Read the key from WebAssembly memory
-        //             let mut key = vec![0u8; key_len as usize];
-        //             if memory
-        //                 .read(&mut caller, key_ptr as usize, &mut key)
-        //                 .is_err()
-        //             {
-        //                 results[0] = Val::I32(4); // Error code for memory read failure
-        //                 return Ok(());
-        //             }
-        //             // Check if the data is in cache
-        //             let ca = caller.data().cache.clone();
-        //             let status = if let Some(cache) = &*ca {
-        //                 if cache.key == key {
-        //                     // Use cached data
-        //                     let value_len = cache.value.len() as u32;
-
-        //                     // Write value length
-        //                     if memory
-        //                         .write(
-        //                             &mut caller,
-        //                             value_len_ptr as usize,
-        //                             &value_len.to_le_bytes(),
-        //                         )
-        //                         .is_err()
-        //                     {
-        //                         results[0] = Val::I32(5); // Error code for memory write failure
-        //                         return Ok(());
-        //                     }
-
-        //                     // Write value data
-        //                     if memory
-        //                         .write(&mut caller, value_ptr as usize, &cache.value)
-        //                         .is_err()
-        //                     {
-        //                         results[0] = Val::I32(5); // Error code for memory write failure
-        //                         return Ok(());
-        //                     }
-
-        //                     0 // Success status
-        //                 } else {
-        //                     // Key not in cache, proceed with normal flow
-        //                     kvdb::storage_get_split(
-        //                         caller,
-        //                         key_ptr,
-        //                         key_len,
-        //                         value_ptr,
-        //                         value_len_ptr,
-        //                     )
-        //                 }
-        //             } else {
-        //                 // No cache, proceed with normal flow
-        //                 kvdb::storage_get_split(caller, key_ptr, key_len, value_ptr, value_len_ptr)
-        //             };
-
-        //             results[0] = Val::I32(status);
-        //             Ok(())
-        //         },
-        //     )
-        //     .unwrap();
         linker
     }
 
@@ -398,6 +308,7 @@ impl Context {
             _ => Err(Trap::HeapMisaligned),
         }
     }
+
     pub(crate) fn read_bytes_from_memory(
         caller: &mut Caller<'_, Context>,
         ptr: i32,
@@ -412,7 +323,7 @@ impl Context {
             return Err(Trap::MemoryOutOfBounds);
         }
         let data = mem.data(&caller)[ptr as usize..(ptr + len) as usize].to_vec();
-        
+
         Ok(data)
     }
 }

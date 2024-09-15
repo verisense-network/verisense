@@ -70,17 +70,16 @@ extern "C" {
 }
 
 /// make a http request and return the request_id;
-/// a `#[http]` function will be called with the request_id when the response is ready
+/// a `#[callback]` function will be called with the request_id when the response is ready
 ///
 /// ```
-/// #[http]
+/// #[callback]
 /// pub fn on_response(u64: request_id, response: Response) {
 ///     // handle response
 /// }
 /// ```
 pub fn request(request: Request) -> anyhow::Result<u64> {
-    // TODO encode request into Vec<u8> so host can parse it then call Into<http_type::Request> and make the real request
-    //
-    // unsafe { http_request() }
-    Ok(0)
+    let bytes = request.encode();
+    let id = unsafe { http_request(bytes.as_ptr(), bytes.len() as i32) };
+    Ok(id as u64)
 }
