@@ -13,6 +13,7 @@ use sc_network::request_responses::IncomingRequest;
 pub struct P2pParams<B, C, BN> {
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
     pub client: Arc<C>,
+    pub p2p_cage_tx: tokio::sync::mpsc::Sender<IncomingRequest>,
     pub controller: AccountId,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
@@ -36,6 +37,7 @@ where
     let P2pParams {
         reqres_receiver,
         client,
+        p2p_cage_tx,
         controller,
         _phantom,
     } = params;
@@ -53,6 +55,9 @@ where
                 Ok(request) = reqres_receiver.recv() => {
                     println!("IncomingRequest msg: {:?}", request);
                     // do stuff
+                    // forward the request to cage
+                    _ = p2p_cage_tx.send(request).await;
+
                     // use request.pending_response to send oneshot OutgoingResponse back
 
                     // API: anywhere you want to send request, use like:

@@ -272,9 +272,11 @@ pub fn new_full<
     })?;
 
     if role.is_authority() {
+        let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
         let params = vrs_nucleus_p2p::P2pParams {
             reqres_receiver,
             client: client.clone(),
+            p2p_cage_tx,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             _phantom: std::marker::PhantomData,
         };
@@ -286,6 +288,7 @@ pub fn new_full<
 
         let params = vrs_nucleus_cage::CageParams {
             nucleus_rpc_rx,
+            p2p_cage_rx,
             client: client.clone(),
             nucleus_home_dir,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),

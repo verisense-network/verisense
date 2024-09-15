@@ -10939,6 +10939,7 @@ dependencies = [
  "parity-scale-codec",
  "rocksdb",
  "sc-client-api",
+ "sc-network",
  "sp-api",
  "sp-blockchain",
  "sp-core",

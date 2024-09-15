@@ -6,6 +6,7 @@ use codec::{Decode, Encode};
 use futures::prelude::*;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_network::request_responses::IncomingRequest;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use std::collections::HashMap;
@@ -21,6 +22,7 @@ use vrs_primitives::{AccountId, Hash, NucleusId};
 
 pub struct CageParams<B, C, BN> {
     pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
+    pub p2p_cage_rx: Receiver<IncomingRequest>,
     pub client: Arc<C>,
     pub controller: AccountId,
     pub nucleus_home_dir: std::path::PathBuf,
@@ -117,6 +119,7 @@ where
 {
     let CageParams {
         mut nucleus_rpc_rx,
+        mut p2p_cage_rx,
         client,
         controller,
         nucleus_home_dir,
@@ -156,6 +159,12 @@ where
                 //         }
                 //     }
                 // },
+                req = p2p_cage_rx.recv() => {
+                    // req type is IncomingRequest, process it.
+                    println!("in cage: IncomingRequest msg: {:?}", req);
+
+
+                },
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
                     if let Some(nucleus) = nuclei.get_mut(&module) {
