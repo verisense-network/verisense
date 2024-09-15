@@ -10949,6 +10949,7 @@ dependencies = [
  "tokio",
  "vrs-core-sdk",
  "vrs-metadata",
+ "vrs-nucleus-p2p",
  "vrs-primitives",
  "wasmtime 22.0.0",
 ]

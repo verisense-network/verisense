@@ -24,6 +24,7 @@ sc-client-api = { version = "35.0.0" }
 hex = { version = "0.4" }
 thiserror = "1"
 vrs-metadata = { path = "../../metadata" }
+vrs-nucleus-p2p= { path = "../../nucleus/p2p" }
 chrono = { version = "0.4" }
 
 [dev-dependencies]

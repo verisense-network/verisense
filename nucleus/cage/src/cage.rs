@@ -7,6 +7,9 @@ use futures::prelude::*;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::request_responses::IncomingRequest;
+use sc_network::service::traits::NotificationEvent;
+use sc_network::service::traits::NotificationService;
+use sc_network::PeerId;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use std::collections::HashMap;
@@ -18,11 +21,13 @@ use vrs_metadata::{
     config::SubstrateConfig, events, metadata, storage, Metadata as RuntimeMetadata,
     METADATA_BYTES,
 };
-use vrs_primitives::{AccountId, Hash, NucleusId};
+use vrs_nucleus_p2p::NucleusP2pMsg;
+use vrs_primitives::{AccountId, NucleusId};
 
 pub struct CageParams<B, C, BN> {
     pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
-    pub p2p_cage_rx: Receiver<IncomingRequest>,
+    pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
+    pub noti_service: Box<dyn NotificationService>,
     pub client: Arc<C>,
     pub controller: AccountId,
     pub nucleus_home_dir: std::path::PathBuf,
@@ -120,6 +125,7 @@ where
     let CageParams {
         mut nucleus_rpc_rx,
         mut p2p_cage_rx,
+        mut noti_service,
         client,
         controller,
         nucleus_home_dir,
@@ -159,11 +165,31 @@ where
                 //         }
                 //     }
                 // },
-                req = p2p_cage_rx.recv() => {
+                Some(msg) = p2p_cage_rx.recv() => {
                     // req type is IncomingRequest, process it.
-                    println!("in cage: IncomingRequest msg: {:?}", req);
+                    println!("in cage: incoming msg: {:?}", msg);
+                    match msg {
+                        NucleusP2pMsg::ReqRes(req) => {
+                            println!("in cage: incoming request: {:?}", req);
+                            // when respond, use req.pending_response to send oneshot OutgoingResponse back
+
+                            // API: anywhere you want to send request, use like:
+                            //   let network_worker = ...;
+                            //   let service = network_worker.service();
+                            //   let res: (Vec<u8>, ProtocolName) = service.request(peer_id, ProtocolName::Static("/nucleus/p2p/reqres"), vec_u8_payload, None, IfDisconnected::ImmediateError).await?;
+                            // here the res is the data sent above by request.pending_response, just simple as that
 
 
+                        }
+                        NucleusP2pMsg::Noti(noti) => {
+                            println!("in cage: incoming notification: {:?}", noti);
+                            // process notification here
+
+                            // API: anywhere you want to send a notification, use like:
+                            // _ = noti_service.send_async_notification(peer: PeerId, noti: Vec<u8>).await;
+
+                        }
+                    }
                 },
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");

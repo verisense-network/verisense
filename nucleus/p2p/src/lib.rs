@@ -9,11 +9,15 @@ use std::sync::Arc;
 use vrs_primitives::{AccountId, Hash, NucleusId};
 
 use sc_network::request_responses::IncomingRequest;
+use sc_network::service::traits::NotificationEvent;
+use sc_network::service::traits::NotificationService;
+use sc_network::PeerId;
 
 pub struct P2pParams<B, C, BN> {
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
     pub client: Arc<C>,
-    pub p2p_cage_tx: tokio::sync::mpsc::Sender<IncomingRequest>,
+    pub p2p_cage_tx: tokio::sync::mpsc::Sender<NucleusP2pMsg>,
+    pub noti_service: Box<dyn NotificationService>,
     pub controller: AccountId,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
@@ -21,6 +25,18 @@ pub struct P2pParams<B, C, BN> {
 struct NucleusP2p {}
 
 impl NucleusP2p {}
+
+#[derive(Debug)]
+pub struct P2pNotification {
+    peer: PeerId,
+    notification: Vec<u8>,
+}
+
+#[derive(Debug)]
+pub enum NucleusP2pMsg {
+    ReqRes(IncomingRequest),
+    Noti(P2pNotification),
+}
 
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
 where
@@ -38,6 +54,7 @@ where
         reqres_receiver,
         client,
         p2p_cage_tx,
+        mut noti_service,
         controller,
         _phantom,
     } = params;
@@ -56,16 +73,27 @@ where
                     println!("IncomingRequest msg: {:?}", request);
                     // do stuff
                     // forward the request to cage
-                    _ = p2p_cage_tx.send(request).await;
+                    let msg = NucleusP2pMsg::ReqRes(request);
+                    _ = p2p_cage_tx.send(msg).await;
 
-                    // use request.pending_response to send oneshot OutgoingResponse back
 
-                    // API: anywhere you want to send request, use like:
-                    // let network_worker = ...;
-                    // let service = network_worker.service();
-                    // let res: (Vec<u8>, ProtocolName) = service.request(peer_id, ProtocolName::Static("xxxx"), vec_u8_payload, None, IfDisconnected::ImmediateError).await?;
-                    // here the res is the data sent above by request.pending_response, just simple as that
+                },
+                Some(event) = noti_service.next_event() => {
+                    match event {
+                        NotificationEvent::NotificationReceived {
+                            peer,
+                            notification
+                        } => {
+                            println!("notification received: peer: {:?}  noti: {:?}", peer, notification);
+                            let noti = P2pNotification {peer, notification};
+                            let msg = NucleusP2pMsg::Noti(noti);
+                            _ = p2p_cage_tx.send(msg).await;
 
+                        }
+                        _ => {
+                            println!("notification received: other noti msgs");
+                        }
+                    }
                 }
             }
         }

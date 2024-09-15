@@ -182,7 +182,7 @@ pub fn new_full<
 
     // --- add nucleus-p2p subprotocol
     let (reqres_sender, reqres_receiver) = async_channel::bounded(1024);
-    let nuclues_p2p_reqres_config = N::request_response_config(
+    let nucleus_p2p_reqres_config = N::request_response_config(
         sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
         vec![],
         1024 * 1024,
@@ -190,7 +190,25 @@ pub fn new_full<
         Duration::from_secs(20),
         Some(reqres_sender),
     );
-    net_config.add_request_response_protocol(nuclues_p2p_reqres_config);
+    net_config.add_request_response_protocol(nucleus_p2p_reqres_config);
+
+    let metrics1 = N::register_notification_metrics(config.prometheus_registry());
+    let peer_store_handle1 = net_config.peer_store_handle();
+    let (nucleus_p2p_noti_config, mut noti_service) = N::notification_config(
+        sc_network::types::ProtocolName::Static("/nucleus/p2p/noti"),
+        vec![],
+        1024 * 1024,
+        None,
+        sc_network::config::SetConfig {
+            in_peers: 0,
+            out_peers: 0,
+            reserved_nodes: Vec::new(),
+            non_reserved_mode: sc_network::config::NonReservedPeerMode::Deny,
+        },
+        metrics1,
+        peer_store_handle1,
+    );
+    net_config.add_notification_protocol(nucleus_p2p_noti_config);
     // ^^--- add nucleus-p2p subprotocol
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
@@ -272,11 +290,16 @@ pub fn new_full<
     })?;
 
     if role.is_authority() {
+        let noti_service1 = noti_service
+            .clone()
+            .expect("notification service clone failed.");
+
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
         let params = vrs_nucleus_p2p::P2pParams {
             reqres_receiver,
             client: client.clone(),
             p2p_cage_tx,
+            noti_service: noti_service1,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             _phantom: std::marker::PhantomData,
         };
@@ -289,6 +312,7 @@ pub fn new_full<
         let params = vrs_nucleus_cage::CageParams {
             nucleus_rpc_rx,
             p2p_cage_rx,
+            noti_service,
             client: client.clone(),
             nucleus_home_dir,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
