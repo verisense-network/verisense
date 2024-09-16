@@ -81,181 +81,32 @@ impl Context {
 
     pub(crate) fn inject_host_funcs(engine: &Engine) -> Linker<Context> {
         let mut linker = Linker::new(engine);
-
         linker
             .func_new(
                 "env",
                 "storage_put",
-                FuncType::new(
-                    &engine,
-                    [ValType::I32, ValType::I32, ValType::I32, ValType::I32],
-                    [ValType::I32],
-                ),
-                |mut caller: Caller<'_, Context>, params, results| {
-                    results[0] = Val::I32(0);
-                    if caller.data().is_get_method() {
-                        results[0] = Val::I32(1);
-                        return Ok(());
-                    }
-                    let mem = match Context::wasm_mem(&mut caller) {
-                        Ok(mem) => mem,
-                        Err(_) => {
-                            results[0] = Val::I32(2);
-                            return Ok(());
-                        } // Error code for memory access failure
-                    };
-                    let k_ptr = params[0].unwrap_i32();
-                    let k_len = params[1].unwrap_i32();
-                    let v_ptr = params[2].unwrap_i32();
-                    let v_len = params[3].unwrap_i32();
-
-                    // Boundary check
-                    if (k_ptr as u64 + k_len as u64) > mem.data_size(&caller) as u64
-                        || (v_ptr as u64 + v_len as u64) > mem.data_size(&caller) as u64
-                    {
-                        results[0] = Val::I32(2);
-                        return Ok(());
-                    }
-
-                    let key = mem.data(&caller)[k_ptr as usize..(k_ptr + k_len) as usize].to_vec();
-                    let val = mem.data(&caller)[v_ptr as usize..(v_ptr + v_len) as usize].to_vec();
-
-                    // println!(
-                    //     "Storing split key={}, val={}",
-                    //     String::from_utf8_lossy(&key),
-                    //     String::from_utf8_lossy(&val)
-                    // );
-
-                    if let Err(e) = kvdb::storage_put_db(&caller.data().db, &key, &val) {
-                        log::error!("Database error: {}", e);
-                        results[0] = Val::I32(3);
-                        return Ok(());
-                    }
-                    Ok(())
-                },
+                kvdb::storage_put_signature(engine),
+                kvdb::storage_put,
             )
             .unwrap();
-        // for static
         linker
             .func_new(
                 "env",
                 "storage_get",
-                FuncType::new(
-                    &engine,
-                    [ValType::I32, ValType::I32, ValType::I32, ValType::I32],
-                    [ValType::I32],
-                ),
-                |mut caller: Caller<'_, Context>, params, results| {
-                    results[0] = Val::I32(0);
-                    let mem = match Context::wasm_mem(&mut caller) {
-                        Ok(mem) => mem,
-                        Err(_) => {
-                            results[0] = Val::I32(2);
-                            return Ok(());
-                        } // Error code for memory access failure
-                    };
-                    let k_ptr = params[0].unwrap_i32();
-                    let k_len = params[1].unwrap_i32();
-                    let v_ptr = params[2].unwrap_i32();
-                    let v_len_ptr = params[3].unwrap_i32();
-
-                    // Boundary check
-                    if (k_ptr as u64 + k_len as u64) > mem.data_size(&caller) as u64 {
-                        results[0] = Val::I32(2);
-                        return Ok(());
-                    }
-                    let key = mem.data(&caller)[k_ptr as usize..(k_ptr + k_len) as usize].to_vec();
-                    let val = kvdb::storage_get_db(&caller.data().db, &key);
-                    match val {
-                        Ok(Some(v)) => {
-                            if mem.write(&mut caller, v_ptr as usize, &v).is_err() {
-                                results[0] = Val::I32(2);
-                                return Ok(());
-                            }
-                            // println!("storage_get key={:?}, val={:?}", key, v);
-                            if mem
-                                .write(
-                                    &mut caller,
-                                    v_len_ptr as usize,
-                                    &(v.len() as i32).to_le_bytes(),
-                                )
-                                .is_err()
-                            {
-                                results[0] = Val::I32(2);
-                                return Ok(());
-                            }
-                        }
-                        Ok(None) => {
-                            results[0] = Val::I32(4);
-                            return Ok(());
-                        }
-                        Err(e) => {
-                            log::error!("storage error {}", e);
-                            results[0] = Val::I32(3);
-                        }
-                    }
-                    Ok(())
-                },
+                kvdb::storage_get_signature(engine),
+                kvdb::storage_get,
             )
             .unwrap();
-        //for dynamic
         linker
             .func_new(
                 "env",
-                "storage_get_len",
-                FuncType::new(
-                    &engine,
-                    [ValType::I32, ValType::I32, ValType::I32],
-                    [ValType::I32],
-                ),
-                |mut caller: Caller<'_, Context>, params, results| {
-                    results[0] = Val::I32(0);
-                    let mem = match Context::wasm_mem(&mut caller) {
-                        Ok(mem) => mem,
-                        Err(_) => {
-                            results[0] = Val::I32(2);
-                            return Ok(());
-                        } // Error code for memory access failure
-                    };
-                    let k_ptr = params[0].unwrap_i32();
-                    let k_len = params[1].unwrap_i32();
-                    let v_len_ptr = params[2].unwrap_i32();
-
-                    // Boundary check
-                    if (k_ptr as u64 + k_len as u64) > mem.data_size(&caller) as u64 {
-                        results[0] = Val::I32(2);
-                        return Ok(());
-                    }
-                    let key = mem.data(&caller)[k_ptr as usize..(k_ptr + k_len) as usize].to_vec();
-                    let val = kvdb::storage_get_db(&caller.data().db, &key);
-                    match val {
-                        Ok(Some(v)) => {
-                            if mem
-                                .write(
-                                    &mut caller,
-                                    v_len_ptr as usize,
-                                    &(v.len() as i32).to_le_bytes(),
-                                )
-                                .is_err()
-                            {
-                                results[0] = Val::I32(2);
-                                return Ok(());
-                            }
-                        }
-                        Ok(None) => {
-                            results[0] = Val::I32(4);
-                            return Ok(());
-                        }
-                        Err(e) => {
-                            log::error!("storage error {}", e);
-                            results[0] = Val::I32(3);
-                        }
-                    }
-                    Ok(())
-                },
+                "storage_del",
+                kvdb::storage_del_signature(engine),
+                kvdb::storage_delete,
             )
             .unwrap();
-        // for set_timer
+
+        // TODO for set_timer
         linker
             .func_new(
                 "env",
@@ -321,6 +172,20 @@ impl Context {
         }
         let data = mem.data(&caller)[ptr as usize..(ptr + len) as usize].to_vec();
         Ok(data)
+    }
+
+    pub(crate) fn write_bytes_to_memory(
+        caller: &mut Caller<'_, Context>,
+        ptr: i32,
+        data: &[u8],
+    ) -> Result<(), Trap> {
+        let mem = Self::wasm_mem(caller)?;
+        // Boundary check
+        if (ptr as u64 + data.len() as u64) > mem.data_size(&caller) as u64 {
+            return Err(Trap::HeapMisaligned);
+        }
+        mem.write(caller, ptr as usize, data)
+            .map_err(|_| Trap::HeapMisaligned)
     }
 }
 

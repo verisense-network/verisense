@@ -1,5 +1,7 @@
 use super::*;
+use codec::Encode;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use vrs_core_sdk::{error::RuntimeError, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use wasmtime::{Caller, FuncType, Val, ValType};
 
 pub(crate) fn init_rocksdb(path: impl AsRef<std::path::Path>) -> anyhow::Result<DB> {
@@ -11,176 +13,184 @@ pub(crate) fn init_rocksdb(path: impl AsRef<std::path::Path>) -> anyhow::Result<
     DB::open_cf_descriptors(&db_opts, path, vec![avs_cf, seq_cf]).map_err(|e| anyhow::anyhow!(e))
 }
 
-pub fn storage_put_db(db: &DB, key: &[u8], value: &[u8]) -> Result<(), String> {
+fn db_put(db: &DB, key: &[u8], value: &[u8]) -> Result<(), String> {
     db.put_cf(db.cf_handle("avs").unwrap(), key, value)
         .map_err(|e| e.to_string())?;
-    // println!(
-    //     "put key={}, val={}",
-    //     String::from_utf8_lossy(&key),
-    //     String::from_utf8_lossy(&value)
-    // );
     Ok(())
 }
-pub fn storage_get_db(db: &DB, key: &[u8]) -> Result<Option<Vec<u8>>, String> {
+
+fn db_get(db: &DB, key: &[u8]) -> Result<Option<Vec<u8>>, String> {
     let value = db
         .get_cf(db.cf_handle("avs").unwrap(), key)
         .map_err(|e| e.to_string())?;
-    // println!("get key={}, val={:?}", String::from_utf8_lossy(&key), value);
     Ok(value)
 }
 
-// pub fn storage_put_signature(store: &Store<Context>) -> FuncType {
-//     FuncType::new(
-//         store.engine(),
-//         [ValType::I32, ValType::I32, ValType::I32, ValType::I32],
-//         [ValType::I32],
-//     )
-// }
-// pub fn storage_get_signature(store: &Store<Context>) -> FuncType {
-//     FuncType::new(
-//         store.engine(),
-//         [ValType::I32, ValType::I32, ValType::I32, ValType::I32], // k_ptr, k_len, v_ptr, v_len_ptr
-//         [ValType::I32],                                           // status
-//     )
-// }
-// pub fn storage_get(
-//     mut caller: Caller<'_, Context>,
-//     params: &[Val],
-//     results: &mut [Val],
-// ) -> anyhow::Result<()> {
-//     println!("aaa");
-//     let memory = caller
-//         .get_export("memory")
-//         .and_then(|e| e.into_memory())
-//         .ok_or_else(|| anyhow::anyhow!("Failed to find memory export"))?;
+fn db_del(db: &DB, key: &[u8]) -> Result<(), String> {
+    db.delete_cf(db.cf_handle("avs").unwrap(), key)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
 
-//     let k_ptr = params[0].unwrap_i32() as u32;
-//     let k_len = params[1].unwrap_i32() as u32;
-//     let v_ptr = params[2].unwrap_i32() as u32;
-//     let v_len_ptr = params[3].unwrap_i32() as u32;
+pub(crate) fn storage_put_signature(engine: &Engine) -> FuncType {
+    FuncType::new(
+        engine,
+        [
+            ValType::I32,
+            ValType::I32,
+            ValType::I32,
+            ValType::I32,
+            ValType::I32,
+        ],
+        [ValType::I32],
+    )
+}
 
-//     // Read the key from WebAssembly memory
-//     let mut key = vec![0u8; k_len as usize];
-//     println!("get key={}, val={}", String::from_utf8_lossy(&key), "123");
+/// the signature of this host function is:
+///
+/// ```
+/// fn storage_put(key_ptr: *const u8, key_len: i32, value_ptr: *const u8, value_len: i32, return_ptr: *mut u8) -> i32;
+/// ```
+pub(crate) fn storage_put(
+    mut caller: Caller<'_, Context>,
+    params: &[Val],
+    result: &mut [Val],
+) -> anyhow::Result<()> {
+    result[0] = Val::I32(NO_MORE_DATA);
+    let r_ptr = params[4].unwrap_i32();
+    if caller.data().is_get_method() {
+        let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
+        let bytes = return_value.encode();
+        assert!(bytes.len() <= BUFFER_LEN);
+        Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+        return Ok(());
+    }
+    let k_ptr = params[0].unwrap_i32();
+    let k_len = params[1].unwrap_i32();
+    let v_ptr = params[2].unwrap_i32();
+    let v_len = params[3].unwrap_i32();
+    let key =
+        Context::read_bytes_from_memory(&mut caller, k_ptr, k_len).expect("read from wasm failed");
+    let val =
+        Context::read_bytes_from_memory(&mut caller, v_ptr, v_len).expect("read from wasm failed");
+    let return_value = if let Err(e) = db_put(&caller.data().db, &key, &val) {
+        CallResult::<()>::Err(RuntimeError::KvStorageError(e))
+    } else {
+        CallResult::<()>::Ok(())
+    };
+    let bytes = return_value.encode();
+    assert!(bytes.len() <= BUFFER_LEN);
+    Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+    Ok(())
+}
 
-//     memory.read(&caller, k_ptr as usize, &mut key)?;
+pub(crate) fn storage_get_signature(engine: &Engine) -> FuncType {
+    FuncType::new(
+        engine,
+        [ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+        [ValType::I32],
+    )
+}
 
-//     let db = &caller.data().db;
+/// the signature of this host function is:
+///
+/// ```
+/// fn storage_get(k_ptr: *const u8, k_len: i32, return_ptr: *mut u8, v_offset: i32) -> i32;
+/// ```
+/// the v_offset represents the offset of the value to read
+///
+///
+///  Result: 1byte
+///     Option: 1byte
+///         vec_len(var_len prefix): 2bytes
+///             bytes: max 64k-4
+/// total: max 64k
+pub fn storage_get(
+    mut caller: Caller<'_, Context>,
+    params: &[Val],
+    result: &mut [Val],
+) -> anyhow::Result<()> {
+    let k_ptr = params[0].unwrap_i32();
+    let k_len = params[1].unwrap_i32();
+    let r_ptr = params[2].unwrap_i32();
+    let v_offset = params[3].unwrap_i32();
+    let key = Context::read_bytes_from_memory(&mut caller, k_ptr, k_len)
+        .expect("can't read bytes from wasm");
+    let db = &caller.data().db;
+    let r = match db_get(db, &key) {
+        Ok(value) => {
+            if let Some(value) = value {
+                if v_offset as usize >= value.len() {
+                    // fatal error: the sdk doesn't work normally
+                    result[0] = Val::I32(NO_MORE_DATA);
+                    CallResult::<Option<Vec<u8>>>::Err(RuntimeError::MemoryAccessOutOfBounds)
+                } else if v_offset as usize + BUFFER_LEN - 4 >= value.len() {
+                    // put the rest of the value into wasm memory
+                    result[0] = Val::I32(NO_MORE_DATA);
+                    CallResult::<Option<Vec<u8>>>::Ok(Some(value[v_offset as usize..].to_vec()))
+                } else {
+                    // put offset..=offset+buf_len-4 into wasm memory
+                    result[0] = Val::I32(1);
+                    CallResult::<Option<Vec<u8>>>::Ok(Some(
+                        value[v_offset as usize..=v_offset as usize + BUFFER_LEN - 4].to_vec(),
+                    ))
+                }
+            } else {
+                // key not found
+                result[0] = Val::I32(NO_MORE_DATA);
+                CallResult::<Option<Vec<u8>>>::Ok(None)
+            }
+        }
+        Err(e) => {
+            // rocksdb error
+            result[0] = Val::I32(NO_MORE_DATA);
+            CallResult::<Option<Vec<u8>>>::Err(RuntimeError::KvStorageError(e))
+        }
+    };
+    let bytes = r.encode();
+    assert!(bytes.len() <= BUFFER_LEN);
+    Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+    Ok(())
+}
 
-//     if let Ok(value_option) = db.get_cf(db.cf_handle("avs").unwrap(), &key) {
-//         if let Some(value) = value_option {
-//             let value_len = value.len() as i32;
+pub(crate) fn storage_del_signature(engine: &Engine) -> FuncType {
+    FuncType::new(
+        engine,
+        [ValType::I32, ValType::I32, ValType::I32],
+        [ValType::I32],
+    )
+}
 
-//             // Write the length of the value
-//             memory.write(&mut caller, v_len_ptr as usize, &value_len.to_le_bytes())?;
-
-//             // Write the value itself
-//             memory.write(&mut caller, v_ptr as usize, &value)?;
-
-//             results[0] = Val::I32(0); // Success status
-//         } else {
-//             // Key not found
-//             results[0] = Val::I32(1); // Not found status
-//         }
-//     } else {
-//         // An error occurred
-//         results[0] = Val::I32(2); // Error status
-//     }
-
-//     Ok(())
-// }
-// pub fn storage_get_split(
-//     mut caller: Caller<'_, Context>,
-//     k_ptr: i32,
-//     k_len: i32,
-//     v_ptr: i32,
-//     v_len_ptr: i32,
-// ) -> i32 {
-//     let memory = match caller.get_export("memory").and_then(|e| e.into_memory()) {
-//         Some(mem) => mem,
-//         None => return 3, // Error code for memory export not found
-//     };
-
-//     // Read the key from WebAssembly memory
-//     let mut key = vec![0u8; k_len as usize];
-//     if memory.read(&caller, k_ptr as usize, &mut key).is_err() {
-//         return 4; // Error code for memory read failure
-//     }
-//     println!(
-//         "get split key={}, val={}",
-//         String::from_utf8_lossy(&key),
-//         "123"
-//     );
-
-//     let db = &caller.data().db;
-
-//     match db.get_cf(db.cf_handle("avs").unwrap(), &key) {
-//         Ok(value_option) => {
-//             if let Some(value) = value_option {
-//                 // let value = [65, 66, 67];
-//                 let value_len = value.len() as i32;
-
-//                 // Write the length of the value
-//                 if memory
-//                     .write(&mut caller, v_len_ptr as usize, &value_len.to_le_bytes())
-//                     .is_err()
-//                 {
-//                     return 5; // Error code for memory write failure
-//                 }
-
-//                 // Write the value itself
-//                 if memory.write(&mut caller, v_ptr as usize, &value).is_err() {
-//                     return 5; // Error code for memory write failure
-//                 }
-
-//                 0 // Success status
-//             } else {
-//                 1 // Not found status
-//             }
-//         }
-//         Err(_) => 2, // Error status for database error
-//     }
-// }
-// pub fn storage_get_split_len(
-//     mut caller: Caller<'_, Context>,
-//     k_ptr: i32,
-//     k_len: i32,
-//     v_len_ptr: i32,
-// ) -> Result<Vec<u8>, i32> {
-//     let memory = match caller.get_export("memory").and_then(|e| e.into_memory()) {
-//         Some(mem) => mem,
-//         None => return Err(3), // Error code for memory export not found
-//     };
-
-//     // Read the key from WebAssembly memory
-//     let mut key = vec![0u8; k_len as usize];
-//     if memory.read(&caller, k_ptr as usize, &mut key).is_err() {
-//         return Err(4); // Error code for memory read failure
-//     }
-//     let db = &caller.data().db;
-
-//     match db.get_cf(db.cf_handle("avs").unwrap(), &key) {
-//         Ok(Some(value)) => {
-//             let value_len = value.len() as i32;
-
-//             // Write the length of the value
-//             if memory
-//                 .write(&mut caller, v_len_ptr as usize, &value_len.to_le_bytes())
-//                 .is_err()
-//             {
-//                 return Err(5); // Error code for memory write failure
-//             }
-
-//             Ok(value)
-//         }
-//         Ok(None) => Err(1), // Not found status
-//         Err(_) => Err(2),   // Error status for database error
-//     }
-// }
-// pub fn storage_delete(context: &Context, key: &[u8]) -> Result<(), StorageError> {
-//     context
-//         .db
-//         .delete_cf(context.db.cf_handle("avs").unwrap(), key)
-//         .map_err(|e| StorageError(e.to_string()))?;
-//     Ok(())
-// }
+/// the signature of this host function is:
+///
+/// ```
+/// fn storage_del(key_ptr: *const u8, key_len: i32, return_ptr: *mut u8) -> i32;
+/// ```
+pub fn storage_delete(
+    mut caller: Caller<'_, Context>,
+    params: &[Val],
+    result: &mut [Val],
+) -> anyhow::Result<()> {
+    result[0] = Val::I32(NO_MORE_DATA);
+    let r_ptr = params[2].unwrap_i32();
+    if caller.data().is_get_method() {
+        let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
+        let bytes = return_value.encode();
+        assert!(bytes.len() <= BUFFER_LEN);
+        Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+        return Ok(());
+    }
+    let k_ptr = params[0].unwrap_i32();
+    let k_len = params[1].unwrap_i32();
+    let key = Context::read_bytes_from_memory(&mut caller, k_ptr, k_len)
+        .expect("can't read bytes from wasm");
+    let return_value = if let Err(e) = db_del(&caller.data().db, &key) {
+        CallResult::<()>::Err(RuntimeError::KvStorageError(e))
+    } else {
+        CallResult::<()>::Ok(())
+    };
+    let bytes = return_value.encode();
+    assert!(bytes.len() <= BUFFER_LEN);
+    Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+    Ok(())
+}
