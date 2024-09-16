@@ -47,6 +47,43 @@ pub fn post(attr: TokenStream, func: TokenStream) -> TokenStream {
 pub fn get(attr: TokenStream, func: TokenStream) -> TokenStream {
     expand(attr, func, "get")
 }
+
+#[proc_macro_attribute]
+pub fn callback(_attr: TokenStream, func: TokenStream) -> TokenStream {
+    let func = parse_macro_input!(func as ItemFn);
+    let func_block = &func.block;
+    let func_decl = &func.sig;
+    let origin_name = &func_decl.ident;
+    let func_generics = &func_decl.generics;
+    let func_inputs = &func_decl.inputs;
+    let func_output = &func_decl.output;
+
+    let func_name = format_ident!("__nucleus_init_{}", &func_decl.ident);
+    if !func_generics.params.is_empty() {
+        panic!("init function should not have generics");
+    }
+    if !matches!(func_output, ReturnType::Default) {
+        panic!("init function should have default return type");
+    }
+    let tys: Vec<_> = func_inputs
+        .iter()
+        .map(|i| match i {
+            FnArg::Typed(ref val) => val.ty.clone(),
+            _ => unreachable!(),
+        })
+        .collect();
+    let expanded = quote! {
+        #[no_mangle]
+        pub fn #func_name(args: std::vec::Vec<u8>) {
+            let mut v: &[u8] = args.as_ref();
+            let decoded = <(#(#tys,)*) as ::vrs_core_sdk::codec::Decode>::decode(&mut v).unwrap();
+            fn #origin_name(args: (#(#tys,)*)) #func_block
+            #origin_name(decoded);
+        }
+    };
+    expanded.into()
+}
+
 fn expand(_attr: TokenStream, item: TokenStream, rename_prefix: &str) -> TokenStream {
     let mut input_fn = parse_macro_input!(item as ItemFn);
     let fn_name = &input_fn.sig.ident;

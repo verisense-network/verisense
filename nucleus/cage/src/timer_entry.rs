@@ -1,15 +1,16 @@
+use chrono::{DateTime, Utc};
 use core::fmt;
 use std::cmp::Reverse;
 use std::hash::{Hash, Hasher};
 use std::{cmp::Ordering, collections::BinaryHeap, hash::DefaultHasher, rc::Rc};
 
-use chrono::{DateTime, Utc};
 #[derive(Debug, Clone, Hash)]
 pub enum CallerType {
     Post,
     Get,
     Entry,
 }
+
 #[derive(Clone, Hash)]
 pub struct CallerInfo {
     pub func: String,
@@ -17,6 +18,7 @@ pub struct CallerInfo {
     pub thread_id: u64,
     pub caller_type: CallerType,
 }
+
 impl CallerInfo {
     pub fn hash_u64(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
@@ -24,6 +26,7 @@ impl CallerInfo {
         hasher.finish()
     }
 }
+
 impl fmt::Debug for CallerInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CallerInfo")
@@ -49,9 +52,11 @@ pub struct TimerEntry {
     pub triggered_time: Option<DateTime<Utc>>,
     pub func_params: Vec<u8>,
 }
+
 pub(crate) struct TimerQueue {
     heap: BinaryHeap<Reverse<TimerEntry>>,
 }
+
 impl TimerEntry {
     pub fn new(
         caller_infos: Vec<CallerInfo>,
@@ -67,6 +72,7 @@ impl TimerEntry {
             func_params,
         }
     }
+
     pub fn hash_u64(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
@@ -132,10 +138,12 @@ impl TimerQueue {
     pub fn peek(&self) -> Option<&TimerEntry> {
         self.heap.peek().map(|Reverse(entry)| entry)
     }
+
     pub fn is_empty(&self) -> bool {
         self.heap.is_empty()
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

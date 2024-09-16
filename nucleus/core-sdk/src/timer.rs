@@ -1,44 +1,44 @@
-pub mod timer {
-    use std::time::Duration;
+use std::time::Duration;
 
-    use crate::{MAX_DELAY_SEC, MAX_FUNC_SIZE, MAX_PARAMS_SIZE};
+use crate::{MAX_DELAY_SEC, MAX_FUNC_SIZE, MAX_PARAMS_SIZE};
 
-    #[link(wasm_import_module = "env")]
-    extern "C" {
-        fn timer_set_delay(
-            delay: i32,
-            func_ptr: *const u8,
-            func_len: i32,
-            params_ptr: *const u8,
-            params_len: i32,
-        ) -> i32;
+#[link(wasm_import_module = "env")]
+extern "C" {
+    fn timer_set_delay(
+        delay: i32,
+        func_ptr: *const u8,
+        func_len: i32,
+        params_ptr: *const u8,
+        params_len: i32,
+    ) -> i32;
+}
+
+pub fn _set_timer(ts: Duration, func: &[u8], params: &[u8]) -> anyhow::Result<()> {
+    if params.len() > MAX_PARAMS_SIZE {
+        return Err(anyhow::anyhow!("params size exceeds maximum allowed size"));
     }
-    pub fn _set_timer(ts: Duration, func: &[u8], params: &[u8]) -> anyhow::Result<()> {
-        if params.len() > MAX_PARAMS_SIZE {
-            return Err(anyhow::anyhow!("params size exceeds maximum allowed size"));
-        }
-        if ts.as_secs() > MAX_DELAY_SEC {
-            return Err(anyhow::anyhow!("delay exceeds maximum allowed size"));
-        }
-        if func.len() > MAX_FUNC_SIZE {
-            return Err(anyhow::anyhow!("func size exceeds maximum allowed size"));
-        }
-        let status = unsafe {
-            timer_set_delay(
-                ts.as_secs() as i32,
-                func.as_ptr(),
-                func.len() as i32,
-                params.as_ptr(),
-                params.len() as i32,
-            )
-        };
-        if status != 0 {
-            Err(anyhow::anyhow!("set timer failed"))
-        } else {
-            Ok(())
-        }
+    if ts.as_secs() > MAX_DELAY_SEC {
+        return Err(anyhow::anyhow!("delay exceeds maximum allowed size"));
+    }
+    if func.len() > MAX_FUNC_SIZE {
+        return Err(anyhow::anyhow!("func size exceeds maximum allowed size"));
+    }
+    let status = unsafe {
+        timer_set_delay(
+            ts.as_secs() as i32,
+            func.as_ptr(),
+            func.len() as i32,
+            params.as_ptr(),
+            params.len() as i32,
+        )
+    };
+    if status != 0 {
+        Err(anyhow::anyhow!("set timer failed"))
+    } else {
+        Ok(())
     }
 }
+
 #[macro_export]
 macro_rules! set_timer {
     ($duration:expr, $func_name:ident, $($param:expr),* $(,)?) => {{
