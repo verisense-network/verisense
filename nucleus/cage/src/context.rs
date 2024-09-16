@@ -1,3 +1,4 @@
+mod http;
 mod kvdb;
 
 use chrono::{DateTime, Utc};
@@ -9,22 +10,17 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex},
 };
-use thiserror::Error;
+use vrs_primitives::NucleusId;
 use wasmtime::{Caller, Engine, Extern, Func, FuncType, Linker, Memory, Store, Trap, Val, ValType};
 
 use crate::{CallerInfo, TimerEntry, TimerQueue};
 
-struct Cache {
-    key: Vec<u8>,
-    value: Vec<u8>,
-}
-
 pub struct Context {
+    pub(crate) id: NucleusId,
     pub(crate) db: Arc<DB>,
+    pub(crate) http: Arc<http::HttpManager>,
     is_get_method: bool,
     caller_infos: Vec<CallerInfo>,
-    //todo: cache
-    cache: Arc<Option<Cache>>,
     timer: Arc<Mutex<TimerQueue>>,
     // 1. we need runtime storage to read
     // 3. we need http manager
@@ -32,12 +28,13 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn init(config: ContextConfig) -> anyhow::Result<Self> {
+    pub fn init(id: NucleusId, config: ContextConfig) -> anyhow::Result<Self> {
         Ok(Context {
+            id,
             db: Arc::new(kvdb::init_rocksdb(config.db_path)?),
+            http: Arc::new(http::HttpManager::new()),
             is_get_method: false,
             caller_infos: vec![],
-            cache: Arc::new(None),
             timer: Arc::new(Mutex::new(TimerQueue::new())),
         })
     }
@@ -105,7 +102,14 @@ impl Context {
                 kvdb::storage_delete,
             )
             .unwrap();
-
+        linker
+            .func_new(
+                "env",
+                "http_request",
+                http::http_request_signature(engine),
+                http::enqueue_http_request,
+            )
+            .unwrap();
         // TODO for set_timer
         linker
             .func_new(

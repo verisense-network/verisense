@@ -7,4 +7,5 @@ pub enum RuntimeError {
     WriteIsNotAllowInGetMethod,
     MemoryAccessOutOfBounds,
     KvStorageError(String),
+    HttpError(String),
 }

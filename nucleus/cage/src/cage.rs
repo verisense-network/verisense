@@ -260,7 +260,7 @@ where
     let config = ContextConfig {
         db_path: nucleus_path.join("db").into_boxed_path(),
     };
-    let context = Context::init(config)?;
+    let context = Context::init(id, config)?;
     let db = context.db.clone();
     let (tx, rx) = std::sync::mpsc::channel();
     let mut nucleus = Nucleus::new(rx, timer_scheduler, context, wasm);

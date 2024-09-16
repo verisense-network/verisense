@@ -32,6 +32,11 @@ fn db_del(db: &DB, key: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
+/// the signature of this host function is:
+///
+/// ```
+/// fn storage_put(key_ptr: *const u8, key_len: i32, value_ptr: *const u8, value_len: i32, return_ptr: *mut u8) -> i32;
+/// ```
 pub(crate) fn storage_put_signature(engine: &Engine) -> FuncType {
     FuncType::new(
         engine,
@@ -84,6 +89,11 @@ pub(crate) fn storage_put(
     Ok(())
 }
 
+/// the signature of this host function is:
+///
+/// ```
+/// fn storage_get(k_ptr: *const u8, k_len: i32, return_ptr: *mut u8, v_offset: i32) -> i32;
+/// ```
 pub(crate) fn storage_get_signature(engine: &Engine) -> FuncType {
     FuncType::new(
         engine,
@@ -98,7 +108,6 @@ pub(crate) fn storage_get_signature(engine: &Engine) -> FuncType {
 /// fn storage_get(k_ptr: *const u8, k_len: i32, return_ptr: *mut u8, v_offset: i32) -> i32;
 /// ```
 /// the v_offset represents the offset of the value to read
-///
 ///
 ///  Result: 1byte
 ///     Option: 1byte
@@ -153,6 +162,11 @@ pub fn storage_get(
     Ok(())
 }
 
+/// the signature of this host function is:
+///
+/// ```
+/// fn storage_del(key_ptr: *const u8, key_len: i32, return_ptr: *mut u8) -> i32;
+/// ```
 pub(crate) fn storage_del_signature(engine: &Engine) -> FuncType {
     FuncType::new(
         engine,

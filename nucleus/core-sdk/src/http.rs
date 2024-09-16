@@ -23,45 +23,45 @@ pub struct Parts {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
-pub struct Request {
-    head: Parts,
-    body: Vec<u8>,
+pub struct HttpRequest {
+    pub head: Parts,
+    pub body: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
-pub struct Response {
-    head: Parts,
-    body: Vec<u8>,
+pub struct HttpResponse {
+    pub head: Parts,
+    pub body: Vec<u8>,
 }
 
+// #[cfg(feature = "host")]
+// impl Into<hyper::Request<Vec<u8>>> for HttpRequest {
+//     fn into(self) -> hyper::Request<Vec<u8>> {
+//         let mut builder = hyper::Request::builder()
+//             .method(self.head.method)
+//             .uri(self.head.uri);
+
+//         for (key, value) in self.head.headers {
+//             builder = builder.header(key, value);
+//         }
+
+//         builder.body(self.body).unwrap()
+//     }
+// }
+
 #[cfg(feature = "host")]
-impl Into<http_type::Request<Vec<u8>>> for Request {
-    fn into(self) -> http_type::Request<Vec<u8>> {
-        let mut builder = http_type::Request::builder()
-            .method(self.head.method)
-            .uri(self.head.uri);
-
-        for (key, value) in self.head.headers {
-            builder = builder.header(key, value);
-        }
-
-        builder.body(self.body).unwrap()
-    }
-}
-
-#[cfg(feature = "host")]
-impl Into<http_type::Method> for HttpMethod {
-    fn into(self) -> http_type::Method {
+impl Into<hyper::Method> for HttpMethod {
+    fn into(self) -> hyper::Method {
         match self {
-            HttpMethod::Options => http_type::Method::OPTIONS,
-            HttpMethod::Get => http_type::Method::GET,
-            HttpMethod::Post => http_type::Method::POST,
-            HttpMethod::Put => http_type::Method::PUT,
-            HttpMethod::Delete => http_type::Method::DELETE,
-            HttpMethod::Head => http_type::Method::HEAD,
-            HttpMethod::Trace => http_type::Method::TRACE,
-            HttpMethod::Connect => http_type::Method::CONNECT,
-            HttpMethod::Patch => http_type::Method::PATCH,
+            HttpMethod::Options => hyper::Method::OPTIONS,
+            HttpMethod::Get => hyper::Method::GET,
+            HttpMethod::Post => hyper::Method::POST,
+            HttpMethod::Put => hyper::Method::PUT,
+            HttpMethod::Delete => hyper::Method::DELETE,
+            HttpMethod::Head => hyper::Method::HEAD,
+            HttpMethod::Trace => hyper::Method::TRACE,
+            HttpMethod::Connect => hyper::Method::CONNECT,
+            HttpMethod::Patch => hyper::Method::PATCH,
         }
     }
 }
@@ -79,7 +79,7 @@ extern "C" {
 ///     // handle response
 /// }
 /// ```
-pub fn request(request: Request) -> Result<u64, RuntimeError> {
+pub fn request(request: HttpRequest) -> Result<u64, RuntimeError> {
     let bytes = request.encode();
     let mut return_bytes = crate::allocate_buffer();
     let status = unsafe {
