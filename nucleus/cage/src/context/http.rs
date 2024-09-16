@@ -1,25 +1,97 @@
 use super::*;
 use bytes::Bytes;
 use codec::{Decode, Encode};
+use futures::FutureExt;
 use http_body_util::{BodyExt, Full};
 use hyper::{
-    header::{HeaderMap, HeaderValue},
-    Request, Response, Uri,
+    rt::{Read, Write},
+    Method, Request, Response, Uri,
 };
-use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use std::sync::atomic::{AtomicU64, Ordering};
+use tokio::net::TcpStream;
+use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use wasmtime::{Caller, FuncType, Val, ValType};
 
-#[derive(Debug)]
-pub struct HttpManager {
-    id: AtomicU64,
+pub type HttpRequestSender = UnboundedSender<HttpRequest>;
+pub type HttpRequestReceiver = UnboundedReceiver<HttpRequest>;
+
+// TODO the id should be unique
+pub fn new_http_manager() -> (HttpCallRegister, HttpCallExecutor) {
+    let (tx, rx) = mpsc::unbounded_channel();
+    (HttpCallRegister::new(tx), HttpCallExecutor::new(rx))
 }
 
-impl HttpManager {
-    pub(crate) fn new() -> Self {
-        HttpManager {
+#[derive(Debug)]
+pub struct HttpRequestWithCallback {
+    pub nucleus_id: NucleusId,
+    pub req_id: u64,
+    pub request: Request<Full<Bytes>>,
+}
+
+#[derive(Debug)]
+pub struct HttpResponseWithCallback {
+    pub nucleus_id: NucleusId,
+    pub req_id: u64,
+    pub response: Response<Full<Bytes>>,
+}
+
+#[derive(Debug)]
+pub struct HttpCallExecutor {
+    rx: UnboundedReceiver<HttpRequestWithCallback>,
+}
+
+impl HttpCallExecutor {
+    fn new(rx: UnboundedReceiver<HttpRequestWithCallback>) -> Self {
+        HttpCallExecutor { rx }
+    }
+
+    pub(crate) fn poll<'a>(
+        &'a mut self,
+    ) -> impl futures::Future<Output = Option<HttpResponseWithCallback>> + 'a {
+        self.rx.recv().then(|req| async move {
+            match req {
+                Some(req) => {
+                    let uri = req.request.uri().clone();
+                    // TODO make the request
+                    Some(HttpResponseWithCallback {
+                        nucleus_id: req.nucleus_id,
+                        req_id: req.req_id,
+                        response: Response::new(Full::from(Bytes::new())),
+                    })
+                }
+                None => None,
+            }
+        })
+    }
+
+    async fn connect<S, C, H, F>(url: hyper::Uri, handshake: H) -> std::io::Result<(S, C)>
+    where
+        H: FnOnce(TcpStream) -> F,
+        F: futures::Future<Output = std::io::Result<(S, C)>> + 'static,
+    {
+        let host = url.host().expect("already check");
+        let port = url.port_u16().unwrap_or(443);
+        let addr = format!("{}:{}", host, port);
+        let stream = TcpStream::connect(addr)
+            .await
+            .map_err(|_| std::io::Error::last_os_error())?;
+        handshake(stream).await
+    }
+}
+
+#[derive(Debug)]
+pub struct HttpCallRegister {
+    id: AtomicU64,
+    tx: UnboundedSender<HttpRequestWithCallback>,
+}
+
+impl HttpCallRegister {
+    // TODO the id should be unique even the node reboot
+    fn new(tx: UnboundedSender<HttpRequestWithCallback>) -> Self {
+        HttpCallRegister {
             id: AtomicU64::new(0),
+            tx,
         }
     }
 
@@ -28,34 +100,31 @@ impl HttpManager {
         origin: NucleusId,
         req: HttpRequest,
     ) -> Result<u64, RuntimeError> {
-        let id = self.id.fetch_add(1, Ordering::Relaxed);
-        let request = Request::builder()
-            .method(req.head.method.into())
-            .uri(req.head.uri)
+        let uri = req
+            .head
+            .uri
+            .parse::<Uri>()
+            .map_err(|e| RuntimeError::HttpError(e.to_string()))?;
+        (uri.scheme_str() == Some("https"))
+            .then(|| ())
+            .ok_or(RuntimeError::HttpError("only support https".to_string()))?;
+        let mut builder = Request::builder()
+            .method(Into::<Method>::into(req.head.method))
+            .uri(uri);
+        for (key, value) in req.head.headers {
+            builder = builder.header(key, value);
+        }
+        let request = builder
             .body(Full::from(req.body))
             .map_err(|e| RuntimeError::HttpError(e.to_string()))?;
-        // TODO save this future then poll it in cage
-        let future = async {
-            // let host = request.uri().host().expect("uri has no host");
-            // let port = request.uri().port_u16().unwrap_or(80);
-
-            // let stream = TcpStream::connect((host, port)).await.unwrap();
-            // let io = TokioIo::new(stream);
-
-            // let (mut sender, conn) = Builder::new()
-            //     .preserve_header_case(true)
-            //     .title_case_headers(true)
-            //     .handshake(io)
-            //     .await?;
-            // tokio::task::spawn(async move {
-            //     if let Err(err) = conn.await {
-            //         println!("Connection failed: {:?}", err);
-            //     }
-            // });
-
-            // let resp = sender.send_request(req).await?;
-        };
-        // TODO
+        let id = self.id.fetch_add(1, Ordering::Relaxed);
+        self.tx
+            .send(HttpRequestWithCallback {
+                nucleus_id: origin,
+                req_id: id,
+                request,
+            })
+            .map_err(|e| RuntimeError::HttpError(e.to_string()))?;
         Ok(id)
     }
 }

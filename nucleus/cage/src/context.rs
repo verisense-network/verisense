@@ -1,5 +1,5 @@
-mod http;
-mod kvdb;
+pub mod http;
+pub mod kvdb;
 
 use chrono::{DateTime, Utc};
 use rocksdb::DB;
@@ -18,7 +18,7 @@ use crate::{CallerInfo, TimerEntry, TimerQueue};
 pub struct Context {
     pub(crate) id: NucleusId,
     pub(crate) db: Arc<DB>,
-    pub(crate) http: Arc<http::HttpManager>,
+    pub(crate) http: Arc<http::HttpCallRegister>,
     is_get_method: bool,
     caller_infos: Vec<CallerInfo>,
     timer: Arc<Mutex<TimerQueue>>,
@@ -28,11 +28,15 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn init(id: NucleusId, config: ContextConfig) -> anyhow::Result<Self> {
+    pub fn init(
+        id: NucleusId,
+        http_register: Arc<http::HttpCallRegister>,
+        config: ContextConfig,
+    ) -> anyhow::Result<Self> {
         Ok(Context {
             id,
             db: Arc::new(kvdb::init_rocksdb(config.db_path)?),
-            http: Arc::new(http::HttpManager::new()),
+            http: http_register,
             is_get_method: false,
             caller_infos: vec![],
             timer: Arc::new(Mutex::new(TimerQueue::new())),

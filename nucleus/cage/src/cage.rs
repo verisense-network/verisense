@@ -1,14 +1,15 @@
 use crate::{
-    nucleus::Nucleus, Context, ContextConfig, Gluon, NucleusResponse, ReplyTo, WasmCodeRef,
-    WasmInfo,
+    context::http::HttpCallRegister, nucleus::Nucleus, Context, ContextConfig, Gluon,
+    NucleusResponse, ReplyTo, WasmCodeRef, WasmInfo,
 };
-use codec::{Decode, Encode};
+use codec::Encode;
 use futures::prelude::*;
-use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use rocksdb::DB;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use std::collections::HashMap;
+// TODO use UnboundedSender to avoid blocking
 use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver};
@@ -132,6 +133,8 @@ where
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
         let mut registry_monitor = client.every_import_notification_stream();
         let timer_scheduler = Arc::new(crate::SchedulerAsync::new());
+        let (http_register, mut http_executor) = crate::context::http::new_http_manager();
+        let http_register = Arc::new(http_register);
         // TODO mock monadring
         //////////////////////////////////////////////////////
         let (token_tx, mut token_rx) = mpsc::unbounded_channel::<NucleusId>();
@@ -154,10 +157,13 @@ where
                     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
                         for (id, config) in instances {
                             let nucleus_path = nucleus_home_dir.join(id.to_string());
-                            start_nucleus::<B>(id, timer_scheduler.clone(), config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
+                            start_nucleus::<B>(id, http_register.clone(), timer_scheduler.clone(), config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
                         }
                     }
                 },
+                http_reply = http_executor.poll() => {
+                    println!("");
+                }
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
                     if let Some(nucleus) = nuclei.get_mut(&module) {
@@ -231,6 +237,7 @@ fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
 // TODO
 fn start_nucleus<B>(
     id: NucleusId,
+    http_register: Arc<HttpCallRegister>,
     timer_scheduler: Arc<crate::SchedulerAsync>,
     nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
     nucleus_path: std::path::PathBuf,
@@ -260,7 +267,7 @@ where
     let config = ContextConfig {
         db_path: nucleus_path.join("db").into_boxed_path(),
     };
-    let context = Context::init(id, config)?;
+    let context = Context::init(id.clone(), http_register, config)?;
     let db = context.db.clone();
     let (tx, rx) = std::sync::mpsc::channel();
     let mut nucleus = Nucleus::new(rx, timer_scheduler, context, wasm);
@@ -398,6 +405,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
     }
 }
+
 // #[cfg(test)]
 // mod tests {
 //     use super::*;

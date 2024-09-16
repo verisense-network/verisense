@@ -143,6 +143,7 @@ impl Vm {
         self.space.data_mut().pop_caller_info();
         return result;
     }
+
     fn call_method(
         &mut self,
         func: &str,
@@ -210,6 +211,7 @@ impl Vm {
 
         Ok(result)
     }
+
     pub fn pop_pending_timer(&mut self) -> Option<TimerEntry> {
         self.space.data_mut().pop_timer_entry()
     }
