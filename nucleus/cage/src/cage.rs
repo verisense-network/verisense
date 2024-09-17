@@ -1,6 +1,6 @@
 use crate::{
-    context::http::HttpCallRegister, nucleus::Nucleus, Context, ContextConfig, Gluon,
-    NucleusResponse, ReplyTo, WasmCodeRef, WasmInfo,
+    host_func::http::HttpCallRegister, nucleus::Nucleus, Gluon, NucleusResponse, ReplyTo, Runtime,
+    RuntimeParams, WasmCodeRef, WasmInfo,
 };
 use codec::Encode;
 use futures::prelude::*;
@@ -14,8 +14,7 @@ use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver};
 use vrs_metadata::{
-    codegen, config::SubstrateConfig, events, metadata, storage, Metadata as RuntimeMetadata,
-    METADATA_BYTES,
+    codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata, METADATA_BYTES,
 };
 use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::{AccountId, Hash, NodeId, NucleusId, NucleusInfo};
@@ -35,7 +34,6 @@ struct NucleusCage {
     event_id: u64,
     db: Arc<DB>,
     // TODO monadring-related
-    // TODO kvdb
 }
 
 impl NucleusCage {
@@ -133,7 +131,7 @@ where
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
         let mut registry_monitor = client.every_import_notification_stream();
         let timer_scheduler = Arc::new(crate::SchedulerAsync::new());
-        let (http_register, mut http_executor) = crate::context::http::new_http_manager();
+        let (http_register, mut http_executor) = crate::host_func::http::new_http_manager();
         let http_register = Arc::new(http_register);
         // TODO mock monadring
         //////////////////////////////////////////////////////
@@ -264,13 +262,15 @@ where
         version: wasm_version,
         code: WasmCodeRef::File(nucleus_path.join("code.wasm")),
     };
-    let config = ContextConfig {
+    let config = RuntimeParams {
+        nucleus_id: id.clone(),
         db_path: nucleus_path.join("db").into_boxed_path(),
+        http_register,
     };
-    let context = Context::init(id.clone(), http_register, config)?;
-    let db = context.db.clone();
+    let runtime = Runtime::init(config)?;
+    let db = runtime.db.clone();
     let (tx, rx) = std::sync::mpsc::channel();
-    let mut nucleus = Nucleus::new(rx, timer_scheduler, context, wasm);
+    let mut nucleus = Nucleus::new(rx, timer_scheduler, runtime, wasm);
     std::thread::spawn(move || {
         nucleus.run();
     });

@@ -1,4 +1,8 @@
-use crate::mem;
+use crate::{
+    mem,
+    runtime::{ComponentProvider, ContextAware},
+    Runtime,
+};
 use bytes::Bytes;
 use codec::{Decode, Encode};
 use futures::FutureExt;
@@ -10,6 +14,12 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use vrs_primitives::NucleusId;
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
+
+impl ComponentProvider<HttpCallRegister> for Runtime {
+    fn get_component(&self) -> std::sync::Arc<HttpCallRegister> {
+        self.http.clone()
+    }
+}
 
 // TODO the id should be unique
 pub fn new_http_manager() -> (HttpCallRegister, HttpCallExecutor) {
@@ -160,14 +170,17 @@ pub(crate) fn enqueue_http_request<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],
     result: &mut [Val],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    R: ContextAware + ComponentProvider<HttpCallRegister>,
+{
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[2].unwrap_i32();
-    if caller.data().is_get_method() {
+    if caller.data().read_only() {
         let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
-        runtime::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+        mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
         return Ok(());
     }
     let req_ptr = params[0].unwrap_i32();
@@ -175,11 +188,11 @@ pub(crate) fn enqueue_http_request<R>(
     let req =
         mem::read_bytes_from_memory(&mut caller, req_ptr, req_len).expect("read from wasm failed");
     let request: HttpRequest = Decode::decode(&mut req.as_slice()).expect("decode request failed");
-    let http_manager = &caller.data().http;
-    let nucleus_id = caller.data().id.clone();
+    let http_manager = &caller.data().get_component();
+    let nucleus_id = caller.data().get_nucleus_id().clone();
     let return_value = http_manager.enqueue_request(nucleus_id, request);
     let bytes = return_value.encode();
     assert!(bytes.len() <= BUFFER_LEN);
-    runtime::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+    mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
     Ok(())
 }

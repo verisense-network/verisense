@@ -1,24 +1,14 @@
-use chrono::{DateTime, Duration, Utc};
-use tokio::{sync::RwLock, time};
-
 use crate::{
-    context::{Context, ContextConfig},
-    scheduler,
+    runtime::{ContextAware, FuncRegister},
     vm::Vm,
-    wasm_code::WasmInfo,
-    CallerInfo, ReplyTo, Scheduler, SchedulerAsync, TimerEntry, WrappedScheduler,
-    WrappedSchedulerSync,
+    CallerInfo, ReplyTo, Scheduler, SchedulerAsync, TimerEntry, WasmInfo,
 };
-use std::{
-    sync::{mpsc::Receiver, Arc},
-    thread::{self, sleep},
-};
-use tokio::sync::mpsc::Sender;
+use std::sync::{mpsc::Receiver, Arc};
 
-pub(crate) struct Nucleus {
+pub(crate) struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
     scheduler: Arc<SchedulerAsync>,
-    vm: Option<Vm>,
+    vm: Option<Vm<R>>,
 }
 
 #[derive(Debug)]
@@ -41,15 +31,18 @@ pub enum Gluon {
 // define VM error type id
 const VM_ERROR: i32 = 0x00000001;
 
-impl Nucleus {
+impl<R> Nucleus<R>
+where
+    R: ContextAware + FuncRegister<Runtime = R>,
+{
     pub(crate) fn new(
         receiver: Receiver<(u64, Gluon)>,
         scheduler: Arc<SchedulerAsync>,
-        context: Context,
+        runtime: R,
         code: WasmInfo,
     ) -> Self {
         // TODO
-        let vm = Vm::new_instance(&code, context)
+        let vm = Vm::new_instance(&code, runtime)
             .inspect_err(|e| {
                 log::error!(
                     "fail to create vm instance for AVS {} due to: {:?}",
@@ -127,10 +120,11 @@ impl Nucleus {
                                 );
                                 (VM_ERROR << 10 + e.to_error_code(), e.to_string())
                             });
-                        while let Some(entry) = vm.pop_pending_timer() {
-                            // println!("{:?}", entry);
-                            self.scheduler.push(entry);
-                        }
+                        // TODO mark: we need to re-design the caller context
+                        // while let Some(entry) = vm.pop_pending_timer() {
+                        //     // println!("{:?}", entry);
+                        //     self.scheduler.push(entry);
+                        // }
                         if let Some(reply_to) = reply_to {
                             if let Err(err) = reply_to.send(vm_result) {
                                 println!("fail to send reply to: {:?}", err);
@@ -153,7 +147,7 @@ impl Nucleus {
 
 #[cfg(test)]
 mod tests {
-    use crate::wasm_code::WasmCodeRef;
+    use crate::WasmCodeRef;
 
     use super::*;
     use codec::Decode;

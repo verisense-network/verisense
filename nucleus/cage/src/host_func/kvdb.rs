@@ -1,8 +1,18 @@
-use crate::mem;
+use crate::{
+    mem,
+    runtime::{ComponentProvider, ContextAware},
+    Runtime,
+};
 use codec::Encode;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use vrs_core_sdk::{error::RuntimeError, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
+
+impl ComponentProvider<DB> for Runtime {
+    fn get_component(&self) -> std::sync::Arc<DB> {
+        self.db.clone()
+    }
+}
 
 pub(crate) fn init_rocksdb(path: impl AsRef<std::path::Path>) -> anyhow::Result<DB> {
     let avs_cf = ColumnFamilyDescriptor::new("avs", Options::default());
@@ -60,10 +70,13 @@ pub(crate) fn storage_put<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],
     result: &mut [Val],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    R: ContextAware + ComponentProvider<DB>,
+{
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[4].unwrap_i32();
-    if caller.data().is_get_method() {
+    if caller.data().read_only() {
         let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
@@ -78,7 +91,8 @@ pub(crate) fn storage_put<R>(
         mem::read_bytes_from_memory(&mut caller, k_ptr, k_len).expect("read from wasm failed");
     let val =
         mem::read_bytes_from_memory(&mut caller, v_ptr, v_len).expect("read from wasm failed");
-    let return_value = if let Err(e) = db_put(&caller.data().db, &key, &val) {
+    let db = caller.data().get_component();
+    let return_value = if let Err(e) = db_put(&db, &key, &val) {
         CallResult::<()>::Err(RuntimeError::KvStorageError(e))
     } else {
         CallResult::<()>::Ok(())
@@ -119,15 +133,18 @@ pub fn storage_get<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],
     result: &mut [Val],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    R: ComponentProvider<DB>,
+{
     let k_ptr = params[0].unwrap_i32();
     let k_len = params[1].unwrap_i32();
     let r_ptr = params[2].unwrap_i32();
     let v_offset = params[3].unwrap_i32();
     let key =
         mem::read_bytes_from_memory(&mut caller, k_ptr, k_len).expect("can't read bytes from wasm");
-    let db = &caller.data().db;
-    let r = match db_get(db, &key) {
+    let db = caller.data().get_component();
+    let r = match db_get(&db, &key) {
         Ok(value) => CallResult::<Option<Vec<u8>>>::Ok(value),
         Err(e) => CallResult::<Option<Vec<u8>>>::Err(RuntimeError::KvStorageError(e)),
     };
@@ -158,10 +175,13 @@ pub fn storage_delete<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],
     result: &mut [Val],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    R: ComponentProvider<DB> + ContextAware,
+{
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[2].unwrap_i32();
-    if caller.data().is_get_method() {
+    if caller.data().read_only() {
         let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
@@ -172,7 +192,7 @@ pub fn storage_delete<R>(
     let k_len = params[1].unwrap_i32();
     let key =
         mem::read_bytes_from_memory(&mut caller, k_ptr, k_len).expect("can't read bytes from wasm");
-    let return_value = if let Err(e) = db_del(&caller.data().db, &key) {
+    let return_value = if let Err(e) = db_del(&caller.data().get_component(), &key) {
         CallResult::<()>::Err(RuntimeError::KvStorageError(e))
     } else {
         CallResult::<()>::Ok(())
