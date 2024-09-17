@@ -1,17 +1,15 @@
-use super::*;
+use crate::mem;
 use bytes::Bytes;
 use codec::{Decode, Encode};
 use futures::FutureExt;
-use http_body_util::{BodyExt, Full};
-use hyper::{
-    rt::{Read, Write},
-    Method, Request, Response, Uri,
-};
+use http_body_util::Full;
+use hyper::{Method, Request, Response, Uri};
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
-use wasmtime::{Caller, FuncType, Val, ValType};
+use vrs_primitives::NucleusId;
+use wasmtime::{Caller, Engine, FuncType, Val, ValType};
 
 // TODO the id should be unique
 pub fn new_http_manager() -> (HttpCallRegister, HttpCallExecutor) {
@@ -62,7 +60,7 @@ impl HttpCallExecutor {
         })
     }
 
-    async fn connect<S, C, H, F>(url: hyper::Uri, handshake: H) -> std::io::Result<(S, C)>
+    async fn connect<S, C, H, F>(url: Uri, handshake: H) -> std::io::Result<(S, C)>
     where
         H: FnOnce(TcpStream) -> F,
         F: futures::Future<Output = std::io::Result<(S, C)>> + 'static,
@@ -126,17 +124,17 @@ impl HttpCallRegister {
     }
 }
 
-fn from_decode_method(method: HttpMethod) -> hyper::Method {
+fn from_decode_method(method: HttpMethod) -> Method {
     match method {
-        HttpMethod::Options => hyper::Method::OPTIONS,
-        HttpMethod::Get => hyper::Method::GET,
-        HttpMethod::Post => hyper::Method::POST,
-        HttpMethod::Put => hyper::Method::PUT,
-        HttpMethod::Delete => hyper::Method::DELETE,
-        HttpMethod::Head => hyper::Method::HEAD,
-        HttpMethod::Trace => hyper::Method::TRACE,
-        HttpMethod::Connect => hyper::Method::CONNECT,
-        HttpMethod::Patch => hyper::Method::PATCH,
+        HttpMethod::Options => Method::OPTIONS,
+        HttpMethod::Get => Method::GET,
+        HttpMethod::Post => Method::POST,
+        HttpMethod::Put => Method::PUT,
+        HttpMethod::Delete => Method::DELETE,
+        HttpMethod::Head => Method::HEAD,
+        HttpMethod::Trace => Method::TRACE,
+        HttpMethod::Connect => Method::CONNECT,
+        HttpMethod::Patch => Method::PATCH,
     }
 }
 
@@ -158,8 +156,8 @@ pub(crate) fn http_request_signature(engine: &Engine) -> FuncType {
 /// ```
 /// fn http_request(req_ptr: *const u8, req_len: u32, return_ptr: *mut u8) -> i32;
 /// ```
-pub(crate) fn enqueue_http_request(
-    mut caller: Caller<'_, Context>,
+pub(crate) fn enqueue_http_request<R>(
+    mut caller: Caller<'_, R>,
     params: &[Val],
     result: &mut [Val],
 ) -> anyhow::Result<()> {
@@ -169,19 +167,19 @@ pub(crate) fn enqueue_http_request(
         let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
-        Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+        runtime::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
         return Ok(());
     }
     let req_ptr = params[0].unwrap_i32();
     let req_len = params[1].unwrap_i32();
-    let req = Context::read_bytes_from_memory(&mut caller, req_ptr, req_len)
-        .expect("read from wasm failed");
+    let req =
+        mem::read_bytes_from_memory(&mut caller, req_ptr, req_len).expect("read from wasm failed");
     let request: HttpRequest = Decode::decode(&mut req.as_slice()).expect("decode request failed");
     let http_manager = &caller.data().http;
     let nucleus_id = caller.data().id.clone();
     let return_value = http_manager.enqueue_request(nucleus_id, request);
     let bytes = return_value.encode();
     assert!(bytes.len() <= BUFFER_LEN);
-    Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+    runtime::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
     Ok(())
 }

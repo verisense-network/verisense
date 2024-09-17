@@ -1,10 +1,6 @@
 use std::{hash::DefaultHasher, rc::Rc, sync::atomic::AtomicU64, thread};
 
-use crate::{
-    context::{Context, ContextConfig},
-    wasm_code::{WasmCodeRef, WasmInfo},
-    CallerInfo, TimerEntry,
-};
+use crate::{CallerInfo, FuncRegister, Runtime, RuntimeParams, TimerEntry, WasmCodeRef, WasmInfo};
 use anyhow::anyhow;
 use codec::Decode;
 use sp_runtime::traits::Member;
@@ -13,8 +9,8 @@ use vrs_primitives::AccountId;
 use wasmtime::{Caller, Func, Memory, Trap, Val};
 use wasmtime::{Engine, ExternRef, ExternType, Instance, Module, Rooted, Store, WasmResults};
 
-pub struct Vm {
-    space: Store<Context>,
+pub struct Vm<C> {
+    space: Store<C>,
     instance: Instance,
     __call_param_ptr: i32,
     // __host_func_param_ptr: i32,
@@ -78,8 +74,8 @@ fn get_thread_id() -> u64 {
     THREAD_ID.with(|&id| id)
 }
 
-impl Vm {
-    pub fn new_instance(wasm: &WasmInfo, context: Context) -> anyhow::Result<Self> {
+impl<R: FuncRegister<Runtime = R>> Vm<R> {
+    pub fn new_instance(wasm: &WasmInfo, runtime: R) -> anyhow::Result<Self> {
         let engine = Engine::default();
         let module = match wasm.code {
             WasmCodeRef::Blob(ref blob) => Module::from_binary(&engine, blob)?,
@@ -91,8 +87,8 @@ impl Vm {
             }
             _ => {}
         });
-        let mut store = Store::new(&engine, context);
-        let linker = Context::inject_host_funcs(&engine);
+        let mut store = Store::new(&engine, runtime);
+        let linker = R::register_host_funcs(&engine);
         let instance = linker.instantiate(&mut store, &module).unwrap();
         let memory = instance
             .get_memory(&mut store, "memory")

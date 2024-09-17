@@ -11106,6 +11106,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrs-test-suite"
+version = "0.0.1"
+
+[[package]]
 name = "w3f-bls"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
