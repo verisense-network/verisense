@@ -34,38 +34,7 @@ pub struct HttpResponse {
     pub body: Vec<u8>,
 }
 
-// #[cfg(feature = "host")]
-// impl Into<hyper::Request<Vec<u8>>> for HttpRequest {
-//     fn into(self) -> hyper::Request<Vec<u8>> {
-//         let mut builder = hyper::Request::builder()
-//             .method(self.head.method)
-//             .uri(self.head.uri);
-
-//         for (key, value) in self.head.headers {
-//             builder = builder.header(key, value);
-//         }
-
-//         builder.body(self.body).unwrap()
-//     }
-// }
-
-#[cfg(feature = "host")]
-impl Into<hyper::Method> for HttpMethod {
-    fn into(self) -> hyper::Method {
-        match self {
-            HttpMethod::Options => hyper::Method::OPTIONS,
-            HttpMethod::Get => hyper::Method::GET,
-            HttpMethod::Post => hyper::Method::POST,
-            HttpMethod::Put => hyper::Method::PUT,
-            HttpMethod::Delete => hyper::Method::DELETE,
-            HttpMethod::Head => hyper::Method::HEAD,
-            HttpMethod::Trace => hyper::Method::TRACE,
-            HttpMethod::Connect => hyper::Method::CONNECT,
-            HttpMethod::Patch => hyper::Method::PATCH,
-        }
-    }
-}
-
+#[link(wasm_import_module = "env")]
 extern "C" {
     fn http_request(req_ptr: *const u8, req_len: u32, return_ptr: *mut u8) -> i32;
 }

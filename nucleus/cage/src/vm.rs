@@ -1,20 +1,14 @@
-use std::{hash::DefaultHasher, rc::Rc, sync::atomic::AtomicU64, thread};
-
 use crate::{
-    context::{Context, ContextConfig},
-    wasm_code::{WasmCodeRef, WasmInfo},
-    CallerInfo, TimerEntry,
+    runtime::{ContextAware, FuncRegister},
+    CallerInfo, TimerEntry, WasmCodeRef, WasmInfo,
 };
-use anyhow::anyhow;
 use codec::Decode;
-use sp_runtime::traits::Member;
+use std::sync::atomic::AtomicU64;
 use thiserror::Error;
-use vrs_core_sdk::AccountId;
-use wasmtime::{Caller, Func, Memory, Trap, Val};
-use wasmtime::{Engine, ExternRef, ExternType, Instance, Module, Rooted, Store, WasmResults};
+use wasmtime::{Engine, ExternType, Instance, Module, Store, Val, WasmResults};
 
-pub struct Vm {
-    space: Store<Context>,
+pub struct Vm<R> {
+    space: Store<R>,
     instance: Instance,
     __call_param_ptr: i32,
     // __host_func_param_ptr: i32,
@@ -78,8 +72,11 @@ fn get_thread_id() -> u64 {
     THREAD_ID.with(|&id| id)
 }
 
-impl Vm {
-    pub fn new_instance(wasm: &WasmInfo, context: Context) -> anyhow::Result<Self> {
+impl<R> Vm<R>
+where
+    R: FuncRegister<Runtime = R> + ContextAware,
+{
+    pub fn new_instance(wasm: &WasmInfo, runtime: R) -> anyhow::Result<Self> {
         let engine = Engine::default();
         let module = match wasm.code {
             WasmCodeRef::Blob(ref blob) => Module::from_binary(&engine, blob)?,
@@ -91,8 +88,8 @@ impl Vm {
             }
             _ => {}
         });
-        let mut store = Store::new(&engine, context);
-        let linker = Context::inject_host_funcs(&engine);
+        let mut store = Store::new(&engine, runtime);
+        let linker = R::register_host_funcs(&engine);
         let instance = linker.instantiate(&mut store, &module).unwrap();
         let memory = instance
             .get_memory(&mut store, "memory")
@@ -107,40 +104,42 @@ impl Vm {
         })
     }
 
+    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
-        self.space.data_mut().set_is_get_method(true);
-        self.space.data_mut().push_caller_info(CallerInfo {
-            func: func.to_string(),
-            params: args.clone(),
-            thread_id: get_thread_id(),
-            caller_type: crate::CallerType::Get,
-        });
+        // self.space.data_mut().set_is_get_method(true);
+        // self.space.data_mut().push_caller_info(CallerInfo {
+        //     func: func.to_string(),
+        //     params: args.clone(),
+        //     thread_id: get_thread_id(),
+        //     caller_type: crate::CallerType::Get,
+        // });
         let result = self.call_method(func, args, true);
-        self.space.data_mut().set_is_get_method(false);
-        self.space.data_mut().pop_caller_info();
+        // self.space.data_mut().set_is_get_method(false);
+        // self.space.data_mut().pop_caller_info();
         result
     }
 
+    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
     pub fn call_post(
         &mut self,
         func: &str,
         args: Vec<u8>,
         caller_infos: Vec<CallerInfo>,
     ) -> Result<Vec<u8>, WasmCallError> {
-        self.space.data_mut().set_is_get_method(false);
-        let new_caller_infos = vec![
-            caller_infos,
-            vec![CallerInfo {
-                func: func.to_string(),
-                params: args.clone(),
-                thread_id: get_thread_id(),
-                caller_type: crate::CallerType::Post,
-            }],
-        ]
-        .concat();
-        self.space.data_mut().replace_caller_infos(new_caller_infos);
+        // self.space.data_mut().set_is_get_method(false);
+        // let new_caller_infos = vec![
+        //     caller_infos,
+        //     vec![CallerInfo {
+        //         func: func.to_string(),
+        //         params: args.clone(),
+        //         thread_id: get_thread_id(),
+        //         caller_type: crate::CallerType::Post,
+        //     }],
+        // ]
+        // .concat();
+        // self.space.data_mut().replace_caller_infos(new_caller_infos);
         let result = self.call_method(func, args, false);
-        self.space.data_mut().pop_caller_info();
+        // self.space.data_mut().pop_caller_info();
         return result;
     }
 
@@ -212,9 +211,10 @@ impl Vm {
         Ok(result)
     }
 
-    pub fn pop_pending_timer(&mut self) -> Option<TimerEntry> {
-        self.space.data_mut().pop_timer_entry()
-    }
+    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
+    // pub fn pop_pending_timer(&mut self) -> Option<TimerEntry> {
+    //     self.space.data_mut().pop_timer_entry()
+    // }
 }
 
 fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
@@ -229,8 +229,8 @@ mod tests {
     use super::*;
     use chrono::Duration;
     use codec::{Decode, Encode};
+    use std::thread::sleep;
     use temp_dir::TempDir;
-    use thread::sleep;
     #[test]
     pub fn load_wasm_should_work() {
         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";

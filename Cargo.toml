@@ -6,8 +6,8 @@ members = [
     "nucleus/*",
     "primitives",
     "metadata",
+    "nucleus-examples"
 ]
-exclude = ["nucleus-examples"]
 resolver = "2"
 
 [workspace.package]
@@ -16,7 +16,6 @@ authors = ["Verisense Team"]
 edition = "2021"
 
 [workspace.dependencies]
-# codec
 codec = { features = [
     "derive",
 ], package = "parity-scale-codec", version = "3.6.12", default-features = false }

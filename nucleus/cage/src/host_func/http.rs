@@ -1,20 +1,25 @@
-use super::*;
+use crate::{
+    mem,
+    runtime::{ComponentProvider, ContextAware},
+    Runtime,
+};
 use bytes::Bytes;
 use codec::{Decode, Encode};
 use futures::FutureExt;
-use http_body_util::{BodyExt, Full};
-use hyper::{
-    rt::{Read, Write},
-    Method, Request, Response, Uri,
-};
+use http_body_util::Full;
+use hyper::{Method, Request, Response, Uri};
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
-use wasmtime::{Caller, FuncType, Val, ValType};
+use vrs_primitives::NucleusId;
+use wasmtime::{Caller, Engine, FuncType, Val, ValType};
 
-pub type HttpRequestSender = UnboundedSender<HttpRequest>;
-pub type HttpRequestReceiver = UnboundedReceiver<HttpRequest>;
+impl ComponentProvider<HttpCallRegister> for Runtime {
+    fn get_component(&self) -> std::sync::Arc<HttpCallRegister> {
+        self.http.clone()
+    }
+}
 
 // TODO the id should be unique
 pub fn new_http_manager() -> (HttpCallRegister, HttpCallExecutor) {
@@ -65,7 +70,7 @@ impl HttpCallExecutor {
         })
     }
 
-    async fn connect<S, C, H, F>(url: hyper::Uri, handshake: H) -> std::io::Result<(S, C)>
+    async fn connect<S, C, H, F>(url: Uri, handshake: H) -> std::io::Result<(S, C)>
     where
         H: FnOnce(TcpStream) -> F,
         F: futures::Future<Output = std::io::Result<(S, C)>> + 'static,
@@ -109,7 +114,7 @@ impl HttpCallRegister {
             .then(|| ())
             .ok_or(RuntimeError::HttpError("only support https".to_string()))?;
         let mut builder = Request::builder()
-            .method(Into::<Method>::into(req.head.method))
+            .method(from_decode_method(req.head.method))
             .uri(uri);
         for (key, value) in req.head.headers {
             builder = builder.header(key, value);
@@ -126,6 +131,20 @@ impl HttpCallRegister {
             })
             .map_err(|e| RuntimeError::HttpError(e.to_string()))?;
         Ok(id)
+    }
+}
+
+fn from_decode_method(method: HttpMethod) -> Method {
+    match method {
+        HttpMethod::Options => Method::OPTIONS,
+        HttpMethod::Get => Method::GET,
+        HttpMethod::Post => Method::POST,
+        HttpMethod::Put => Method::PUT,
+        HttpMethod::Delete => Method::DELETE,
+        HttpMethod::Head => Method::HEAD,
+        HttpMethod::Trace => Method::TRACE,
+        HttpMethod::Connect => Method::CONNECT,
+        HttpMethod::Patch => Method::PATCH,
     }
 }
 
@@ -147,30 +166,33 @@ pub(crate) fn http_request_signature(engine: &Engine) -> FuncType {
 /// ```
 /// fn http_request(req_ptr: *const u8, req_len: u32, return_ptr: *mut u8) -> i32;
 /// ```
-pub(crate) fn enqueue_http_request(
-    mut caller: Caller<'_, Context>,
+pub(crate) fn enqueue_http_request<R>(
+    mut caller: Caller<'_, R>,
     params: &[Val],
     result: &mut [Val],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    R: ContextAware + ComponentProvider<HttpCallRegister>,
+{
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[2].unwrap_i32();
-    if caller.data().is_get_method() {
+    if caller.data().read_only() {
         let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
-        Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+        mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
         return Ok(());
     }
     let req_ptr = params[0].unwrap_i32();
     let req_len = params[1].unwrap_i32();
-    let req = Context::read_bytes_from_memory(&mut caller, req_ptr, req_len)
-        .expect("read from wasm failed");
+    let req =
+        mem::read_bytes_from_memory(&mut caller, req_ptr, req_len).expect("read from wasm failed");
     let request: HttpRequest = Decode::decode(&mut req.as_slice()).expect("decode request failed");
-    let http_manager = &caller.data().http;
-    let nucleus_id = caller.data().id.clone();
+    let http_manager = &caller.data().get_component();
+    let nucleus_id = caller.data().get_nucleus_id().clone();
     let return_value = http_manager.enqueue_request(nucleus_id, request);
     let bytes = return_value.encode();
     assert!(bytes.len() <= BUFFER_LEN);
-    Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+    mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
     Ok(())
 }
