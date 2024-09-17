@@ -7,19 +7,9 @@ edition.workspace = true
 
 [features]
 default = ["std"]
-std = ["vrs-primitives/std", "codec/std"]
-host = ["hyper"]
+std = ["codec/std"]
 
 [dependencies]
-vrs-primitives = { path = "../../primitives", default-features = false }
-tokio = { version = "1", features = [
-    "sync",
-    "macros",
-    "rt",
-    "io-util",
-    "time",
-] }
 paste = "1.0"
 anyhow = { version = "1", default-features = false }
 codec = { workspace = true, features = ["derive"], default-features = false }
-hyper = { version = "1.3", features = ["client"], optional = true }

@@ -13,9 +13,6 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use wasmtime::{Caller, FuncType, Val, ValType};
 
-pub type HttpRequestSender = UnboundedSender<HttpRequest>;
-pub type HttpRequestReceiver = UnboundedReceiver<HttpRequest>;
-
 // TODO the id should be unique
 pub fn new_http_manager() -> (HttpCallRegister, HttpCallExecutor) {
     let (tx, rx) = mpsc::unbounded_channel();
@@ -109,7 +106,7 @@ impl HttpCallRegister {
             .then(|| ())
             .ok_or(RuntimeError::HttpError("only support https".to_string()))?;
         let mut builder = Request::builder()
-            .method(Into::<Method>::into(req.head.method))
+            .method(from_decode_method(req.head.method))
             .uri(uri);
         for (key, value) in req.head.headers {
             builder = builder.header(key, value);
@@ -126,6 +123,20 @@ impl HttpCallRegister {
             })
             .map_err(|e| RuntimeError::HttpError(e.to_string()))?;
         Ok(id)
+    }
+}
+
+fn from_decode_method(method: HttpMethod) -> hyper::Method {
+    match method {
+        HttpMethod::Options => hyper::Method::OPTIONS,
+        HttpMethod::Get => hyper::Method::GET,
+        HttpMethod::Post => hyper::Method::POST,
+        HttpMethod::Put => hyper::Method::PUT,
+        HttpMethod::Delete => hyper::Method::DELETE,
+        HttpMethod::Head => hyper::Method::HEAD,
+        HttpMethod::Trace => hyper::Method::TRACE,
+        HttpMethod::Connect => hyper::Method::CONNECT,
+        HttpMethod::Patch => hyper::Method::PATCH,
     }
 }
 

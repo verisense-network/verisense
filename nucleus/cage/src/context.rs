@@ -1,19 +1,18 @@
 pub mod http;
 pub mod kvdb;
 
+use crate::{CallerInfo, TimerEntry, TimerQueue};
 use chrono::{DateTime, Utc};
 use rocksdb::DB;
-use std::collections::BinaryHeap;
-use std::{
-    cell::{Cell, RefCell},
-    cmp::Ordering,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
+use vrs_core_sdk::{BUFFER_LEN, NO_MORE_DATA};
 use vrs_primitives::NucleusId;
-use wasmtime::{Caller, Engine, Extern, Func, FuncType, Linker, Memory, Store, Trap, Val, ValType};
+use wasmtime::{Caller, Engine, Extern, FuncType, Linker, Memory, Trap, Val, ValType};
 
-use crate::{CallerInfo, TimerEntry, TimerQueue};
+#[derive(Clone, Debug)]
+pub struct ContextConfig {
+    pub db_path: Box<std::path::Path>,
+}
 
 pub struct Context {
     pub(crate) id: NucleusId,
@@ -161,10 +160,11 @@ impl Context {
         linker
     }
 
-    pub(crate) fn wasm_mem(caller: &mut Caller<'_, Context>) -> Result<Memory, Trap> {
+    // this might panic the whole nucleus thread, maybe we should check it at startup
+    pub(crate) fn wasm_mem(caller: &mut Caller<'_, Context>) -> Memory {
         match caller.get_export("memory") {
-            Some(Extern::Memory(mem)) => Ok(mem),
-            _ => Err(Trap::HeapMisaligned),
+            Some(Extern::Memory(mem)) => mem,
+            _ => panic!("Invalid WASM: no memory exported"),
         }
     }
 
@@ -173,11 +173,11 @@ impl Context {
         ptr: i32,
         len: i32,
     ) -> Result<Vec<u8>, Trap> {
-        let mem = Self::wasm_mem(caller)?;
+        let mem = Self::wasm_mem(caller);
         // Boundary check
-        if (ptr as u64 + len as u64) > mem.data_size(&caller) as u64 {
-            return Err(Trap::MemoryOutOfBounds);
-        }
+        // if (ptr as u64 + len as u64) > mem.data_size(&caller) as u64 {
+        //     return Err(Trap::MemoryOutOfBounds);
+        // }
         let data = mem.data(&caller)[ptr as usize..(ptr + len) as usize].to_vec();
         Ok(data)
     }
@@ -187,17 +187,34 @@ impl Context {
         ptr: i32,
         data: &[u8],
     ) -> Result<(), Trap> {
-        let mem = Self::wasm_mem(caller)?;
-        // Boundary check
-        if (ptr as u64 + data.len() as u64) > mem.data_size(&caller) as u64 {
-            return Err(Trap::HeapMisaligned);
-        }
+        let mem = Self::wasm_mem(caller);
         mem.write(caller, ptr as usize, data)
-            .map_err(|_| Trap::HeapMisaligned)
+            .map_err(|_| Trap::MemoryOutOfBounds)
     }
-}
 
-#[derive(Clone, Debug)]
-pub struct ContextConfig {
-    pub db_path: Box<std::path::Path>,
+    pub(crate) fn write_to_memory<T: codec::Encode>(
+        caller: &mut Caller<'_, Context>,
+        ptr: i32,
+        data: T,
+        offset: Option<i32>,
+    ) -> Result<Val, Trap> {
+        let bytes = data.encode();
+        if bytes.len() > BUFFER_LEN {
+            assert!(offset.is_some());
+            let offset = offset.unwrap() as usize;
+            if offset >= bytes.len() {
+                return Err(Trap::MemoryOutOfBounds);
+            } else if offset + BUFFER_LEN >= bytes.len() {
+                Self::write_bytes_to_memory(caller, ptr, &bytes[offset..])?;
+                Ok(Val::I32(NO_MORE_DATA))
+            } else {
+                let bytes = &bytes[offset..offset + BUFFER_LEN];
+                Self::write_bytes_to_memory(caller, ptr, &bytes[offset..=offset + BUFFER_LEN])?;
+                Ok(Val::I32(1))
+            }
+        } else {
+            Self::write_bytes_to_memory(caller, ptr, &bytes)?;
+            Ok(Val::I32(NO_MORE_DATA))
+        }
+    }
 }

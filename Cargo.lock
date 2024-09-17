@@ -10962,11 +10962,8 @@ name = "vrs-core-sdk"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "hyper 1.4.1",
  "parity-scale-codec",
  "paste",
- "tokio",
- "vrs-primitives",
 ]
 
 [[package]]
@@ -11012,6 +11009,15 @@ dependencies = [
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "wasmtime 22.0.0",
+]
+
+[[package]]
+name = "vrs-nucleus-examples"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "vrs-core-macros",
+ "vrs-core-sdk",
 ]
 
 [[package]]

@@ -9,7 +9,7 @@ use anyhow::anyhow;
 use codec::Decode;
 use sp_runtime::traits::Member;
 use thiserror::Error;
-use vrs_core_sdk::AccountId;
+use vrs_primitives::AccountId;
 use wasmtime::{Caller, Func, Memory, Trap, Val};
 use wasmtime::{Engine, ExternRef, ExternType, Instance, Module, Rooted, Store, WasmResults};
 

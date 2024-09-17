@@ -108,12 +108,13 @@ pub(crate) fn storage_get_signature(engine: &Engine) -> FuncType {
 /// fn storage_get(k_ptr: *const u8, k_len: i32, return_ptr: *mut u8, v_offset: i32) -> i32;
 /// ```
 /// the v_offset represents the offset of the value to read
-///
-///  Result: 1byte
+/// first time:
+///   Result: 1byte
 ///     Option: 1byte
-///         vec_len(var_len prefix): 2bytes
-///             bytes: max 64k-4
-/// total: max 64k
+///       vec_len(var_len prefix): 2bytes
+///         bytes: max 64k-4
+/// rest:
+///   bytes: max 64k
 pub fn storage_get(
     mut caller: Caller<'_, Context>,
     params: &[Val],
@@ -127,38 +128,11 @@ pub fn storage_get(
         .expect("can't read bytes from wasm");
     let db = &caller.data().db;
     let r = match db_get(db, &key) {
-        Ok(value) => {
-            if let Some(value) = value {
-                if v_offset as usize >= value.len() {
-                    // fatal error: the sdk doesn't work normally
-                    result[0] = Val::I32(NO_MORE_DATA);
-                    CallResult::<Option<Vec<u8>>>::Err(RuntimeError::MemoryAccessOutOfBounds)
-                } else if v_offset as usize + BUFFER_LEN - 4 >= value.len() {
-                    // put the rest of the value into wasm memory
-                    result[0] = Val::I32(NO_MORE_DATA);
-                    CallResult::<Option<Vec<u8>>>::Ok(Some(value[v_offset as usize..].to_vec()))
-                } else {
-                    // put offset..=offset+buf_len-4 into wasm memory
-                    result[0] = Val::I32(1);
-                    CallResult::<Option<Vec<u8>>>::Ok(Some(
-                        value[v_offset as usize..=v_offset as usize + BUFFER_LEN - 4].to_vec(),
-                    ))
-                }
-            } else {
-                // key not found
-                result[0] = Val::I32(NO_MORE_DATA);
-                CallResult::<Option<Vec<u8>>>::Ok(None)
-            }
-        }
-        Err(e) => {
-            // rocksdb error
-            result[0] = Val::I32(NO_MORE_DATA);
-            CallResult::<Option<Vec<u8>>>::Err(RuntimeError::KvStorageError(e))
-        }
+        Ok(value) => CallResult::<Option<Vec<u8>>>::Ok(value),
+        Err(e) => CallResult::<Option<Vec<u8>>>::Err(RuntimeError::KvStorageError(e)),
     };
-    let bytes = r.encode();
-    assert!(bytes.len() <= BUFFER_LEN);
-    Context::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
+    let flag = Context::write_to_memory(&mut caller, r_ptr, r, Some(v_offset))?;
+    result[0] = flag;
     Ok(())
 }
 

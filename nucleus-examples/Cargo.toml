@@ -4,19 +4,15 @@ version = "0.0.1"
 authors = ["Verisense Team"]
 edition = "2021"
 
-[lib]
+[[example]]
+name = "timer"
 crate-type = ["cdylib"]
 
-[dependencies]
+[[example]]
+name = "basic_macros"
+crate-type = ["cdylib"]
+
+[dev-dependencies]
 vrs-core-sdk = { path = "../nucleus/core-sdk", default-features = false }
 vrs-core-macros = { path = "../nucleus/core-macros", default-features = false }
 parity-scale-codec = { version = "3.6", default-features = false }
-
-[dev-dependencies]
-hex = "0.4"
-rand = { version = "0.8", features = ["std"] }
-
-[features]
-default = ["std"]
-std = ["vrs-core-sdk/std"]
-no-std = []
