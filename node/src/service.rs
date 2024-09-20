@@ -156,6 +156,7 @@ pub fn new_full<
         .unwrap()
         .public()
         .to_peer_id();
+    let node_id_4tests = node_id.clone();
     let metrics = N::register_notification_metrics(config.prometheus_registry());
     let peer_store_handle = net_config.peer_store_handle();
     let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
@@ -293,6 +294,9 @@ pub fn new_full<
         let noti_service1 = noti_service
             .clone()
             .expect("notification service clone failed.");
+        let noti_service2 = noti_service
+            .clone()
+            .expect("notification service clone failed.");
 
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
         let params = vrs_nucleus_p2p::P2pParams {
@@ -323,6 +327,29 @@ pub fn new_full<
             None,
             vrs_nucleus_cage::start_nucleus_cage(params),
         );
+
+        // for p2p tests
+        task_manager
+            .spawn_essential_handle()
+            .spawn_blocking("nucleus-p2p-tests", None, async {
+                let noti_service = noti_service2.clone();
+                // use a tokio timer to drive the tests
+                _ = tokio::time::sleep(Duration::from_secs(5)).await;
+                let mut interval = tokio::time::interval(Duration::from_secs(1));
+
+                for i in 1.. {
+                    interval.tick().await;
+                    println!("<---- P2p timer Tick ---->");
+
+                    // send to self at first
+                    let node_id = node_id_4tests.clone();
+                    let test_data: Vec<u8> =
+                        format!("hello, notification. {i}").as_bytes().to_vec();
+                    _ = noti_service2
+                        .send_async_notification(&node_id, test_data)
+                        .await;
+                }
+            });
     }
 
     if role.is_authority() {
