@@ -16,7 +16,9 @@ extern "C" {
     fn storage_get(k_ptr: *const u8, k_len: i32, return_ptr: *mut u8, v_offset: i32) -> i32;
 }
 
-pub fn put(key: &[u8], value: &[u8]) -> CallResult<()> {
+pub fn put(key: impl AsRef<[u8]>, value: impl AsRef<[u8]>) -> CallResult<()> {
+    let key = key.as_ref();
+    let value = value.as_ref();
     assert!(key.len() <= i32::MAX as usize);
     assert!(value.len() <= i32::MAX as usize);
     let mut buf = crate::allocate_buffer();
@@ -33,7 +35,8 @@ pub fn put(key: &[u8], value: &[u8]) -> CallResult<()> {
     CallResult::<()>::decode(&mut &buf[..]).map_err(|_| RuntimeError::DecodeReturnValueError)?
 }
 
-pub fn del(key: &[u8]) -> CallResult<()> {
+pub fn del(key: impl AsRef<[u8]>) -> CallResult<()> {
+    let key = key.as_ref();
     assert!(key.len() <= i32::MAX as usize);
     let mut buf = crate::allocate_buffer();
     let status = unsafe { storage_del(key.as_ptr(), key.len() as i32, buf.as_mut_ptr()) };
@@ -41,7 +44,8 @@ pub fn del(key: &[u8]) -> CallResult<()> {
     CallResult::<()>::decode(&mut &buf[..]).map_err(|_| RuntimeError::DecodeReturnValueError)?
 }
 
-pub fn get(key: &[u8]) -> CallResult<Option<Vec<u8>>> {
+pub fn get(key: impl AsRef<[u8]>) -> CallResult<Option<Vec<u8>>> {
+    let key = key.as_ref();
     assert!(key.len() <= i32::MAX as usize);
     let mut buf = crate::allocate_buffer();
     let mut val = vec![];

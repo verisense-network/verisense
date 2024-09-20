@@ -4,6 +4,7 @@ use crate::{
     CallerInfo, ReplyTo, Scheduler, SchedulerAsync, TimerEntry, WasmInfo,
 };
 use std::sync::{mpsc::Receiver, Arc};
+use vrs_core_sdk::{http::HttpResponse, CallResult};
 
 pub(crate) struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
@@ -26,6 +27,10 @@ pub enum Gluon {
         endpoint: String,
         payload: Vec<u8>,
         reply_to: Option<ReplyTo>,
+    },
+    HttpCallback {
+        request_id: u64,
+        payload: CallResult<HttpResponse>,
     },
 }
 // define VM error type id
@@ -71,6 +76,18 @@ where
                 // TODO load new module from storage
                 // TODO handle errors
             }
+            Gluon::HttpCallback {
+                request_id,
+                payload,
+            } => {
+                self.vm.as_mut().map(|vm| {
+                    vm.call_inner("__nucleus_http_callback", (request_id, payload))
+                        .inspect_err(|e| {
+                            log::error!("fail to http callback due to: {:?}", e);
+                        })
+                        .ok();
+                });
+            }
             Gluon::GetRequest {
                 endpoint,
                 payload,
@@ -93,7 +110,6 @@ where
                     log::error!("vm not initialized");
                 }
             },
-
             Gluon::PostRequest {
                 endpoint,
                 payload,

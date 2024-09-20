@@ -20,7 +20,8 @@ pub mod t {
 
 #[init]
 pub fn init(e: t::E, u: u32) {
-    storage::put(b"hello", b"world").unwrap();
+    let b = format!("b = {}, c = {}", e.b, e.c);
+    storage::put(&u.to_be_bytes(), b.as_bytes()).unwrap();
 }
 
 #[post]

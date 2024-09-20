@@ -1,10 +1,10 @@
 use crate::{
-    host_func::{http, kvdb, timer},
+    host_func::{http, io, kvdb, timer},
     CallerInfo, TimerEntry, TimerQueue,
 };
 use rocksdb::DB;
 use std::sync::{Arc, Mutex};
-use vrs_primitives::{AccountId, NucleusId};
+use vrs_primitives::NucleusId;
 use wasmtime::{Engine, Linker};
 
 pub trait FuncRegister {
@@ -105,6 +105,22 @@ impl FuncRegister for Runtime {
 
     fn register_host_funcs(engine: &Engine) -> Linker<Runtime> {
         let mut linker = Linker::new(engine);
+        linker
+            .func_new(
+                "env",
+                "stdout_print",
+                io::stdout_print_signature(engine),
+                io::stdout_print,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "stderr_print",
+                io::stderr_print_signature(engine),
+                io::stderr_print,
+            )
+            .unwrap();
         linker
             .func_new(
                 "env",

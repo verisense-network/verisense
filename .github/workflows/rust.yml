@@ -15,8 +15,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install System deps
+      - name: Install system deps
         run: sudo apt-get install protobuf-compiler
+      - name: Install wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Build
         run: cargo build --all-features --verbose
     # - name: Run tests

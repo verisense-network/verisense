@@ -12,6 +12,10 @@ crate-type = ["cdylib"]
 name = "basic_macros"
 crate-type = ["cdylib"]
 
+[[example]]
+name = "http"
+crate-type = ["cdylib"]
+
 [dev-dependencies]
 vrs-core-sdk = { path = "../nucleus/core-sdk", default-features = false }
 vrs-core-macros = { path = "../nucleus/core-macros", default-features = false }

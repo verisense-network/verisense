@@ -44,7 +44,7 @@ extern "C" {
 ///
 /// ```
 /// #[callback]
-/// pub fn on_response(u64: request_id, response: Response) {
+/// pub fn on_response(u64: request_id, response: CallResult<HttpResponse>) {
 ///     // handle response
 /// }
 /// ```
