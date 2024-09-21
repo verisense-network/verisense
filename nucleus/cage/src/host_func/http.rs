@@ -124,12 +124,21 @@ impl HttpCallExecutor {
         handshake(stream).await
     }
 
-    async fn accumulate_frames(
-        response: Response<Incoming>,
-    ) -> hyper::Result<Response<Full<Bytes>>> {
+    async fn accumulate_frames(response: Response<Incoming>) -> hyper::Result<HttpResponse> {
         let (p, b) = response.into_parts();
-        let bytes = b.collect().await?.to_bytes();
-        let response = Response::from_parts(p, Full::from(bytes));
+        let body = b.collect().await?.to_bytes().to_vec();
+        let response = HttpResponse {
+            head: ResponseHead {
+                status: p.status.as_u16(),
+                headers: p
+                    .headers
+                    .into_iter()
+                    .filter_map(|(k, v)| v.to_str().ok().map(|vv| (k, vv.to_string())))
+                    .filter_map(|(k, v)| k.map(|kk| (kk.to_string(), v.to_string())))
+                    .collect(),
+            },
+            body,
+        };
         Ok(response)
     }
 }

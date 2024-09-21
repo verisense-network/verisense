@@ -97,7 +97,17 @@ impl NucleusCage {
             Gluon::GetRequest { .. } => {
                 let _ = self.tunnel.send((0, gluon));
             }
-            // TODO
+            Gluon::HttpCallback {
+                request_id,
+                payload,
+            } => {
+                self.pending_requests.push((
+                    "__nucleus_http_callback".to_string(),
+                    (request_id, payload).encode(),
+                    None,
+                ));
+            }
+            // TODO handle other types of Gluon
             _ => unreachable!(),
         }
     }

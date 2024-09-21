@@ -16,10 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install system deps
-        run: sudo apt-get install protobuf-compiler
-      - name: Install wasm32 target
-        run: rustup target add wasm32-unknown-unknown
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
+
+      - name: Install Rust toochain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          target: wasm32-unknown-unknown
+          components: rustfmt, clippy, rust-src
+
       - name: Build
         run: cargo build --all-features --verbose
+
     # - name: Run tests
     #   run: cargo test --verbose
