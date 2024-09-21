@@ -10994,6 +10994,7 @@ dependencies = [
  "hyper-util",
  "log",
  "parity-scale-codec",
+ "pin-project-lite",
  "rocksdb",
  "sc-client-api",
  "sp-api",

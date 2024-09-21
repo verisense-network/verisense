@@ -1,6 +1,7 @@
 use crate::{
-    host_func::http::HttpCallRegister, nucleus::Nucleus, Gluon, NucleusResponse, ReplyTo, Runtime,
-    RuntimeParams, WasmCodeRef, WasmInfo,
+    host_func::http::{HttpCallRegister, HttpResponseWithCallback},
+    nucleus::Nucleus,
+    Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, WasmCodeRef, WasmInfo,
 };
 use codec::Encode;
 use futures::prelude::*;
@@ -96,7 +97,17 @@ impl NucleusCage {
             Gluon::GetRequest { .. } => {
                 let _ = self.tunnel.send((0, gluon));
             }
-            // TODO
+            Gluon::HttpCallback {
+                request_id,
+                payload,
+            } => {
+                self.pending_requests.push((
+                    "__nucleus_http_callback".to_string(),
+                    (request_id, payload).encode(),
+                    None,
+                ));
+            }
+            // TODO handle other types of Gluon
             _ => unreachable!(),
         }
     }
@@ -160,7 +171,18 @@ where
                     }
                 },
                 http_reply = http_executor.poll() => {
-                    println!("");
+                    println!("{:?}", http_reply);
+                    let HttpResponseWithCallback {
+                        nucleus_id,
+                        req_id,
+                        response,
+                    } = http_reply.expect("HttpCallRegister must exists;qed");
+                    if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
+                        nucleus.forward(Gluon::HttpCallback {
+                            request_id: req_id,
+                            payload: response,
+                        });
+                    }
                 }
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");

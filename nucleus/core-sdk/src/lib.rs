@@ -2,12 +2,15 @@ mod constant;
 
 pub mod error;
 pub mod http;
+pub mod io;
 pub mod storage;
 pub mod timer;
 
+// use paste::paste as macro_paste;
+
 pub use codec;
 pub use constant::*;
-pub use paste::paste as macro_paste;
+pub use io::{_eprint, _print};
 pub use timer::_set_timer;
 
 /// the buffer used for transfering data from host to wasm

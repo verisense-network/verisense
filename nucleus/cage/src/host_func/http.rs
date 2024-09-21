@@ -6,11 +6,17 @@ use crate::{
 use bytes::Bytes;
 use codec::{Decode, Encode};
 use futures::FutureExt;
-use http_body_util::Full;
-use hyper::{Method, Request, Response, Uri};
+use http_body_util::{BodyExt, Full};
+use hyper::{body::Incoming, Method, Request, Response, Uri};
 use std::sync::atomic::{AtomicU64, Ordering};
-use tokio::net::TcpStream;
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
+use tokio::{
+    net::TcpStream,
+    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+};
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use vrs_primitives::NucleusId;
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
@@ -38,7 +44,7 @@ pub struct HttpRequestWithCallback {
 pub struct HttpResponseWithCallback {
     pub nucleus_id: NucleusId,
     pub req_id: u64,
-    pub response: Response<Full<Bytes>>,
+    pub response: CallResult<HttpResponse>,
 }
 
 #[derive(Debug)]
@@ -54,20 +60,54 @@ impl HttpCallExecutor {
     pub(crate) fn poll<'a>(
         &'a mut self,
     ) -> impl futures::Future<Output = Option<HttpResponseWithCallback>> + 'a {
-        self.rx.recv().then(|req| async move {
-            match req {
-                Some(req) => {
-                    let uri = req.request.uri().clone();
-                    // TODO make the request
-                    Some(HttpResponseWithCallback {
-                        nucleus_id: req.nucleus_id,
-                        req_id: req.req_id,
-                        response: Response::new(Full::from(Bytes::new())),
-                    })
+        self.rx
+            .recv()
+            .then(|req| async move {
+                match req {
+                    Some(req) => {
+                        let uri = req.request.uri().clone();
+                        match Self::connect(uri, local_handshake).await {
+                            Ok((mut s, _c)) => Some((
+                                req.nucleus_id,
+                                req.req_id,
+                                s.send_request(req.request)
+                                    .await
+                                    .map_err(|e| RuntimeError::HttpError(e.to_string())),
+                            )),
+                            Err(e) => Some((
+                                req.nucleus_id,
+                                req.req_id,
+                                CallResult::Err(RuntimeError::HttpError(e.to_string())),
+                            )),
+                        }
+                    }
+                    None => None,
                 }
-                None => None,
-            }
-        })
+            })
+            .then(|write_r| async move {
+                match write_r {
+                    Some((nid, rid, r)) => match r {
+                        Ok(response) => match Self::accumulate_frames(response).await {
+                            Ok(response) => Some(HttpResponseWithCallback {
+                                nucleus_id: nid,
+                                req_id: rid,
+                                response: CallResult::Ok(response),
+                            }),
+                            Err(e) => Some(HttpResponseWithCallback {
+                                nucleus_id: nid,
+                                req_id: rid,
+                                response: CallResult::Err(RuntimeError::HttpError(e.to_string())),
+                            }),
+                        },
+                        Err(e) => Some(HttpResponseWithCallback {
+                            nucleus_id: nid,
+                            req_id: rid,
+                            response: CallResult::Err(e),
+                        }),
+                    },
+                    None => None,
+                }
+            })
     }
 
     async fn connect<S, C, H, F>(url: Uri, handshake: H) -> std::io::Result<(S, C)>
@@ -82,6 +122,24 @@ impl HttpCallExecutor {
             .await
             .map_err(|_| std::io::Error::last_os_error())?;
         handshake(stream).await
+    }
+
+    async fn accumulate_frames(response: Response<Incoming>) -> hyper::Result<HttpResponse> {
+        let (p, b) = response.into_parts();
+        let body = b.collect().await?.to_bytes().to_vec();
+        let response = HttpResponse {
+            head: ResponseHead {
+                status: p.status.as_u16(),
+                headers: p
+                    .headers
+                    .into_iter()
+                    .filter_map(|(k, v)| v.to_str().ok().map(|vv| (k, vv.to_string())))
+                    .filter_map(|(k, v)| k.map(|kk| (kk.to_string(), v.to_string())))
+                    .collect(),
+            },
+            body,
+        };
+        Ok(response)
     }
 }
 
@@ -195,4 +253,156 @@ where
     assert!(bytes.len() <= BUFFER_LEN);
     mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
     Ok(())
+}
+
+pin_project_lite::pin_project! {
+    #[derive(Debug)]
+    pub struct TokioStreamAdapter<T> {
+        #[pin]
+        inner: T,
+    }
+}
+
+impl<T> hyper::rt::Read for TokioStreamAdapter<T>
+where
+    T: tokio::io::AsyncRead,
+{
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        mut buf: hyper::rt::ReadBufCursor<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        let n = unsafe {
+            let mut tbuf = tokio::io::ReadBuf::uninit(buf.as_mut());
+            match tokio::io::AsyncRead::poll_read(self.project().inner, cx, &mut tbuf) {
+                Poll::Ready(Ok(())) => tbuf.filled().len(),
+                other => return other,
+            }
+        };
+
+        unsafe {
+            buf.advance(n);
+        }
+        Poll::Ready(Ok(()))
+    }
+}
+
+impl<T> hyper::rt::Write for TokioStreamAdapter<T>
+where
+    T: tokio::io::AsyncWrite,
+{
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        tokio::io::AsyncWrite::poll_write(self.project().inner, cx, buf)
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
+        tokio::io::AsyncWrite::poll_flush(self.project().inner, cx)
+    }
+
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        tokio::io::AsyncWrite::poll_shutdown(self.project().inner, cx)
+    }
+
+    fn is_write_vectored(&self) -> bool {
+        tokio::io::AsyncWrite::is_write_vectored(&self.inner)
+    }
+
+    fn poll_write_vectored(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        bufs: &[std::io::IoSlice<'_>],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        tokio::io::AsyncWrite::poll_write_vectored(self.project().inner, cx, bufs)
+    }
+}
+
+impl<T> tokio::io::AsyncRead for TokioStreamAdapter<T>
+where
+    T: hyper::rt::Read,
+{
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        tbuf: &mut tokio::io::ReadBuf<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        let filled = tbuf.filled().len();
+        let sub_filled = unsafe {
+            let mut buf = hyper::rt::ReadBuf::uninit(tbuf.unfilled_mut());
+
+            match hyper::rt::Read::poll_read(self.project().inner, cx, buf.unfilled()) {
+                Poll::Ready(Ok(())) => buf.filled().len(),
+                other => return other,
+            }
+        };
+
+        let n_filled = filled + sub_filled;
+        let n_init = sub_filled;
+        unsafe {
+            tbuf.assume_init(n_init);
+            tbuf.set_filled(n_filled);
+        }
+
+        Poll::Ready(Ok(()))
+    }
+}
+
+impl<T> tokio::io::AsyncWrite for TokioStreamAdapter<T>
+where
+    T: hyper::rt::Write,
+{
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        hyper::rt::Write::poll_write(self.project().inner, cx, buf)
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
+        hyper::rt::Write::poll_flush(self.project().inner, cx)
+    }
+
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        hyper::rt::Write::poll_shutdown(self.project().inner, cx)
+    }
+
+    fn is_write_vectored(&self) -> bool {
+        hyper::rt::Write::is_write_vectored(&self.inner)
+    }
+
+    fn poll_write_vectored(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        bufs: &[std::io::IoSlice<'_>],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        hyper::rt::Write::poll_write_vectored(self.project().inner, cx, bufs)
+    }
+}
+
+// TODO extend this to support deterministic handshake
+async fn local_handshake<B>(
+    stream: TcpStream,
+) -> std::io::Result<(
+    hyper::client::conn::http1::SendRequest<B>,
+    hyper::client::conn::http1::Connection<TokioStreamAdapter<TcpStream>, B>,
+)>
+where
+    B: hyper::body::Body + 'static,
+    B::Data: Send,
+    B::Error: Into<Box<dyn core::error::Error + Send + Sync>>,
+{
+    let stream = TokioStreamAdapter { inner: stream };
+    hyper::client::conn::http1::handshake(stream)
+        .await
+        .map_err(|_| std::io::Error::last_os_error())
 }
