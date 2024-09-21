@@ -4,6 +4,7 @@ use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
+use sc_network::PeerId;
 use sc_network::{NetworkRequest, NetworkStateInfo};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
@@ -337,13 +338,24 @@ pub fn new_full<
             None,
             async move {
                 let service = network2;
-                let node_id = service.local_peer_id();
                 _ = tokio::time::sleep(Duration::from_secs(5)).await;
-                let mut interval = tokio::time::interval(Duration::from_secs(1));
+                let mut interval = tokio::time::interval(Duration::from_secs(2));
 
                 for i in 1.. {
                     interval.tick().await;
                     println!("<---- P2p timer Tick ---->");
+
+                    let nodes = service
+                        .reserved_peers()
+                        .await
+                        .expect("cannot get reserved peers.");
+                    println!("nodes id: {:?}", nodes);
+                    let mut node_id = service.local_peer_id();
+                    println!("local node id: {:?}", node_id);
+                    let nodes: Vec<PeerId> = nodes.into_iter().filter(|&x| x != node_id).collect();
+                    if nodes.len() > 0 {
+                        node_id = nodes[0];
+                    }
 
                     // == test sending to self at first
                     // send notification msg
