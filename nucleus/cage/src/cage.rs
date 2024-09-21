@@ -7,6 +7,7 @@ use futures::prelude::*;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::request_responses::IncomingRequest;
+use sc_network::request_responses::OutgoingResponse;
 use sc_network::service::traits::NotificationEvent;
 use sc_network::service::traits::NotificationService;
 use sc_network::PeerId;
@@ -179,6 +180,15 @@ where
                             //   let res: (Vec<u8>, ProtocolName) = service.request(peer_id, ProtocolName::Static("/nucleus/p2p/reqres"), vec_u8_payload, None, IfDisconnected::ImmediateError).await?;
                             // here the res is the data sent above by request.pending_response, just simple as that
 
+                            // only for test here:
+                            // handle it
+                            // let data = req.payload;
+                            let outgoing_msg = OutgoingResponse {
+                                result: Ok(b"response from cage req/res handle.".to_vec()),
+                                reputation_changes: vec![],
+                                sent_feedback: None
+                            };
+                            _ = req.pending_response.send(outgoing_msg);
 
                         }
                         NucleusP2pMsg::Noti(noti) => {

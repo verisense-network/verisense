@@ -76,7 +76,6 @@ where
                     let msg = NucleusP2pMsg::ReqRes(request);
                     _ = p2p_cage_tx.send(msg).await;
 
-
                 },
                 Some(event) = noti_service.next_event() => {
                     match event {

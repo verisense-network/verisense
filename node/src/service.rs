@@ -4,6 +4,7 @@ use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
+use sc_network::{NetworkRequest, NetworkStateInfo};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
@@ -156,7 +157,7 @@ pub fn new_full<
         .unwrap()
         .public()
         .to_peer_id();
-    let node_id_4tests = node_id.clone();
+    // let node_id_4tests = node_id.clone();
     let metrics = N::register_notification_metrics(config.prometheus_registry());
     let peer_store_handle = net_config.peer_store_handle();
     let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
@@ -294,7 +295,7 @@ pub fn new_full<
         let noti_service1 = noti_service
             .clone()
             .expect("notification service clone failed.");
-        let noti_service2 = noti_service
+        let mut noti_service2 = noti_service
             .clone()
             .expect("notification service clone failed.");
 
@@ -328,12 +329,15 @@ pub fn new_full<
             vrs_nucleus_cage::start_nucleus_cage(params),
         );
 
+        // the network is the NetworkService instance
+        let network2 = network.clone();
         // for p2p tests
-        task_manager
-            .spawn_essential_handle()
-            .spawn_blocking("nucleus-p2p-tests", None, async {
-                let noti_service = noti_service2.clone();
-                // use a tokio timer to drive the tests
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "nucleus-p2p-tests",
+            None,
+            async move {
+                let service = network2;
+                let node_id = service.local_peer_id();
                 _ = tokio::time::sleep(Duration::from_secs(5)).await;
                 let mut interval = tokio::time::interval(Duration::from_secs(1));
 
@@ -341,15 +345,37 @@ pub fn new_full<
                     interval.tick().await;
                     println!("<---- P2p timer Tick ---->");
 
-                    // send to self at first
-                    let node_id = node_id_4tests.clone();
+                    // == test sending to self at first
+                    // send notification msg
                     let test_data: Vec<u8> =
-                        format!("hello, notification. {i}").as_bytes().to_vec();
+                        format!("hello, notification: {i}").as_bytes().to_vec();
                     _ = noti_service2
                         .send_async_notification(&node_id, test_data)
                         .await;
+
+                    // send req/res msg
+                    let test_data: Vec<u8> = format!("hello, request: {i}").as_bytes().to_vec();
+                    let result = service
+                        .request(
+                            node_id,
+                            sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
+                            test_data,
+                            None,
+                            sc_network::IfDisconnected::ImmediateError,
+                        )
+                        .await;
+                    if let Ok((res, name)) = result {
+                        println!(
+                            "Response of the request is: {}: {:?}",
+                            name,
+                            std::str::from_utf8(&res).expect("not a valid ascii string.")
+                        );
+                    } else {
+                        println!("Error on response of the request {:?}", result);
+                    }
                 }
-            });
+            },
+        );
     }
 
     if role.is_authority() {
