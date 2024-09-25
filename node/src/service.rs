@@ -10,6 +10,7 @@ use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpS
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use std::str::FromStr;
 use std::{sync::Arc, time::Duration};
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 
@@ -345,25 +346,46 @@ pub fn new_full<
                     interval.tick().await;
                     println!("<---- P2p timer Tick ---->");
 
-                    let nodes = service
-                        .reserved_peers()
-                        .await
-                        .expect("cannot get reserved peers.");
-                    println!("nodes id: {:?}", nodes);
-                    let mut node_id = service.local_peer_id();
-                    println!("local node id: {:?}", node_id);
-                    let nodes: Vec<PeerId> = nodes.into_iter().filter(|&x| x != node_id).collect();
-                    if nodes.len() > 0 {
-                        node_id = nodes[0];
-                    }
+                    let mut peer_ids = Vec::new();
 
-                    // == test sending to self at first
+                    // Get the network state
+                    if let Ok(state) = service.network_state().await {
+                        // Extract connected peers
+                        for (name, _) in state.connected_peers {
+                            peer_ids.push(name);
+                        }
+                    }
+                    println!("nodes id: {:?}", peer_ids);
+
+                    // let nodes = service
+                    //     .reserved_peers()
+                    //     .await
+                    //     .expect("cannot get reserved peers.");
+                    // println!("nodes id: {:?}", nodes);
+                    let local_node = service.local_peer_id();
+                    println!("local node id: {:?}", local_node);
+                    let nodes: Vec<String> = peer_ids
+                        .into_iter()
+                        .filter(|x| x != &local_node.to_base58())
+                        .collect();
+                    let node_id;
+                    if nodes.len() > 0 {
+                        let peer_id =
+                            PeerId::from_str(&nodes[0]).expect("convert string to PeerId failed");
+                        node_id = peer_id;
+                    } else {
+                        node_id = local_node;
+                    }
+                    println!("remote node id: {:?}", node_id);
+
+                    // == test
                     // send notification msg
                     let test_data: Vec<u8> =
                         format!("hello, notification: {i}").as_bytes().to_vec();
-                    _ = noti_service2
-                        .send_async_notification(&node_id, test_data)
-                        .await;
+                    // _ = noti_service2
+                    //     .send_async_notification(&node_id, test_data)
+                    //     .await;
+                    noti_service2.send_sync_notification(&node_id, test_data);
 
                     // send req/res msg
                     let test_data: Vec<u8> = format!("hello, request: {i}").as_bytes().to_vec();
