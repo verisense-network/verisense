@@ -203,12 +203,13 @@ pub fn new_full<
         vec![],
         1024 * 1024,
         None,
-        sc_network::config::SetConfig {
-            in_peers: 0,
-            out_peers: 0,
-            reserved_nodes: Vec::new(),
-            non_reserved_mode: sc_network::config::NonReservedPeerMode::Deny,
-        },
+        sc_network::config::SetConfig::default(),
+        // sc_network::config::SetConfig {
+        // in_peers: 25,
+        // out_peers: 75,
+        // reserved_nodes: Vec::new(),
+        // non_reserved_mode: NonReservedPeerMode::Accept,
+        // },
         metrics1,
         peer_store_handle1,
     );
