@@ -295,14 +295,15 @@ pub fn new_full<
     })?;
 
     if role.is_authority() {
-        let noti_service1 = noti_service
-            .clone()
-            .expect("notification service clone failed.");
-        let mut noti_service2 = noti_service
-            .clone()
-            .expect("notification service clone failed.");
+        // let noti_service1 = noti_service
+        //     .clone()
+        //     .expect("notification service clone failed.");
+        // let mut noti_service2 = noti_service
+        //     .clone()
+        //     .expect("notification service clone failed.");
 
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
+        let (noti_sender, noti_receiver) = tokio::sync::mpsc::channel(10000);
         let (test_sender, test_receiver): (
             tokio::sync::mpsc::UnboundedSender<Vec<PeerId>>,
             tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
@@ -310,9 +311,11 @@ pub fn new_full<
         let params = vrs_nucleus_p2p::P2pParams {
             reqres_receiver,
             client: client.clone(),
+            net_service: network.clone(),
             test_receiver,
             p2p_cage_tx,
-            noti_service: noti_service2,
+            noti_receiver,
+            noti_service,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             _phantom: std::marker::PhantomData,
         };
@@ -325,7 +328,8 @@ pub fn new_full<
         let params = vrs_nucleus_cage::CageParams {
             nucleus_rpc_rx,
             p2p_cage_rx,
-            noti_service: noti_service1,
+            noti_sender,
+            net_service: network.clone(),
             client: client.clone(),
             nucleus_home_dir,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
@@ -337,14 +341,8 @@ pub fn new_full<
             vrs_nucleus_cage::start_nucleus_cage(params),
         );
 
+        // for tests
         let network2 = network.clone();
-        // let local_node = network2.local_peer_id();
-        // let msg_sink = noti_service
-        //     .message_sink(&local_node)
-        //     .expect("error when get msg_sink");
-        // let test_data: Vec<u8> = format!("hello, notification").as_bytes().to_vec();
-        // msg_sink.send_sync_notification(test_data);
-
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-p2p-tests",
             None,
@@ -352,91 +350,6 @@ pub fn new_full<
                 p2ptest_task(network2, test_sender).await;
             },
         );
-
-        // the network is the NetworkService instance
-        // for p2p tests
-        // task_manager.spawn_essential_handle().spawn_blocking(
-        //     "nucleus-p2p-tests",
-        //     None,
-        //     async move {
-        //         let service = network2;
-        //         _ = tokio::time::sleep(Duration::from_secs(5)).await;
-        //         let mut interval = tokio::time::interval(Duration::from_secs(2));
-
-        //         for i in 1.. {
-        //             interval.tick().await;
-        //             println!("<---- P2p timer Tick ---->");
-
-        //             let mut peer_ids = Vec::new();
-
-        //             // Get the network state
-        //             if let Ok(state) = service.network_state().await {
-        //                 // Extract connected peers
-        //                 for (name, _) in state.connected_peers {
-        //                     peer_ids.push(name);
-        //                 }
-        //             }
-        //             println!("nodes id: {:?}", peer_ids);
-
-        //             // let nodes = service
-        //             //     .reserved_peers()
-        //             //     .await
-        //             //     .expect("cannot get reserved peers.");
-        //             // println!("nodes id: {:?}", nodes);
-        //             let local_node = service.local_peer_id();
-        //             println!("local node id: {:?}", local_node);
-        //             let nodes: Vec<String> = peer_ids
-        //                 .into_iter()
-        //                 .filter(|x| x != &local_node.to_base58())
-        //                 .collect();
-        //             let node_id;
-        //             if nodes.len() > 0 {
-        //                 let peer_id =
-        //                     PeerId::from_str(&nodes[0]).expect("convert string to PeerId failed");
-        //                 node_id = peer_id;
-        //             } else {
-        //                 node_id = local_node;
-        //             }
-        //             println!("remote node id: {:?}", node_id);
-
-        //             // == test
-        //             // send notification msg
-        //             let test_data: Vec<u8> =
-        //                 format!("hello, notification: {i}").as_bytes().to_vec();
-        //             println!(" ==> going to send noti: {:?} {:?}", node_id, test_data);
-        //             println!(" ==> noti protocol name: {:?}", noti_service2.protocol());
-        //             let msg_sink = noti_service2
-        //                 .message_sink(&node_id)
-        //                 .expect("error when get msg_sink");
-        //             // _ = noti_service2
-        //             //     .send_async_notification(&node_id, test_data.clone())
-        //             //     .await;
-        //             // noti_service2.send_sync_notification(&node_id, test_data);
-        //             msg_sink.send_sync_notification(test_data);
-
-        //             // send req/res msg
-        //             let test_data: Vec<u8> = format!("hello, request: {i}").as_bytes().to_vec();
-        //             let result = service
-        //                 .request(
-        //                     node_id,
-        //                     sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
-        //                     test_data,
-        //                     None,
-        //                     sc_network::IfDisconnected::ImmediateError,
-        //                 )
-        //                 .await;
-        //             if let Ok((res, name)) = result {
-        //                 println!(
-        //                     "Response of the request is: {}: {:?}",
-        //                     name,
-        //                     std::str::from_utf8(&res).expect("not a valid ascii string.")
-        //                 );
-        //             } else {
-        //                 println!("Error on response of the request {:?}", result);
-        //             }
-        //         }
-        //     },
-        // );
     }
 
     if role.is_authority() {
@@ -562,11 +475,6 @@ async fn p2ptest_task(
         }
         println!("nodes id: {:?}", peer_ids);
 
-        // let nodes = service
-        //     .reserved_peers()
-        //     .await
-        //     .expect("cannot get reserved peers.");
-        // println!("nodes id: {:?}", nodes);
         let local_node = service.local_peer_id();
         println!("local node id: {:?}", local_node);
         let nodes: Vec<String> = peer_ids
@@ -582,20 +490,6 @@ async fn p2ptest_task(
         }
         println!("remote node id: {:?}", node_id);
         _ = sender.send(vec![node_id]);
-
-        // == test
-        // send notification msg
-        // let test_data: Vec<u8> = format!("hello, notification: {i}").as_bytes().to_vec();
-        // println!(" ==> going to send noti: {:?} {:?}", node_id, test_data);
-        // println!(" ==> noti protocol name: {:?}", noti_service2.protocol());
-        // let msg_sink = noti_service2
-        //     .message_sink(&node_id)
-        //     .expect("error when get msg_sink");
-        // // _ = noti_service2
-        // //     .send_async_notification(&node_id, test_data.clone())
-        // //     .await;
-        // // noti_service2.send_sync_notification(&node_id, test_data);
-        // msg_sink.send_sync_notification(test_data);
 
         // send req/res msg
         let test_data: Vec<u8> = format!("hello, request: {i}").as_bytes().to_vec();

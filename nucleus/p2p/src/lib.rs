@@ -18,9 +18,10 @@ use sc_network::PeerId;
 pub struct P2pParams<B, C, BN> {
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
     pub client: Arc<C>,
-    // pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
+    pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
     pub test_receiver: tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
     pub p2p_cage_tx: tokio::sync::mpsc::Sender<NucleusP2pMsg>,
+    pub noti_receiver: tokio::sync::mpsc::Receiver<(Vec<u8>, Vec<PeerId>)>,
     pub noti_service: Box<dyn NotificationService>,
     pub controller: AccountId,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
@@ -57,8 +58,10 @@ where
     let P2pParams {
         reqres_receiver,
         client,
+        mut net_service,
         mut test_receiver,
         p2p_cage_tx,
+        mut noti_receiver,
         mut noti_service,
         controller,
         _phantom,
@@ -69,13 +72,6 @@ where
         loop {
             // println!(" ---> noti protocol name: {:?}", noti_service.protocol());
             tokio::select! {
-                // poll the msg from another p2p peer
-                // The msg type is: sc_network::request_responses::IncomingRequest
-                // pub struct IncomingRequest {
-                //     pub peer: PeerId,
-                //     pub payload: Vec<u8>,
-                //     pub pending_response: Sender<OutgoingResponse>,
-                // }
                 Some(nodes) = test_receiver.recv() => {
                     println!(" ==> get nodes info: {:?}", nodes);
                     for node_id in nodes {
@@ -89,6 +85,34 @@ where
                         // _ = noti_service2
                         //     .send_async_notification(&node_id, test_data.clone())
                         //     .await;
+                    }
+                },
+                Some(noti) = noti_receiver.recv() => {
+                    println!(" ==> get noti info: {:?}", noti);
+
+                    let (noti, mut nodes) = noti;
+                    // process nodes.is_empty(), if it is, query the whole set of peers
+                    if nodes.is_empty() {
+                        let mut peer_ids = Vec::new();
+
+                        // Get the network state
+                        if let Ok(state) = net_service.network_state().await {
+                            // Extract connected peers
+                            for (name, _) in state.connected_peers {
+                                let peer_id = PeerId::from_str(&name).expect("failed to convert string to PeerId");
+                                peer_ids.push(peer_id);
+                            }
+                        }
+                        println!("nodes id: {:?}", peer_ids);
+                        nodes = peer_ids;
+                    }
+
+                    for node_id in nodes {
+                        // println!(" ==> going to send noti: {:?} {:?}", node_id, noti.clone());
+                        // _ = noti_service
+                        //     .send_async_notification(&node_id, noti)
+                        //     .await;
+                        noti_service.send_sync_notification(&node_id, noti.clone());
                     }
                 },
                 Ok(request) = reqres_receiver.recv() => {
@@ -139,5 +163,32 @@ where
                 }
             }
         }
+    }
+}
+
+pub async fn send_request(
+    net_service: Arc<dyn sc_network::service::traits::NetworkService>,
+    node_id: &PeerId,
+    data: Vec<u8>,
+) -> Result<Vec<u8>, ()> {
+    let result = net_service
+        .request(
+            node_id.clone(),
+            sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
+            data,
+            None,
+            sc_network::IfDisconnected::ImmediateError,
+        )
+        .await;
+    if let Ok((res, name)) = result {
+        println!(
+            "Response of the request is: {}: {:?}",
+            name,
+            std::str::from_utf8(&res).expect("not a valid ascii string.")
+        );
+        return Ok(res);
+    } else {
+        println!("Error on response of the request {:?}", result);
+        return Err(());
     }
 }
