@@ -6,10 +6,9 @@ mod nucleus;
 mod runtime;
 mod vm;
 
-mod scheduler;
-mod timer_entry;
-pub(crate) use scheduler::*;
-pub use timer_entry::*;
+// mod scheduler;
+pub use host_func::timer_entry::*;
+// pub(crate) use scheduler::*;
 
 pub use bytecode::{WasmCodeRef, WasmInfo};
 pub use cage::{start_nucleus_cage, CageParams};

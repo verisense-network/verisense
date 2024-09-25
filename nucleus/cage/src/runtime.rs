@@ -28,13 +28,14 @@ pub struct RuntimeParams {
     pub db_path: Box<std::path::Path>,
     pub nucleus_id: NucleusId,
     pub http_register: Arc<http::HttpCallRegister>,
+    pub timer_scheduler: Arc<timer::SchedulerAsync>,
 }
 
 pub struct Runtime {
     pub(crate) id: NucleusId,
     pub(crate) db: Arc<DB>,
     pub(crate) http: Arc<http::HttpCallRegister>,
-    pub(crate) timer: Arc<Mutex<TimerQueue>>,
+    pub(crate) timer: Arc<timer::SchedulerAsync>,
     is_get_method: bool,
     caller_infos: Vec<CallerInfo>,
     // TODO we need runtime storage to read
@@ -48,7 +49,7 @@ impl Runtime {
             http: config.http_register,
             is_get_method: false,
             caller_infos: vec![],
-            timer: Arc::new(Mutex::new(TimerQueue::new())),
+            timer: config.timer_scheduler,
         })
     }
 
@@ -70,23 +71,6 @@ impl Runtime {
 
     pub fn set_is_get_method(&mut self, value: bool) {
         self.is_get_method = value;
-    }
-
-    pub fn pop_timer_entry(&mut self) -> Option<TimerEntry> {
-        self.timer.lock().unwrap().pop()
-    }
-
-    pub fn fetch_all_timer_entries(&self) -> Vec<TimerEntry> {
-        let mut timer = self.timer.lock().unwrap();
-        let mut entries = Vec::new();
-        while let Some(entry) = timer.pop() {
-            entries.push(entry);
-        }
-        entries
-    }
-
-    pub fn push_timer_entry(&self, entry: TimerEntry) {
-        self.timer.lock().unwrap().push(entry);
     }
 }
 

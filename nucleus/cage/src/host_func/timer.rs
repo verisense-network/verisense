@@ -1,13 +1,19 @@
+use std::{pin::Pin, sync::Arc, task::Poll};
+
 use crate::{
     mem,
     runtime::{ComponentProvider, ContextAware},
     Runtime, TimerEntry, TimerQueue,
 };
 use chrono::Utc;
+use tokio::sync::{
+    mpsc::{UnboundedReceiver, UnboundedSender},
+    Mutex,
+};
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
 
-impl ComponentProvider<std::sync::Mutex<TimerQueue>> for Runtime {
-    fn get_component(&self) -> std::sync::Arc<std::sync::Mutex<TimerQueue>> {
+impl ComponentProvider<SchedulerAsync> for Runtime {
+    fn get_component(&self) -> std::sync::Arc<SchedulerAsync> {
         self.timer.clone()
     }
 }
@@ -36,7 +42,7 @@ pub(crate) fn register_timer<R>(
     results: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ContextAware + ComponentProvider<std::sync::Mutex<TimerQueue>>,
+    R: ContextAware + ComponentProvider<SchedulerAsync>,
 {
     if caller.data().read_only() {
         results[0] = Val::I32(1);
@@ -60,11 +66,59 @@ where
             func_params,
         };
         let timer = caller.data().get_component();
-        let mut timer = timer.lock().unwrap();
         timer.push(entry);
         results[0] = Val::I32(0);
     } else {
         results[0] = Val::I32(2);
     }
     Ok(())
+}
+
+#[derive(Clone, Debug)]
+pub struct SchedulerAsync {
+    tx: UnboundedSender<TimerEntry>,
+    rx: Arc<Mutex<UnboundedReceiver<TimerEntry>>>,
+}
+
+impl SchedulerAsync {
+    pub fn new() -> Self {
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        SchedulerAsync {
+            tx,
+            rx: Arc::new(Mutex::new(rx)),
+        }
+    }
+
+    pub async fn pop(&self) -> Option<TimerEntry> {
+        let mut rx = self.rx.lock().await;
+        rx.recv().await
+    }
+
+    pub fn push(&self, entry: TimerEntry) {
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let now = Utc::now();
+            if entry.timestamp > now {
+                tokio::time::sleep((entry.timestamp - now).to_std().unwrap()).await;
+            }
+            let mut entry = entry;
+            entry.triggered_time = Some(Utc::now());
+            let _ = tx.send(entry);
+        });
+    }
+}
+impl futures::Stream for SchedulerAsync {
+    type Item = TimerEntry;
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        let rx = self.rx.try_lock();
+        match rx {
+            Ok(mut rx) => rx.poll_recv(cx),
+            Err(_) => {
+                return Poll::Pending;
+            }
+        }
+    }
 }
