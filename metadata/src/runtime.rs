@@ -4092,8 +4092,8 @@ pub mod codegen {
                     pub type NucleusId = ::subxt::ext::subxt_core::utils::AccountId32;
                 }
                 impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for MockRegister {
-                    const CALL: &'static str = "mock_register";
                     const PALLET: &'static str = "Nucleus";
+                    const CALL: &'static str = "mock_register";
                 }
             }
             pub struct TransactionApi;
@@ -4145,7 +4145,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn mock_register(
                     &self,
                     nucleus_id: types::mock_register::NucleusId,
@@ -4349,7 +4348,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn node_controllers(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::node_controllers::Param0>,
