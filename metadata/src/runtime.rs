@@ -127,9 +127,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                154u8, 160u8, 231u8, 147u8, 18u8, 126u8, 203u8, 146u8, 244u8, 202u8, 208u8, 245u8,
-                181u8, 255u8, 149u8, 150u8, 153u8, 65u8, 16u8, 207u8, 184u8, 11u8, 76u8, 89u8,
-                194u8, 95u8, 92u8, 161u8, 117u8, 175u8, 232u8, 158u8,
+                155u8, 148u8, 135u8, 130u8, 112u8, 76u8, 238u8, 13u8, 50u8, 144u8, 59u8, 1u8, 66u8,
+                90u8, 164u8, 255u8, 199u8, 2u8, 109u8, 212u8, 245u8, 234u8, 167u8, 61u8, 156u8,
+                244u8, 102u8, 6u8, 169u8, 253u8, 0u8, 175u8,
             ]
     }
     pub mod system {
@@ -1166,10 +1166,9 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            135u8, 81u8, 105u8, 229u8, 205u8, 157u8, 144u8, 178u8, 135u8, 254u8,
-                            229u8, 73u8, 91u8, 243u8, 23u8, 105u8, 151u8, 250u8, 139u8, 185u8,
-                            163u8, 121u8, 80u8, 246u8, 166u8, 50u8, 130u8, 162u8, 195u8, 28u8,
-                            197u8, 210u8,
+                            97u8, 40u8, 90u8, 148u8, 110u8, 215u8, 53u8, 253u8, 129u8, 189u8, 68u8,
+                            62u8, 48u8, 110u8, 192u8, 184u8, 114u8, 50u8, 126u8, 207u8, 249u8,
+                            255u8, 197u8, 68u8, 228u8, 238u8, 27u8, 132u8, 3u8, 189u8, 96u8, 42u8,
                         ],
                     )
                 }
@@ -3798,9 +3797,9 @@ pub mod codegen {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            16u8, 23u8, 97u8, 27u8, 69u8, 14u8, 255u8, 51u8, 209u8, 80u8, 65u8,
-                            161u8, 249u8, 200u8, 12u8, 189u8, 36u8, 32u8, 215u8, 64u8, 204u8,
-                            129u8, 43u8, 226u8, 177u8, 47u8, 91u8, 110u8, 71u8, 90u8, 250u8, 197u8,
+                            65u8, 68u8, 215u8, 118u8, 74u8, 139u8, 142u8, 184u8, 11u8, 96u8, 101u8,
+                            180u8, 78u8, 217u8, 8u8, 101u8, 114u8, 37u8, 194u8, 25u8, 128u8, 95u8,
+                            93u8, 7u8, 50u8, 194u8, 87u8, 48u8, 254u8, 124u8, 81u8, 69u8,
                         ],
                     )
                 }
@@ -3818,10 +3817,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            206u8, 212u8, 125u8, 162u8, 15u8, 161u8, 238u8, 98u8, 179u8, 60u8,
-                            50u8, 80u8, 223u8, 131u8, 88u8, 36u8, 5u8, 220u8, 253u8, 42u8, 82u8,
-                            106u8, 105u8, 43u8, 16u8, 208u8, 68u8, 251u8, 117u8, 137u8, 63u8,
-                            126u8,
+                            71u8, 101u8, 228u8, 213u8, 171u8, 146u8, 246u8, 65u8, 97u8, 12u8,
+                            252u8, 39u8, 67u8, 169u8, 34u8, 17u8, 53u8, 26u8, 85u8, 97u8, 187u8,
+                            246u8, 145u8, 234u8, 106u8, 172u8, 199u8, 203u8, 233u8, 37u8, 6u8,
+                            75u8,
                         ],
                     )
                 }
@@ -3855,10 +3854,9 @@ pub mod codegen {
                             call: ::subxt::ext::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            222u8, 93u8, 13u8, 164u8, 54u8, 196u8, 161u8, 20u8, 53u8, 15u8, 162u8,
-                            46u8, 145u8, 124u8, 137u8, 146u8, 196u8, 124u8, 117u8, 165u8, 68u8,
-                            158u8, 199u8, 26u8, 194u8, 213u8, 241u8, 113u8, 82u8, 100u8, 121u8,
-                            26u8,
+                            130u8, 212u8, 103u8, 90u8, 114u8, 130u8, 211u8, 29u8, 51u8, 89u8,
+                            226u8, 129u8, 136u8, 119u8, 208u8, 209u8, 9u8, 96u8, 253u8, 77u8, 79u8,
+                            206u8, 64u8, 101u8, 246u8, 4u8, 53u8, 22u8, 249u8, 242u8, 152u8, 158u8,
                         ],
                     )
                 }
@@ -4072,6 +4070,31 @@ pub mod codegen {
                     const PALLET: &'static str = "Nucleus";
                     const CALL: &'static str = "upload_nucleus_wasm";
                 }
+                #[derive(
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt :: ext :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt :: ext :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt :: ext :: subxt_core :: ext :: codec)]
+                #[decode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_decode"
+                )]
+                #[encode_as_type(
+                    crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode"
+                )]
+                pub struct MockRegister {
+                    pub nucleus_id: mock_register::NucleusId,
+                }
+                pub mod mock_register {
+                    use super::runtime_types;
+                    pub type NucleusId = ::subxt::ext::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt::ext::subxt_core::blocks::StaticExtrinsic for MockRegister {
+                    const CALL: &'static str = "mock_register";
+                    const PALLET: &'static str = "Nucleus";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -4119,6 +4142,23 @@ pub mod codegen {
                             73u8, 141u8, 151u8, 40u8, 193u8, 230u8, 42u8, 117u8, 82u8, 17u8, 254u8,
                             147u8, 14u8, 125u8, 56u8, 135u8, 136u8, 193u8, 7u8, 58u8, 54u8, 198u8,
                             120u8, 166u8, 254u8, 98u8, 111u8, 18u8, 105u8, 165u8, 175u8, 61u8,
+                        ],
+                    )
+                }
+
+                pub fn mock_register(
+                    &self,
+                    nucleus_id: types::mock_register::NucleusId,
+                ) -> ::subxt::ext::subxt_core::tx::payload::StaticPayload<types::MockRegister>
+                {
+                    ::subxt::ext::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Nucleus",
+                        "mock_register",
+                        types::MockRegister { nucleus_id },
+                        [
+                            142u8, 209u8, 252u8, 91u8, 84u8, 73u8, 44u8, 138u8, 78u8, 30u8, 106u8,
+                            210u8, 254u8, 118u8, 83u8, 189u8, 232u8, 243u8, 164u8, 8u8, 29u8,
+                            201u8, 221u8, 244u8, 39u8, 57u8, 22u8, 238u8, 56u8, 27u8, 109u8, 12u8,
                         ],
                     )
                 }
@@ -4199,14 +4239,14 @@ pub mod codegen {
             #[encode_as_type(crate_path = ":: subxt :: ext :: subxt_core :: ext :: scale_encode")]
             pub struct InstanceRegistered {
                 pub id: instance_registered::Id,
-                pub node_controller: instance_registered::NodeController,
+                pub controller: instance_registered::Controller,
                 pub node_id: instance_registered::NodeId,
             }
             pub mod instance_registered {
                 use super::runtime_types;
                 pub type Id = ::subxt::ext::subxt_core::utils::AccountId32;
-                pub type NodeController = ::subxt::ext::subxt_core::utils::AccountId32;
-                pub type NodeId = runtime_types::sp_core::OpaquePeerId;
+                pub type Controller = ::subxt::ext::subxt_core::utils::AccountId32;
+                pub type NodeId = ::core::option::Option<runtime_types::sp_core::OpaquePeerId>;
             }
             impl ::subxt::ext::subxt_core::events::StaticEvent for InstanceRegistered {
                 const PALLET: &'static str = "Nucleus";
@@ -4226,12 +4266,16 @@ pub mod codegen {
                     >;
                     pub type Param0 = ::subxt::ext::subxt_core::utils::AccountId32;
                 }
+                pub mod node_controllers {
+                    use super::runtime_types;
+                    pub type NodeControllers = runtime_types::sp_core::OpaquePeerId;
+                    pub type Param0 = ::subxt::ext::subxt_core::utils::AccountId32;
+                }
                 pub mod instances {
                     use super::runtime_types;
-                    pub type Instances = ::subxt::ext::subxt_core::alloc::vec::Vec<(
+                    pub type Instances = ::subxt::ext::subxt_core::alloc::vec::Vec<
                         ::subxt::ext::subxt_core::utils::AccountId32,
-                        runtime_types::sp_core::OpaquePeerId,
-                    )>;
+                    >;
                     pub type Param0 = ::subxt::ext::subxt_core::utils::AccountId32;
                 }
             }
@@ -4284,6 +4328,54 @@ pub mod codegen {
                         ],
                     )
                 }
+                pub fn node_controllers_iter(
+                    &self,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::node_controllers::NodeControllers,
+                    (),
+                    (),
+                    ::subxt::ext::subxt_core::utils::Yes,
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Nucleus",
+                        "NodeControllers",
+                        (),
+                        [
+                            72u8, 168u8, 225u8, 205u8, 103u8, 194u8, 159u8, 213u8, 249u8, 238u8,
+                            41u8, 253u8, 171u8, 177u8, 75u8, 95u8, 221u8, 180u8, 204u8, 208u8,
+                            93u8, 3u8, 30u8, 43u8, 238u8, 144u8, 94u8, 14u8, 102u8, 86u8, 153u8,
+                            181u8,
+                        ],
+                    )
+                }
+
+                pub fn node_controllers(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::node_controllers::Param0>,
+                ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
+                    ::subxt::ext::subxt_core::storage::address::StaticStorageKey<
+                        types::node_controllers::Param0,
+                    >,
+                    types::node_controllers::NodeControllers,
+                    ::subxt::ext::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt::ext::subxt_core::storage::address::StaticAddress::new_static(
+                        "Nucleus",
+                        "NodeControllers",
+                        ::subxt::ext::subxt_core::storage::address::StaticStorageKey::new(
+                            _0.borrow(),
+                        ),
+                        [
+                            72u8, 168u8, 225u8, 205u8, 103u8, 194u8, 159u8, 213u8, 249u8, 238u8,
+                            41u8, 253u8, 171u8, 177u8, 75u8, 95u8, 221u8, 180u8, 204u8, 208u8,
+                            93u8, 3u8, 30u8, 43u8, 238u8, 144u8, 94u8, 14u8, 102u8, 86u8, 153u8,
+                            181u8,
+                        ],
+                    )
+                }
                 pub fn instances_iter(
                     &self,
                 ) -> ::subxt::ext::subxt_core::storage::address::StaticAddress<
@@ -4298,9 +4390,9 @@ pub mod codegen {
                         "Instances",
                         (),
                         [
-                            38u8, 123u8, 7u8, 129u8, 122u8, 118u8, 121u8, 236u8, 89u8, 225u8, 12u8,
-                            188u8, 236u8, 52u8, 233u8, 19u8, 201u8, 17u8, 33u8, 47u8, 75u8, 82u8,
-                            210u8, 134u8, 127u8, 160u8, 86u8, 235u8, 103u8, 136u8, 61u8, 69u8,
+                            93u8, 226u8, 25u8, 95u8, 180u8, 191u8, 1u8, 35u8, 199u8, 241u8, 132u8,
+                            88u8, 120u8, 65u8, 244u8, 199u8, 139u8, 249u8, 41u8, 1u8, 141u8, 14u8,
+                            95u8, 175u8, 237u8, 222u8, 191u8, 34u8, 213u8, 210u8, 94u8, 88u8,
                         ],
                     )
                 }
@@ -4323,9 +4415,9 @@ pub mod codegen {
                             _0.borrow(),
                         ),
                         [
-                            38u8, 123u8, 7u8, 129u8, 122u8, 118u8, 121u8, 236u8, 89u8, 225u8, 12u8,
-                            188u8, 236u8, 52u8, 233u8, 19u8, 201u8, 17u8, 33u8, 47u8, 75u8, 82u8,
-                            210u8, 134u8, 127u8, 160u8, 86u8, 235u8, 103u8, 136u8, 61u8, 69u8,
+                            93u8, 226u8, 25u8, 95u8, 180u8, 191u8, 1u8, 35u8, 199u8, 241u8, 132u8,
+                            88u8, 120u8, 65u8, 244u8, 199u8, 139u8, 249u8, 41u8, 1u8, 141u8, 14u8,
+                            95u8, 175u8, 237u8, 222u8, 191u8, 34u8, 213u8, 210u8, 94u8, 88u8,
                         ],
                     )
                 }
@@ -5529,6 +5621,10 @@ pub mod codegen {
                         to: runtime_types::sp_core::OpaquePeerId,
                         hash: ::subxt::ext::subxt_core::utils::H256,
                     },
+                    #[codec(index = 2)]
+                    mock_register {
+                        nucleus_id: ::subxt::ext::subxt_core::utils::AccountId32,
+                    },
                 }
                 #[derive(
                     :: subxt :: ext :: subxt_core :: ext :: codec :: Decode,
@@ -5587,8 +5683,8 @@ pub mod codegen {
                     #[codec(index = 2)]
                     InstanceRegistered {
                         id: ::subxt::ext::subxt_core::utils::AccountId32,
-                        node_controller: ::subxt::ext::subxt_core::utils::AccountId32,
-                        node_id: runtime_types::sp_core::OpaquePeerId,
+                        controller: ::subxt::ext::subxt_core::utils::AccountId32,
+                        node_id: ::core::option::Option<runtime_types::sp_core::OpaquePeerId>,
                     },
                 }
                 #[derive(

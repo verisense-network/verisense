@@ -8,9 +8,9 @@ edition.workspace = true
 proc-macro = true
 
 [dependencies]
-syn = "2.0"
+syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
-vrs-core-sdk = { path = "../core-sdk" }
+vrs-core-sdk = { path = "../core-sdk", default-features = false }
 
 [features]
 default = ["std"]

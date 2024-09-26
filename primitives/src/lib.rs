@@ -1,5 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
+use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
@@ -30,3 +34,15 @@ pub type Address = MultiAddress<AccountId, ()>;
 pub type NucleusId = AccountId32;
 
 pub type NodeId = sp_core::OpaquePeerId;
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
+pub struct NucleusInfo<AccountId, Hash, NodeId> {
+    pub name: alloc::vec::Vec<u8>,
+    pub manager: AccountId,
+    pub wasm_hash: Hash,
+    pub wasm_version: u32,
+    pub wasm_location: Option<NodeId>,
+    pub current_event: u64,
+    pub root_state: Hash,
+    pub peers: alloc::vec::Vec<NodeId>,
+}
