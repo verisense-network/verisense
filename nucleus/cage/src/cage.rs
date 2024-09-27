@@ -7,21 +7,32 @@ use codec::Encode;
 use futures::prelude::*;
 use rocksdb::DB;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_network::request_responses::IncomingRequest;
+use sc_network::request_responses::OutgoingResponse;
+// use sc_network::service::traits::NotificationEvent;
+// use sc_network::service::traits::NotificationService;
+use sc_network::service::traits::NetworkService;
+use sc_network::PeerId;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use std::collections::HashMap;
 // TODO use UnboundedSender to avoid blocking
 use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
-use tokio::sync::mpsc::{self, Receiver};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata, METADATA_BYTES,
 };
+use vrs_nucleus_p2p::NucleusP2pMsg;
 use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::{AccountId, Hash, NodeId, NucleusId, NucleusInfo};
 
 pub struct CageParams<B, C, BN> {
     pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
+    pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
+    pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
+    pub net_service: Arc<dyn NetworkService>,
+    // pub noti_service: Box<dyn NotificationService>,
     pub client: Arc<C>,
     pub controller: AccountId,
     pub nucleus_home_dir: std::path::PathBuf,
@@ -128,6 +139,9 @@ where
 {
     let CageParams {
         mut nucleus_rpc_rx,
+        mut p2p_cage_rx,
+        mut noti_sender,
+        mut net_service,
         client,
         controller,
         nucleus_home_dir,
@@ -160,6 +174,45 @@ where
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
+                // block = registry_monitor.next() => {
+                //     let hash = block.expect("block importing error").hash;
+                //     // TODO handle deregister as well
+                //     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
+                //         for (id, config) in instances {
+                //             let db_path = nucleus_home_dir.join(id.to_string());
+                //             start_nucleus::<B>(id, config, db_path, &mut nuclei).expect("fail to start nucleus");
+                //         }
+                //     }
+                // },
+                Some(msg) = p2p_cage_rx.recv() => {
+                    // req type is IncomingRequest, process it.
+                    log::info!("in cage: incoming msg: {:?}", msg);
+                    match msg {
+                        NucleusP2pMsg::ReqRes(req) => {
+                            log::info!("in cage: incoming request: {:?}", req);
+
+                            // API: anywhere you want to send request, use like:
+                            // let result = vrs_nucleus_p2p::send_request(net_service, peer_id, payload).await;
+
+                            // when respond, use req.pending_response to send oneshot OutgoingResponse back
+                            let outgoing_msg = OutgoingResponse {
+                                result: Ok(b"response from cage req/res handle.".to_vec()),
+                                reputation_changes: vec![],
+                                sent_feedback: None
+                            };
+                            _ = req.pending_response.send(outgoing_msg);
+
+                        }
+                        NucleusP2pMsg::Noti(noti) => {
+                            log::info!("in cage: incoming notification: {:?}", noti);
+                            // process notification here
+
+                            // API: anywhere you want to send a notification, use like:
+                            // _ = noti_sender.send((Vec<u8>, Vec<PeerId>)).await;
+
+                        }
+                    }
+                },
                 block = registry_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
                     // TODO handle deregister as well
