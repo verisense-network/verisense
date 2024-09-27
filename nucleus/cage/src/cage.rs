@@ -186,10 +186,10 @@ where
                 // },
                 Some(msg) = p2p_cage_rx.recv() => {
                     // req type is IncomingRequest, process it.
-                    println!("in cage: incoming msg: {:?}", msg);
+                    log::info!("in cage: incoming msg: {:?}", msg);
                     match msg {
                         NucleusP2pMsg::ReqRes(req) => {
-                            println!("in cage: incoming request: {:?}", req);
+                            log::info!("in cage: incoming request: {:?}", req);
 
                             // API: anywhere you want to send request, use like:
                             // let result = vrs_nucleus_p2p::send_request(net_service, peer_id, payload).await;
@@ -204,7 +204,7 @@ where
 
                         }
                         NucleusP2pMsg::Noti(noti) => {
-                            println!("in cage: incoming notification: {:?}", noti);
+                            log::info!("in cage: incoming notification: {:?}", noti);
                             // process notification here
 
                             // API: anywhere you want to send a notification, use like:

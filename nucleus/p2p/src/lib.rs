@@ -70,13 +70,12 @@ where
         log::info!("🔌 Nucleus p2p controller: {}", controller);
 
         loop {
-            // println!(" ---> noti protocol name: {:?}", noti_service.protocol());
             tokio::select! {
                 Some(nodes) = test_receiver.recv() => {
-                    println!(" ==> get nodes info: {:?}", nodes);
+                    log::info!(" ==> get nodes info: {:?}", nodes);
                     for node_id in nodes {
                         let test_data: Vec<u8> = format!("hello, notification").as_bytes().to_vec();
-                        println!(" ==> going to send noti: {:?} {:?}", node_id, test_data);
+                        log::info!(" ==> going to send noti: {:?} {:?}", node_id, test_data);
                         // let msg_sink = noti_service
                         //     .message_sink(&node_id)
                         //     .expect("error when get msg_sink");
@@ -88,7 +87,7 @@ where
                     }
                 },
                 Some(noti) = noti_receiver.recv() => {
-                    println!(" ==> get noti info: {:?}", noti);
+                    log::info!(" ==> get noti info: {:?}", noti);
 
                     let (noti, mut nodes) = noti;
                     // process nodes.is_empty(), if it is, query the whole set of peers
@@ -103,12 +102,12 @@ where
                                 peer_ids.push(peer_id);
                             }
                         }
-                        println!("nodes id: {:?}", peer_ids);
+                        log::info!("nodes id: {:?}", peer_ids);
                         nodes = peer_ids;
                     }
 
                     for node_id in nodes {
-                        // println!(" ==> going to send noti: {:?} {:?}", node_id, noti.clone());
+                        // log::info!(" ==> going to send noti: {:?} {:?}", node_id, noti.clone());
                         // _ = noti_service
                         //     .send_async_notification(&node_id, noti)
                         //     .await;
@@ -116,7 +115,7 @@ where
                     }
                 },
                 Ok(request) = reqres_receiver.recv() => {
-                    println!("IncomingRequest msg: {:?}", request);
+                    log::info!("IncomingRequest msg: {:?}", request);
                     // do stuff
                     // forward the request to cage
                     let msg = NucleusP2pMsg::ReqRes(request);
@@ -129,7 +128,7 @@ where
                             peer,
                             notification
                         } => {
-                            println!("notification received: peer: {:?}  noti: {:?}", peer, notification);
+                            log::info!("notification received: peer: {:?}  noti: {:?}", peer, notification);
                             let noti = P2pNotification {peer, notification};
                             let msg = NucleusP2pMsg::Noti(noti);
                             _ = p2p_cage_tx.send(msg).await;
@@ -140,8 +139,8 @@ where
                             handshake,
                             result_tx,
                         } => {
-                            println!("notification ValidateInboundSubstream received: {:?}", peer);
-                            println!("notification ValidateInboundSubstream received: {:?}", handshake);
+                            log::info!("notification ValidateInboundSubstream received: {:?}", peer);
+                            log::info!("notification ValidateInboundSubstream received: {:?}", handshake);
                             // to build the notification substream
                             // _ = result_tx.send(ValidationResult::Accept);
                         }
@@ -151,13 +150,13 @@ where
                             handshake,
                             negotiated_fallback,
                         } => {
-                            println!("notification NotificationStreamOpened received: {:?}", peer);
-                            println!("notification NotificationStreamOpened received: {:?}", direction);
-                            println!("notification NotificationStreamOpened received: {:?}", handshake);
-                            println!("notification NotificationStreamOpened received: {:?}", negotiated_fallback);
+                            log::info!("notification NotificationStreamOpened received: {:?}", peer);
+                            log::info!("notification NotificationStreamOpened received: {:?}", direction);
+                            log::info!("notification NotificationStreamOpened received: {:?}", handshake);
+                            log::info!("notification NotificationStreamOpened received: {:?}", negotiated_fallback);
                         }
                         NotificationEvent::NotificationStreamClosed { peer } => {
-                            println!("notification NotificationStreamClosed received: {:?}", peer);
+                            log::info!("notification NotificationStreamClosed received: {:?}", peer);
                         }
                     }
                 }
@@ -181,14 +180,14 @@ pub async fn send_request(
         )
         .await;
     if let Ok((res, name)) = result {
-        println!(
+        log::info!(
             "Response of the request is: {}: {:?}",
             name,
             std::str::from_utf8(&res).expect("not a valid ascii string.")
         );
         return Ok(res);
     } else {
-        println!("Error on response of the request {:?}", result);
+        log::info!("Error on response of the request {:?}", result);
         return Err(());
     }
 }

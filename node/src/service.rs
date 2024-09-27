@@ -462,7 +462,7 @@ async fn p2ptest_task(
 
     for i in 1.. {
         interval.tick().await;
-        println!("<---- P2p timer Tick ---->");
+        log::info!("<---- P2p timer Tick ---->");
 
         let mut peer_ids = Vec::new();
 
@@ -473,10 +473,10 @@ async fn p2ptest_task(
                 peer_ids.push(name);
             }
         }
-        println!("nodes id: {:?}", peer_ids);
+        log::info!("nodes id: {:?}", peer_ids);
 
         let local_node = service.local_peer_id();
-        println!("local node id: {:?}", local_node);
+        log::info!("local node id: {:?}", local_node);
         let nodes: Vec<String> = peer_ids
             .into_iter()
             .filter(|x| x != &local_node.to_base58())
@@ -488,7 +488,7 @@ async fn p2ptest_task(
         } else {
             node_id = local_node;
         }
-        println!("remote node id: {:?}", node_id);
+        log::info!("remote node id: {:?}", node_id);
         _ = sender.send(vec![node_id]);
 
         // send req/res msg
@@ -503,13 +503,13 @@ async fn p2ptest_task(
             )
             .await;
         if let Ok((res, name)) = result {
-            println!(
+            log::info!(
                 "Response of the request is: {}: {:?}",
                 name,
                 std::str::from_utf8(&res).expect("not a valid ascii string.")
             );
         } else {
-            println!("Error on response of the request {:?}", result);
+            log::error!("Error on response of the request {:?}", result);
         }
     }
 }

@@ -10898,6 +10898,7 @@ dependencies = [
  "frame-system",
  "futures",
  "jsonrpsee 0.23.2",
+ "log",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
