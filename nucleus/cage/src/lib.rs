@@ -6,6 +6,9 @@ mod nucleus;
 mod runtime;
 mod vm;
 
+#[cfg(test)]
+pub mod test_suite;
+
 mod scheduler;
 mod timer_entry;
 pub(crate) use scheduler::*;

@@ -18,5 +18,5 @@ crate-type = ["cdylib"]
 
 [dev-dependencies]
 vrs-core-sdk = { path = "../nucleus/core-sdk", default-features = false }
-vrs-core-macros = { path = "../nucleus/core-macros", default-features = false }
-parity-scale-codec = { version = "3.6", default-features = false }
+codec = { workspace = true, features = ["derive"] }
+# vrs-core-macros = { path = "../nucleus/core-macros", default-features = false }

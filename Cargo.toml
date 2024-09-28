@@ -19,6 +19,7 @@ edition = "2021"
 codec = { features = [
     "derive",
 ], package = "parity-scale-codec", version = "3.6.12", default-features = false }
+parity-scale-codec-derive = "3.6.12"
 scale-info = { features = [
     "derive",
     "serde",

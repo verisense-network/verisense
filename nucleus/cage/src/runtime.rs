@@ -35,8 +35,8 @@ pub struct Runtime {
     pub(crate) db: Arc<DB>,
     pub(crate) http: Arc<http::HttpCallRegister>,
     pub(crate) timer: Arc<Mutex<TimerQueue>>,
-    is_get_method: bool,
-    caller_infos: Vec<CallerInfo>,
+    pub(crate) is_get_method: bool,
+    pub(crate) caller_infos: Vec<CallerInfo>,
     // TODO we need runtime storage to read
 }
 
@@ -119,6 +119,14 @@ impl FuncRegister for Runtime {
                 "stderr_print",
                 io::stderr_print_signature(engine),
                 io::stderr_print,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "get_nucleus_id",
+                io::get_nucleus_id_signature(engine),
+                io::get_nucleus_id,
             )
             .unwrap();
         linker
