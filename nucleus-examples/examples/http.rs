@@ -1,13 +1,13 @@
-use vrs_core_macros::{callback, post};
 use vrs_core_sdk::{
+    callback,
     http::{self, *},
-    CallResult,
+    post, CallResult,
 };
 
 #[post]
 pub fn request_google() {
     let id = http::request(HttpRequest {
-        head: Parts {
+        head: RequestHead {
             method: HttpMethod::Get,
             uri: "https://www.google.com".to_string(),
             headers: Default::default(),

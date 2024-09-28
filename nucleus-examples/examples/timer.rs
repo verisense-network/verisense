@@ -1,5 +1,4 @@
-use vrs_core_macros::{get, init, post};
-use vrs_core_sdk::{set_timer, storage};
+use vrs_core_sdk::{get, init, post, set_timer, storage};
 
 #[post]
 pub fn test_delay(a: String, b: i32) {

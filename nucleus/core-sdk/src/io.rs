@@ -1,10 +1,20 @@
-use codec::Encode;
+use codec::{Decode, Encode};
 
 #[link(wasm_import_module = "env")]
 extern "C" {
     fn stdout_print(ptr: *const u8, len: i32);
 
     fn stderr_print(ptr: *const u8, len: i32);
+
+    fn get_nucleus_id(ptr: *mut u8);
+}
+
+pub fn nucleus_id() -> crate::NucleusId {
+    let mut id = crate::NucleusId::from([0u8; 32]).encode();
+    unsafe {
+        get_nucleus_id(id.as_mut_ptr());
+    }
+    <crate::NucleusId as Decode>::decode(&mut &id[..]).unwrap()
 }
 
 pub fn _print(args: String) {
