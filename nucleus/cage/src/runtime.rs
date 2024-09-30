@@ -148,9 +148,33 @@ impl FuncRegister for Runtime {
         linker
             .func_new(
                 "env",
+                "storage_get_prefix",
+                kvdb::storage_get_prefix_signature(engine),
+                kvdb::storage_get_prefix,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "storage_get_range",
+                kvdb::storage_get_range_signature(engine),
+                kvdb::storage_get_range,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
                 "storage_del",
                 kvdb::storage_del_signature(engine),
-                kvdb::storage_delete,
+                kvdb::storage_del,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "storage_del_range",
+                kvdb::storage_del_range_signature(engine),
+                kvdb::storage_del_range,
             )
             .unwrap();
         linker
