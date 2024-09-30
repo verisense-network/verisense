@@ -233,6 +233,7 @@ fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_suite::*;
     use chrono::Duration;
     use codec::{Decode, Encode};
     use std::thread::sleep;
@@ -240,19 +241,7 @@ mod tests {
     #[test]
     pub fn load_wasm_should_work() {
         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-        let wasm = WasmInfo {
-            account: AccountId::new([0u8; 32]),
-            name: "avs-dev-demo".to_string(),
-            version: 0,
-            code: WasmCodeRef::File(wasm_path.to_string()),
-        };
-
-        let tmp_dir = TempDir::new().unwrap();
-        let context = Context::init(ContextConfig {
-            db_path: tmp_dir.child("1").into_boxed_path(),
-        })
-        .unwrap();
-        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+        let (vm, handle) = new_vm_with_executable(wasm_path);
         let input = <(String, String) as codec::Encode>::encode(&(
             "aaaaaaaaaa".to_string(),
             "bbbbbbbbbb".to_string(),
@@ -675,19 +664,7 @@ mod tests {
     #[test]
     pub fn test_tree_set_time_delay() {
         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-        let wasm = WasmInfo {
-            account: AccountId::new([0u8; 32]),
-            name: "avs-dev-demo".to_string(),
-            version: 0,
-            code: WasmCodeRef::File(wasm_path.to_string()),
-        };
-
-        let tmp_dir = TempDir::new().unwrap();
-        let context = Context::init(ContextConfig {
-            db_path: tmp_dir.child("1").into_boxed_path(),
-        })
-        .unwrap();
-        let mut vm = Vm::new_instance(&wasm, context).unwrap();
+        let (vm, handle) = new_vm_with_executable(wasm_path);
         let input = <(i32, i32) as codec::Encode>::encode(&(1, 0));
         let result = vm
             .call_post(
