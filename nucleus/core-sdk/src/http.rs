@@ -16,7 +16,7 @@ pub enum HttpMethod {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
-pub struct Parts {
+pub struct RequestHead {
     pub method: HttpMethod,
     pub uri: String,
     pub headers: BTreeMap<String, String>,
@@ -24,13 +24,19 @@ pub struct Parts {
 
 #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
 pub struct HttpRequest {
-    pub head: Parts,
+    pub head: RequestHead,
     pub body: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
+pub struct ResponseHead {
+    pub status: u16,
+    pub headers: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Encode, Decode)]
 pub struct HttpResponse {
-    pub head: Parts,
+    pub head: ResponseHead,
     pub body: Vec<u8>,
 }
 
@@ -44,7 +50,7 @@ extern "C" {
 ///
 /// ```
 /// #[callback]
-/// pub fn on_response(u64: request_id, response: Response) {
+/// pub fn on_response(u64: request_id, response: CallResult<HttpResponse>) {
 ///     // handle response
 /// }
 /// ```

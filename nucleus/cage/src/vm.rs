@@ -1,8 +1,10 @@
 use crate::{
-    runtime::{ContextAware, FuncRegister},
+    host_func::timer::PendingTimerQueue,
+    runtime::{ComponentProvider, ContextAware, FuncRegister},
     CallerInfo, TimerEntry, WasmCodeRef, WasmInfo,
 };
 use codec::Decode;
+use futures::future::Pending;
 use std::sync::atomic::AtomicU64;
 use thiserror::Error;
 use wasmtime::{Engine, ExternType, Instance, Module, Store, Val, WasmResults};
@@ -104,6 +106,15 @@ where
         })
     }
 
+    pub fn call_inner<T: codec::Encode>(
+        &mut self,
+        func: &str,
+        args: T,
+    ) -> Result<(), WasmCallError> {
+        let result = self.call_method(&func, args.encode(), false);
+        result.map(|_| ())
+    }
+
     // TODO we need to re-degisn the caller context(the previous context is now called runtime)
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         // self.space.data_mut().set_is_get_method(true);
@@ -113,19 +124,26 @@ where
         //     thread_id: get_thread_id(),
         //     caller_type: crate::CallerType::Get,
         // });
-        let result = self.call_method(func, args, true);
+        let func = format!("__nucleus_get_{}", func);
+        let result = self.call_method(&func, args, true);
         // self.space.data_mut().set_is_get_method(false);
         // self.space.data_mut().pop_caller_info();
         result
     }
-
-    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
-    pub fn call_post(
+    pub fn call_timer(
         &mut self,
         func: &str,
         args: Vec<u8>,
         caller_infos: Vec<CallerInfo>,
-    ) -> Result<Vec<u8>, WasmCallError> {
+    ) -> Result<(Vec<u8>, Vec<TimerEntry>), WasmCallError> {
+        let func = format!("__nucleus_timer_{}", func);
+        let result = self.call_method(&func, args, false)?;
+        let timer = self.space.data().pop_all_pending_timer();
+        Ok((result, timer))
+    }
+
+    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
+    pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         // self.space.data_mut().set_is_get_method(false);
         // let new_caller_infos = vec![
         //     caller_infos,
@@ -138,22 +156,18 @@ where
         // ]
         // .concat();
         // self.space.data_mut().replace_caller_infos(new_caller_infos);
-        let result = self.call_method(func, args, false);
+        let func = format!("__nucleus_post_{}", func);
+        let result = self.call_method(&func, args, false);
         // self.space.data_mut().pop_caller_info();
         return result;
     }
 
     fn call_method(
         &mut self,
-        func: &str,
+        func_name: &str,
         args: Vec<u8>,
         is_get: bool,
     ) -> Result<Vec<u8>, WasmCallError> {
-        let func_name = if is_get {
-            format!("__nucleus_get_{}", func)
-        } else {
-            format!("__nucleus_post_{}", func)
-        };
         let func = self
             .instance
             .get_func(&mut self.space, &func_name)

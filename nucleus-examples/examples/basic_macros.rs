@@ -1,26 +1,26 @@
-use t::{D, E};
-use vrs_core_macros::{get, init, post};
-use vrs_core_sdk::storage;
+// use vrs_core_macros::{get, init, post};
+use vrs_core_sdk::{
+    codec::{Decode, Encode},
+    get, init, post, storage,
+};
 
-pub mod t {
-    use parity_scale_codec::{Decode, Encode};
+#[derive(Debug, Decode, Encode)]
+pub struct E {
+    pub a: Vec<u32>,
+    pub b: i32,
+    pub c: u32,
+}
 
-    #[derive(Debug, Decode, Encode)]
-    pub struct E {
-        pub a: Vec<u32>,
-        pub b: i32,
-        pub c: u32,
-    }
-
-    #[derive(Debug, Decode, Encode)]
-    pub struct D {
-        pub b: i32,
-    }
+#[derive(Debug, Decode, Encode)]
+pub struct D {
+    pub b: i32,
 }
 
 #[init]
-pub fn init(e: t::E, u: u32) {
-    storage::put(b"hello", b"world").unwrap();
+pub fn init(e: E, u: u32) {
+    let b = format!("b = {}, c = {}", e.b, e.c);
+    storage::put(&u.to_be_bytes(), b.as_bytes()).unwrap();
+    vrs_core_sdk::println!("nucleus id: {:?}", vrs_core_sdk::nucleus_id());
 }
 
 #[post]
@@ -46,6 +46,10 @@ pub fn cc(a: String, b: String) -> Result<String, String> {
     Ok(c)
 }
 
+#[get]
+pub fn get() -> i32 {
+    5
+}
 #[post]
 pub fn use_codec(d: D) -> Result<E, String> {
     Ok(E {

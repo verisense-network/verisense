@@ -1,10 +1,14 @@
 use crate::{
-    host_func::{http, kvdb, timer},
+    host_func::{
+        http, io, kvdb,
+        timer::{self, PendingTimerQueue},
+    },
     CallerInfo, TimerEntry, TimerQueue,
 };
+use hyper::rt::Timer;
 use rocksdb::DB;
 use std::sync::{Arc, Mutex};
-use vrs_primitives::{AccountId, NucleusId};
+use vrs_primitives::NucleusId;
 use wasmtime::{Engine, Linker};
 
 pub trait FuncRegister {
@@ -15,6 +19,7 @@ pub trait FuncRegister {
 
 pub trait ContextAware {
     fn read_only(&self) -> bool;
+    fn pop_all_pending_timer(&self) -> Vec<TimerEntry>;
 
     fn get_nucleus_id(&self) -> NucleusId;
 }
@@ -35,9 +40,9 @@ pub struct Runtime {
     pub(crate) id: NucleusId,
     pub(crate) db: Arc<DB>,
     pub(crate) http: Arc<http::HttpCallRegister>,
-    pub(crate) timer: Arc<timer::SchedulerAsync>,
-    is_get_method: bool,
-    caller_infos: Vec<CallerInfo>,
+    pub(crate) register_timer: Arc<PendingTimerQueue>,
+    pub(crate) is_get_method: bool,
+    pub(crate) caller_infos: Vec<CallerInfo>,
     // TODO we need runtime storage to read
 }
 
@@ -49,7 +54,7 @@ impl Runtime {
             http: config.http_register,
             is_get_method: false,
             caller_infos: vec![],
-            timer: config.timer_scheduler,
+            register_timer: Arc::new(PendingTimerQueue::new()),
         })
     }
 
@@ -82,6 +87,14 @@ impl ContextAware for Runtime {
     fn get_nucleus_id(&self) -> NucleusId {
         self.id.clone()
     }
+
+    fn pop_all_pending_timer(&self) -> Vec<TimerEntry> {
+        let mut timers = vec![];
+        while let Some(e) = self.register_timer.pop() {
+            timers.push(e);
+        }
+        timers
+    }
 }
 
 impl FuncRegister for Runtime {
@@ -89,6 +102,30 @@ impl FuncRegister for Runtime {
 
     fn register_host_funcs(engine: &Engine) -> Linker<Runtime> {
         let mut linker = Linker::new(engine);
+        linker
+            .func_new(
+                "env",
+                "stdout_print",
+                io::stdout_print_signature(engine),
+                io::stdout_print,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "stderr_print",
+                io::stderr_print_signature(engine),
+                io::stderr_print,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "get_nucleus_id",
+                io::get_nucleus_id_signature(engine),
+                io::get_nucleus_id,
+            )
+            .unwrap();
         linker
             .func_new(
                 "env",

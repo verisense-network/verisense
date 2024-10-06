@@ -4,10 +4,13 @@ use futures::FutureExt;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
+use sc_network::PeerId;
+use sc_network::{NetworkRequest, NetworkStateInfo};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use std::str::FromStr;
 use std::{sync::Arc, time::Duration};
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 
@@ -156,6 +159,7 @@ pub fn new_full<
         .unwrap()
         .public()
         .to_peer_id();
+    // let node_id_4tests = node_id.clone();
     let metrics = N::register_notification_metrics(config.prometheus_registry());
     let peer_store_handle = net_config.peer_store_handle();
     let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
@@ -179,6 +183,38 @@ pub fn new_full<
         grandpa_link.shared_authority_set().clone(),
         Vec::default(),
     ));
+
+    // --- add nucleus-p2p subprotocol
+    let (reqres_sender, reqres_receiver) = async_channel::bounded(1024);
+    let nucleus_p2p_reqres_config = N::request_response_config(
+        sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
+        vec![],
+        1024 * 1024,
+        16 * 1024 * 1024,
+        Duration::from_secs(20),
+        Some(reqres_sender),
+    );
+    net_config.add_request_response_protocol(nucleus_p2p_reqres_config);
+
+    let metrics1 = N::register_notification_metrics(config.prometheus_registry());
+    let peer_store_handle1 = net_config.peer_store_handle();
+    let (nucleus_p2p_noti_config, mut noti_service) = N::notification_config(
+        sc_network::types::ProtocolName::Static("/nucleus/p2p/noti"),
+        vec![],
+        1024 * 1024,
+        None,
+        sc_network::config::SetConfig::default(),
+        // sc_network::config::SetConfig {
+        // in_peers: 25,
+        // out_peers: 75,
+        // reserved_nodes: Vec::new(),
+        // non_reserved_mode: NonReservedPeerMode::Accept,
+        // },
+        metrics1,
+        peer_store_handle1,
+    );
+    net_config.add_notification_protocol(nucleus_p2p_noti_config);
+    // ^^--- add nucleus-p2p subprotocol
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
@@ -259,8 +295,41 @@ pub fn new_full<
     })?;
 
     if role.is_authority() {
+        // let noti_service1 = noti_service
+        //     .clone()
+        //     .expect("notification service clone failed.");
+        // let mut noti_service2 = noti_service
+        //     .clone()
+        //     .expect("notification service clone failed.");
+
+        let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
+        let (noti_sender, noti_receiver) = tokio::sync::mpsc::channel(10000);
+        let (test_sender, test_receiver): (
+            tokio::sync::mpsc::UnboundedSender<Vec<PeerId>>,
+            tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
+        ) = tokio::sync::mpsc::unbounded_channel();
+        let params = vrs_nucleus_p2p::P2pParams {
+            reqres_receiver,
+            client: client.clone(),
+            net_service: network.clone(),
+            test_receiver,
+            p2p_cage_tx,
+            noti_receiver,
+            noti_service,
+            controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
+            _phantom: std::marker::PhantomData,
+        };
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "nucleus-p2p",
+            None,
+            vrs_nucleus_p2p::start_nucleus_p2p(params),
+        );
+
         let params = vrs_nucleus_cage::CageParams {
             nucleus_rpc_rx,
+            p2p_cage_rx,
+            noti_sender,
+            net_service: network.clone(),
             client: client.clone(),
             nucleus_home_dir,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
@@ -270,6 +339,16 @@ pub fn new_full<
             "nucleus-cage",
             None,
             vrs_nucleus_cage::start_nucleus_cage(params),
+        );
+
+        // for tests
+        let network2 = network.clone();
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "nucleus-p2p-tests",
+            None,
+            async move {
+                p2ptest_task(network2, test_sender).await;
+            },
         );
     }
 
@@ -371,4 +450,66 @@ pub fn new_full<
     }
     network_starter.start_network();
     Ok(task_manager)
+}
+
+async fn p2ptest_task(
+    net_service: Arc<dyn sc_network::service::traits::NetworkService>,
+    sender: tokio::sync::mpsc::UnboundedSender<Vec<PeerId>>,
+) {
+    let service = net_service;
+    _ = tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(2));
+
+    for i in 1.. {
+        interval.tick().await;
+        log::info!("<---- P2p timer Tick ---->");
+
+        let mut peer_ids = Vec::new();
+
+        // Get the network state
+        if let Ok(state) = service.network_state().await {
+            // Extract connected peers
+            for (name, _) in state.connected_peers {
+                peer_ids.push(name);
+            }
+        }
+        log::info!("nodes id: {:?}", peer_ids);
+
+        let local_node = service.local_peer_id();
+        log::info!("local node id: {:?}", local_node);
+        let nodes: Vec<String> = peer_ids
+            .into_iter()
+            .filter(|x| x != &local_node.to_base58())
+            .collect();
+        let node_id;
+        if nodes.len() > 0 {
+            let peer_id = PeerId::from_str(&nodes[0]).expect("convert string to PeerId failed");
+            node_id = peer_id;
+        } else {
+            node_id = local_node;
+        }
+        log::info!("remote node id: {:?}", node_id);
+        _ = sender.send(vec![node_id]);
+
+        // send req/res msg
+        let test_data: Vec<u8> = format!("hello, request: {i}").as_bytes().to_vec();
+        let result = service
+            .request(
+                node_id,
+                sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
+                test_data,
+                None,
+                sc_network::IfDisconnected::ImmediateError,
+            )
+            .await;
+        if let Ok((res, name)) = result {
+            log::info!(
+                "Response of the request is: {}: {:?}",
+                name,
+                std::str::from_utf8(&res).expect("not a valid ascii string.")
+            );
+        } else {
+            log::error!("Error on response of the request {:?}", result);
+        }
+    }
 }

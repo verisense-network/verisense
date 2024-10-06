@@ -1,5 +1,8 @@
 use crate::{
-    host_func::{http::HttpCallRegister, timer::SchedulerAsync},
+    host_func::{
+        http::{HttpCallRegister, HttpResponseWithCallback},
+        timer::SchedulerAsync,
+    },
     nucleus::Nucleus,
     Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, WasmCodeRef, WasmInfo,
 };
@@ -7,21 +10,32 @@ use codec::Encode;
 use futures::prelude::*;
 use rocksdb::DB;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_network::request_responses::IncomingRequest;
+use sc_network::request_responses::OutgoingResponse;
+// use sc_network::service::traits::NotificationEvent;
+// use sc_network::service::traits::NotificationService;
+use sc_network::service::traits::NetworkService;
+use sc_network::PeerId;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use std::collections::HashMap;
 // TODO use UnboundedSender to avoid blocking
 use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
-use tokio::sync::mpsc::{self, Receiver};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata, METADATA_BYTES,
 };
+use vrs_nucleus_p2p::NucleusP2pMsg;
 use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::{AccountId, Hash, NodeId, NucleusId, NucleusInfo};
 
 pub struct CageParams<B, C, BN> {
     pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
+    pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
+    pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
+    pub net_service: Arc<dyn NetworkService>,
+    // pub noti_service: Box<dyn NotificationService>,
     pub client: Arc<C>,
     pub controller: AccountId,
     pub nucleus_home_dir: std::path::PathBuf,
@@ -97,7 +111,17 @@ impl NucleusCage {
             Gluon::GetRequest { .. } => {
                 let _ = self.tunnel.send((0, gluon));
             }
-            // TODO
+            Gluon::HttpCallback {
+                request_id,
+                payload,
+            } => {
+                self.pending_requests.push((
+                    "__nucleus_http_callback".to_string(),
+                    (request_id, payload).encode(),
+                    None,
+                ));
+            }
+            // TODO handle other types of Gluon
             _ => unreachable!(),
         }
     }
@@ -118,6 +142,9 @@ where
 {
     let CageParams {
         mut nucleus_rpc_rx,
+        mut p2p_cage_rx,
+        mut noti_sender,
+        mut net_service,
         client,
         controller,
         nucleus_home_dir,
@@ -150,6 +177,45 @@ where
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
+                // block = registry_monitor.next() => {
+                //     let hash = block.expect("block importing error").hash;
+                //     // TODO handle deregister as well
+                //     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
+                //         for (id, config) in instances {
+                //             let db_path = nucleus_home_dir.join(id.to_string());
+                //             start_nucleus::<B>(id, config, db_path, &mut nuclei).expect("fail to start nucleus");
+                //         }
+                //     }
+                // },
+                Some(msg) = p2p_cage_rx.recv() => {
+                    // req type is IncomingRequest, process it.
+                    log::info!("in cage: incoming msg: {:?}", msg);
+                    match msg {
+                        NucleusP2pMsg::ReqRes(req) => {
+                            log::info!("in cage: incoming request: {:?}", req);
+
+                            // API: anywhere you want to send request, use like:
+                            // let result = vrs_nucleus_p2p::send_request(net_service, peer_id, payload).await;
+
+                            // when respond, use req.pending_response to send oneshot OutgoingResponse back
+                            let outgoing_msg = OutgoingResponse {
+                                result: Ok(b"response from cage req/res handle.".to_vec()),
+                                reputation_changes: vec![],
+                                sent_feedback: None
+                            };
+                            _ = req.pending_response.send(outgoing_msg);
+
+                        }
+                        NucleusP2pMsg::Noti(noti) => {
+                            log::info!("in cage: incoming notification: {:?}", noti);
+                            // process notification here
+
+                            // API: anywhere you want to send a notification, use like:
+                            // _ = noti_sender.send((Vec<u8>, Vec<PeerId>)).await;
+
+                        }
+                    }
+                },
                 block = registry_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
                     // TODO handle deregister as well
@@ -166,7 +232,18 @@ where
                     }
                 },
                 http_reply = http_executor.poll() => {
-                    println!("");
+                    println!("{:?}", http_reply);
+                    let HttpResponseWithCallback {
+                        nucleus_id,
+                        req_id,
+                        response,
+                    } = http_reply.expect("HttpCallRegister must exists;qed");
+                    if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
+                        nucleus.forward(Gluon::HttpCallback {
+                            request_id: req_id,
+                            payload: response,
+                        });
+                    }
                 }
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
@@ -294,124 +371,118 @@ where
     Ok(())
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::SchedulerAsync;
-//     use crate::{nucleus::Nucleus, scheduler, vm::Vm, Scheduler, WrappedSchedulerSync};
-//     use codec::Decode;
-//     use futures::channel::mpsc::SendError;
-//     use rocksdb::Options;
-//     use sp_core::hexdisplay::AsBytesRef;
-//     use std::thread;
-//     use std::{sync::Arc, time::Duration};
-//     use temp_dir::TempDir;
-//     use tokio::sync::{oneshot, RwLock};
-//     use tokio::{sync::mpsc, task, time};
-//     use vrs_core_sdk::AccountId;
-//     struct ResultProcessor {
-//         receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
-//     }
-//     impl ResultProcessor {
-//         fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
-//             let (sender, receiver) = tokio::sync::oneshot::channel();
-//             thread::spawn(move || async move {
-//                 let reply_to = receiver.await;
-//                 println!("reply: {:?}", reply_to);
-//             });
-//             sender
-//         }
-//     }
-//     fn decode(data: Vec<u8>) -> i32 {
-//         let mut reply = data.as_slice();
-//         let reply = <Result<i32, String> as codec::Decode>::decode(&mut reply)
-//             .unwrap()
-//             .unwrap();
-//         reply
-//     }
-//     #[tokio::test]
-//     async fn test_scheduler_async() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_suite::{new_mock_nucleus, new_mock_runtime, new_vm_with_executable};
+    use crate::{nucleus::Nucleus, vm::Vm, Scheduler, WrappedSchedulerSync};
+    use codec::Decode;
+    use futures::channel::mpsc::SendError;
+    use rocksdb::Options;
+    use sp_core::hexdisplay::AsBytesRef;
+    use std::thread;
+    use std::{sync::Arc, time::Duration};
+    use temp_dir::TempDir;
+    use tokio::sync::{oneshot, RwLock};
+    use tokio::{sync::mpsc, task, time};
+    use vrs_core_sdk::AccountId;
+    struct ResultProcessor {
+        receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
+    }
+    impl ResultProcessor {
+        fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
+            let (sender, receiver) = tokio::sync::oneshot::channel();
+            thread::spawn(move || async move {
+                let reply_to = receiver.await;
+                println!("reply: {:?}", reply_to);
+            });
+            sender
+        }
+    }
+    fn decode(data: Vec<u8>) -> i32 {
+        let mut reply = data.as_slice();
+        let reply = <Result<i32, String> as codec::Decode>::decode(&mut reply)
+            .unwrap()
+            .unwrap();
+        reply
+    }
+    #[tokio::test]
+    async fn test_scheduler_async() {
+        let wasm_path = "../../nucleus-examples/timer.wasm";
+        let (sender_cage, receiver_cage) = std::sync::mpsc::channel();
+        let (mut nucleus, _): (Nucleus<Runtime>, crate::test_suite::OutOfRuntime) =
+            new_mock_nucleus(receiver_cage, wasm_path.to_string());
+        let sender_cage_clone = sender_cage.clone();
+        let sc = Arc::new(crate::host_func::timer::SchedulerAsync::new());
+        task::spawn_blocking(move || {
+            nucleus.run();
+        });
 
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("0").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let (sender_cage, receiver_cage) = std::sync::mpsc::channel();
-//         let scheduler = SchedulerAsync::new();
-//         let scheduler = Arc::new(scheduler);
-//         let sc = scheduler.clone();
-//         let mut nucleus = Nucleus::new(receiver_cage, scheduler, context, wasm);
-//         let sender_cage_clone = sender_cage.clone();
-//         task::spawn_blocking(move || {
-//             nucleus.run();
-//         });
+        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        sender_cage
+            .send((
+                0,
+                Gluon::TimerRequest {
+                    endpoint: "test_set_perfect_tree_mod_timer".to_owned(),
+                    payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
+                    // reply_to: Some(sender_reply),
+                    reply_to: Some(sender_reply),
+                },
+            ))
+            .unwrap();
+        let reply = receiver_reply.await.unwrap().unwrap();
+        assert_eq!(decode(reply.0), 1);
+        for e in reply.1 {
+            sc.push(e);
+        }
+        // let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        // sender_cage
+        //     .send((
+        //         0,
+        //         Gluon::TimerRequest {
+        //             endpoint: "test_stream".to_owned(),
+        //             payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
+        //             // reply_to: Some(sender_reply),
+        //             reply_to: Some(sender_reply),
+        //         },
+        //     ))
+        //     .unwrap();
+        // let reply = receiver_reply.await.unwrap().unwrap();
+        // println!("{:?}", reply.1);
+        // assert_eq!(decode(reply.0), 555);
+        tokio::spawn(async move {
+            let mut last = 0;
+            let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
+            while let Some(entry) = sc.pop().await {
+                let sender = sender_cage_clone.clone();
 
-//         let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-//         sender_cage
-//             .send((
-//                 0,
-//                 Gluon::PostRequest {
-//                     endpoint: "test_set_perfect_tree_mod_timer".to_owned(),
-//                     payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
-//                     // reply_to: Some(sender_reply),
-//                     reply_to: Some(sender_reply),
-//                 },
-//             ))
-//             .unwrap();
-//         let reply = receiver_reply.await.unwrap().unwrap();
-//         assert_eq!(decode(reply), 1);
-//         let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-//         sender_cage
-//             .send((
-//                 0,
-//                 Gluon::PostRequest {
-//                     endpoint: "test_stream".to_owned(),
-//                     payload: vec![],
-//                     // reply_to: Some(sender_reply),
-//                     reply_to: Some(sender_reply),
-//                 },
-//             ))
-//             .unwrap();
-//         let reply = receiver_reply.await.unwrap().unwrap();
-//         assert_eq!(decode(reply), 555);
-//         tokio::spawn(async move {
-//             let mut last = 0;
-//             let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
-//             while let Some(entry) = sc.pop().await {
-//                 let sender = sender_cage_clone.clone();
+                let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+                if let Err(err) = sender.send((
+                    0,
+                    Gluon::TimerRequest {
+                        endpoint: entry.func_name,
+                        payload: entry.func_params,
+                        reply_to: Some(sender_reply),
+                    },
+                )) {
+                    println!("fail to send timer entry: {:?}", err);
+                }
+                let reply = receiver_reply.await.unwrap().unwrap();
+                assert!(result[decode(reply.0) as usize] >= last);
+                last = result[last];
+                for e in reply.1 {
+                    sc.push(e);
+                }
 
-//                 let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-//                 if let Err(err) = sender.send((
-//                     0,
-//                     Gluon::PostRequest {
-//                         endpoint: entry.func_name,
-//                         payload: entry.func_params,
-//                         reply_to: Some(sender_reply),
-//                     },
-//                 )) {
-//                     println!("fail to send timer entry: {:?}", err);
-//                 }
-//                 let reply = receiver_reply.await.unwrap().unwrap();
-//                 assert!(result[decode(reply) as usize] >= last);
-//                 last = result[last];
-
-//                 // task::spawn_blocking(move || async move {
-//                 //     let reply = receiver_reply.await.unwrap();
-//                 //     println!("reply: {:?}", reply);
-//                 // });
-//             }
-//         });
-//         tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
-//     }
-// }
+                // task::spawn_blocking(move || async move {
+                //     let reply = receiver_reply.await.unwrap();
+                //     println!("reply: {:?}", reply);
+                // });
+            }
+        });
+        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+    }
+}
 
 // #[cfg(test)]
 // mod tests {

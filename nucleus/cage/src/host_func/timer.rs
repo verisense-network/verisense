@@ -12,9 +12,9 @@ use tokio::sync::{
 };
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
 
-impl ComponentProvider<SchedulerAsync> for Runtime {
-    fn get_component(&self) -> std::sync::Arc<SchedulerAsync> {
-        self.timer.clone()
+impl ComponentProvider<PendingTimerQueue> for Runtime {
+    fn get_component(&self) -> std::sync::Arc<PendingTimerQueue> {
+        self.register_timer.clone()
     }
 }
 
@@ -42,7 +42,7 @@ pub(crate) fn register_timer<R>(
     results: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ContextAware + ComponentProvider<SchedulerAsync>,
+    R: ContextAware + ComponentProvider<PendingTimerQueue>,
 {
     if caller.data().read_only() {
         results[0] = Val::I32(1);
@@ -65,7 +65,7 @@ where
             caller_infos: vec![],
             func_params,
         };
-        let timer = caller.data().get_component();
+        let timer = caller.data_mut().get_component();
         timer.push(entry);
         results[0] = Val::I32(0);
     } else {
@@ -73,7 +73,28 @@ where
     }
     Ok(())
 }
-
+pub struct PendingTimerQueue {
+    pending_timer: Arc<std::sync::Mutex<TimerQueue>>,
+}
+impl PendingTimerQueue {
+    pub fn new() -> Self {
+        PendingTimerQueue {
+            pending_timer: Arc::new(std::sync::Mutex::new(TimerQueue::new())),
+        }
+    }
+    pub fn push(&self, entry: TimerEntry) {
+        let mut pending_timer = self.pending_timer.lock().unwrap();
+        pending_timer.push(entry);
+    }
+    pub fn pop(&self) -> Option<TimerEntry> {
+        let mut pending_timer = self.pending_timer.lock().unwrap();
+        pending_timer.pop()
+    }
+    pub fn is_empty(&self) -> bool {
+        let pending_timer = self.pending_timer.lock().unwrap();
+        pending_timer.is_empty()
+    }
+}
 #[derive(Clone, Debug)]
 pub struct SchedulerAsync {
     tx: UnboundedSender<TimerEntry>,
