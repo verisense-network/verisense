@@ -57,6 +57,7 @@ where
         let timestamp = Utc::now() + std::time::Duration::from_secs(*delay as u64);
 
         let entry = TimerEntry {
+            nucleus_id: caller.data().get_nucleus_id(),
             timestamp,
             func_name: String::from_utf8(func_name)?,
             triggered_time: None,

@@ -4,7 +4,8 @@ use crate::{
         timer::SchedulerAsync,
     },
     nucleus::Nucleus,
-    Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, WasmCodeRef, WasmInfo,
+    Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, TimerEntry, TimersReplyTo,
+    WasmCodeRef, WasmInfo,
 };
 use codec::Encode;
 use futures::prelude::*;
@@ -19,10 +20,14 @@ use sc_network::PeerId;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use std::collections::HashMap;
+use stream::FuturesUnordered;
 // TODO use UnboundedSender to avoid blocking
 use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::{
+    mpsc::{self, Receiver, Sender},
+    oneshot,
+};
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata, METADATA_BYTES,
 };
@@ -46,6 +51,7 @@ struct NucleusCage {
     nucleus_id: NucleusId,
     tunnel: SyncSender<(u64, Gluon)>,
     pending_requests: Vec<(String, Vec<u8>, Option<ReplyTo>)>,
+    pending_timer_requests: Vec<(String, Vec<u8>, Option<ReplyTo>, TimersReplyTo)>,
     event_id: u64,
     db: Arc<DB>,
     // TODO monadring-related
@@ -91,6 +97,32 @@ impl NucleusCage {
                 ));
             }
         }
+        let pipe = self.pending_timer_requests.drain(..).collect::<Vec<_>>();
+        for gluon in pipe.into_iter() {
+            self.event_id += 1;
+            let event = Self::merge_payload(&gluon.0, &gluon.1);
+            if let Err(e) = self.pre_commit(self.event_id, &event) {
+                log::error!(
+                    "couldn't save event {} of nucleus {}: {:?}",
+                    self.event_id,
+                    self.nucleus_id,
+                    e
+                );
+                if let Some(reply_to) = gluon.2 {
+                    let _ = reply_to.send(Err((-42000, "Event persistence failed.".to_string())));
+                }
+            } else {
+                let _ = self.tunnel.send((
+                    self.event_id,
+                    Gluon::TimerRequest {
+                        endpoint: gluon.0,
+                        payload: gluon.1,
+                        reply_to: gluon.2,
+                        pending_timer_queue: gluon.3,
+                    },
+                ));
+            }
+        }
     }
 
     fn merge_payload(endpoint: &String, payload: &[u8]) -> Vec<u8> {
@@ -122,6 +154,19 @@ impl NucleusCage {
                 ));
             }
             // TODO handle other types of Gluon
+            Gluon::TimerRequest {
+                endpoint,
+                payload,
+                reply_to,
+                pending_timer_queue,
+            } => {
+                self.pending_timer_requests.push((
+                    endpoint,
+                    payload,
+                    reply_to,
+                    pending_timer_queue,
+                ));
+            }
             _ => unreachable!(),
         }
     }
@@ -159,6 +204,9 @@ where
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
         let mut registry_monitor = client.every_import_notification_stream();
         let timer_scheduler = Arc::new(crate::host_func::timer::SchedulerAsync::new());
+        let mut timers_receivers: FuturesUnordered<oneshot::Receiver<Vec<TimerEntry>>> =
+            FuturesUnordered::new();
+
         let (http_register, mut http_executor) = crate::host_func::http::new_http_manager();
         let http_register = Arc::new(http_register);
         // TODO mock monadring
@@ -226,9 +274,26 @@ where
                         }
                     }
                 },
+                Some(timer_entries) = timers_receivers.next()=>{
+                    for entry in timer_entries.expect("Failed to receive timer entries").into_iter(){
+                        timer_scheduler.push(entry);
+                    }
+                }
                 timer_entry = timer_scheduler.pop() => {
                     if let Some(entry) = timer_entry {
-                        println!("123");
+
+                    //todo: which sender to reply to?
+                    let (tx, rx) = oneshot::channel();
+                    let (timer_tx,timer_rx) = oneshot::channel();
+                    timers_receivers.push(timer_rx);
+                    if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
+                        nucleus.forward(Gluon::TimerRequest {
+                            endpoint: entry.func_name,
+                            payload: entry.func_params,
+                            reply_to: Some(tx),
+                            pending_timer_queue: timer_tx,
+                        });
+                    }
                     }
                 },
                 http_reply = http_executor.poll() => {
@@ -364,6 +429,7 @@ where
             nucleus_id: id,
             tunnel: tx,
             pending_requests: vec![],
+            pending_timer_requests: vec![],
             event_id: current_event,
             db,
         },
@@ -382,6 +448,7 @@ mod tests {
     use sp_core::hexdisplay::AsBytesRef;
     use std::thread;
     use std::{sync::Arc, time::Duration};
+    use stream::FuturesUnordered;
     use temp_dir::TempDir;
     use tokio::sync::{oneshot, RwLock};
     use tokio::{sync::mpsc, task, time};
@@ -417,7 +484,9 @@ mod tests {
         task::spawn_blocking(move || {
             nucleus.run();
         });
-
+        let mut receivers = FuturesUnordered::new();
+        let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+        receivers.push(receiver_timer_reply);
         let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
         sender_cage
             .send((
@@ -427,12 +496,14 @@ mod tests {
                     payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
                     // reply_to: Some(sender_reply),
                     reply_to: Some(sender_reply),
+                    pending_timer_queue: sender_timer_reply,
                 },
             ))
             .unwrap();
         let reply = receiver_reply.await.unwrap().unwrap();
-        assert_eq!(decode(reply.0), 1);
-        for e in reply.1 {
+        assert_eq!(decode(reply), 1);
+        let es = receivers.next().await.unwrap().unwrap();
+        for e in es.into_iter() {
             sc.push(e);
         }
         // let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
@@ -455,7 +526,8 @@ mod tests {
             let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
             while let Some(entry) = sc.pop().await {
                 let sender = sender_cage_clone.clone();
-
+                let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+                receivers.push(receiver_timer_reply);
                 let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
                 if let Err(err) = sender.send((
                     0,
@@ -463,14 +535,16 @@ mod tests {
                         endpoint: entry.func_name,
                         payload: entry.func_params,
                         reply_to: Some(sender_reply),
+                        pending_timer_queue: sender_timer_reply,
                     },
                 )) {
                     println!("fail to send timer entry: {:?}", err);
                 }
                 let reply = receiver_reply.await.unwrap().unwrap();
-                assert!(result[decode(reply.0) as usize] >= last);
+                assert!(result[decode(reply) as usize] >= last);
                 last = result[last];
-                for e in reply.1 {
+                let es = receivers.next().await.unwrap().unwrap();
+                for e in es.into_iter() {
                     sc.push(e);
                 }
 

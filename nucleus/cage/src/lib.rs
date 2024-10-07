@@ -19,5 +19,4 @@ pub use runtime::{Runtime, RuntimeParams};
 
 pub type NucleusResponse = Result<Vec<u8>, (i32, String)>;
 pub type ReplyTo = tokio::sync::oneshot::Sender<NucleusResponse>;
-pub type NucleusTimerResponse = Result<(Vec<u8>, Vec<TimerEntry>), (i32, String)>;
-pub type TimerReplyTo = tokio::sync::oneshot::Sender<NucleusTimerResponse>;
+pub type TimersReplyTo = tokio::sync::oneshot::Sender<Vec<TimerEntry>>;

@@ -1,9 +1,10 @@
 use crate::{
     runtime::{ContextAware, FuncRegister},
     vm::Vm,
-    CallerInfo, ReplyTo, TimerEntry, TimerReplyTo, WasmInfo,
+    CallerInfo, ReplyTo, TimerEntry, TimersReplyTo, WasmInfo,
 };
 use std::sync::{mpsc::Receiver, Arc};
+use tokio::net::unix::pipe::Sender;
 use vrs_core_sdk::{http::HttpResponse, CallResult};
 
 pub(crate) struct Nucleus<R> {
@@ -20,7 +21,8 @@ pub enum Gluon {
     TimerRequest {
         endpoint: String,
         payload: Vec<u8>,
-        reply_to: Option<TimerReplyTo>,
+        reply_to: Option<ReplyTo>,
+        pending_timer_queue: TimersReplyTo,
     },
     PostRequest {
         endpoint: String,
@@ -145,34 +147,49 @@ where
                 endpoint,
                 payload,
                 reply_to,
+                pending_timer_queue,
             } => match self.vm {
                 Some(ref mut vm) => {
-                    let vm_result = vm
-                        .call_timer(
-                            &endpoint,
-                            payload.clone(),
-                            vec![CallerInfo {
-                                func: "Gluon::TimerRequest".to_string(),
-                                params: payload,
-                                thread_id: 0,
-                                caller_type: crate::CallerType::Entry,
-                            }],
-                        )
-                        .map_err(|e| {
+                    let vm_result = vm.call_timer(
+                        &endpoint,
+                        payload.clone(),
+                        vec![CallerInfo {
+                            func: "Gluon::TimerRequest".to_string(),
+                            params: payload,
+                            thread_id: 0,
+                            caller_type: crate::CallerType::Entry,
+                        }],
+                    );
+                    match vm_result {
+                        Ok((result, entries)) => {
+                            if let Some(reply_to) = reply_to {
+                                if let Err(err) = reply_to.send(Ok(result)) {
+                                    println!("fail to send reply to: {:?}", err);
+                                    log::error!("fail to send reply to: {:?}", err);
+                                }
+                            } else {
+                                log::error!("reply_to not found");
+                            }
+                            pending_timer_queue.send(entries);
+                        }
+                        Err(e) => {
                             log::error!(
-                                "fail to call post endpoint: {} due to: {:?}",
+                                "fail to call timer endpoint: {} due to: {:?}",
                                 &endpoint,
                                 e
                             );
-                            (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                        });
-                    if let Some(reply_to) = reply_to {
-                        if let Err(err) = reply_to.send(vm_result) {
-                            println!("fail to send reply to: {:?}", err);
-                            log::error!("fail to send reply to: {:?}", err);
+
+                            if let Some(reply_to) = reply_to {
+                                if let Err(err) = reply_to
+                                    .send(Err((VM_ERROR << 10 + e.to_error_code(), e.to_string())))
+                                {
+                                    println!("fail to send reply to: {:?}", err);
+                                    log::error!("fail to send reply to: {:?}", err);
+                                }
+                            } else {
+                                log::error!("reply_to not found");
+                            }
                         }
-                    } else {
-                        log::error!("reply_to not found");
                     }
                 }
                 None => {

@@ -50,16 +50,16 @@ pub fn test_set_tree_mod_timer() {
 // 8   9 10  11 12 13 14 15
 #[timer]
 pub fn test_set_perfect_tree_mod_timer(i: i32, using_time: i32) -> Result<i32, String> {
-    // if i == 1 {
-    //     storage::put(b"delay", format!("node {} using time {}", 1, 0).as_bytes())
-    //         .map_err(|e| e.to_string())?;
-    // } else {
-    //     storage::put(
-    //         b"delay",
-    //         format!("node {} using time {}", i, using_time).as_bytes(),
-    //     )
-    //     .map_err(|e| e.to_string())?;
-    // }
+    if i == 1 {
+        storage::put(b"delay", format!("node {} using time {}", 1, 0).as_bytes())
+            .map_err(|e| e.to_string())?;
+    } else {
+        storage::put(
+            b"delay",
+            format!("node {} using time {}", i, using_time).as_bytes(),
+        )
+        .map_err(|e| e.to_string())?;
+    }
     if i >= 8 {
         return Ok(i);
     }
