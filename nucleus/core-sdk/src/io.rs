@@ -1,3 +1,19 @@
+//! Stdio module for printing to stdout and stderr of the host environment, useful for debugging on local.
+//! It is only available in the host environment, i.e., the environment where the Wasm is running.
+//! The functions in this module can be called both in get and post functions.
+//!
+//! # Examples
+//!
+//! ```
+//! use vrs_core_sdk::post;
+//!
+//! #[post]
+//! pub fn post(name: String) {
+//!     vrs_core_sdk::println!("Hello, {}", name);
+//!     vrs_core_sdk::eprintln!("Hello, {}", name);
+//! }
+//! ```
+
 use codec::{Decode, Encode};
 
 #[link(wasm_import_module = "env")]
@@ -9,6 +25,7 @@ extern "C" {
     fn get_nucleus_id(ptr: *mut u8);
 }
 
+/// Get the id of the current nucleus.
 pub fn nucleus_id() -> crate::NucleusId {
     let mut id = crate::NucleusId::from([0u8; 32]).encode();
     unsafe {
