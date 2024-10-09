@@ -1,17 +1,26 @@
 mod backend;
 
 use self::backend::RocksDbBackend;
-use rocksdb::DB;
-use std::sync::Arc;
-use xmt::{blake2b::Blake2bHasher, SparseMerkleTree};
+use xmt::{blake2b::Blake2bHasher, SparseMerkleTree, H256};
 
-pub use xmt::H256;
+// we only store the hash of each value since we need to scan the keys
+// TODO
+type State = SparseMerkleTree<Blake2bHasher, Vec<u8>, RocksDbBackend<Vec<u8>>>;
 
-type State = SparseMerkleTree<Blake2bHasher, H256, RocksDbBackend>;
-
-#[derive(Debug)]
 pub struct NucleusState {
-    pub backend: Arc<DB>,
-    pub event_id: u64,
-    pub root: H256,
+    backend: RocksDbBackend<Vec<u8>>,
+    // event_id: u64,
+    state: State,
+}
+
+impl NucleusState {
+    pub fn new(path: impl AsRef<std::path::Path>) -> anyhow::Result<Self> {
+        let backend = RocksDbBackend::open(path)?;
+        let state = State::new_with_store(backend.clone()).map_err(|e| anyhow::anyhow!(e))?;
+        Ok(Self { backend, state })
+    }
+
+    pub fn get_root(&self) -> H256 {
+        *self.state.root()
+    }
 }
