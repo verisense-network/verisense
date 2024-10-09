@@ -399,7 +399,7 @@ async fn local_handshake<B>(
 where
     B: hyper::body::Body + 'static,
     B::Data: Send,
-    B::Error: Into<Box<dyn core::error::Error + Send + Sync>>,
+    B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
     let stream = TokioStreamAdapter { inner: stream };
     hyper::client::conn::http1::handshake(stream)

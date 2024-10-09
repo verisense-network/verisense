@@ -1,7 +1,11 @@
 use crate::{
-    host_func::{http, io, kvdb, timer},
+    host_func::{
+        http, io, kvdb,
+        timer::{self, PendingTimerQueue},
+    },
     CallerInfo, TimerEntry, TimerQueue,
 };
+use hyper::rt::Timer;
 use rocksdb::DB;
 use std::sync::{Arc, Mutex};
 use vrs_primitives::NucleusId;
@@ -15,6 +19,7 @@ pub trait FuncRegister {
 
 pub trait ContextAware {
     fn read_only(&self) -> bool;
+    fn pop_all_pending_timer(&self) -> Vec<TimerEntry>;
 
     fn get_nucleus_id(&self) -> NucleusId;
 }
@@ -28,13 +33,14 @@ pub struct RuntimeParams {
     pub db_path: Box<std::path::Path>,
     pub nucleus_id: NucleusId,
     pub http_register: Arc<http::HttpCallRegister>,
+    pub timer_scheduler: Arc<timer::SchedulerAsync>,
 }
 
 pub struct Runtime {
     pub(crate) id: NucleusId,
     pub(crate) db: Arc<DB>,
     pub(crate) http: Arc<http::HttpCallRegister>,
-    pub(crate) timer: Arc<Mutex<TimerQueue>>,
+    pub(crate) register_timer: Arc<PendingTimerQueue>,
     pub(crate) is_get_method: bool,
     pub(crate) caller_infos: Vec<CallerInfo>,
     // TODO we need runtime storage to read
@@ -48,7 +54,7 @@ impl Runtime {
             http: config.http_register,
             is_get_method: false,
             caller_infos: vec![],
-            timer: Arc::new(Mutex::new(TimerQueue::new())),
+            register_timer: Arc::new(PendingTimerQueue::new()),
         })
     }
 
@@ -71,23 +77,6 @@ impl Runtime {
     pub fn set_is_get_method(&mut self, value: bool) {
         self.is_get_method = value;
     }
-
-    pub fn pop_timer_entry(&mut self) -> Option<TimerEntry> {
-        self.timer.lock().unwrap().pop()
-    }
-
-    pub fn fetch_all_timer_entries(&self) -> Vec<TimerEntry> {
-        let mut timer = self.timer.lock().unwrap();
-        let mut entries = Vec::new();
-        while let Some(entry) = timer.pop() {
-            entries.push(entry);
-        }
-        entries
-    }
-
-    pub fn push_timer_entry(&self, entry: TimerEntry) {
-        self.timer.lock().unwrap().push(entry);
-    }
 }
 
 impl ContextAware for Runtime {
@@ -97,6 +86,14 @@ impl ContextAware for Runtime {
 
     fn get_nucleus_id(&self) -> NucleusId {
         self.id.clone()
+    }
+
+    fn pop_all_pending_timer(&self) -> Vec<TimerEntry> {
+        let mut timers = vec![];
+        while let Some(e) = self.register_timer.pop() {
+            timers.push(e);
+        }
+        timers
     }
 }
 

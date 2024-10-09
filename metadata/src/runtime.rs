@@ -54,23 +54,18 @@ pub mod codegen {
         pub fn system(&self) -> system::constants::ConstantsApi {
             system::constants::ConstantsApi
         }
-
         pub fn timestamp(&self) -> timestamp::constants::ConstantsApi {
             timestamp::constants::ConstantsApi
         }
-
         pub fn aura(&self) -> aura::constants::ConstantsApi {
             aura::constants::ConstantsApi
         }
-
         pub fn grandpa(&self) -> grandpa::constants::ConstantsApi {
             grandpa::constants::ConstantsApi
         }
-
         pub fn balances(&self) -> balances::constants::ConstantsApi {
             balances::constants::ConstantsApi
         }
-
         pub fn transaction_payment(&self) -> transaction_payment::constants::ConstantsApi {
             transaction_payment::constants::ConstantsApi
         }
@@ -80,31 +75,24 @@ pub mod codegen {
         pub fn system(&self) -> system::storage::StorageApi {
             system::storage::StorageApi
         }
-
         pub fn timestamp(&self) -> timestamp::storage::StorageApi {
             timestamp::storage::StorageApi
         }
-
         pub fn aura(&self) -> aura::storage::StorageApi {
             aura::storage::StorageApi
         }
-
         pub fn grandpa(&self) -> grandpa::storage::StorageApi {
             grandpa::storage::StorageApi
         }
-
         pub fn balances(&self) -> balances::storage::StorageApi {
             balances::storage::StorageApi
         }
-
         pub fn transaction_payment(&self) -> transaction_payment::storage::StorageApi {
             transaction_payment::storage::StorageApi
         }
-
         pub fn sudo(&self) -> sudo::storage::StorageApi {
             sudo::storage::StorageApi
         }
-
         pub fn nucleus(&self) -> nucleus::storage::StorageApi {
             nucleus::storage::StorageApi
         }
@@ -114,23 +102,18 @@ pub mod codegen {
         pub fn system(&self) -> system::calls::TransactionApi {
             system::calls::TransactionApi
         }
-
         pub fn timestamp(&self) -> timestamp::calls::TransactionApi {
             timestamp::calls::TransactionApi
         }
-
         pub fn grandpa(&self) -> grandpa::calls::TransactionApi {
             grandpa::calls::TransactionApi
         }
-
         pub fn balances(&self) -> balances::calls::TransactionApi {
             balances::calls::TransactionApi
         }
-
         pub fn sudo(&self) -> sudo::calls::TransactionApi {
             sudo::calls::TransactionApi
         }
-
         pub fn nucleus(&self) -> nucleus::calls::TransactionApi {
             nucleus::calls::TransactionApi
         }
@@ -178,8 +161,8 @@ pub mod codegen {
                     pub type Remark = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Remark {
-                    const CALL: &'static str = "remark";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "remark";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -199,8 +182,8 @@ pub mod codegen {
                     pub type Pages = ::core::primitive::u64;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SetHeapPages {
-                    const CALL: &'static str = "set_heap_pages";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "set_heap_pages";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -220,8 +203,8 @@ pub mod codegen {
                     pub type Code = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SetCode {
-                    const CALL: &'static str = "set_code";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "set_code";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -241,8 +224,8 @@ pub mod codegen {
                     pub type Code = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SetCodeWithoutChecks {
-                    const CALL: &'static str = "set_code_without_checks";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "set_code_without_checks";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -265,8 +248,8 @@ pub mod codegen {
                     )>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SetStorage {
-                    const CALL: &'static str = "set_storage";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "set_storage";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -288,8 +271,8 @@ pub mod codegen {
                     >;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for KillStorage {
-                    const CALL: &'static str = "kill_storage";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "kill_storage";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -311,8 +294,8 @@ pub mod codegen {
                     pub type Subkeys = ::core::primitive::u32;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for KillPrefix {
-                    const CALL: &'static str = "kill_prefix";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "kill_prefix";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -332,8 +315,8 @@ pub mod codegen {
                     pub type Remark = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for RemarkWithEvent {
-                    const CALL: &'static str = "remark_with_event";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "remark_with_event";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -353,8 +336,8 @@ pub mod codegen {
                     pub type CodeHash = ::subxt_core::utils::H256;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for AuthorizeUpgrade {
-                    const CALL: &'static str = "authorize_upgrade";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "authorize_upgrade";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -374,8 +357,8 @@ pub mod codegen {
                     pub type CodeHash = ::subxt_core::utils::H256;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for AuthorizeUpgradeWithoutChecks {
-                    const CALL: &'static str = "authorize_upgrade_without_checks";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "authorize_upgrade_without_checks";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -395,8 +378,8 @@ pub mod codegen {
                     pub type Code = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ApplyAuthorizedUpgrade {
-                    const CALL: &'static str = "apply_authorized_upgrade";
                     const PALLET: &'static str = "System";
+                    const CALL: &'static str = "apply_authorized_upgrade";
                 }
             }
             pub struct TransactionApi;
@@ -417,7 +400,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn set_heap_pages(
                     &self,
                     pages: types::set_heap_pages::Pages,
@@ -434,7 +416,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn set_code(
                     &self,
                     code: types::set_code::Code,
@@ -450,7 +431,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn set_code_without_checks(
                     &self,
                     code: types::set_code_without_checks::Code,
@@ -468,7 +448,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn set_storage(
                     &self,
                     items: types::set_storage::Items,
@@ -485,7 +464,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn kill_storage(
                     &self,
                     keys: types::kill_storage::Keys,
@@ -502,7 +480,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn kill_prefix(
                     &self,
                     prefix: types::kill_prefix::Prefix,
@@ -520,7 +497,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn remark_with_event(
                     &self,
                     remark: types::remark_with_event::Remark,
@@ -537,7 +513,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn authorize_upgrade(
                     &self,
                     code_hash: types::authorize_upgrade::CodeHash,
@@ -555,7 +530,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn authorize_upgrade_without_checks(
                     &self,
                     code_hash: types::authorize_upgrade_without_checks::CodeHash,
@@ -573,7 +547,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn apply_authorized_upgrade(
                     &self,
                     code: types::apply_authorized_upgrade::Code,
@@ -613,8 +586,8 @@ pub mod codegen {
                 pub type DispatchInfo = runtime_types::frame_support::dispatch::DispatchInfo;
             }
             impl ::subxt_core::events::StaticEvent for ExtrinsicSuccess {
-                const EVENT: &'static str = "ExtrinsicSuccess";
                 const PALLET: &'static str = "System";
+                const EVENT: &'static str = "ExtrinsicSuccess";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -636,8 +609,8 @@ pub mod codegen {
                 pub type DispatchInfo = runtime_types::frame_support::dispatch::DispatchInfo;
             }
             impl ::subxt_core::events::StaticEvent for ExtrinsicFailed {
-                const EVENT: &'static str = "ExtrinsicFailed";
                 const PALLET: &'static str = "System";
+                const EVENT: &'static str = "ExtrinsicFailed";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -651,8 +624,8 @@ pub mod codegen {
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
             pub struct CodeUpdated;
             impl ::subxt_core::events::StaticEvent for CodeUpdated {
-                const EVENT: &'static str = "CodeUpdated";
                 const PALLET: &'static str = "System";
+                const EVENT: &'static str = "CodeUpdated";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -672,8 +645,8 @@ pub mod codegen {
                 pub type Account = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for NewAccount {
-                const EVENT: &'static str = "NewAccount";
                 const PALLET: &'static str = "System";
+                const EVENT: &'static str = "NewAccount";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -693,8 +666,8 @@ pub mod codegen {
                 pub type Account = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for KilledAccount {
-                const EVENT: &'static str = "KilledAccount";
                 const PALLET: &'static str = "System";
+                const EVENT: &'static str = "KilledAccount";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -716,8 +689,8 @@ pub mod codegen {
                 pub type Hash = ::subxt_core::utils::H256;
             }
             impl ::subxt_core::events::StaticEvent for Remarked {
-                const EVENT: &'static str = "Remarked";
                 const PALLET: &'static str = "System";
+                const EVENT: &'static str = "Remarked";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -739,8 +712,8 @@ pub mod codegen {
                 pub type CheckVersion = ::core::primitive::bool;
             }
             impl ::subxt_core::events::StaticEvent for UpgradeAuthorized {
-                const EVENT: &'static str = "UpgradeAuthorized";
                 const PALLET: &'static str = "System";
+                const EVENT: &'static str = "UpgradeAuthorized";
             }
         }
         pub mod storage {
@@ -861,7 +834,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn account(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::account::Param0>,
@@ -883,7 +855,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn extrinsic_count(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -905,7 +876,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn inherents_applied(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -926,7 +896,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn block_weight(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -947,7 +916,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn all_extrinsics_len(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -969,7 +937,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn block_hash_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -991,7 +958,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn block_hash(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::block_hash::Param0>,
@@ -1014,7 +980,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn extrinsic_data_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1035,7 +1000,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn extrinsic_data(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::extrinsic_data::Param0>,
@@ -1057,7 +1021,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn number(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1078,7 +1041,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn parent_hash(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1099,7 +1061,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn digest(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1120,7 +1081,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn events(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1141,7 +1101,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn event_count(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1163,7 +1122,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn event_topics_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1184,7 +1142,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn event_topics(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::event_topics::Param0>,
@@ -1206,7 +1163,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn last_runtime_upgrade(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1227,7 +1183,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn upgraded_to_u32_ref_count(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1248,7 +1203,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn upgraded_to_triple_ref_count(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1270,7 +1224,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn execution_phase(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1291,7 +1244,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn authorized_upgrade(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1333,7 +1285,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn block_length(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<
@@ -1349,7 +1300,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn block_hash_count(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
@@ -1365,7 +1315,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn db_weight(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<
@@ -1382,7 +1331,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn version(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<
@@ -1399,7 +1347,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn ss58_prefix(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u16>
@@ -1446,8 +1393,8 @@ pub mod codegen {
                     pub type Now = ::core::primitive::u64;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Set {
-                    const CALL: &'static str = "set";
                     const PALLET: &'static str = "Timestamp";
+                    const CALL: &'static str = "set";
                 }
             }
             pub struct TransactionApi;
@@ -1504,7 +1451,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn did_update(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1592,7 +1538,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn current_slot(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1674,8 +1619,8 @@ pub mod codegen {
                     pub type KeyOwnerProof = runtime_types::sp_core::Void;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ReportEquivocation {
-                    const CALL: &'static str = "report_equivocation";
                     const PALLET: &'static str = "Grandpa";
+                    const CALL: &'static str = "report_equivocation";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -1703,8 +1648,8 @@ pub mod codegen {
                     pub type KeyOwnerProof = runtime_types::sp_core::Void;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ReportEquivocationUnsigned {
-                    const CALL: &'static str = "report_equivocation_unsigned";
                     const PALLET: &'static str = "Grandpa";
+                    const CALL: &'static str = "report_equivocation_unsigned";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -1726,8 +1671,8 @@ pub mod codegen {
                     pub type BestFinalizedBlockNumber = ::core::primitive::u32;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for NoteStalled {
-                    const CALL: &'static str = "note_stalled";
                     const PALLET: &'static str = "Grandpa";
+                    const CALL: &'static str = "note_stalled";
                 }
             }
             pub struct TransactionApi;
@@ -1754,7 +1699,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn report_equivocation_unsigned(
                     &self,
                     equivocation_proof: types::report_equivocation_unsigned::EquivocationProof,
@@ -1778,7 +1722,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn note_stalled(
                     &self,
                     delay: types::note_stalled::Delay,
@@ -1824,8 +1767,8 @@ pub mod codegen {
                 )>;
             }
             impl ::subxt_core::events::StaticEvent for NewAuthorities {
-                const EVENT: &'static str = "NewAuthorities";
                 const PALLET: &'static str = "Grandpa";
+                const EVENT: &'static str = "NewAuthorities";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -1839,8 +1782,8 @@ pub mod codegen {
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
             pub struct Paused;
             impl ::subxt_core::events::StaticEvent for Paused {
-                const EVENT: &'static str = "Paused";
                 const PALLET: &'static str = "Grandpa";
+                const EVENT: &'static str = "Paused";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -1854,8 +1797,8 @@ pub mod codegen {
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
             pub struct Resumed;
             impl ::subxt_core::events::StaticEvent for Resumed {
-                const EVENT: &'static str = "Resumed";
                 const PALLET: &'static str = "Grandpa";
+                const EVENT: &'static str = "Resumed";
             }
         }
         pub mod storage {
@@ -1920,7 +1863,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn pending_change(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1942,7 +1884,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn next_forced(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1963,7 +1904,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn stalled(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1984,7 +1924,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn current_set_id(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -2006,7 +1945,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn set_id_session_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -2027,7 +1965,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn set_id_session(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::set_id_session::Param0>,
@@ -2049,7 +1986,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn authorities(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -2092,7 +2028,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn max_nominators(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
@@ -2108,7 +2043,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn max_set_id_session_entries(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u64>
@@ -2160,8 +2094,8 @@ pub mod codegen {
                     pub type Value = ::core::primitive::u128;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for TransferAllowDeath {
-                    const CALL: &'static str = "transfer_allow_death";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "transfer_allow_death";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2188,8 +2122,8 @@ pub mod codegen {
                     pub type Value = ::core::primitive::u128;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ForceTransfer {
-                    const CALL: &'static str = "force_transfer";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "force_transfer";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2213,8 +2147,8 @@ pub mod codegen {
                     pub type Value = ::core::primitive::u128;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for TransferKeepAlive {
-                    const CALL: &'static str = "transfer_keep_alive";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "transfer_keep_alive";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2237,8 +2171,8 @@ pub mod codegen {
                     pub type KeepAlive = ::core::primitive::bool;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for TransferAll {
-                    const CALL: &'static str = "transfer_all";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "transfer_all";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2261,8 +2195,8 @@ pub mod codegen {
                     pub type Amount = ::core::primitive::u128;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ForceUnreserve {
-                    const CALL: &'static str = "force_unreserve";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "force_unreserve";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2282,8 +2216,8 @@ pub mod codegen {
                     pub type Who = ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for UpgradeAccounts {
-                    const CALL: &'static str = "upgrade_accounts";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "upgrade_accounts";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2307,8 +2241,8 @@ pub mod codegen {
                     pub type NewFree = ::core::primitive::u128;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ForceSetBalance {
-                    const CALL: &'static str = "force_set_balance";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "force_set_balance";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2331,8 +2265,8 @@ pub mod codegen {
                     pub type Delta = ::core::primitive::u128;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ForceAdjustTotalIssuance {
-                    const CALL: &'static str = "force_adjust_total_issuance";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "force_adjust_total_issuance";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -2355,8 +2289,8 @@ pub mod codegen {
                     pub type KeepAlive = ::core::primitive::bool;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Burn {
-                    const CALL: &'static str = "burn";
                     const PALLET: &'static str = "Balances";
+                    const CALL: &'static str = "burn";
                 }
             }
             pub struct TransactionApi;
@@ -2379,7 +2313,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn force_transfer(
                     &self,
                     source: types::force_transfer::Source,
@@ -2402,7 +2335,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn transfer_keep_alive(
                     &self,
                     dest: types::transfer_keep_alive::Dest,
@@ -2420,7 +2352,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn transfer_all(
                     &self,
                     dest: types::transfer_all::Dest,
@@ -2437,7 +2368,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn force_unreserve(
                     &self,
                     who: types::force_unreserve::Who,
@@ -2456,7 +2386,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn upgrade_accounts(
                     &self,
                     who: types::upgrade_accounts::Who,
@@ -2473,7 +2402,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn force_set_balance(
                     &self,
                     who: types::force_set_balance::Who,
@@ -2491,7 +2419,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn force_adjust_total_issuance(
                     &self,
                     direction: types::force_adjust_total_issuance::Direction,
@@ -2510,7 +2437,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn burn(
                     &self,
                     value: types::burn::Value,
@@ -2552,8 +2478,8 @@ pub mod codegen {
                 pub type FreeBalance = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Endowed {
-                const EVENT: &'static str = "Endowed";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Endowed";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2575,8 +2501,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for DustLost {
-                const EVENT: &'static str = "DustLost";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "DustLost";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2600,8 +2526,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Transfer {
-                const EVENT: &'static str = "Transfer";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Transfer";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2623,8 +2549,8 @@ pub mod codegen {
                 pub type Free = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for BalanceSet {
-                const EVENT: &'static str = "BalanceSet";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "BalanceSet";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2646,8 +2572,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Reserved {
-                const EVENT: &'static str = "Reserved";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Reserved";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2669,8 +2595,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Unreserved {
-                const EVENT: &'static str = "Unreserved";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Unreserved";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2697,8 +2623,8 @@ pub mod codegen {
                     runtime_types::frame_support::traits::tokens::misc::BalanceStatus;
             }
             impl ::subxt_core::events::StaticEvent for ReserveRepatriated {
-                const EVENT: &'static str = "ReserveRepatriated";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "ReserveRepatriated";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2720,8 +2646,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Deposit {
-                const EVENT: &'static str = "Deposit";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Deposit";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2743,8 +2669,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Withdraw {
-                const EVENT: &'static str = "Withdraw";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Withdraw";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2766,8 +2692,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Slashed {
-                const EVENT: &'static str = "Slashed";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Slashed";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2789,8 +2715,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Minted {
-                const EVENT: &'static str = "Minted";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Minted";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2812,8 +2738,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Burned {
-                const EVENT: &'static str = "Burned";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Burned";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2835,8 +2761,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Suspended {
-                const EVENT: &'static str = "Suspended";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Suspended";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2858,8 +2784,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Restored {
-                const EVENT: &'static str = "Restored";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Restored";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2879,8 +2805,8 @@ pub mod codegen {
                 pub type Who = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for Upgraded {
-                const EVENT: &'static str = "Upgraded";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Upgraded";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2900,8 +2826,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Issued {
-                const EVENT: &'static str = "Issued";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Issued";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2921,8 +2847,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Rescinded {
-                const EVENT: &'static str = "Rescinded";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Rescinded";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2944,8 +2870,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Locked {
-                const EVENT: &'static str = "Locked";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Locked";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2967,8 +2893,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Unlocked {
-                const EVENT: &'static str = "Unlocked";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Unlocked";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -2990,8 +2916,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Frozen {
-                const EVENT: &'static str = "Frozen";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Frozen";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -3013,8 +2939,8 @@ pub mod codegen {
                 pub type Amount = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for Thawed {
-                const EVENT: &'static str = "Thawed";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "Thawed";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -3036,8 +2962,8 @@ pub mod codegen {
                 pub type New = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for TotalIssuanceForced {
-                const EVENT: &'static str = "TotalIssuanceForced";
                 const PALLET: &'static str = "Balances";
+                const EVENT: &'static str = "TotalIssuanceForced";
             }
         }
         pub mod storage {
@@ -3122,7 +3048,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn inactive_issuance(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -3143,7 +3068,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn account_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -3164,7 +3088,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn account(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::account::Param0>,
@@ -3186,7 +3109,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn locks_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -3207,7 +3129,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn locks(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::locks::Param0>,
@@ -3229,7 +3150,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn reserves_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -3250,7 +3170,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn reserves(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::reserves::Param0>,
@@ -3272,7 +3191,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn holds_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -3293,7 +3211,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn holds(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::holds::Param0>,
@@ -3315,7 +3232,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn freezes_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -3336,7 +3252,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn freezes(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::freezes::Param0>,
@@ -3378,7 +3293,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn max_locks(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
@@ -3394,7 +3308,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn max_reserves(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
@@ -3410,7 +3323,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn max_freezes(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
@@ -3457,8 +3369,8 @@ pub mod codegen {
                 pub type Tip = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for TransactionFeePaid {
-                const EVENT: &'static str = "TransactionFeePaid";
                 const PALLET: &'static str = "TransactionPayment";
+                const EVENT: &'static str = "TransactionFeePaid";
             }
         }
         pub mod storage {
@@ -3498,7 +3410,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn storage_version(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -3573,8 +3484,8 @@ pub mod codegen {
                     pub type Call = runtime_types::vrs_runtime::RuntimeCall;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Sudo {
-                    const CALL: &'static str = "sudo";
                     const PALLET: &'static str = "Sudo";
+                    const CALL: &'static str = "sudo";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -3596,8 +3507,8 @@ pub mod codegen {
                     pub type Weight = runtime_types::sp_weights::weight_v2::Weight;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SudoUncheckedWeight {
-                    const CALL: &'static str = "sudo_unchecked_weight";
                     const PALLET: &'static str = "Sudo";
+                    const CALL: &'static str = "sudo_unchecked_weight";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -3618,8 +3529,8 @@ pub mod codegen {
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SetKey {
-                    const CALL: &'static str = "set_key";
                     const PALLET: &'static str = "Sudo";
+                    const CALL: &'static str = "set_key";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -3642,8 +3553,8 @@ pub mod codegen {
                     pub type Call = runtime_types::vrs_runtime::RuntimeCall;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SudoAs {
-                    const CALL: &'static str = "sudo_as";
                     const PALLET: &'static str = "Sudo";
+                    const CALL: &'static str = "sudo_as";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -3657,8 +3568,8 @@ pub mod codegen {
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub struct RemoveKey;
                 impl ::subxt_core::blocks::StaticExtrinsic for RemoveKey {
-                    const CALL: &'static str = "remove_key";
                     const PALLET: &'static str = "Sudo";
+                    const CALL: &'static str = "remove_key";
                 }
             }
             pub struct TransactionApi;
@@ -3680,7 +3591,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn sudo_unchecked_weight(
                     &self,
                     call: types::sudo_unchecked_weight::Call,
@@ -3702,7 +3612,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn set_key(
                     &self,
                     new: types::set_key::New,
@@ -3718,7 +3627,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn sudo_as(
                     &self,
                     who: types::sudo_as::Who,
@@ -3738,7 +3646,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn remove_key(
                     &self,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::RemoveKey> {
@@ -3778,8 +3685,8 @@ pub mod codegen {
                     ::core::result::Result<(), runtime_types::sp_runtime::DispatchError>;
             }
             impl ::subxt_core::events::StaticEvent for Sudid {
-                const EVENT: &'static str = "Sudid";
                 const PALLET: &'static str = "Sudo";
+                const EVENT: &'static str = "Sudid";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -3801,8 +3708,8 @@ pub mod codegen {
                 pub type New = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for KeyChanged {
-                const EVENT: &'static str = "KeyChanged";
                 const PALLET: &'static str = "Sudo";
+                const EVENT: &'static str = "KeyChanged";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -3816,8 +3723,8 @@ pub mod codegen {
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
             pub struct KeyRemoved;
             impl ::subxt_core::events::StaticEvent for KeyRemoved {
-                const EVENT: &'static str = "KeyRemoved";
                 const PALLET: &'static str = "Sudo";
+                const EVENT: &'static str = "KeyRemoved";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -3838,8 +3745,8 @@ pub mod codegen {
                     ::core::result::Result<(), runtime_types::sp_runtime::DispatchError>;
             }
             impl ::subxt_core::events::StaticEvent for SudoAsDone {
-                const EVENT: &'static str = "SudoAsDone";
                 const PALLET: &'static str = "Sudo";
+                const EVENT: &'static str = "SudoAsDone";
             }
         }
         pub mod storage {
@@ -3911,8 +3818,8 @@ pub mod codegen {
                     pub type Capacity = ::core::primitive::u8;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for CreateNucleus {
-                    const CALL: &'static str = "create_nucleus";
                     const PALLET: &'static str = "Nucleus";
+                    const CALL: &'static str = "create_nucleus";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -3936,8 +3843,8 @@ pub mod codegen {
                     pub type Hash = ::subxt_core::utils::H256;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for UploadNucleusWasm {
-                    const CALL: &'static str = "upload_nucleus_wasm";
                     const PALLET: &'static str = "Nucleus";
+                    const CALL: &'static str = "upload_nucleus_wasm";
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -3957,8 +3864,8 @@ pub mod codegen {
                     pub type NucleusId = ::subxt_core::utils::AccountId32;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for MockRegister {
-                    const CALL: &'static str = "mock_register";
                     const PALLET: &'static str = "Nucleus";
+                    const CALL: &'static str = "mock_register";
                 }
             }
             pub struct TransactionApi;
@@ -3988,7 +3895,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn upload_nucleus_wasm(
                     &self,
                     nucleus_id: types::upload_nucleus_wasm::NucleusId,
@@ -4011,7 +3917,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn mock_register(
                     &self,
                     nucleus_id: types::mock_register::NucleusId,
@@ -4062,8 +3967,8 @@ pub mod codegen {
                 pub type Capacity = ::core::primitive::u8;
             }
             impl ::subxt_core::events::StaticEvent for NucleusCreated {
-                const EVENT: &'static str = "NucleusCreated";
                 const PALLET: &'static str = "Nucleus";
+                const EVENT: &'static str = "NucleusCreated";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -4089,8 +3994,8 @@ pub mod codegen {
                 pub type WasmLocation = runtime_types::sp_core::OpaquePeerId;
             }
             impl ::subxt_core::events::StaticEvent for NucleusUpgraded {
-                const EVENT: &'static str = "NucleusUpgraded";
                 const PALLET: &'static str = "Nucleus";
+                const EVENT: &'static str = "NucleusUpgraded";
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -4114,8 +4019,8 @@ pub mod codegen {
                 pub type NodeId = ::core::option::Option<runtime_types::sp_core::OpaquePeerId>;
             }
             impl ::subxt_core::events::StaticEvent for InstanceRegistered {
-                const EVENT: &'static str = "InstanceRegistered";
                 const PALLET: &'static str = "Nucleus";
+                const EVENT: &'static str = "InstanceRegistered";
             }
         }
         pub mod storage {
@@ -4166,7 +4071,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn nuclei(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::nuclei::Param0>,
@@ -4189,7 +4093,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn node_controllers_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -4211,7 +4114,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn node_controllers(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::node_controllers::Param0>,
@@ -4236,7 +4138,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn instances_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -4257,7 +4158,6 @@ pub mod codegen {
                         ],
                     )
                 }
-
                 pub fn instances(
                     &self,
                     _0: impl ::core::borrow::Borrow<types::instances::Param0>,

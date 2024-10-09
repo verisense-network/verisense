@@ -1,14 +1,14 @@
 use crate::{
     runtime::{ContextAware, FuncRegister},
     vm::Vm,
-    CallerInfo, ReplyTo, Scheduler, SchedulerAsync, TimerEntry, WasmInfo,
+    CallerInfo, ReplyTo, TimerEntry, TimersReplyTo, WasmInfo,
 };
 use std::sync::{mpsc::Receiver, Arc};
+use tokio::net::unix::pipe::Sender;
 use vrs_core_sdk::{http::HttpResponse, CallResult};
 
 pub(crate) struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
-    scheduler: Arc<SchedulerAsync>,
     vm: Option<Vm<R>>,
 }
 
@@ -17,6 +17,12 @@ pub enum Gluon {
     CodeUpgrade {
         // TODO
         version: u32,
+    },
+    TimerRequest {
+        endpoint: String,
+        payload: Vec<u8>,
+        reply_to: Option<ReplyTo>,
+        pending_timer_queue: TimersReplyTo,
     },
     PostRequest {
         endpoint: String,
@@ -40,12 +46,7 @@ impl<R> Nucleus<R>
 where
     R: ContextAware + FuncRegister<Runtime = R>,
 {
-    pub(crate) fn new(
-        receiver: Receiver<(u64, Gluon)>,
-        scheduler: Arc<SchedulerAsync>,
-        runtime: R,
-        code: WasmInfo,
-    ) -> Self {
+    pub(crate) fn new(receiver: Receiver<(u64, Gluon)>, runtime: R, code: WasmInfo) -> Self {
         // TODO
         let vm = Vm::new_instance(&code, runtime)
             .inspect_err(|e| {
@@ -56,11 +57,7 @@ where
                 )
             })
             .ok();
-        Nucleus {
-            receiver,
-            vm,
-            scheduler,
-        }
+        Nucleus { receiver, vm }
     }
 
     pub(crate) fn run(&mut self) {
@@ -117,25 +114,14 @@ where
             } => {
                 match self.vm {
                     Some(ref mut vm) => {
-                        let vm_result = vm
-                            .call_post(
+                        let vm_result = vm.call_post(&endpoint, payload.clone()).map_err(|e| {
+                            log::error!(
+                                "fail to call post endpoint: {} due to: {:?}",
                                 &endpoint,
-                                payload.clone(),
-                                vec![CallerInfo {
-                                    func: "Gluon::PostRequest".to_string(),
-                                    params: payload,
-                                    thread_id: 0,
-                                    caller_type: crate::CallerType::Entry,
-                                }],
-                            )
-                            .map_err(|e| {
-                                log::error!(
-                                    "fail to call post endpoint: {} due to: {:?}",
-                                    &endpoint,
-                                    e
-                                );
-                                (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                            });
+                                e
+                            );
+                            (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                        });
                         // TODO mark: we need to re-design the caller context
                         // while let Some(entry) = vm.pop_pending_timer() {
                         //     // println!("{:?}", entry);
@@ -157,13 +143,66 @@ where
                 // let vm_result = self.vm.run_func(None, &endpoint, payload);
                 // vec![]
             }
+            Gluon::TimerRequest {
+                endpoint,
+                payload,
+                reply_to,
+                pending_timer_queue,
+            } => match self.vm {
+                Some(ref mut vm) => {
+                    let vm_result = vm.call_timer(
+                        &endpoint,
+                        payload.clone(),
+                        vec![CallerInfo {
+                            func: "Gluon::TimerRequest".to_string(),
+                            params: payload,
+                            thread_id: 0,
+                            caller_type: crate::CallerType::Entry,
+                        }],
+                    );
+                    match vm_result {
+                        Ok((result, entries)) => {
+                            if let Some(reply_to) = reply_to {
+                                if let Err(err) = reply_to.send(Ok(result)) {
+                                    println!("fail to send reply to: {:?}", err);
+                                    log::error!("fail to send reply to: {:?}", err);
+                                }
+                            } else {
+                                log::error!("reply_to not found");
+                            }
+                            pending_timer_queue.send(entries);
+                        }
+                        Err(e) => {
+                            log::error!(
+                                "fail to call timer endpoint: {} due to: {:?}",
+                                &endpoint,
+                                e
+                            );
+
+                            if let Some(reply_to) = reply_to {
+                                if let Err(err) = reply_to
+                                    .send(Err((VM_ERROR << 10 + e.to_error_code(), e.to_string())))
+                                {
+                                    println!("fail to send reply to: {:?}", err);
+                                    log::error!("fail to send reply to: {:?}", err);
+                                }
+                            } else {
+                                log::error!("reply_to not found");
+                            }
+                        }
+                    }
+                }
+                None => {
+                    log::error!("vm not initialized");
+                }
+            },
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::WasmCodeRef;
+    use crate::{test_suite::new_vm_with_executable, WasmCodeRef};
 
     use super::*;
     use codec::Decode;
@@ -175,26 +214,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_nucleus_accept() {
-        let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-        let wasm = WasmInfo {
-            account: AccountId::new([0u8; 32]),
-            name: "avs-dev-demo".to_string(),
-            version: 0,
-            code: WasmCodeRef::File(wasm_path.to_string()),
-        };
-
-        let tmp_dir = TempDir::new().unwrap();
-        let context = Context::init(ContextConfig {
-            db_path: tmp_dir.child("0").into_boxed_path(),
-        })
-        .unwrap();
-        let vm = Vm::new_instance(&wasm, context).unwrap();
-
+        let wasm_path = "../../nucleus-examples/basic_macros.wasm";
+        let (vm, _) = new_vm_with_executable(wasm_path.to_string());
         let (sender, receiver) = mpsc::channel();
         let mut nucleus = Nucleus {
             receiver,
             vm: Some(vm),
-            scheduler: Arc::new(SchedulerAsync::new()),
         };
 
         let (tx_get, rx_get) = oneshot::channel();

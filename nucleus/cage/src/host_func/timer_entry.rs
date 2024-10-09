@@ -3,6 +3,7 @@ use core::fmt;
 use std::cmp::Reverse;
 use std::hash::{Hash, Hasher};
 use std::{cmp::Ordering, collections::BinaryHeap, hash::DefaultHasher, rc::Rc};
+use vrs_primitives::NucleusId;
 
 #[derive(Debug, Clone, Hash)]
 pub enum CallerType {
@@ -46,6 +47,7 @@ impl fmt::Display for CallerInfo {
 
 #[derive(Clone, Hash)]
 pub struct TimerEntry {
+    pub nucleus_id: NucleusId,
     pub caller_infos: Vec<CallerInfo>,
     pub timestamp: DateTime<Utc>,
     pub func_name: String,
@@ -59,12 +61,14 @@ pub(crate) struct TimerQueue {
 
 impl TimerEntry {
     pub fn new(
+        nucleus_id: NucleusId,
         caller_infos: Vec<CallerInfo>,
         timestamp: DateTime<Utc>,
         func_name: String,
         func_params: Vec<u8>,
     ) -> Self {
         TimerEntry {
+            nucleus_id,
             caller_infos,
             timestamp,
             func_name,
@@ -149,11 +153,13 @@ mod tests {
     use super::*;
     use chrono::Utc;
     use std::time::Duration;
+    use vrs_core_sdk::nucleus_id;
 
     #[test]
     fn test_timer_queue() {
         let mut timer_queue = TimerQueue::new();
         let entry = TimerEntry::new(
+            NucleusId::new([0; 32]),
             vec![CallerInfo {
                 func: "test".to_string(),
                 params: vec![1, 2, 3],
@@ -166,6 +172,7 @@ mod tests {
         );
         timer_queue.push(entry.clone());
         let entry = TimerEntry::new(
+            NucleusId::new([0; 32]),
             vec![CallerInfo {
                 func: "test".to_string(),
                 params: vec![3, 2, 1],
@@ -178,6 +185,7 @@ mod tests {
         );
         timer_queue.push(entry.clone());
         let entry = TimerEntry::new(
+            NucleusId::new([0; 32]),
             vec![CallerInfo {
                 func: "test".to_string(),
                 params: vec![3, 2, 1],

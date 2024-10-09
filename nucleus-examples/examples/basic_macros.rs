@@ -46,6 +46,10 @@ pub fn cc(a: String, b: String) -> Result<String, String> {
     Ok(c)
 }
 
+#[get]
+pub fn get() -> i32 {
+    5
+}
 #[post]
 pub fn use_codec(d: D) -> Result<E, String> {
     Ok(E {
