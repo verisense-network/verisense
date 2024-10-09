@@ -1,5 +1,6 @@
-use crate::{bytecode::*, host_func::*, runtime::*, vm::Vm, TimerQueue};
+use crate::{bytecode::*, host_func::*, nucleus::Nucleus, runtime::*, vm::Vm, Gluon, TimerQueue};
 use temp_dir::TempDir;
+use timer::{PendingTimerQueue, SchedulerAsync};
 use vrs_primitives::{AccountId, NucleusId};
 
 #[derive(Debug)]
@@ -21,18 +22,32 @@ pub fn new_mock_runtime() -> (Runtime, OutOfRuntime) {
     let tmp_dir = TempDir::new().unwrap();
     let db_path = tmp_dir.child("test_nucleus").into_boxed_path();
 
-    Runtime {
-        id: NucleusId::from([1u8; 32]),
-        db: std::sync::Arc::new(kvdb::init_rocksdb(db_path).unwrap()),
-        http: std::sync::Arc::new(http_register),
-        timer: std::sync::Arc::new(std::sync::Mutex::new(TimerQueue::new())),
-        is_get_method: false,
-        caller_infos: vec![],
-    }
+    (
+        Runtime {
+            id: NucleusId::from([1u8; 32]),
+            db: std::sync::Arc::new(kvdb::init_rocksdb(db_path).unwrap()),
+            http: std::sync::Arc::new(http_register),
+            register_timer: Arc::new(PendingTimerQueue::new()),
+            is_get_method: false,
+            caller_infos: vec![],
+        },
+        OutOfRuntime { http_executor },
+    )
 }
 
 pub fn new_vm_with_executable(f: impl AsRef<std::path::Path>) -> (Vm<Runtime>, OutOfRuntime) {
     let wasm = load_wasm_file(f);
     let (runtime, out_of_runtime) = new_mock_runtime();
     (Vm::new_instance(&wasm, runtime).unwrap(), out_of_runtime)
+}
+use std::sync::{mpsc::Receiver, Arc};
+pub fn new_mock_nucleus(
+    receiver: Receiver<(u64, Gluon)>,
+    f: impl AsRef<std::path::Path>,
+) -> (Nucleus<Runtime>, OutOfRuntime) {
+    let (runtime, out_of_runtime) = new_mock_runtime();
+    (
+        Nucleus::new(receiver, runtime, load_wasm_file(f)),
+        out_of_runtime,
+    )
 }

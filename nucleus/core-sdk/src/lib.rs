@@ -4,7 +4,7 @@ pub mod error;
 pub mod http;
 pub mod io;
 pub mod storage;
-pub mod timer;
+mod timer;
 
 pub use codec;
 pub use constant::*;
@@ -28,5 +28,5 @@ pub type NucleusId = vrs_metadata::utils::AccountId32;
 
 #[inline]
 pub(crate) fn allocate_buffer() -> Vec<u8> {
-    Vec::with_capacity(BUFFER_LEN)
+    vec![0; BUFFER_LEN]
 }

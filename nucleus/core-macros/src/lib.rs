@@ -11,6 +11,10 @@ pub fn post(_attr: TokenStream, func: TokenStream) -> TokenStream {
 pub fn get(_attr: TokenStream, func: TokenStream) -> TokenStream {
     expand(func, "get")
 }
+#[proc_macro_attribute]
+pub fn timer(_attr: TokenStream, func: TokenStream) -> TokenStream {
+    expand(func, "timer")
+}
 
 #[proc_macro_attribute]
 pub fn init(_attr: TokenStream, item: TokenStream) -> TokenStream {
