@@ -9,7 +9,7 @@ use xmt::{
 
 #[derive(Debug, Clone)]
 pub struct RocksDbBackend<V> {
-    inner: std::sync::Arc<DB>,
+    pub(crate) inner: std::sync::Arc<DB>,
     _v: std::marker::PhantomData<V>,
 }
 
