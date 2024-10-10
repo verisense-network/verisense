@@ -3,9 +3,8 @@ use crate::{
         http, io, kvdb,
         timer::{self, PendingTimerQueue},
     },
-    CallerInfo, TimerEntry, TimerQueue,
+    CallerInfo, TimerEntry,
 };
-use hyper::rt::Timer;
 use rocksdb::DB;
 use std::sync::{Arc, Mutex};
 use vrs_primitives::NucleusId;

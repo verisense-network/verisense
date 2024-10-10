@@ -18,7 +18,7 @@ pub fn load_wasm_file(f: impl AsRef<std::path::Path>) -> WasmInfo {
 }
 
 pub fn new_mock_runtime() -> (Runtime, OutOfRuntime) {
-    let (http_register, mut http_executor) = crate::host_func::http::new_http_manager();
+    let (http_register, http_executor) = crate::host_func::http::new_http_manager();
     let tmp_dir = TempDir::new().unwrap();
     let db_path = tmp_dir.child("test_nucleus").into_boxed_path();
 
@@ -27,7 +27,7 @@ pub fn new_mock_runtime() -> (Runtime, OutOfRuntime) {
             id: NucleusId::from([1u8; 32]),
             db: std::sync::Arc::new(kvdb::init_rocksdb(db_path).unwrap()),
             http: std::sync::Arc::new(http_register),
-            register_timer: Arc::new(PendingTimerQueue::new()),
+            register_timer: std::sync::Arc::new(PendingTimerQueue::new()),
             is_get_method: false,
             caller_infos: vec![],
         },

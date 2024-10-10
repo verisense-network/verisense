@@ -1,10 +1,8 @@
 use crate::{
-    host_func::timer::PendingTimerQueue,
     runtime::{ComponentProvider, ContextAware, FuncRegister},
     CallerInfo, TimerEntry, WasmCodeRef, WasmInfo,
 };
 use codec::Decode;
-use futures::future::Pending;
 use std::sync::atomic::AtomicU64;
 use thiserror::Error;
 use wasmtime::{Engine, ExternType, Instance, Module, Store, Val, WasmResults};
@@ -130,6 +128,7 @@ where
         // self.space.data_mut().pop_caller_info();
         result
     }
+
     pub fn call_timer(
         &mut self,
         func: &str,

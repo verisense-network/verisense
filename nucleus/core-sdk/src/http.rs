@@ -1,3 +1,5 @@
+//! Module for making http requests within nucleus.
+
 use crate::error::RuntimeError;
 use codec::{Decode, Encode};
 use std::collections::BTreeMap;
@@ -45,13 +47,38 @@ extern "C" {
     fn http_request(req_ptr: *const u8, req_len: u32, return_ptr: *mut u8) -> i32;
 }
 
-/// make a http request and return the request_id;
-/// a `#[callback]` function will be called with the request_id when the response is ready
+/// Make a http request and return the request_id immediately.
+///
+/// A `#[callback]` function will be called with the request_id when the response is ready.
 ///
 /// ```
+/// use vrs_core_sdk::{CallResult, http::{*, self}, callback, post};
+///
+/// #[post]
+/// pub fn request_google() {
+///     let id = http::request(HttpRequest {
+///         head: RequestHead {
+///             method: HttpMethod::Get,
+///             uri: "https://www.google.com".to_string(),
+///             headers: Default::default(),
+///         },
+///         body: vec![],
+///     })
+///     .unwrap();
+///     vrs_core_sdk::println!("http request {} enqueued", id);
+/// }
+///
 /// #[callback]
-/// pub fn on_response(u64: request_id, response: CallResult<HttpResponse>) {
-///     // handle response
+/// pub fn on_response(id: u64, response: CallResult<HttpResponse>) {
+///     match response {
+///         Ok(response) => {
+///             let body = String::from_utf8_lossy(&response.body);
+///             vrs_core_sdk::println!("id = {}, response: {}", id, body);
+///         }
+///         Err(e) => {
+///             vrs_core_sdk::eprintln!("id = {}, error: {:?}", id, e);
+///         }
+///     }
 /// }
 /// ```
 pub fn request(request: HttpRequest) -> Result<u64, RuntimeError> {
@@ -64,7 +91,6 @@ pub fn request(request: HttpRequest) -> Result<u64, RuntimeError> {
             return_bytes.as_mut_ptr(),
         )
     };
-    // we don't expect an asynchronous response more than 64k
     assert!(status == crate::NO_MORE_DATA);
     Result::<u64, RuntimeError>::decode(&mut &return_bytes[..])
         .map_err(|_| RuntimeError::DecodeReturnValueError)?

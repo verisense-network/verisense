@@ -4,6 +4,7 @@ mod host_func;
 mod mem;
 mod nucleus;
 mod runtime;
+mod state;
 mod vm;
 
 #[cfg(test)]

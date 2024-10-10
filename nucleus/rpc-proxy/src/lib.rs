@@ -2,7 +2,9 @@ use async_trait::async_trait;
 use codec::Decode;
 use constants::*;
 use futures::prelude::*;
-use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
+use jsonrpsee::{
+    core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned, PendingSubscriptionSink,
+};
 use sc_network_types::PeerId;
 use sc_transaction_pool_api::{BlockHash, TransactionPool, TransactionSource, TransactionStatus};
 use sp_api::{ApiExt, ProvideRuntimeApi};
@@ -27,6 +29,9 @@ pub trait NucleusRpc<Hash> {
 
     #[method(name = "nucleus_deploy")]
     async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
+
+    #[subscription(name = "nucleus_subscribeState", unsubscribe = "nucleus_unsubscribeState", item = Bytes)]
+    fn subscribe_state(&self, nucleus: NucleusId, key: String);
 }
 
 pub struct NucleusEntry<P, C> {
@@ -205,6 +210,8 @@ where
             }
         }
     }
+
+    fn subscribe_state(&self, sink: PendingSubscriptionSink, nucleus: NucleusId, key: String) {}
 }
 
 mod constants {
