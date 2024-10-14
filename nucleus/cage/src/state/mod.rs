@@ -11,17 +11,17 @@ type State = SparseMerkleTree<Blake2bHasher, B256, RocksDbBackend<B256>>;
 
 pub struct NucleusState {
     state: State,
-    broadcast: Sender<(Vec<u8>, Option<Vec<u8>>)>,
+    // broadcast: Sender<(Vec<u8>, Option<Vec<u8>>)>,
 }
 
 impl NucleusState {
     pub fn new(
         path: impl AsRef<std::path::Path>,
-        broadcast: Sender<(Vec<u8>, Option<Vec<u8>>)>,
+        // _broadcast: Sender<(Vec<u8>, Option<Vec<u8>>)>,
     ) -> anyhow::Result<Self> {
         let backend = RocksDbBackend::open(path)?;
         let state = State::new_with_store(backend).map_err(|e| anyhow::anyhow!(e))?;
-        Ok(Self { state, broadcast })
+        Ok(Self { state })
     }
 
     pub fn get_state_root(&self) -> B256 {
@@ -34,7 +34,7 @@ impl NucleusState {
             .inner
             .delete_cf(backend.data_cf(), key.as_ref())
             .map_err(|e| e.to_string())?;
-        let _ = self.broadcast.send((key.as_ref().to_vec(), None));
+        // let _ = self.broadcast.send((key.as_ref().to_vec(), None));
         Ok(())
     }
 
@@ -58,9 +58,9 @@ impl NucleusState {
             .inner
             .put_cf(backend.data_cf(), key.as_ref(), val.as_ref())
             .map_err(|e| e.to_string())?;
-        let _ = self
-            .broadcast
-            .send((key.as_ref().to_vec(), Some(val.as_ref().to_vec())));
+        // let _ = self
+        //     .broadcast
+        //     .send((key.as_ref().to_vec(), Some(val.as_ref().to_vec())));
         Ok(())
     }
 

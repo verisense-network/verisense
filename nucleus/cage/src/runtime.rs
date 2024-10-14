@@ -20,6 +20,7 @@ pub trait FuncRegister {
 
 pub trait ContextAware {
     fn read_only(&self) -> bool;
+
     fn pop_all_pending_timer(&self) -> Vec<TimerEntry>;
 
     fn get_nucleus_id(&self) -> NucleusId;
@@ -39,7 +40,7 @@ pub struct RuntimeParams {
 
 pub struct Runtime {
     pub(crate) id: NucleusId,
-    pub(crate) db: Arc<NucleusState>,
+    pub(crate) state: Arc<NucleusState>,
     pub(crate) http: Arc<HttpCallRegister>,
     pub(crate) register_timer: Arc<PendingTimerQueue>,
     pub(crate) is_get_method: bool,
@@ -51,7 +52,7 @@ impl Runtime {
     pub fn init(config: RuntimeParams) -> anyhow::Result<Self> {
         Ok(Self {
             id: config.nucleus_id,
-            db: Arc::new(kvdb::init_rocksdb(config.db_path)?),
+            state: Arc::new(NucleusState::new(config.db_path)?),
             http: config.http_register,
             is_get_method: false,
             caller_infos: vec![],
