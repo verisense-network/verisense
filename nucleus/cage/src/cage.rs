@@ -440,19 +440,13 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_suite::{new_mock_nucleus, new_mock_runtime, new_vm_with_executable};
-    use crate::{nucleus::Nucleus, vm::Vm, Scheduler, WrappedSchedulerSync};
-    use codec::Decode;
-    use futures::channel::mpsc::SendError;
-    use rocksdb::Options;
-    use sp_core::hexdisplay::AsBytesRef;
+    use crate::nucleus::Nucleus;
+    use crate::test_suite::new_mock_nucleus;
+    use std::sync::Arc;
     use std::thread;
-    use std::{sync::Arc, time::Duration};
     use stream::FuturesUnordered;
-    use temp_dir::TempDir;
-    use tokio::sync::{oneshot, RwLock};
-    use tokio::{sync::mpsc, task, time};
-    use vrs_core_sdk::AccountId;
+    use tokio::task;
+
     struct ResultProcessor {
         receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
     }

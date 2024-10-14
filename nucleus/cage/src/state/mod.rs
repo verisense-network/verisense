@@ -10,8 +10,6 @@ use xmt::{blake2b::Blake2bHasher, SparseMerkleTree};
 type State = SparseMerkleTree<Blake2bHasher, B256, RocksDbBackend<B256>>;
 
 pub struct NucleusState {
-    // backend: RocksDbBackend<B256>,
-    // event_id: u64,
     state: State,
     broadcast: Sender<(Vec<u8>, Option<Vec<u8>>)>,
 }

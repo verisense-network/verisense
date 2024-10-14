@@ -1,21 +1,14 @@
 use crate::{TimerEntry, TimerQueue};
 use chrono::{DateTime, Utc};
-use std::future::Future;
 use std::pin::Pin;
 use std::sync::mpsc;
-use std::sync::mpsc::Receiver as SyncReceiver;
 use std::sync::mpsc::Sender as SyncSender;
-use std::sync::Arc;
-use std::task::Poll;
 use std::thread;
 use std::time::Duration;
-use tokio::sync::mpsc::UnboundedReceiver;
-use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::Mutex;
-use tokio::sync::RwLock;
 use tokio::time::Sleep;
 use tokio::time::{self, Instant};
+
 pub struct WrappedScheduler {
     sender: Sender<TimerEntry>,
 }
@@ -82,6 +75,7 @@ impl WrappedScheduler {
             receiver_cage,
         )
     }
+
     pub async fn push(
         &self,
         entry: TimerEntry,
@@ -145,6 +139,7 @@ impl WrappedSchedulerSync {
     pub fn push(&self, entry: TimerEntry) -> Result<(), std::sync::mpsc::SendError<TimerEntry>> {
         self.sender.send(entry)
     }
+
     pub fn push_thread(&self, entry: TimerEntry) {
         let sender = self.sender.clone();
         thread::spawn(move || {

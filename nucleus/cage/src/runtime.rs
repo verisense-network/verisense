@@ -1,12 +1,14 @@
 use crate::{
     host_func::{
-        http, io, kvdb,
+        http::{self, HttpCallRegister},
+        io, kvdb,
         timer::{self, PendingTimerQueue},
     },
+    state::NucleusState,
     CallerInfo, TimerEntry,
 };
-use rocksdb::DB;
-use std::sync::{Arc, Mutex};
+// use rocksdb::DB;
+use std::sync::Arc;
 use vrs_primitives::NucleusId;
 use wasmtime::{Engine, Linker};
 
@@ -37,8 +39,8 @@ pub struct RuntimeParams {
 
 pub struct Runtime {
     pub(crate) id: NucleusId,
-    pub(crate) db: Arc<DB>,
-    pub(crate) http: Arc<http::HttpCallRegister>,
+    pub(crate) db: Arc<NucleusState>,
+    pub(crate) http: Arc<HttpCallRegister>,
     pub(crate) register_timer: Arc<PendingTimerQueue>,
     pub(crate) is_get_method: bool,
     pub(crate) caller_infos: Vec<CallerInfo>,

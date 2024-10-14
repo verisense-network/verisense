@@ -14,8 +14,6 @@ pub struct Vm<R> {
     // __host_func_param_ptr: i32,
 }
 
-pub const MAX_PARAM_SIZE: usize = 65536;
-
 #[derive(Error, Debug, PartialEq)]
 pub enum WasmCallError {
     #[error("Endpoint not found")]
@@ -61,16 +59,6 @@ impl WasmCallError {
         }
     }
 }
-use std::sync::atomic::Ordering;
-static THREAD_COUNTER: AtomicU64 = AtomicU64::new(0);
-
-thread_local! {
-    static THREAD_ID: u64 = THREAD_COUNTER.fetch_add(1, Ordering::SeqCst);
-}
-
-fn get_thread_id() -> u64 {
-    THREAD_ID.with(|&id| id)
-}
 
 impl<R> Vm<R>
 where
@@ -84,7 +72,7 @@ where
         };
         module.exports().for_each(|ty| match ty.ty() {
             ExternType::Func(func) => {
-                log::info!("user wasm export: {} {}", func.to_string(), ty.name());
+                log::debug!("user wasm export: {} {}", func.to_string(), ty.name());
             }
             _ => {}
         });
