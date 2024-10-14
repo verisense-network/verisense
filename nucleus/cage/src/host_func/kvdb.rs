@@ -15,15 +15,6 @@ impl ComponentProvider<NucleusState> for Runtime {
     }
 }
 
-// pub(crate) fn init_rocksdb(path: impl AsRef<std::path::Path>) -> anyhow::Result<DB> {
-//     let avs_cf = ColumnFamilyDescriptor::new("avs", Options::default());
-//     let seq_cf = ColumnFamilyDescriptor::new("seq", Options::default());
-//     let mut db_opts = Options::default();
-//     db_opts.create_missing_column_families(true);
-//     db_opts.create_if_missing(true);
-//     DB::open_cf_descriptors(&db_opts, path, vec![avs_cf, seq_cf]).map_err(|e| anyhow::anyhow!(e))
-// }
-
 /// the signature of this host function is:
 ///
 /// ```

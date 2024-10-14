@@ -7,7 +7,6 @@ use crate::{
     state::NucleusState,
     CallerInfo, TimerEntry,
 };
-// use rocksdb::DB;
 use std::sync::Arc;
 use vrs_primitives::NucleusId;
 use wasmtime::{Engine, Linker};
