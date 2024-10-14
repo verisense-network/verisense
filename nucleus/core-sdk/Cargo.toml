@@ -13,6 +13,5 @@ std = ["codec/std"]
 paste = "1.0"
 anyhow = { version = "1", default-features = false }
 codec = { workspace = true, features = ["derive"], default-features = false }
-# parity-scale-codec-derive = { workspace = true }
 vrs-metadata = { path = "../../metadata", default-features = false }
 vrs-core-macros = { path = "../core-macros" }

@@ -1,10 +1,9 @@
 use crate::{
     runtime::{ContextAware, FuncRegister},
     vm::Vm,
-    CallerInfo, ReplyTo, TimerEntry, TimersReplyTo, WasmInfo,
+    CallerInfo, ReplyTo, TimersReplyTo, WasmInfo,
 };
-use std::sync::{mpsc::Receiver, Arc};
-use tokio::net::unix::pipe::Sender;
+use std::sync::mpsc::Receiver;
 use vrs_core_sdk::{http::HttpResponse, CallResult};
 
 pub(crate) struct Nucleus<R> {

@@ -1,3 +1,38 @@
+//! The core sdk for developing nucleus on Verisense.
+//! NOTE: This crate is currently under heavy development and is not stable yet. We release it just for testing and collecting feedback.
+//!
+//! # Examples
+//!
+//! ```
+//! use parity_scale_codec::{Decode, Encode};
+//! use vrs_core_sdk::{get, post, storage};
+//!
+//! #[derive(Debug, Decode, Encode)]
+//! pub struct User {
+//!     pub id: u64,
+//!     pub name: String,
+//! }
+//!
+//! #[post]
+//! pub fn add_user(user: User) -> Result<(), String> {
+//!     let max_id_key = [&b"user:"[..], &u64::MAX.to_be_bytes()[..]].concat();
+//!     let max_id = match storage::search(&max_id_key, storage::Direction::Reverse)
+//!         .map_err(|e| e.to_string())?
+//!     {
+//!         Some((id, _)) => u64::from_be_bytes(id[5..].try_into().unwrap()) + 1,
+//!         None => 1u64,
+//!     };
+//!     storage::put(&max_id.to_be_bytes(), user.encode()).map_err(|e| e.to_string())
+//! }
+//!
+//! #[get]
+//! pub fn get_user(id: u64) -> Result<Option<User>, String> {
+//!     let r = storage::get(&id.to_be_bytes()).map_err(|e| e.to_string())?;
+//!     let user = r.map(|d| User::decode(&mut &d[..]).unwrap());
+//!     Ok(user)
+//! }
+//! ```
+
 mod constant;
 
 pub mod error;
@@ -24,9 +59,10 @@ pub const NO_MORE_DATA: i32 = 0;
 /// result of host function, T should be `codec::Codec`
 pub type CallResult<T> = Result<T, error::RuntimeError>;
 
+/// the id of the nucleus, same as AccountId32
 pub type NucleusId = vrs_metadata::utils::AccountId32;
 
 #[inline]
 pub(crate) fn allocate_buffer() -> Vec<u8> {
-    vec![0; BUFFER_LEN]
+    vec![0u8; BUFFER_LEN]
 }

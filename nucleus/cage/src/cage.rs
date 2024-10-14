@@ -4,12 +4,12 @@ use crate::{
         timer::SchedulerAsync,
     },
     nucleus::Nucleus,
+    state::NucleusState,
     Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, TimerEntry, TimersReplyTo,
     WasmCodeRef, WasmInfo,
 };
 use codec::Encode;
 use futures::prelude::*;
-use rocksdb::DB;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::request_responses::IncomingRequest;
 use sc_network::request_responses::OutgoingResponse;
@@ -53,7 +53,7 @@ struct NucleusCage {
     pending_requests: Vec<(String, Vec<u8>, Option<ReplyTo>)>,
     pending_timer_requests: Vec<(String, Vec<u8>, Option<ReplyTo>, TimersReplyTo)>,
     event_id: u64,
-    db: Arc<DB>,
+    state: Arc<NucleusState>,
     // TODO monadring-related
 }
 
@@ -63,8 +63,8 @@ impl NucleusCage {
     }
 
     fn pre_commit(&self, id: u64, msg: &[u8]) -> anyhow::Result<()> {
-        let handle = self.db.cf_handle("seq").unwrap();
-        self.db.put_cf(handle, &id.to_be_bytes(), msg)?;
+        // let handle = self.db.cf_handle("seq").unwrap();
+        // self.db.put_cf(handle, &id.to_be_bytes(), msg)?;
         Ok(())
     }
 
@@ -417,7 +417,7 @@ where
         timer_scheduler,
     };
     let runtime = Runtime::init(config)?;
-    let db = runtime.db.clone();
+    let state = runtime.state.clone();
     let (tx, rx) = std::sync::mpsc::channel();
     let mut nucleus = Nucleus::new(rx, runtime, wasm);
     std::thread::spawn(move || {
@@ -431,7 +431,7 @@ where
             pending_requests: vec![],
             pending_timer_requests: vec![],
             event_id: current_event,
-            db,
+            state,
         },
     );
     Ok(())
@@ -440,19 +440,13 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_suite::{new_mock_nucleus, new_mock_runtime, new_vm_with_executable};
-    use crate::{nucleus::Nucleus, vm::Vm, Scheduler, WrappedSchedulerSync};
-    use codec::Decode;
-    use futures::channel::mpsc::SendError;
-    use rocksdb::Options;
-    use sp_core::hexdisplay::AsBytesRef;
+    use crate::nucleus::Nucleus;
+    use crate::test_suite::new_mock_nucleus;
+    use std::sync::Arc;
     use std::thread;
-    use std::{sync::Arc, time::Duration};
     use stream::FuturesUnordered;
-    use temp_dir::TempDir;
-    use tokio::sync::{oneshot, RwLock};
-    use tokio::{sync::mpsc, task, time};
-    use vrs_core_sdk::AccountId;
+    use tokio::task;
+
     struct ResultProcessor {
         receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
     }

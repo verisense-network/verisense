@@ -1,30 +1,18 @@
 use crate::{
     mem,
     runtime::{ComponentProvider, ContextAware},
+    state::NucleusState,
     Runtime,
 };
 use codec::Encode;
-use rocksdb::{ColumnFamilyDescriptor, Direction as IterDirection, IteratorMode, Options, DB};
+use rocksdb::{Direction as IterDirection, IteratorMode};
 use vrs_core_sdk::{error::RuntimeError, storage::Direction, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
 
-impl ComponentProvider<DB> for Runtime {
-    fn get_component(&self) -> std::sync::Arc<DB> {
-        self.db.clone()
+impl ComponentProvider<NucleusState> for Runtime {
+    fn get_component(&self) -> std::sync::Arc<NucleusState> {
+        self.state.clone()
     }
-}
-
-pub(crate) fn init_rocksdb(path: impl AsRef<std::path::Path>) -> anyhow::Result<DB> {
-    let avs_cf = ColumnFamilyDescriptor::new("avs", Options::default());
-    let seq_cf = ColumnFamilyDescriptor::new("seq", Options::default());
-    let mut db_opts = Options::default();
-    db_opts.create_missing_column_families(true);
-    db_opts.create_if_missing(true);
-    DB::open_cf_descriptors(&db_opts, path, vec![avs_cf, seq_cf]).map_err(|e| anyhow::anyhow!(e))
-}
-
-pub(crate) fn data_cf(db: &DB) -> &rocksdb::ColumnFamily {
-    db.cf_handle("avs").unwrap()
 }
 
 /// the signature of this host function is:
@@ -57,7 +45,7 @@ pub(crate) fn storage_put<R>(
     result: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ContextAware + ComponentProvider<DB>,
+    R: ContextAware + ComponentProvider<NucleusState>,
 {
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[4].unwrap_i32();
@@ -77,7 +65,7 @@ where
     let val =
         mem::read_bytes_from_memory(&mut caller, v_ptr, v_len).expect("read from wasm failed");
     let db = caller.data().get_component();
-    let return_value = if let Err(e) = db.put_cf(data_cf(&db), &key, &val) {
+    let return_value = if let Err(e) = db.put_user_data(&key, &val) {
         CallResult::<()>::Err(RuntimeError::KvStorageError(e.to_string()))
     } else {
         CallResult::<()>::Ok(())
@@ -120,7 +108,7 @@ pub fn storage_get<R>(
     result: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ComponentProvider<DB>,
+    R: ComponentProvider<NucleusState>,
 {
     let k_ptr = params[0].unwrap_i32();
     let k_len = params[1].unwrap_i32();
@@ -129,7 +117,7 @@ where
     let key =
         mem::read_bytes_from_memory(&mut caller, k_ptr, k_len).expect("can't read bytes from wasm");
     let db = caller.data().get_component();
-    let r = match db.get_cf(data_cf(&db), &key) {
+    let r = match db.get_user_data(&key) {
         Ok(value) => CallResult::<Option<Vec<u8>>>::Ok(value),
         Err(e) => CallResult::<Option<Vec<u8>>>::Err(RuntimeError::KvStorageError(e.to_string())),
     };
@@ -162,7 +150,7 @@ pub fn storage_del<R>(
     result: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ComponentProvider<DB> + ContextAware,
+    R: ComponentProvider<NucleusState> + ContextAware,
 {
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[2].unwrap_i32();
@@ -178,7 +166,7 @@ where
     let key =
         mem::read_bytes_from_memory(&mut caller, k_ptr, k_len).expect("can't read bytes from wasm");
     let db = caller.data().get_component();
-    let return_value = if let Err(e) = db.delete_cf(data_cf(&db), &key) {
+    let return_value = if let Err(e) = db.del_user_data(&key) {
         CallResult::<()>::Err(RuntimeError::KvStorageError(e.to_string()))
     } else {
         CallResult::<()>::Ok(())
@@ -214,7 +202,7 @@ pub fn storage_get_prefix<R>(
     result: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ComponentProvider<DB>,
+    R: ComponentProvider<NucleusState>,
 {
     let k_ptr = params[0].unwrap_i32();
     let k_len = params[1].unwrap_i32();
@@ -228,15 +216,16 @@ where
         Direction::Forward => IterDirection::Forward,
         Direction::Reverse => IterDirection::Reverse,
     };
-    let mut iter = db.iterator_cf(data_cf(&db), IteratorMode::From(&key, direction));
-    let next = iter
-        .next()
-        .transpose()
-        .map_err(|e| RuntimeError::KvStorageError(e.to_string()))
-        .map(|kv| kv.map(|(k, v)| (k.to_vec(), v.to_vec())));
-    let flag = mem::write_to_memory(&mut caller, r_ptr, next, Some(v_offset))?;
-    result[0] = flag;
-    Ok(())
+    db.apply_on_user_data(IteratorMode::From(&key, direction), |mut iter| {
+        let next = iter
+            .next()
+            .transpose()
+            .map_err(|e| RuntimeError::KvStorageError(e.to_string()))
+            .map(|kv| kv.map(|(k, v)| (k.to_vec(), v.to_vec())));
+        let flag = mem::write_to_memory(&mut caller, r_ptr, next, Some(v_offset))?;
+        result[0] = flag;
+        Ok(())
+    })
 }
 
 /// the signature of this host function is:
@@ -284,7 +273,7 @@ pub fn storage_get_range<R>(
     result: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ComponentProvider<DB>,
+    R: ComponentProvider<NucleusState>,
 {
     let k_ptr = params[0].unwrap_i32();
     let k_len = params[1].unwrap_i32();
@@ -299,37 +288,38 @@ where
         Direction::Forward => IterDirection::Forward,
         Direction::Reverse => IterDirection::Reverse,
     };
-    let mut iter = db.iterator_cf(data_cf(&db), IteratorMode::From(&key, direction));
-    let mut collected = vec![];
-    while let Some(kv) = iter.next() {
-        if limit == 0 {
-            break;
-        }
-        match kv {
-            Err(e) => {
-                let flag = mem::write_to_memory(
-                    &mut caller,
-                    r_ptr,
-                    CallResult::<Vec<(Vec<u8>, Vec<u8>)>>::Err(RuntimeError::KvStorageError(
-                        e.to_string(),
-                    )),
-                    Some(v_offset),
-                )?;
-                result[0] = flag;
-                return Ok(());
+    db.apply_on_user_data(IteratorMode::From(&key, direction), |mut iter| {
+        let mut collected = vec![];
+        while let Some(kv) = iter.next() {
+            if limit == 0 {
+                break;
             }
-            Ok((k, v)) => collected.push((k.to_vec(), v.to_vec())),
+            match kv {
+                Err(e) => {
+                    let flag = mem::write_to_memory(
+                        &mut caller,
+                        r_ptr,
+                        CallResult::<Vec<(Vec<u8>, Vec<u8>)>>::Err(RuntimeError::KvStorageError(
+                            e.to_string(),
+                        )),
+                        Some(v_offset),
+                    )?;
+                    result[0] = flag;
+                    return Ok(());
+                }
+                Ok((k, v)) => collected.push((k.to_vec(), v.to_vec())),
+            }
+            limit -= 1;
         }
-        limit -= 1;
-    }
-    let flag = mem::write_to_memory(
-        &mut caller,
-        r_ptr,
-        CallResult::<Vec<(Vec<u8>, Vec<u8>)>>::Ok(collected),
-        Some(v_offset),
-    )?;
-    result[0] = flag;
-    Ok(())
+        let flag = mem::write_to_memory(
+            &mut caller,
+            r_ptr,
+            CallResult::<Vec<(Vec<u8>, Vec<u8>)>>::Ok(collected),
+            Some(v_offset),
+        )?;
+        result[0] = flag;
+        Ok(())
+    })
 }
 
 /// the signature of this host function is:
@@ -374,7 +364,7 @@ pub fn storage_del_range<R>(
     result: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ComponentProvider<DB> + ContextAware,
+    R: ComponentProvider<NucleusState> + ContextAware,
 {
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[4].unwrap_i32();
@@ -394,7 +384,7 @@ where
     let end_key = mem::read_bytes_from_memory(&mut caller, end_key_ptr, end_key_len)
         .expect("can't read bytes from wasm");
     let db = caller.data().get_component();
-    let return_value = if let Err(e) = db.delete_range_cf(data_cf(&db), &start_key, &end_key) {
+    let return_value = if let Err(e) = db.del_user_data_range(&start_key, &end_key) {
         CallResult::<()>::Err(RuntimeError::KvStorageError(e.to_string()))
     } else {
         CallResult::<()>::Ok(())

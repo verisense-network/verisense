@@ -4,12 +4,12 @@ mod host_func;
 mod mem;
 mod nucleus;
 mod runtime;
+mod state;
 mod vm;
 
 #[cfg(test)]
 pub mod test_suite;
 
-pub(crate) use host_func::scheduler::*;
 pub(crate) use host_func::timer_entry::*;
 
 pub use bytecode::{WasmCodeRef, WasmInfo};

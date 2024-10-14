@@ -153,7 +153,6 @@ mod tests {
     use super::*;
     use chrono::Utc;
     use std::time::Duration;
-    use vrs_core_sdk::nucleus_id;
 
     #[test]
     fn test_timer_queue() {

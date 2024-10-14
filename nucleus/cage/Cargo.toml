@@ -5,6 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
 sp-runtime = { workspace = true }
 sc-network = { version = "0.42.0" }
 tokio = { version = "1", features = ["full"] }
@@ -34,6 +35,7 @@ hyper-util = { version ="0.1", features = ["full"] }
 bytes = "1"
 http-body-util = "0.1.0"
 pin-project-lite = "0.2.4"
+xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
 
 
 [dev-dependencies]

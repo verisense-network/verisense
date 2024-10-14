@@ -1,13 +1,13 @@
 use crate::{
     host_func::{
-        http, io, kvdb,
+        http::{self, HttpCallRegister},
+        io, kvdb,
         timer::{self, PendingTimerQueue},
     },
-    CallerInfo, TimerEntry, TimerQueue,
+    state::NucleusState,
+    CallerInfo, TimerEntry,
 };
-use hyper::rt::Timer;
-use rocksdb::DB;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use vrs_primitives::NucleusId;
 use wasmtime::{Engine, Linker};
 
@@ -19,6 +19,7 @@ pub trait FuncRegister {
 
 pub trait ContextAware {
     fn read_only(&self) -> bool;
+
     fn pop_all_pending_timer(&self) -> Vec<TimerEntry>;
 
     fn get_nucleus_id(&self) -> NucleusId;
@@ -38,8 +39,8 @@ pub struct RuntimeParams {
 
 pub struct Runtime {
     pub(crate) id: NucleusId,
-    pub(crate) db: Arc<DB>,
-    pub(crate) http: Arc<http::HttpCallRegister>,
+    pub(crate) state: Arc<NucleusState>,
+    pub(crate) http: Arc<HttpCallRegister>,
     pub(crate) register_timer: Arc<PendingTimerQueue>,
     pub(crate) is_get_method: bool,
     pub(crate) caller_infos: Vec<CallerInfo>,
@@ -50,7 +51,7 @@ impl Runtime {
     pub fn init(config: RuntimeParams) -> anyhow::Result<Self> {
         Ok(Self {
             id: config.nucleus_id,
-            db: Arc::new(kvdb::init_rocksdb(config.db_path)?),
+            state: Arc::new(NucleusState::new(config.db_path)?),
             http: config.http_register,
             is_get_method: false,
             caller_infos: vec![],
