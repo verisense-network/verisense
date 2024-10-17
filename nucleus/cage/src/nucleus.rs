@@ -6,7 +6,7 @@ use crate::{
 use std::sync::mpsc::Receiver;
 use vrs_core_sdk::{http::HttpResponse, CallResult};
 
-pub(crate) struct Nucleus<R> {
+pub struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
     vm: Option<Vm<R>>,
 }

@@ -1,6 +1,9 @@
-use crate::{bytecode::*, host_func::*, nucleus::Nucleus, runtime::*, vm::Vm, Gluon, TimerQueue};
+use crate::{
+    bytecode::*, host_func::*, nucleus::Nucleus, runtime::*, state::NucleusState, vm::Vm, Gluon,
+};
+use std::sync::{mpsc::Receiver, Arc};
 use temp_dir::TempDir;
-use timer::{PendingTimerQueue, SchedulerAsync};
+use timer::PendingTimerQueue;
 use vrs_primitives::{AccountId, NucleusId};
 
 #[derive(Debug)]
@@ -25,9 +28,9 @@ pub fn new_mock_runtime() -> (Runtime, OutOfRuntime) {
     (
         Runtime {
             id: NucleusId::from([1u8; 32]),
-            db: std::sync::Arc::new(kvdb::init_rocksdb(db_path).unwrap()),
-            http: std::sync::Arc::new(http_register),
-            register_timer: std::sync::Arc::new(PendingTimerQueue::new()),
+            state: Arc::new(NucleusState::new(db_path).unwrap()),
+            http: Arc::new(http_register),
+            register_timer: Arc::new(PendingTimerQueue::new()),
             is_get_method: false,
             caller_infos: vec![],
         },
@@ -40,7 +43,7 @@ pub fn new_vm_with_executable(f: impl AsRef<std::path::Path>) -> (Vm<Runtime>, O
     let (runtime, out_of_runtime) = new_mock_runtime();
     (Vm::new_instance(&wasm, runtime).unwrap(), out_of_runtime)
 }
-use std::sync::{mpsc::Receiver, Arc};
+
 pub fn new_mock_nucleus(
     receiver: Receiver<(u64, Gluon)>,
     f: impl AsRef<std::path::Path>,

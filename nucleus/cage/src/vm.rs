@@ -3,7 +3,6 @@ use crate::{
     CallerInfo, TimerEntry, WasmCodeRef, WasmInfo,
 };
 use codec::Decode;
-use std::sync::atomic::AtomicU64;
 use thiserror::Error;
 use wasmtime::{Engine, ExternType, Instance, Module, Store, Val, WasmResults};
 
@@ -11,7 +10,6 @@ pub struct Vm<R> {
     space: Store<R>,
     instance: Instance,
     __call_param_ptr: i32,
-    // __host_func_param_ptr: i32,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -216,13 +214,6 @@ where
     // pub fn pop_pending_timer(&mut self) -> Option<TimerEntry> {
     //     self.space.data_mut().pop_timer_entry()
     // }
-}
-
-fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
-    let mut b = a.clone();
-    let c = u32::from_ne_bytes([b[0], b[1], b[2], b[3]]);
-    b.drain(0..4);
-    (c, b)
 }
 
 // #[cfg(test)]
