@@ -20,6 +20,8 @@ pub trait FuncRegister {
 pub trait ContextAware {
     fn read_only(&self) -> bool;
 
+    fn set_read_only(&mut self, read_only: bool);
+
     fn pop_all_pending_timer(&self) -> Vec<TimerEntry>;
 
     fn get_nucleus_id(&self) -> NucleusId;
@@ -42,7 +44,7 @@ pub struct Runtime {
     pub(crate) state: Arc<NucleusState>,
     pub(crate) http: Arc<HttpCallRegister>,
     pub(crate) register_timer: Arc<PendingTimerQueue>,
-    pub(crate) is_get_method: bool,
+    pub(crate) read_only: bool,
     pub(crate) caller_infos: Vec<CallerInfo>,
     // TODO we need runtime storage to read
 }
@@ -53,7 +55,7 @@ impl Runtime {
             id: config.nucleus_id,
             state: Arc::new(NucleusState::new(config.db_path)?),
             http: config.http_register,
-            is_get_method: false,
+            read_only: false,
             caller_infos: vec![],
             register_timer: Arc::new(PendingTimerQueue::new()),
         })
@@ -70,19 +72,15 @@ impl Runtime {
     pub fn replace_caller_infos(&mut self, caller_infos: Vec<CallerInfo>) {
         self.caller_infos = caller_infos;
     }
-
-    pub fn is_get_method(&self) -> bool {
-        self.is_get_method
-    }
-
-    pub fn set_is_get_method(&mut self, value: bool) {
-        self.is_get_method = value;
-    }
 }
 
 impl ContextAware for Runtime {
     fn read_only(&self) -> bool {
-        self.is_get_method
+        self.read_only
+    }
+
+    fn set_read_only(&mut self, read_only: bool) {
+        self.read_only = read_only;
     }
 
     fn get_nucleus_id(&self) -> NucleusId {

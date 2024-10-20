@@ -31,7 +31,7 @@ pub fn new_mock_runtime() -> (Runtime, OutOfRuntime) {
             state: Arc::new(NucleusState::new(db_path).unwrap()),
             http: Arc::new(http_register),
             register_timer: Arc::new(PendingTimerQueue::new()),
-            is_get_method: false,
+            read_only: false,
             caller_infos: vec![],
         },
         OutOfRuntime { http_executor },
@@ -50,7 +50,7 @@ pub fn new_mock_nucleus(
 ) -> (Nucleus<Runtime>, OutOfRuntime) {
     let (runtime, out_of_runtime) = new_mock_runtime();
     (
-        Nucleus::new(receiver, runtime, load_wasm_file(f)),
+        Nucleus::init(receiver, runtime, load_wasm_file(f)).unwrap(),
         out_of_runtime,
     )
 }

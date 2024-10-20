@@ -1,10 +1,14 @@
 use crate::{
     runtime::{ContextAware, FuncRegister},
     vm::Vm,
-    CallerInfo, ReplyTo, TimersReplyTo, WasmInfo,
+    ReplyTo, WasmInfo,
 };
+use codec::{Decode, Encode};
 use std::sync::mpsc::Receiver;
-use vrs_core_sdk::{http::HttpResponse, CallResult};
+use vrs_core_sdk::{
+    http::{HttpRequest, HttpResponse},
+    CallResult,
+};
 
 pub struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
@@ -14,14 +18,8 @@ pub struct Nucleus<R> {
 #[derive(Debug)]
 pub enum Gluon {
     CodeUpgrade {
-        // TODO
         version: u32,
-    },
-    TimerRequest {
-        endpoint: String,
-        payload: Vec<u8>,
-        reply_to: Option<ReplyTo>,
-        pending_timer_queue: TimersReplyTo,
+        digest: [u8; 32],
     },
     PostRequest {
         endpoint: String,
@@ -33,11 +31,114 @@ pub enum Gluon {
         payload: Vec<u8>,
         reply_to: Option<ReplyTo>,
     },
+    // TODO add task_id
+    TimerRequest {
+        endpoint: String,
+        payload: Vec<u8>,
+    },
     HttpCallback {
         request_id: u64,
         payload: CallResult<HttpResponse>,
     },
 }
+
+impl From<&Gluon> for Event {
+    fn from(gluon: &Gluon) -> Self {
+        match gluon {
+            Gluon::CodeUpgrade { version, digest } => Event::CodeUpgrade {
+                version: *version,
+                digest: *digest,
+            },
+            Gluon::PostRequest {
+                endpoint, payload, ..
+            } => Event::PostRequest {
+                endpoint: endpoint.clone(),
+                payload: payload.clone(),
+            },
+            Gluon::GetRequest { .. } => Event::Dummy,
+            Gluon::TimerRequest {
+                // task_id,
+                endpoint,
+                payload,
+            } => Event::TimerTrigger {
+                task_id: 0,
+                endpoint: endpoint.clone(),
+                payload: payload.clone(),
+            },
+            Gluon::HttpCallback {
+                request_id,
+                payload,
+            } => Event::HttpCallback {
+                request_id: *request_id,
+                payload: payload.clone(),
+            },
+        }
+    }
+}
+
+impl Into<Event> for Gluon {
+    fn into(self) -> Event {
+        match self {
+            Self::CodeUpgrade { version, digest } => Event::CodeUpgrade { version, digest },
+            Self::PostRequest {
+                endpoint, payload, ..
+            } => Event::PostRequest { endpoint, payload },
+            Self::GetRequest { .. } => Event::Dummy,
+            Self::TimerRequest {
+                // task_id,
+                endpoint,
+                payload,
+            } => Event::TimerTrigger {
+                task_id: 0,
+                endpoint,
+                payload,
+            },
+            Self::HttpCallback {
+                request_id,
+                payload,
+            } => Event::HttpCallback {
+                request_id,
+                payload,
+            },
+        }
+    }
+}
+
+/// Serialized `Gluon`, i.e. received from peers or call `gluon.into()` then save it
+#[derive(Debug, Encode, Decode)]
+pub enum Event {
+    #[codec(index = 0)]
+    CodeUpgrade { version: u32, digest: [u8; 32] },
+    #[codec(index = 1)]
+    PostRequest { endpoint: String, payload: Vec<u8> },
+    #[codec(index = 2)]
+    TimerRegister {
+        task_id: u64,
+        delay: u64,
+        endpoint: String,
+        payload: Vec<u8>,
+    },
+    #[codec(index = 3)]
+    TimerTrigger {
+        task_id: u64,
+        endpoint: String,
+        payload: Vec<u8>,
+    },
+    #[codec(index = 4)]
+    HttpRequest {
+        request_id: u64,
+        ssl_key: Vec<u8>,
+        request: HttpRequest,
+    },
+    #[codec(index = 5)]
+    HttpCallback {
+        request_id: u64,
+        payload: CallResult<HttpResponse>,
+    },
+    #[codec(skip)]
+    Dummy,
+}
+
 // define VM error type id
 const VM_ERROR: i32 = 0x00000001;
 
@@ -45,171 +146,96 @@ impl<R> Nucleus<R>
 where
     R: ContextAware + FuncRegister<Runtime = R>,
 {
-    pub(crate) fn new(receiver: Receiver<(u64, Gluon)>, runtime: R, code: WasmInfo) -> Self {
-        // TODO
-        let vm = Vm::new_instance(&code, runtime)
-            .inspect_err(|e| {
-                log::error!(
-                    "fail to create vm instance for AVS {} due to: {:?}",
-                    &code.name,
-                    e
-                )
-            })
-            .ok();
-        Nucleus { receiver, vm }
+    pub(crate) fn init(
+        receiver: Receiver<(u64, Gluon)>,
+        runtime: R,
+        code: WasmInfo,
+    ) -> anyhow::Result<Self> {
+        let vm = Vm::new_instance(&code, runtime).inspect_err(|e| {
+            log::error!(
+                "fail to create vm instance for AVS {} due to: {:?}",
+                &code.name,
+                e
+            )
+        })?;
+        Ok(Nucleus {
+            receiver,
+            vm: Some(vm),
+        })
     }
 
     pub(crate) fn run(&mut self) {
         while let Ok((id, msg)) = self.receiver.recv() {
-            // TODO save msg with id to rocksdb
-            self.accept(msg);
+            // TODO save msg with id to state
+            // only interrupted if events save failed or VM not initialized
+            if let Err(e) = self.accept(msg) {
+                log::error!("Nucleus interrupted due to: {:?}", e);
+                break;
+            }
         }
     }
 
-    fn accept(&mut self, msg: Gluon) {
+    fn accept(&mut self, msg: Gluon) -> anyhow::Result<()> {
+        let vm = self
+            .vm
+            .as_mut()
+            .ok_or(anyhow::anyhow!("VM not initialized"))?;
         match msg {
-            Gluon::CodeUpgrade { version } => {
+            Gluon::CodeUpgrade { version, digest } => {
                 // TODO load new module from storage
-                // TODO handle errors
             }
             Gluon::HttpCallback {
                 request_id,
                 payload,
             } => {
-                self.vm.as_mut().map(|vm| {
-                    vm.call_inner("__nucleus_http_callback", (request_id, payload))
-                        .inspect_err(|e| {
-                            log::error!("fail to http callback due to: {:?}", e);
-                        })
-                        .ok();
-                });
+                println!("recv http response {:?}", payload);
+                let _ = vm.call_inner("__nucleus_http_callback", (request_id, payload));
             }
             Gluon::GetRequest {
                 endpoint,
                 payload,
                 reply_to,
-            } => match self.vm {
-                Some(ref mut vm) => {
-                    let vm_result = vm.call_get(&endpoint, payload).map_err(|e| {
-                        log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
-                        (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                    });
-                    if let Some(reply_to) = reply_to {
-                        if let Err(err) = reply_to.send(vm_result) {
-                            log::error!("fail to send reply to: {:?}", err);
-                        }
-                    } else {
-                        log::error!("reply_to not found");
-                    }
+            } => {
+                let vm_result = vm.call_get(&endpoint, payload).map_err(|e| {
+                    log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
+                    (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                });
+                if let Some(reply_to) = reply_to {
+                    let _ = reply_to.send(vm_result);
                 }
-                None => {
-                    log::error!("vm not initialized");
-                }
-            },
+            }
             Gluon::PostRequest {
                 endpoint,
                 payload,
                 reply_to,
             } => {
-                match self.vm {
-                    Some(ref mut vm) => {
-                        let vm_result = vm.call_post(&endpoint, payload.clone()).map_err(|e| {
-                            log::error!(
-                                "fail to call post endpoint: {} due to: {:?}",
-                                &endpoint,
-                                e
-                            );
-                            (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                        });
-                        // TODO mark: we need to re-design the caller context
-                        // while let Some(entry) = vm.pop_pending_timer() {
-                        //     // println!("{:?}", entry);
-                        //     self.scheduler.push(entry);
-                        // }
-                        if let Some(reply_to) = reply_to {
-                            if let Err(err) = reply_to.send(vm_result) {
-                                println!("fail to send reply to: {:?}", err);
-                                log::error!("fail to send reply to: {:?}", err);
-                            }
-                        } else {
-                            log::error!("reply_to not found");
-                        }
-                    }
-                    None => {
-                        log::error!("vm not initialized");
-                    }
+                let vm_result = vm.call_post(&endpoint, payload.clone()).map_err(|e| {
+                    log::error!("fail to call post endpoint: {} due to: {:?}", &endpoint, e);
+                    (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                });
+                // when reply events, there is no `reply_to`
+                if let Some(reply_to) = reply_to {
+                    // we don't need to handle this error if the connection dropped
+                    let _ = reply_to.send(vm_result);
                 }
-                // let vm_result = self.vm.run_func(None, &endpoint, payload);
-                // vec![]
             }
-            Gluon::TimerRequest {
-                endpoint,
-                payload,
-                reply_to,
-                pending_timer_queue,
-            } => match self.vm {
-                Some(ref mut vm) => {
-                    let vm_result = vm.call_timer(
-                        &endpoint,
-                        payload.clone(),
-                        vec![CallerInfo {
-                            func: "Gluon::TimerRequest".to_string(),
-                            params: payload,
-                            thread_id: 0,
-                            caller_type: crate::CallerType::Entry,
-                        }],
-                    );
-                    match vm_result {
-                        Ok((result, entries)) => {
-                            if let Some(reply_to) = reply_to {
-                                if let Err(err) = reply_to.send(Ok(result)) {
-                                    println!("fail to send reply to: {:?}", err);
-                                    log::error!("fail to send reply to: {:?}", err);
-                                }
-                            } else {
-                                log::error!("reply_to not found");
-                            }
-                            pending_timer_queue.send(entries);
-                        }
-                        Err(e) => {
-                            log::error!(
-                                "fail to call timer endpoint: {} due to: {:?}",
-                                &endpoint,
-                                e
-                            );
-
-                            if let Some(reply_to) = reply_to {
-                                if let Err(err) = reply_to
-                                    .send(Err((VM_ERROR << 10 + e.to_error_code(), e.to_string())))
-                                {
-                                    println!("fail to send reply to: {:?}", err);
-                                    log::error!("fail to send reply to: {:?}", err);
-                                }
-                            } else {
-                                log::error!("reply_to not found");
-                            }
-                        }
-                    }
+            Gluon::TimerRequest { endpoint, payload } => {
+                if let Err(e) = vm.call_timer(&endpoint, payload) {
+                    log::error!("fail to call timer endpoint: {} due to: {:?}", &endpoint, e);
                 }
-                None => {
-                    log::error!("vm not initialized");
-                }
-            },
+            }
         }
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_suite::new_vm_with_executable, WasmCodeRef};
-
     use super::*;
+    use crate::test_suite::new_vm_with_executable;
     use codec::Decode;
-    use temp_dir::TempDir;
-    // use tokio::sync::mpsc;
     use std::sync::mpsc;
     use tokio::sync::oneshot;
-    use vrs_core_sdk::AccountId;
 
     #[tokio::test]
     async fn test_nucleus_accept() {

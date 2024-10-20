@@ -9,7 +9,7 @@ pub fn request_google() {
     let id = http::request(HttpRequest {
         head: RequestHead {
             method: HttpMethod::Get,
-            uri: "https://www.google.com".to_string(),
+            uri: "https://www.baidu.com".to_string(),
             headers: Default::default(),
         },
         body: vec![],

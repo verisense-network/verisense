@@ -10266,6 +10266,7 @@ dependencies = [
  "temp-dir",
  "thiserror",
  "tokio",
+ "tokio-native-tls",
  "unicase",
  "vrs-core-sdk",
  "vrs-metadata",
