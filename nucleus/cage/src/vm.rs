@@ -70,7 +70,7 @@ where
         };
         module.exports().for_each(|ty| {
             if let ExternType::Func(func) = ty.ty() {
-                log::debug!("user wasm export: {} {}", func.to_string(), ty.name());
+                log::info!("user wasm export: {} {}", func.to_string(), ty.name());
             }
         });
         let mut store = Store::new(&engine, runtime);
@@ -94,9 +94,40 @@ where
         args: T,
     ) -> Result<(), WasmCallError> {
         self.space.data_mut().set_read_only(false);
-        self.call_method(&func, args.encode())
+        self.call_no_returns(&func, args.encode())
             .inspect_err(|e| log::warn!("fail to invoke inner method, {:?}", e))
-            .map(|_| ())
+    }
+
+    fn call_no_returns(&mut self, func_name: &str, args: Vec<u8>) -> Result<(), WasmCallError> {
+        let func = self
+            .instance
+            .get_func(&mut self.space, &func_name)
+            .ok_or(WasmCallError::EndpointNotFound)?;
+        let memory = self
+            .instance
+            .get_memory(&mut self.space, "memory")
+            .ok_or(WasmCallError::NoMemoryExported)?;
+
+        if args.len() > 65536 {
+            return Err(WasmCallError::ArgumentsSizeExceeded);
+        }
+
+        // Write args to memory
+        memory
+            .write(&mut self.space, self.__call_param_ptr as usize, &args)
+            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+
+        // Call the function
+        func.call(
+            &mut self.space,
+            &[
+                Val::I32(self.__call_param_ptr as i32),
+                Val::I32(args.len() as i32),
+            ],
+            &mut [],
+        )
+        .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
+        Ok(())
     }
 
     pub fn call_timer(

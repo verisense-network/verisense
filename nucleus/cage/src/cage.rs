@@ -211,7 +211,6 @@ where
                         log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply.err());
                         continue;
                     }
-                    println!("recv response: {:?}", http_reply);
                     let HttpResponseWithCallback {
                         nucleus_id,
                         req_id,
