@@ -188,7 +188,6 @@ where
                 request_id,
                 payload,
             } => {
-                println!("recv http response {:?}", payload);
                 let _ = vm.call_inner("__nucleus_http_callback", (request_id, payload));
             }
             Gluon::GetRequest {

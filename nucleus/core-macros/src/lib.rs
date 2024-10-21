@@ -61,8 +61,8 @@ fn expand_no_return(func: ItemFn, entry_name: Ident) -> TokenStream {
         .collect();
     let expanded = quote! {
         #[no_mangle]
-        pub fn #entry_name(args: std::vec::Vec<u8>) {
-            let mut v: &[u8] = args.as_ref();
+        pub fn #entry_name(__ptr: *const u8, __len: usize) {
+            let mut v = unsafe { std::slice::from_raw_parts(__ptr, __len) };
             let decoded = <(#(#tys,)*) as ::vrs_core_sdk::codec::Decode>::decode(&mut v).unwrap();
             fn #origin_name((#(#arg_names,)*): (#(#tys,)*)) #func_block
             #origin_name(decoded);
