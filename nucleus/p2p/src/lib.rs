@@ -72,7 +72,6 @@ where
         loop {
             tokio::select! {
                 Some(nodes) = test_receiver.recv() => {
-                    log::info!(" ==> get nodes info: {:?}", nodes);
                     for node_id in nodes {
                         let test_data: Vec<u8> = format!("hello, notification").as_bytes().to_vec();
                         log::info!(" ==> going to send noti: {:?} {:?}", node_id, test_data);
@@ -87,7 +86,6 @@ where
                     }
                 },
                 Some(noti) = noti_receiver.recv() => {
-                    log::info!(" ==> get noti info: {:?}", noti);
 
                     let (noti, mut nodes) = noti;
                     // process nodes.is_empty(), if it is, query the whole set of peers
@@ -102,7 +100,6 @@ where
                                 peer_ids.push(peer_id);
                             }
                         }
-                        log::info!("nodes id: {:?}", peer_ids);
                         nodes = peer_ids;
                     }
 
@@ -115,7 +112,7 @@ where
                     }
                 },
                 Ok(request) = reqres_receiver.recv() => {
-                    log::info!("IncomingRequest msg: {:?}", request);
+                    log::debug!("Incoming p2p request msg: {:?}", request);
                     // do stuff
                     // forward the request to cage
                     let msg = NucleusP2pMsg::ReqRes(request);
@@ -128,7 +125,7 @@ where
                             peer,
                             notification
                         } => {
-                            log::info!("notification received: peer: {:?}  noti: {:?}", peer, notification);
+                            log::info!("p2p notification received: peer: {:?}  noti: {:?}", peer, notification);
                             let noti = P2pNotification {peer, notification};
                             let msg = NucleusP2pMsg::Noti(noti);
                             _ = p2p_cage_tx.send(msg).await;

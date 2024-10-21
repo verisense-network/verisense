@@ -5,7 +5,7 @@ use crate::{
     },
     nucleus::Nucleus,
     state::NucleusState,
-    Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, TimerEntry, TimersReplyTo,
+    Event, Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, TimerEntry, TimersReplyTo,
     WasmCodeRef, WasmInfo,
 };
 use codec::Encode;
@@ -50,8 +50,7 @@ pub struct CageParams<B, C, BN> {
 struct NucleusCage {
     nucleus_id: NucleusId,
     tunnel: SyncSender<(u64, Gluon)>,
-    pending_requests: Vec<(String, Vec<u8>, Option<ReplyTo>)>,
-    pending_timer_requests: Vec<(String, Vec<u8>, Option<ReplyTo>, TimersReplyTo)>,
+    pending_requests: Vec<Gluon>,
     event_id: u64,
     state: Arc<NucleusState>,
     // TODO monadring-related
@@ -68,106 +67,35 @@ impl NucleusCage {
         Ok(())
     }
 
-    fn drain(&mut self, imports: Vec<(String, Vec<u8>)>) {
-        for import in imports.into_iter() {
-            self.pending_requests.push((import.0, import.1, None));
-        }
+    fn drain(&mut self, imports: Vec<Event>) {
+        // TODO handle imports first
+        // for `TimerRegister` and `HttpRequest`, we need to check its id
         let pipe = self.pending_requests.drain(..).collect::<Vec<_>>();
         for gluon in pipe.into_iter() {
             self.event_id += 1;
-            let event = Self::merge_payload(&gluon.0, &gluon.1);
-            if let Err(e) = self.pre_commit(self.event_id, &event) {
+            let event = Event::from(&gluon);
+            if let Err(e) = self.pre_commit(self.event_id, &event.encode()) {
                 log::error!(
                     "couldn't save event {} of nucleus {}: {:?}",
                     self.event_id,
                     self.nucleus_id,
                     e
                 );
-                if let Some(reply_to) = gluon.2 {
-                    let _ = reply_to.send(Err((-42000, "Event persistence failed.".to_string())));
-                }
+                // TODO only reply request from rpc
+                // if let Some(reply_to) = gluon.2 {
+                //     let _ = reply_to.send(Err((-42000, "Event persistence failed.".to_string())));
+                // }
             } else {
-                let _ = self.tunnel.send((
-                    self.event_id,
-                    Gluon::PostRequest {
-                        endpoint: gluon.0,
-                        payload: gluon.1,
-                        reply_to: gluon.2,
-                    },
-                ));
+                let _ = self.tunnel.send((self.event_id, gluon));
             }
         }
-        let pipe = self.pending_timer_requests.drain(..).collect::<Vec<_>>();
-        for gluon in pipe.into_iter() {
-            self.event_id += 1;
-            let event = Self::merge_payload(&gluon.0, &gluon.1);
-            if let Err(e) = self.pre_commit(self.event_id, &event) {
-                log::error!(
-                    "couldn't save event {} of nucleus {}: {:?}",
-                    self.event_id,
-                    self.nucleus_id,
-                    e
-                );
-                if let Some(reply_to) = gluon.2 {
-                    let _ = reply_to.send(Err((-42000, "Event persistence failed.".to_string())));
-                }
-            } else {
-                let _ = self.tunnel.send((
-                    self.event_id,
-                    Gluon::TimerRequest {
-                        endpoint: gluon.0,
-                        payload: gluon.1,
-                        reply_to: gluon.2,
-                        pending_timer_queue: gluon.3,
-                    },
-                ));
-            }
-        }
-    }
-
-    fn merge_payload(endpoint: &String, payload: &[u8]) -> Vec<u8> {
-        let mut buf = <String>::encode(endpoint);
-        buf.extend(payload);
-        buf
     }
 
     fn forward(&mut self, gluon: Gluon) {
-        match gluon {
-            Gluon::PostRequest {
-                endpoint,
-                payload,
-                reply_to,
-            } => {
-                self.pending_requests.push((endpoint, payload, reply_to));
-            }
-            Gluon::GetRequest { .. } => {
-                let _ = self.tunnel.send((0, gluon));
-            }
-            Gluon::HttpCallback {
-                request_id,
-                payload,
-            } => {
-                self.pending_requests.push((
-                    "__nucleus_http_callback".to_string(),
-                    (request_id, payload).encode(),
-                    None,
-                ));
-            }
-            // TODO handle other types of Gluon
-            Gluon::TimerRequest {
-                endpoint,
-                payload,
-                reply_to,
-                pending_timer_queue,
-            } => {
-                self.pending_timer_requests.push((
-                    endpoint,
-                    payload,
-                    reply_to,
-                    pending_timer_queue,
-                ));
-            }
-            _ => unreachable!(),
+        if matches!(gluon, Gluon::GetRequest { .. }) {
+            let _ = self.tunnel.send((0, gluon));
+        } else {
+            self.pending_requests.push(gluon);
         }
     }
 }
@@ -225,19 +153,8 @@ where
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
-                // block = registry_monitor.next() => {
-                //     let hash = block.expect("block importing error").hash;
-                //     // TODO handle deregister as well
-                //     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
-                //         for (id, config) in instances {
-                //             let db_path = nucleus_home_dir.join(id.to_string());
-                //             start_nucleus::<B>(id, config, db_path, &mut nuclei).expect("fail to start nucleus");
-                //         }
-                //     }
-                // },
                 Some(msg) = p2p_cage_rx.recv() => {
                     // req type is IncomingRequest, process it.
-                    log::info!("in cage: incoming msg: {:?}", msg);
                     match msg {
                         NucleusP2pMsg::ReqRes(req) => {
                             log::info!("in cage: incoming request: {:?}", req);
@@ -246,12 +163,12 @@ where
                             // let result = vrs_nucleus_p2p::send_request(net_service, peer_id, payload).await;
 
                             // when respond, use req.pending_response to send oneshot OutgoingResponse back
-                            let outgoing_msg = OutgoingResponse {
-                                result: Ok(b"response from cage req/res handle.".to_vec()),
-                                reputation_changes: vec![],
-                                sent_feedback: None
-                            };
-                            _ = req.pending_response.send(outgoing_msg);
+                            // let outgoing_msg = OutgoingResponse {
+                            //     result: Ok(b"response from cage req/res handle.".to_vec()),
+                            //     reputation_changes: vec![],
+                            //     sent_feedback: None
+                            // };
+                            // _ = req.pending_response.send(outgoing_msg);
 
                         }
                         NucleusP2pMsg::Noti(noti) => {
@@ -281,28 +198,25 @@ where
                 }
                 timer_entry = timer_scheduler.pop() => {
                     if let Some(entry) = timer_entry {
-
-                    //todo: which sender to reply to?
-                    let (tx, rx) = oneshot::channel();
-                    let (timer_tx,timer_rx) = oneshot::channel();
-                    timers_receivers.push(timer_rx);
-                    if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
-                        nucleus.forward(Gluon::TimerRequest {
-                            endpoint: entry.func_name,
-                            payload: entry.func_params,
-                            reply_to: Some(tx),
-                            pending_timer_queue: timer_tx,
-                        });
-                    }
+                        if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
+                            nucleus.forward(Gluon::TimerRequest {
+                                endpoint: entry.func_name,
+                                payload: entry.func_params,
+                            });
+                        }
                     }
                 },
                 http_reply = http_executor.poll() => {
-                    println!("{:?}", http_reply);
+                    if http_reply.is_err() {
+                        log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply.err());
+                        continue;
+                    }
+                    println!("recv response: {:?}", http_reply);
                     let HttpResponseWithCallback {
                         nucleus_id,
                         req_id,
                         response,
-                    } = http_reply.expect("HttpCallRegister must exists;qed");
+                    } = http_reply.expect("already checked").expect("HttpCallRegister must exists;qed");
                     if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
                         nucleus.forward(Gluon::HttpCallback {
                             request_id: req_id,
@@ -321,7 +235,7 @@ where
                 // TODO replace this with token received
                 token = token_rx.recv() => {
                     log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
-                    // TODO only drain the nucleus that token
+                    // TODO only drain the associated nucleus
                     nuclei.values_mut().for_each(|nucleus| nucleus.drain(vec![]));
                 }
             }
@@ -419,21 +333,22 @@ where
     let runtime = Runtime::init(config)?;
     let state = runtime.state.clone();
     let (tx, rx) = std::sync::mpsc::channel();
-    let mut nucleus = Nucleus::new(rx, runtime, wasm);
-    std::thread::spawn(move || {
-        nucleus.run();
-    });
-    nuclei.insert(
-        id.clone(),
-        NucleusCage {
-            nucleus_id: id,
-            tunnel: tx,
-            pending_requests: vec![],
-            pending_timer_requests: vec![],
-            event_id: current_event,
-            state,
-        },
-    );
+    if let Ok(mut nucleus) = Nucleus::init(rx, runtime, wasm) {
+        // FIXME how to notify the user that his code is invalid?
+        std::thread::spawn(move || {
+            nucleus.run();
+        });
+        nuclei.insert(
+            id.clone(),
+            NucleusCage {
+                nucleus_id: id,
+                tunnel: tx,
+                pending_requests: vec![],
+                event_id: current_event,
+                state,
+            },
+        );
+    }
     Ok(())
 }
 
@@ -478,28 +393,25 @@ mod tests {
         task::spawn_blocking(move || {
             nucleus.run();
         });
-        let mut receivers = FuturesUnordered::new();
-        let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
-        receivers.push(receiver_timer_reply);
-        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        // let mut receivers = FuturesUnordered::new();
+        // let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+        // receivers.push(receiver_timer_reply);
+        // let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
         sender_cage
             .send((
                 0,
                 Gluon::TimerRequest {
                     endpoint: "test_set_perfect_tree_mod_timer".to_owned(),
                     payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
-                    // reply_to: Some(sender_reply),
-                    reply_to: Some(sender_reply),
-                    pending_timer_queue: sender_timer_reply,
                 },
             ))
             .unwrap();
-        let reply = receiver_reply.await.unwrap().unwrap();
-        assert_eq!(decode(reply), 1);
-        let es = receivers.next().await.unwrap().unwrap();
-        for e in es.into_iter() {
-            sc.push(e);
-        }
+        // let reply = receiver_reply.await.unwrap().unwrap();
+        // assert_eq!(decode(reply), 1);
+        // let es = receivers.next().await.unwrap().unwrap();
+        // for e in es.into_iter() {
+        //     sc.push(e);
+        // }
         // let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
         // sender_cage
         //     .send((
@@ -520,27 +432,24 @@ mod tests {
             let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
             while let Some(entry) = sc.pop().await {
                 let sender = sender_cage_clone.clone();
-                let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
-                receivers.push(receiver_timer_reply);
-                let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+                // let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+                // receivers.push(receiver_timer_reply);
                 if let Err(err) = sender.send((
                     0,
                     Gluon::TimerRequest {
                         endpoint: entry.func_name,
                         payload: entry.func_params,
-                        reply_to: Some(sender_reply),
-                        pending_timer_queue: sender_timer_reply,
                     },
                 )) {
                     println!("fail to send timer entry: {:?}", err);
                 }
-                let reply = receiver_reply.await.unwrap().unwrap();
-                assert!(result[decode(reply) as usize] >= last);
-                last = result[last];
-                let es = receivers.next().await.unwrap().unwrap();
-                for e in es.into_iter() {
-                    sc.push(e);
-                }
+                // let reply = receiver_reply.await.unwrap().unwrap();
+                // assert!(result[decode(reply) as usize] >= last);
+                // last = result[last];
+                // let es = receivers.next().await.unwrap().unwrap();
+                // for e in es.into_iter() {
+                //     sc.push(e);
+                // }
 
                 // task::spawn_blocking(move || async move {
                 //     let reply = receiver_reply.await.unwrap();

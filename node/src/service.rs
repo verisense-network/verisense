@@ -342,14 +342,14 @@ pub fn new_full<
         );
 
         // for tests
-        let network2 = network.clone();
-        task_manager.spawn_essential_handle().spawn_blocking(
-            "nucleus-p2p-tests",
-            None,
-            async move {
-                p2ptest_task(network2, test_sender).await;
-            },
-        );
+        // let network2 = network.clone();
+        // task_manager.spawn_essential_handle().spawn_blocking(
+        //     "nucleus-p2p-tests",
+        //     None,
+        //     async move {
+        //         p2ptest_task(network2, test_sender).await;
+        //     },
+        // );
     }
 
     if role.is_authority() {

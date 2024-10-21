@@ -8,14 +8,12 @@ use codec::{Decode, Encode};
 use futures::FutureExt;
 use http_body_util::{BodyExt, Full};
 use hyper::{body::Incoming, Method, Request, Response, Uri};
+use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::{
-    pin::Pin,
-    task::{Context, Poll},
-};
 use tokio::{
     net::TcpStream,
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+    task::JoinError,
 };
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use vrs_primitives::NucleusId;
@@ -59,55 +57,32 @@ impl HttpCallExecutor {
 
     pub(crate) fn poll<'a>(
         &'a mut self,
-    ) -> impl futures::Future<Output = Option<HttpResponseWithCallback>> + 'a {
-        self.rx
-            .recv()
-            .then(|req| async move {
+    ) -> impl futures::Future<Output = Result<Option<HttpResponseWithCallback>, JoinError>> + 'a
+    {
+        self.rx.recv().then(|req| {
+            tokio::spawn(async move {
                 match req {
                     Some(req) => {
-                        let uri = req.request.uri().clone();
-                        match Self::connect(uri, local_handshake).await {
-                            Ok((mut s, _c)) => Some((
-                                req.nucleus_id,
-                                req.req_id,
-                                s.send_request(req.request)
-                                    .await
-                                    .map_err(|e| RuntimeError::HttpError(e.to_string())),
-                            )),
-                            Err(e) => Some((
-                                req.nucleus_id,
-                                req.req_id,
-                                CallResult::Err(RuntimeError::HttpError(e.to_string())),
-                            )),
-                        }
+                        let req_id = req.req_id;
+                        let nucleus_id = req.nucleus_id.clone();
+                        let response = tokio::select! {
+                            response = Self::send_request(req) => {
+                                response
+                            },
+                            _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+                                Err(RuntimeError::HttpError("timeout".to_string()))
+                            },
+                        };
+                        Some(HttpResponseWithCallback {
+                            nucleus_id,
+                            req_id,
+                            response,
+                        })
                     }
                     None => None,
                 }
             })
-            .then(|write_r| async move {
-                match write_r {
-                    Some((nid, rid, r)) => match r {
-                        Ok(response) => match Self::accumulate_frames(response).await {
-                            Ok(response) => Some(HttpResponseWithCallback {
-                                nucleus_id: nid,
-                                req_id: rid,
-                                response: CallResult::Ok(response),
-                            }),
-                            Err(e) => Some(HttpResponseWithCallback {
-                                nucleus_id: nid,
-                                req_id: rid,
-                                response: CallResult::Err(RuntimeError::HttpError(e.to_string())),
-                            }),
-                        },
-                        Err(e) => Some(HttpResponseWithCallback {
-                            nucleus_id: nid,
-                            req_id: rid,
-                            response: CallResult::Err(e),
-                        }),
-                    },
-                    None => None,
-                }
-            })
+        })
     }
 
     async fn connect<S, C, H, F>(url: Uri, handshake: H) -> std::io::Result<(S, C)>
@@ -140,6 +115,18 @@ impl HttpCallExecutor {
             body,
         };
         Ok(response)
+    }
+
+    async fn send_request(req: HttpRequestWithCallback) -> CallResult<HttpResponse> {
+        let https = hyper_tls::HttpsConnector::new();
+        let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
+        let response = client
+            .request(req.request)
+            .await
+            .map_err(|e| RuntimeError::HttpError(e.to_string()))?;
+        Self::accumulate_frames(response)
+            .await
+            .map_err(|e| RuntimeError::HttpError(e.to_string()))
     }
 }
 
@@ -255,154 +242,58 @@ where
     Ok(())
 }
 
-pin_project_lite::pin_project! {
-    #[derive(Debug)]
-    pub struct TokioStreamAdapter<T> {
-        #[pin]
-        inner: T,
-    }
-}
-
-impl<T> hyper::rt::Read for TokioStreamAdapter<T>
-where
-    T: tokio::io::AsyncRead,
-{
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        mut buf: hyper::rt::ReadBufCursor<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        let n = unsafe {
-            let mut tbuf = tokio::io::ReadBuf::uninit(buf.as_mut());
-            match tokio::io::AsyncRead::poll_read(self.project().inner, cx, &mut tbuf) {
-                Poll::Ready(Ok(())) => tbuf.filled().len(),
-                other => return other,
-            }
-        };
-
-        unsafe {
-            buf.advance(n);
-        }
-        Poll::Ready(Ok(()))
-    }
-}
-
-impl<T> hyper::rt::Write for TokioStreamAdapter<T>
-where
-    T: tokio::io::AsyncWrite,
-{
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<Result<usize, std::io::Error>> {
-        tokio::io::AsyncWrite::poll_write(self.project().inner, cx, buf)
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
-        tokio::io::AsyncWrite::poll_flush(self.project().inner, cx)
-    }
-
-    fn poll_shutdown(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        tokio::io::AsyncWrite::poll_shutdown(self.project().inner, cx)
-    }
-
-    fn is_write_vectored(&self) -> bool {
-        tokio::io::AsyncWrite::is_write_vectored(&self.inner)
-    }
-
-    fn poll_write_vectored(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        bufs: &[std::io::IoSlice<'_>],
-    ) -> Poll<Result<usize, std::io::Error>> {
-        tokio::io::AsyncWrite::poll_write_vectored(self.project().inner, cx, bufs)
-    }
-}
-
-impl<T> tokio::io::AsyncRead for TokioStreamAdapter<T>
-where
-    T: hyper::rt::Read,
-{
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        tbuf: &mut tokio::io::ReadBuf<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        let filled = tbuf.filled().len();
-        let sub_filled = unsafe {
-            let mut buf = hyper::rt::ReadBuf::uninit(tbuf.unfilled_mut());
-
-            match hyper::rt::Read::poll_read(self.project().inner, cx, buf.unfilled()) {
-                Poll::Ready(Ok(())) => buf.filled().len(),
-                other => return other,
-            }
-        };
-
-        let n_filled = filled + sub_filled;
-        let n_init = sub_filled;
-        unsafe {
-            tbuf.assume_init(n_init);
-            tbuf.set_filled(n_filled);
-        }
-
-        Poll::Ready(Ok(()))
-    }
-}
-
-impl<T> tokio::io::AsyncWrite for TokioStreamAdapter<T>
-where
-    T: hyper::rt::Write,
-{
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<Result<usize, std::io::Error>> {
-        hyper::rt::Write::poll_write(self.project().inner, cx, buf)
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
-        hyper::rt::Write::poll_flush(self.project().inner, cx)
-    }
-
-    fn poll_shutdown(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        hyper::rt::Write::poll_shutdown(self.project().inner, cx)
-    }
-
-    fn is_write_vectored(&self) -> bool {
-        hyper::rt::Write::is_write_vectored(&self.inner)
-    }
-
-    fn poll_write_vectored(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        bufs: &[std::io::IoSlice<'_>],
-    ) -> Poll<Result<usize, std::io::Error>> {
-        hyper::rt::Write::poll_write_vectored(self.project().inner, cx, bufs)
-    }
-}
-
 // TODO extend this to support deterministic handshake
-async fn local_handshake<B>(
-    stream: TcpStream,
-) -> std::io::Result<(
-    hyper::client::conn::http1::SendRequest<B>,
-    hyper::client::conn::http1::Connection<TokioStreamAdapter<TcpStream>, B>,
-)>
-where
-    B: hyper::body::Body + 'static,
-    B::Data: Send,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
-{
-    let stream = TokioStreamAdapter { inner: stream };
-    hyper::client::conn::http1::handshake(stream)
-        .await
-        .map_err(|_| std::io::Error::last_os_error())
+// async fn local_handshake<B>(
+//     stream: TcpStream,
+// ) -> std::io::Result<(
+//     hyper::client::conn::http1::SendRequest<B>,
+//     hyper::client::conn::http1::Connection<TokioStreamAdapter<TcpStream>, B>,
+// )>
+// where
+//     B: hyper::body::Body + 'static,
+//     B::Data: Send,
+//     B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+// {
+//     let stream = TokioStreamAdapter { inner: stream };
+//     hyper::client::conn::http1::handshake(stream)
+//         .await
+//         .map_err(|_| std::io::Error::last_os_error())
+// }
+
+#[tokio::test]
+pub async fn register_http_should_work() {
+    env_logger::init();
+    let (register, mut executor) = new_http_manager();
+    tokio::spawn(async move {
+        let req = HttpRequest {
+            head: RequestHead {
+                method: HttpMethod::Get,
+                uri: "https://www.baidu.com".to_string(),
+                headers: Default::default(),
+            },
+            body: vec![],
+        };
+        register
+            .enqueue_request(NucleusId::new([0u8; 32]), req)
+            .unwrap();
+    });
+    let mut executed: usize = 0;
+    loop {
+        if executed > 5 {
+            panic!("http never triggered");
+        }
+        tokio::select! {
+            _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
+                executed += 1;
+            }
+            response = executor.poll() => {
+                assert!(response.is_ok());
+                let response = response.unwrap();
+                assert!(response.is_some());
+                let response = response.unwrap();
+                assert_eq!(response.req_id, 0);
+                break;
+            }
+        }
+    }
 }

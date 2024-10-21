@@ -11,6 +11,7 @@ pub fn post(_attr: TokenStream, func: TokenStream) -> TokenStream {
 pub fn get(_attr: TokenStream, func: TokenStream) -> TokenStream {
     expand(func, "get")
 }
+
 #[proc_macro_attribute]
 pub fn timer(_attr: TokenStream, func: TokenStream) -> TokenStream {
     expand(func, "timer")
@@ -26,7 +27,7 @@ pub fn init(_attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn callback(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func = parse_macro_input!(item as ItemFn);
-    let func_name = format_ident!("__nucleus_callback");
+    let func_name = format_ident!("__nucleus_http_callback");
     expand_no_return(func, func_name)
 }
 

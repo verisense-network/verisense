@@ -1,11 +1,10 @@
-use std::{pin::Pin, sync::Arc, task::Poll};
-
 use crate::{
     mem,
     runtime::{ComponentProvider, ContextAware},
     Runtime, TimerEntry, TimerQueue,
 };
 use chrono::Utc;
+use std::{pin::Pin, sync::Arc, task::Poll};
 use tokio::sync::{
     mpsc::{UnboundedReceiver, UnboundedSender},
     Mutex,
@@ -83,14 +82,17 @@ impl PendingTimerQueue {
             pending_timer: Arc::new(std::sync::Mutex::new(TimerQueue::new())),
         }
     }
+
     pub fn push(&self, entry: TimerEntry) {
         let mut pending_timer = self.pending_timer.lock().unwrap();
         pending_timer.push(entry);
     }
+
     pub fn pop(&self) -> Option<TimerEntry> {
         let mut pending_timer = self.pending_timer.lock().unwrap();
         pending_timer.pop()
     }
+
     pub fn is_empty(&self) -> bool {
         let pending_timer = self.pending_timer.lock().unwrap();
         pending_timer.is_empty()
@@ -131,6 +133,7 @@ impl SchedulerAsync {
 }
 impl futures::Stream for SchedulerAsync {
     type Item = TimerEntry;
+
     fn poll_next(
         self: Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,

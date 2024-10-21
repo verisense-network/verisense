@@ -34,6 +34,7 @@ hyper-tls = "0.6.0"
 hyper-util = { version ="0.1", features = ["full"] }
 bytes = "1"
 http-body-util = "0.1.0"
+tokio-native-tls = "0.3"
 pin-project-lite = "0.2.4"
 xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
 

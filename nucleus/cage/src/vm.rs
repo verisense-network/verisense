@@ -1,17 +1,15 @@
 use crate::{
-    runtime::{ComponentProvider, ContextAware, FuncRegister},
-    CallerInfo, TimerEntry, WasmCodeRef, WasmInfo,
+    runtime::{ContextAware, FuncRegister},
+    TimerEntry, WasmCodeRef, WasmInfo,
 };
 use codec::Decode;
-use std::sync::atomic::AtomicU64;
 use thiserror::Error;
-use wasmtime::{Engine, ExternType, Instance, Module, Store, Val, WasmResults};
+use wasmtime::{Engine, ExternType, Instance, Module, Store, Val};
 
 pub struct Vm<R> {
     space: Store<R>,
     instance: Instance,
     __call_param_ptr: i32,
-    // __host_func_param_ptr: i32,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -70,11 +68,10 @@ where
             WasmCodeRef::Blob(ref blob) => Module::from_binary(&engine, blob)?,
             WasmCodeRef::File(ref path) => Module::from_file(&engine, path)?,
         };
-        module.exports().for_each(|ty| match ty.ty() {
-            ExternType::Func(func) => {
+        module.exports().for_each(|ty| {
+            if let ExternType::Func(func) = ty.ty() {
                 log::debug!("user wasm export: {} {}", func.to_string(), ty.name());
             }
-            _ => {}
         });
         let mut store = Store::new(&engine, runtime);
         let linker = R::register_host_funcs(&engine);
@@ -82,7 +79,6 @@ where
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or(anyhow::anyhow!("no memory exported"))?;
-
         let ptr = memory.data_size(&store) as i32;
         memory.grow(&mut store, 1).unwrap();
         Ok(Self {
@@ -97,64 +93,39 @@ where
         func: &str,
         args: T,
     ) -> Result<(), WasmCallError> {
-        let result = self.call_method(&func, args.encode(), false);
-        result.map(|_| ())
-    }
-
-    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
-    pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
-        // self.space.data_mut().set_is_get_method(true);
-        // self.space.data_mut().push_caller_info(CallerInfo {
-        //     func: func.to_string(),
-        //     params: args.clone(),
-        //     thread_id: get_thread_id(),
-        //     caller_type: crate::CallerType::Get,
-        // });
-        let func = format!("__nucleus_get_{}", func);
-        let result = self.call_method(&func, args, true);
-        // self.space.data_mut().set_is_get_method(false);
-        // self.space.data_mut().pop_caller_info();
-        result
+        self.space.data_mut().set_read_only(false);
+        self.call_method(&func, args.encode())
+            .inspect_err(|e| log::warn!("fail to invoke inner method, {:?}", e))
+            .map(|_| ())
     }
 
     pub fn call_timer(
         &mut self,
         func: &str,
         args: Vec<u8>,
-        caller_infos: Vec<CallerInfo>,
     ) -> Result<(Vec<u8>, Vec<TimerEntry>), WasmCallError> {
+        self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_timer_{}", func);
-        let result = self.call_method(&func, args, false)?;
+        let result = self.call_method(&func, args)?;
         let timer = self.space.data().pop_all_pending_timer();
         Ok((result, timer))
     }
 
-    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
+    pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+        self.space.data_mut().set_read_only(true);
+        let func = format!("__nucleus_get_{}", func);
+        let result = self.call_method(&func, args);
+        result
+    }
+
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
-        // self.space.data_mut().set_is_get_method(false);
-        // let new_caller_infos = vec![
-        //     caller_infos,
-        //     vec![CallerInfo {
-        //         func: func.to_string(),
-        //         params: args.clone(),
-        //         thread_id: get_thread_id(),
-        //         caller_type: crate::CallerType::Post,
-        //     }],
-        // ]
-        // .concat();
-        // self.space.data_mut().replace_caller_infos(new_caller_infos);
+        self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_post_{}", func);
-        let result = self.call_method(&func, args, false);
-        // self.space.data_mut().pop_caller_info();
+        let result = self.call_method(&func, args);
         return result;
     }
 
-    fn call_method(
-        &mut self,
-        func_name: &str,
-        args: Vec<u8>,
-        is_get: bool,
-    ) -> Result<Vec<u8>, WasmCallError> {
+    fn call_method(&mut self, func_name: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         let func = self
             .instance
             .get_func(&mut self.space, &func_name)
@@ -192,12 +163,7 @@ where
         memory
             .read(&mut self.space, result_ptr, &mut result_len_bytes)
             .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
-        // println!("{:?}", result_len_bytes);
         let result_len = u32::from_le_bytes(result_len_bytes);
-
-        // if result_len > 65536 * 128 {
-        //     return Err(WasmCallError::ResultSizeExceeded);
-        // }
 
         // Read result data
         let mut result_data = vec![0u8; result_len as usize];
@@ -211,18 +177,6 @@ where
 
         Ok(result)
     }
-
-    // TODO we need to re-degisn the caller context(the previous context is now called runtime)
-    // pub fn pop_pending_timer(&mut self) -> Option<TimerEntry> {
-    //     self.space.data_mut().pop_timer_entry()
-    // }
-}
-
-fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
-    let mut b = a.clone();
-    let c = u32::from_ne_bytes([b[0], b[1], b[2], b[3]]);
-    b.drain(0..4);
-    (c, b)
 }
 
 // #[cfg(test)]
@@ -543,28 +497,6 @@ fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
 //         assert_eq!(s, Err("Failed to decode arguments tuple".to_string()));
 //     }
 //     #[test]
-//     pub fn test_put_get_dynamic() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("2").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-//         let result = vm.call_post("test_put_get", vec![], vec![]).unwrap();
-//         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
-//             .unwrap()
-//             .unwrap();
-//         assert_eq!(s, "1".repeat(65536 * 16));
-//     }
-//     #[test]
 //     pub fn test_not_found() {
 //         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
 //         let wasm = WasmInfo {
@@ -585,28 +517,6 @@ fn decode_result(a: Vec<u8>) -> (u32, Vec<u8>) {
 //             .unwrap()
 //             .unwrap();
 //         assert_eq!(s, "");
-//     }
-//     #[test]
-//     pub fn test_put_get_static() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("2").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-//         let result = vm.call_post("test_put_get_static", vec![], vec![]).unwrap();
-//         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
-//             .unwrap()
-//             .unwrap();
-//         assert_eq!(s, "test_value");
 //     }
 //     #[test]
 //     pub fn test_multiple_set_time_delay() {

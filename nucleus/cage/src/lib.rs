@@ -14,7 +14,7 @@ pub(crate) use host_func::timer_entry::*;
 
 pub use bytecode::{WasmCodeRef, WasmInfo};
 pub use cage::{start_nucleus_cage, CageParams};
-pub use nucleus::Gluon;
+pub use nucleus::{Event, Gluon};
 pub use runtime::{Runtime, RuntimeParams};
 
 pub type NucleusResponse = Result<Vec<u8>, (i32, String)>;
