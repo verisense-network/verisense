@@ -286,11 +286,13 @@ where
                                 "TimerInit",
                                 e
                             );
+                            pending_timer_queue.send(vec![]).unwrap();
                         }
                     }
                 }
                 None => {
                     log::error!("vm not initialized");
+                    pending_timer_queue.send(vec![]).unwrap();
                 }
             },
         }
@@ -315,7 +317,15 @@ mod tests {
             receiver,
             vm: Some(vm),
         };
+        let (tx_post, rx_post) = oneshot::channel();
+        let init_msg = Gluon::TimerInitRequest {
+            pending_timer_queue: tx_post,
+        };
+        sender.send((0, init_msg)).unwrap();
+        let (_, msg) = nucleus.receiver.recv().unwrap();
+        nucleus.accept(msg);
 
+        rx_post.await.unwrap();
         let (tx_get, rx_get) = oneshot::channel();
         let get_msg = Gluon::GetRequest {
             endpoint: "get".to_string(),

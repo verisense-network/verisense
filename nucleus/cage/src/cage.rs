@@ -187,7 +187,16 @@ where
                     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
                         for (id, config) in instances {
                             let nucleus_path = nucleus_home_dir.join(id.to_string());
-                            start_nucleus::<B>(id, http_register.clone(), timer_scheduler.clone(), config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
+                            start_nucleus::<B>(id.clone(), http_register.clone(), timer_scheduler.clone(), config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
+
+                            if let Some(nucleus) = nuclei.get_mut(&id) {
+                                let (timer_sender, timer_receiver) = oneshot::channel();
+                                timers_receivers.push(timer_receiver);
+                                nucleus.forward(Gluon::TimerInitRequest {
+                                    pending_timer_queue: timer_sender,
+                                });
+                            }
+
                         }
                     }
                 },
