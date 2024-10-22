@@ -547,6 +547,7 @@ mod forum_tests {
             .unwrap();
         // let reply = receiver_reply.await.unwrap().unwrap();
         let es = receivers.next().await.unwrap().unwrap();
+        println!("{}", es.len());
         for e in es.into_iter() {
             sc.push(e);
         }
@@ -616,7 +617,6 @@ mod forum_tests {
                 } = http_reply
                     .expect("already checked")
                     .expect("HttpCallRegister must exists;qed");
-                println!("123");
                 sender_cage
                     .clone()
                     .send((
@@ -629,7 +629,7 @@ mod forum_tests {
                     .unwrap();
             }
         });
-        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
     }
 }
 
