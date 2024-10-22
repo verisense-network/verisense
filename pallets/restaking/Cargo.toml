@@ -1,0 +1,68 @@
+[package]
+name = "pallet-restaking"
+description = "FRAME pallet restaking for managing validators"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+parity-scale-codec = { workspace =true, default-features = false, features = [
+    "derive",
+] }
+scale-info = { version = "2.11.0", default-features = false, features = [
+    "derive",
+] }
+
+log = { version = "0.4.20", default-features = false }
+# frame deps
+frame-benchmarking = { workspace = true, default-features = false, optional = true }
+frame-support = { workspace =true }
+frame-system = { workspace = true }
+pallet-session = { workspace = true,  default-features = false, features = ["historical"]}
+sp-staking = { workspace = true , default-features = false }
+verisense-support = { path = "../../support", default-features =  false }
+serde = { version = "1.0.197", default-features = false, features = ["derive"] }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+pallet-authorship = { workspace = true, default-features = false }
+sp-core = { workspace = true }
+
+[dev-dependencies]
+sp-core = { workspace = true, default-features = true }
+sp-io = { workspace =true, default-features = true}
+sp-runtime = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+    "parity-scale-codec/std",
+    "frame-benchmarking?/std",
+    "frame-support/std",
+    "verisense-support/std",
+    "frame-system/std",
+    "scale-info/std",
+    "pallet-session/std",
+    "sp-core/std",
+    "sp-std/std",
+    "sp-staking/std",
+    "serde/std",
+    "pallet-authorship/std",
+    "sp-runtime/std",
+]
+runtime-benchmarks = [
+    "frame-benchmarking/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "frame-system/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+    "sp-staking/runtime-benchmarks",
+]
+try-runtime = [
+    "frame-support/try-runtime",
+    "frame-system/try-runtime",
+    "sp-runtime/try-runtime",
+    "pallet-session/try-runtime",
+    "pallet-authorship/try-runtime",
+]
