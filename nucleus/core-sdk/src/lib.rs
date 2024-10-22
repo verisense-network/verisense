@@ -49,6 +49,7 @@ pub use constant::*;
 pub use io::{_eprint, _print, nucleus_id};
 pub use paste;
 pub use timer::_set_timer;
+pub use timer::now;
 pub use vrs_core_macros::*;
 pub use vrs_metadata::utils::AccountId32 as AccountId;
 

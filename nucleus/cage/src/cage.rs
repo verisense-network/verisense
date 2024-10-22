@@ -199,9 +199,13 @@ where
                 timer_entry = timer_scheduler.pop() => {
                     if let Some(entry) = timer_entry {
                         if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
+                            let (timer_sender, timer_receiver) = oneshot::channel();
+                            timers_receivers.push(timer_receiver);
                             nucleus.forward(Gluon::TimerRequest {
                                 endpoint: entry.func_name,
                                 payload: entry.func_params,
+                                reply_to: None,
+                                pending_timer_queue: timer_sender,
                             });
                         }
                     }
@@ -392,25 +396,27 @@ mod tests {
         task::spawn_blocking(move || {
             nucleus.run();
         });
-        // let mut receivers = FuturesUnordered::new();
-        // let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
-        // receivers.push(receiver_timer_reply);
-        // let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        let mut receivers = FuturesUnordered::new();
+        let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+        receivers.push(receiver_timer_reply);
+        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
         sender_cage
             .send((
                 0,
                 Gluon::TimerRequest {
                     endpoint: "test_set_perfect_tree_mod_timer".to_owned(),
                     payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
+                    reply_to: Some(sender_reply),
+                    pending_timer_queue: sender_timer_reply,
                 },
             ))
             .unwrap();
-        // let reply = receiver_reply.await.unwrap().unwrap();
-        // assert_eq!(decode(reply), 1);
-        // let es = receivers.next().await.unwrap().unwrap();
-        // for e in es.into_iter() {
-        //     sc.push(e);
-        // }
+        let reply = receiver_reply.await.unwrap().unwrap();
+        assert_eq!(decode(reply), 1);
+        let es = receivers.next().await.unwrap().unwrap();
+        for e in es.into_iter() {
+            sc.push(e);
+        }
         // let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
         // sender_cage
         //     .send((
@@ -423,37 +429,203 @@ mod tests {
         //         },
         //     ))
         //     .unwrap();
-        // let reply = receiver_reply.await.unwrap().unwrap();
         // println!("{:?}", reply.1);
         // assert_eq!(decode(reply.0), 555);
+        let mut last = 0;
+        let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
+        // println!("aaa");
+        let mut len = 2;
+        while let Some(entry) = sc.pop().await {
+            let sender = sender_cage_clone.clone();
+            let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+            receivers.push(receiver_timer_reply);
+            let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+
+            if let Err(err) = sender.send((
+                0,
+                Gluon::TimerRequest {
+                    endpoint: entry.func_name,
+                    payload: entry.func_params,
+                    reply_to: Some(sender_reply),
+                    pending_timer_queue: sender_timer_reply,
+                },
+            )) {
+                println!("fail to send timer entry: {:?}", err);
+            }
+            let reply = receiver_reply.await.unwrap().unwrap();
+            println!("reply: {:?}", reply);
+            assert!(result[decode(reply.clone()) as usize] >= last);
+            last = result[decode(reply) as usize];
+            let es = receivers.next().await.unwrap().unwrap();
+            for e in es.into_iter() {
+                sc.push(e);
+            }
+            len += 1;
+            if len == result.len() {
+                break;
+            }
+            // task::spawn_blocking(move || async move {
+            //     let reply = receiver_reply.await.unwrap();
+            //     println!("reply: {:?}", reply);
+            // });
+        }
+    }
+}
+
+#[cfg(test)]
+mod forum_tests {
+    use super::*;
+    use crate::nucleus::Nucleus;
+    use crate::test_suite::new_mock_nucleus;
+    use codec::Decode;
+    use serde::{Deserialize, Serialize};
+    use std::sync::Arc;
+    use std::thread;
+    use stream::FuturesUnordered;
+    use tokio::task;
+
+    struct ResultProcessor {
+        receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
+    }
+    impl ResultProcessor {
+        fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
+            let (sender, receiver) = tokio::sync::oneshot::channel();
+            thread::spawn(move || async move {
+                let reply_to = receiver.await;
+                println!("reply: {:?}", reply_to);
+            });
+            sender
+        }
+    }
+    fn decode(data: Vec<u8>) -> i32 {
+        let mut reply = data.as_slice();
+        let reply = <Result<i32, String> as codec::Decode>::decode(&mut reply)
+            .unwrap()
+            .unwrap();
+        reply
+    }
+    #[derive(Debug, Decode, Encode, Deserialize, Serialize)]
+    pub struct VeArticle {
+        pub id: u64,
+        pub title: String,
+        pub content: String,
+        pub author_id: u64,
+        pub author_nickname: String,
+        pub subspace_id: u64,
+        pub ext_link: String,
+        pub status: i16,
+        pub weight: i16,
+        pub created_time: i64,
+        pub updated_time: i64,
+    }
+    #[tokio::test]
+    async fn test_forum() {
+        let wasm_path = "../../../veforum/veavs.wasm";
+        let (sender_cage, receiver_cage) = std::sync::mpsc::channel();
+        let (mut nucleus, mut out_of_runtime): (Nucleus<Runtime>, crate::test_suite::OutOfRuntime) =
+            new_mock_nucleus(receiver_cage, wasm_path.to_string());
+        let sender_cage_clone = sender_cage.clone();
+        let sc = Arc::new(crate::host_func::timer::SchedulerAsync::new());
+        task::spawn_blocking(move || {
+            nucleus.run();
+        });
+        let mut receivers = FuturesUnordered::new();
+        let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+        receivers.push(receiver_timer_reply);
+        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        sender_cage
+            .send((
+                0,
+                Gluon::TimerRequest {
+                    endpoint: "timer_reply_all_articles".to_owned(),
+                    payload: vec![],
+                    reply_to: Some(sender_reply),
+                    pending_timer_queue: sender_timer_reply,
+                },
+            ))
+            .unwrap();
+        let reply = receiver_reply.await.unwrap().unwrap();
+        let es = receivers.next().await.unwrap().unwrap();
+        for e in es.into_iter() {
+            sc.push(e);
+        }
+
         tokio::spawn(async move {
-            let mut last = 0;
-            let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
             while let Some(entry) = sc.pop().await {
                 let sender = sender_cage_clone.clone();
                 // let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
                 // receivers.push(receiver_timer_reply);
+                let sender = sender_cage_clone.clone();
+                let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+                receivers.push(receiver_timer_reply);
+                let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+
                 if let Err(err) = sender.send((
                     0,
                     Gluon::TimerRequest {
                         endpoint: entry.func_name,
                         payload: entry.func_params,
+                        reply_to: Some(sender_reply),
+                        pending_timer_queue: sender_timer_reply,
                     },
                 )) {
                     println!("fail to send timer entry: {:?}", err);
                 }
-                // let reply = receiver_reply.await.unwrap().unwrap();
-                // assert!(result[decode(reply) as usize] >= last);
-                // last = result[last];
-                // let es = receivers.next().await.unwrap().unwrap();
-                // for e in es.into_iter() {
-                //     sc.push(e);
-                // }
+                let reply = receiver_reply.await.unwrap().unwrap();
+                let es = receivers.next().await.unwrap().unwrap();
+                for e in es.into_iter() {
+                    sc.push(e);
+                }
+            }
+        });
 
-                // task::spawn_blocking(move || async move {
-                //     let reply = receiver_reply.await.unwrap();
-                //     println!("reply: {:?}", reply);
-                // });
+        let sender = sender_cage.clone();
+        tokio::spawn(async move {
+            loop {
+                let article = VeArticle {
+                    id: 0,
+                    title: "title".to_string(),
+                    content: "Today is a good day".to_string(),
+                    author_id: 0,
+                    author_nickname: "AI Assistant".to_string(),
+                    subspace_id: 0,
+                    ext_link: "ext_link".to_string(),
+                    status: 0,
+                    weight: 0,
+                    created_time: chrono::Utc::now().timestamp(),
+                    updated_time: 0,
+                };
+                let (article_tx, article_rx) = oneshot::channel();
+                let article_post = Gluon::PostRequest {
+                    endpoint: "add_article".to_string(),
+                    payload: article.encode(),
+                    reply_to: Some(article_tx),
+                };
+                sender.clone().send((0, article_post)).unwrap();
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            }
+        });
+        tokio::spawn(async move {
+            loop {
+                let http_reply = out_of_runtime.http_executor.poll().await;
+                let HttpResponseWithCallback {
+                    nucleus_id,
+                    req_id,
+                    response,
+                } = http_reply
+                    .expect("already checked")
+                    .expect("HttpCallRegister must exists;qed");
+                println!("123");
+                sender_cage
+                    .clone()
+                    .send((
+                        0,
+                        Gluon::HttpCallback {
+                            request_id: req_id,
+                            payload: response,
+                        },
+                    ))
+                    .unwrap();
             }
         });
         tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
