@@ -1,5 +1,8 @@
-use vrs_core_sdk::{get, init, post, set_timer, storage, timer};
-
+use vrs_core_sdk::{get, init, post, set_timer, storage, timer, timer_init};
+#[timer_init]
+pub fn timer_init() {
+    test_set_perfect_tree_mod_timer(1, 0);
+}
 #[timer]
 pub fn test_delay(a: String, b: i32) {
     storage::put(b"delay", format!("delay_complete {} {}", a, b).as_bytes()).unwrap();

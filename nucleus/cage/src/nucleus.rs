@@ -38,6 +38,9 @@ pub enum Gluon {
         reply_to: Option<ReplyTo>,
         pending_timer_queue: TimersReplyTo,
     },
+    TimerInitRequest {
+        pending_timer_queue: TimersReplyTo,
+    },
     HttpCallback {
         request_id: u64,
         payload: CallResult<HttpResponse>,
@@ -75,6 +78,7 @@ impl From<&Gluon> for Event {
                 request_id: *request_id,
                 payload: payload.clone(),
             },
+            Gluon::TimerInitRequest { .. } => Event::TimerInit {},
         }
     }
 }
@@ -104,6 +108,9 @@ impl Into<Event> for Gluon {
                 request_id,
                 payload,
             },
+            Self::TimerInitRequest {
+                pending_timer_queue,
+            } => Event::TimerInit {},
         }
     }
 }
@@ -139,6 +146,8 @@ pub enum Event {
         request_id: u64,
         payload: CallResult<HttpResponse>,
     },
+    #[codec(index = 6)]
+    TimerInit {},
     #[codec(skip)]
     Dummy,
 }
@@ -255,6 +264,28 @@ where
                                     log::error!("fail to send reply to: {:?}", err);
                                 }
                             }
+                        }
+                    }
+                }
+                None => {
+                    log::error!("vm not initialized");
+                }
+            },
+            Gluon::TimerInitRequest {
+                pending_timer_queue,
+            } => match self.vm {
+                Some(ref mut vm) => {
+                    let vm_result = vm.call_init();
+                    match vm_result {
+                        Ok(entries) => {
+                            pending_timer_queue.send(entries).unwrap();
+                        }
+                        Err(e) => {
+                            log::error!(
+                                "fail to call timer endpoint: {} due to: {:?}",
+                                "TimerInit",
+                                e
+                            );
                         }
                     }
                 }

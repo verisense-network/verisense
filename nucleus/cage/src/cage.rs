@@ -399,22 +399,18 @@ mod tests {
         let mut receivers = FuturesUnordered::new();
         let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
         receivers.push(receiver_timer_reply);
-        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
         sender_cage
             .send((
                 0,
-                Gluon::TimerRequest {
-                    endpoint: "test_set_perfect_tree_mod_timer".to_owned(),
-                    payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
-                    reply_to: Some(sender_reply),
+                Gluon::TimerInitRequest {
                     pending_timer_queue: sender_timer_reply,
                 },
             ))
             .unwrap();
-        let reply = receiver_reply.await.unwrap().unwrap();
-        assert_eq!(decode(reply), 1);
         let es = receivers.next().await.unwrap().unwrap();
+        println!("{}", es.len());
         for e in es.into_iter() {
+            println!("{:?}", e);
             sc.push(e);
         }
         // let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
@@ -532,19 +528,15 @@ mod forum_tests {
         let mut receivers = FuturesUnordered::new();
         let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
         receivers.push(receiver_timer_reply);
-        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
         sender_cage
             .send((
                 0,
-                Gluon::TimerRequest {
-                    endpoint: "timer_reply_all_articles".to_owned(),
-                    payload: vec![],
-                    reply_to: Some(sender_reply),
+                Gluon::TimerInitRequest {
                     pending_timer_queue: sender_timer_reply,
                 },
             ))
             .unwrap();
-        let reply = receiver_reply.await.unwrap().unwrap();
+        // let reply = receiver_reply.await.unwrap().unwrap();
         let es = receivers.next().await.unwrap().unwrap();
         for e in es.into_iter() {
             sc.push(e);

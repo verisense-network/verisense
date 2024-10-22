@@ -23,6 +23,44 @@ pub fn init(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func_name = format_ident!("__nucleus_init");
     expand_no_return(func, func_name)
 }
+#[proc_macro_attribute]
+pub fn timer_init(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    // Parse the input tokens into a syntax tree
+    let mut input = parse_macro_input!(item as ItemFn);
+
+    // Check if the function name is `init`
+    let fn_name = &input.sig.ident;
+    if fn_name != "timer_init" {
+        return syn::Error::new_spanned(fn_name, "function must be named `timer_init`")
+            .to_compile_error()
+            .into();
+    }
+
+    // Check if the function has no inputs
+    if !input.sig.inputs.is_empty() {
+        return syn::Error::new_spanned(
+            &input.sig.inputs,
+            "function must not have any input parameters",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    // Check if the function has no output
+    if let ReturnType::Default = input.sig.output {
+        // This is the expected case, do nothing
+    } else {
+        return syn::Error::new_spanned(&input.sig.output, "function must not have any output")
+            .to_compile_error()
+            .into();
+    }
+    // Rename the function to `__nucleus__init`
+    input.sig.ident = syn::Ident::new("__nucleus_timer_init", fn_name.span());
+
+    // Return the modified function
+    TokenStream::from(quote! {
+    #[no_mangle] #input })
+}
 
 #[proc_macro_attribute]
 pub fn callback(_attr: TokenStream, item: TokenStream) -> TokenStream {
