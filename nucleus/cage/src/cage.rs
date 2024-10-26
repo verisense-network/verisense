@@ -220,6 +220,7 @@ where
                     }
                 },
                 http_reply = http_executor.poll() => {
+                    println!("http_reply: {:?}", http_reply);
                     if http_reply.is_err() {
                         log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply.err());
                         continue;
