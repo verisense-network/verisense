@@ -201,11 +201,14 @@ where
                     }
                 },
                 Some(timer_entries) = timers_receivers.next()=>{
+                    println!("ggggg");
+                    log::info!("timer entries received: {:?}", timer_entries);
                     for entry in timer_entries.expect("Failed to receive timer entries").into_iter(){
                         timer_scheduler.push(entry);
                     }
-                }
+                },
                 timer_entry = timer_scheduler.pop() => {
+                    println!("ttttttttt");
                     if let Some(entry) = timer_entry {
                         if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
                             let (timer_sender, timer_receiver) = oneshot::channel();
@@ -219,24 +222,44 @@ where
                         }
                     }
                 },
-                http_reply = http_executor.poll() => {
-                    println!("http_reply: {:?}", http_reply);
-                    if http_reply.is_err() {
-                        log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply.err());
-                        continue;
-                    }
-                    let HttpResponseWithCallback {
+                http_reply = http_executor.recv_response()=>{
+                    println!("http reply: {:?}", http_reply);
+
+                    if let Some(HttpResponseWithCallback {
                         nucleus_id,
                         req_id,
                         response,
-                    } = http_reply.expect("already checked").expect("HttpCallRegister must exists;qed");
-                    if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
-                        nucleus.forward(Gluon::HttpCallback {
-                            request_id: req_id,
-                            payload: response,
-                        });
+                    }) = http_reply{
+                        if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
+                            nucleus.forward(Gluon::HttpCallback {
+                                request_id: req_id,
+                                payload: response,
+                            });
+                        }
+
+                    }else{
+                        println!("no http reply");
                     }
-                }
+                },
+                // http_reply = http_executor.poll() => {
+                //     println!("ooooooo");
+                //     log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply);
+                //     if http_reply.is_err() {
+                //         log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply.err());
+                //         continue;
+                //     }
+                //     let HttpResponseWithCallback {
+                //         nucleus_id,
+                //         req_id,
+                //         response,
+                //     } = http_reply.expect("already checked").expect("HttpCallRegister must exists;qed");
+                //     if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
+                //         nucleus.forward(Gluon::HttpCallback {
+                //             request_id: req_id,
+                //             payload: response,
+                //         });
+                //     }
+                // },
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
                     if let Some(nucleus) = nuclei.get_mut(&module) {
@@ -610,14 +633,20 @@ mod forum_tests {
         });
         tokio::spawn(async move {
             loop {
-                let http_reply = out_of_runtime.http_executor.poll().await;
+                let http_reply = out_of_runtime.http_executor.recv_response().await.unwrap();
                 let HttpResponseWithCallback {
                     nucleus_id,
                     req_id,
                     response,
-                } = http_reply
-                    .expect("already checked")
-                    .expect("HttpCallRegister must exists;qed");
+                } = http_reply;
+                // let http_reply = out_of_runtime.http_executor.poll().await;
+                // let HttpResponseWithCallback {
+                //     nucleus_id,
+                //     req_id,
+                //     response,
+                // } = http_reply
+                //     .expect("already checked")
+                //     .expect("HttpCallRegister must exists;qed");
                 sender_cage
                     .clone()
                     .send((

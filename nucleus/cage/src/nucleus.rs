@@ -540,14 +540,26 @@ mod forum_tests {
             <Result<bool, String>>::decode(&mut &article_get_result[..]).unwrap();
         println!("{:?}", article_get_result);
 
-        let http_reply = http_executor.http_executor.poll().await;
+        // let http_reply = http_executor.http_executor.poll().await;
+        // let HttpResponseWithCallback {
+        //     nucleus_id,
+        //     req_id,
+        //     response,
+        // } = http_reply
+        //     .expect("already checked")
+        //     .expect("HttpCallRegister must exists;qed");
+        // nucleus.accept(Gluon::HttpCallback {
+        //     request_id: req_id,
+        //     payload: response,
+        // });
+        // let request = http_executor.http_executor.recv_request().await.unwrap();
+        // http_executor.http_executor.process_request(request);
+        let http_reply = http_executor.http_executor.recv_response().await.unwrap();
         let HttpResponseWithCallback {
             nucleus_id,
             req_id,
             response,
-        } = http_reply
-            .expect("already checked")
-            .expect("HttpCallRegister must exists;qed");
+        } = http_reply;
         nucleus.accept(Gluon::HttpCallback {
             request_id: req_id,
             payload: response,
