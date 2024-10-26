@@ -243,8 +243,7 @@ where
                         Ok((result, entries)) => {
                             if let Some(reply_to) = reply_to {
                                 if let Err(err) = reply_to.send(Ok(result)) {
-                                    println!("fail to send reply to: {:?}", err);
-                                    log::error!("fail to send reply to: {:?}", err);
+                                    log::error!("⏲️ Fail to send reply to: {:?}", err);
                                 }
                             }
                             pending_timer_queue.send(entries).unwrap();
@@ -260,8 +259,7 @@ where
                                 if let Err(err) = reply_to
                                     .send(Err((VM_ERROR << 10 + e.to_error_code(), e.to_string())))
                                 {
-                                    println!("fail to send reply to: {:?}", err);
-                                    log::error!("fail to send reply to: {:?}", err);
+                                    log::error!("⏲️ Fail to send reply to: {:?}", err);
                                 }
                             }
                         }

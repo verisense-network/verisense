@@ -66,11 +66,11 @@ impl HttpCallExecutor {
                     tokio::spawn(async move {
                         let response = tokio::select! {
                             response = Self::send_request(req) => {
-                                println!("http response: {:?}", response);
+                                log::info!("🌐 Http response: {:?}", response);
                                 response
                             },
                             _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
-                                println!("http response: timeout");
+                                log::info!("🌐 Http response: timeout");
                                 Err(RuntimeError::HttpError("timeout".to_string()))
                             },
                         };
@@ -80,11 +80,11 @@ impl HttpCallExecutor {
                             response,
                         });
                         if r.is_err() {
-                            log::error!("send response failed");
+                            log::error!("🌐 Send response failed");
                         }
                     });
                 } else {
-                    println!("http executor receive none");
+                    log::info!("🌐 Http executor receive none");
                 }
             }
         });

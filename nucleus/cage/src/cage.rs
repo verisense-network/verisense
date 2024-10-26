@@ -201,14 +201,13 @@ where
                     }
                 },
                 Some(timer_entries) = timers_receivers.next()=>{
-                    println!("ggggg");
-                    log::info!("timer entries received: {:?}", timer_entries);
+                    log::info!("⏲️ Timer entries received: {:?}", timer_entries);
                     for entry in timer_entries.expect("Failed to receive timer entries").into_iter(){
                         timer_scheduler.push(entry);
                     }
                 },
                 timer_entry = timer_scheduler.pop() => {
-                    println!("ttttttttt");
+                    log::info!("⏲️ Timer gluon sent: {:?}", timer_entry);
                     if let Some(entry) = timer_entry {
                         if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
                             let (timer_sender, timer_receiver) = oneshot::channel();
@@ -223,7 +222,7 @@ where
                     }
                 },
                 http_reply = http_executor.recv_response()=>{
-                    println!("http reply: {:?}", http_reply);
+                    log::info!("🌐 Http reply: {:?}", http_reply);
 
                     if let Some(HttpResponseWithCallback {
                         nucleus_id,
@@ -238,7 +237,7 @@ where
                         }
 
                     }else{
-                        println!("no http reply");
+                        log::error!("🌐 No http reply");
                     }
                 },
                 // http_reply = http_executor.poll() => {
