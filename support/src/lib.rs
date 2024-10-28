@@ -12,6 +12,6 @@ macro_rules! log {
 }
 
 pub trait ValidatorsProvider<AccountId> {
-    fn provide() -> Vec<(AccountId, u128)>;
+	fn provide() -> Vec<(AccountId, u128)>;
 	fn next_validators_set_id() -> u32;
 }
