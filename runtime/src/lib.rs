@@ -17,6 +17,7 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
+use pallet_session::historical as session_historical;
 
 pub use frame_support::{
     construct_runtime, derive_impl, parameter_types,
@@ -43,6 +44,7 @@ use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
+use sp_runtime::traits::{ConvertInto, OpaqueKeys};
 pub use vrs_primitives::*;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -104,6 +106,7 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -161,28 +164,28 @@ impl frame_system::Config for Runtime {
 }
 
 impl pallet_aura::Config for Runtime {
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
     type AuthorityId = AuraId;
-    type DisabledValidators = ();
     type MaxAuthorities = ConstU32<32>;
+    type DisabledValidators = ();
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
     type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
 impl pallet_grandpa::Config for Runtime {
-    type EquivocationReportSystem = ();
-    type KeyOwnerProof = sp_core::Void;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
     type MaxAuthorities = ConstU32<32>;
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = ConstU64<0>;
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+    type KeyOwnerProof = sp_core::Void;
+    type EquivocationReportSystem = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
-    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
     type OnTimestampSet = Aura;
+    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
 
@@ -190,21 +193,21 @@ impl pallet_timestamp::Config for Runtime {
 pub const EXISTENTIAL_DEPOSIT: u128 = 500;
 
 impl pallet_balances::Config for Runtime {
-    type AccountStore = System;
+    /// The ubiquitous event type.
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = RuntimeHoldReason;
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
     /// The type for recording an account's balance.
     type Balance = Balance;
     type DustRemoval = ();
     type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
+    type AccountStore = System;
+    type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = RuntimeFreezeReason;
-    type MaxFreezes = VariantCountOf<RuntimeFreezeReason>;
     type MaxLocks = ConstU32<50>;
     type MaxReserves = ();
-    type ReserveIdentifier = [u8; 8];
-    /// The ubiquitous event type.
-    type RuntimeEvent = RuntimeEvent;
-    type RuntimeFreezeReason = RuntimeHoldReason;
-    type RuntimeHoldReason = RuntimeHoldReason;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type MaxFreezes = VariantCountOf<RuntimeFreezeReason>;
 }
 
 parameter_types! {
@@ -212,28 +215,85 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
-    type LengthToFee = IdentityFee<Balance>;
-    type OnChargeTransaction = FungibleAdapter<Balances, ()>;
-    type OperationalFeeMultiplier = ConstU8<5>;
     type RuntimeEvent = RuntimeEvent;
+    type OnChargeTransaction = FungibleAdapter<Balances, ()>;
     type WeightToFee = IdentityFee<Balance>;
+    type LengthToFee = IdentityFee<Balance>;
+    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type OperationalFeeMultiplier = ConstU8<5>;
 }
 
 impl pallet_sudo::Config for Runtime {
-    type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_nucleus::Config for Runtime {
-    type ControllerLookup = Nucleus;
-    type NodeId = NodeId;
-    type NucleusId = NucleusId;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_nucleus::weights::SubstrateWeight<Runtime>;
+    type NucleusId = NucleusId;
+    type NodeId = NodeId;
+    type ControllerLookup = Nucleus;
 }
 
+impl pallet_session::historical::Config for Runtime {
+    type FullIdentification = u128;
+    type FullIdentificationOf = pallet_validators::types::ExposureOf<Runtime>;
+}
+
+pub struct ValidatorIdOf;
+impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf {
+    fn convert(a: AccountId) -> Option<AccountId> {
+        Some(a)
+    }
+}
+
+parameter_types! {
+	pub const Period: u32 = MINUTES;
+	pub const Offset: u32 = 0;
+}
+
+impl pallet_session::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ConvertInto;
+    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Validators>;
+    type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = opaque::SessionKeys;
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+const vx: AccountId = AccountId::new(hex_literal::hex!(
+    "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+));
+
+parameter_types! {
+    pub const SessionsPerEra: sp_staking::SessionIndex = 3;
+    pub const BondingDuration: u32 = 24 * 21;
+    pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 3;
+    pub const HistoryDepth: u32 = 100;
+    pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
+    pub const VV: AccountId = vx;
+}
+
+impl pallet_validators::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type BondingDuration = BondingDuration;
+    type UnixTime = Timestamp;
+    type SessionsPerEra = SessionsPerEra;
+    type SessionInterface = Self;
+    type VV = VV;
+    type HistoryDepth = HistoryDepth;
+   // type ValidatorsProvider = ();
+}
+impl pallet_authorship::Config for Runtime {
+    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+    type EventHandler = (Validators,);
+}
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -261,19 +321,33 @@ mod runtime {
     pub type Aura = pallet_aura;
 
     #[runtime::pallet_index(3)]
-    pub type Grandpa = pallet_grandpa;
+    pub type Authorship = pallet_authorship;
 
     #[runtime::pallet_index(4)]
-    pub type Balances = pallet_balances;
+    pub type Validators = pallet_validators;
 
     #[runtime::pallet_index(5)]
-    pub type TransactionPayment = pallet_transaction_payment;
+    pub type Session = pallet_session;
 
     #[runtime::pallet_index(6)]
-    pub type Sudo = pallet_sudo;
+    pub type Grandpa = pallet_grandpa;
 
     #[runtime::pallet_index(7)]
+    pub type Historical = session_historical;
+
+    #[runtime::pallet_index(8)]
+    pub type Balances = pallet_balances;
+
+    #[runtime::pallet_index(9)]
+    pub type TransactionPayment = pallet_transaction_payment;
+
+    #[runtime::pallet_index(10)]
+    pub type Sudo = pallet_sudo;
+
+    #[runtime::pallet_index(11)]
     pub type Nucleus = pallet_nucleus;
+
+
 }
 
 /// Block header type as expected by this runtime.
