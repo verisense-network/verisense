@@ -97,6 +97,16 @@ where
         self.call_no_returns(&func, args.encode())
             .inspect_err(|e| log::warn!("fail to invoke inner method, {:?}", e))
     }
+    fn call_no_input_no_output(&mut self, func_name: &str) -> Result<(), WasmCallError> {
+        let func = self
+            .instance
+            .get_func(&mut self.space, &func_name)
+            .ok_or(WasmCallError::EndpointNotFound)?;
+        println!("FUNC{:?} {}", func, func_name);
+        func.call(&mut self.space, &[], &mut [])
+            .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
+        Ok(())
+    }
 
     fn call_no_returns(&mut self, func_name: &str, args: Vec<u8>) -> Result<(), WasmCallError> {
         let func = self
@@ -141,7 +151,15 @@ where
         let timer = self.space.data().pop_all_pending_timer();
         Ok((result, timer))
     }
-
+    pub fn call_init(&mut self) -> Result<Vec<TimerEntry>, WasmCallError> {
+        self.space.data_mut().set_read_only(false);
+        let func = "__nucleus_timer_init";
+        println!("call init");
+        let _ = self.call_no_input_no_output(&func)?;
+        let timer = self.space.data().pop_all_pending_timer();
+        println!("timer: {:?}", timer);
+        Ok(timer)
+    }
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(true);
         let func = format!("__nucleus_get_{}", func);

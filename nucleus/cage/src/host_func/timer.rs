@@ -35,6 +35,20 @@ pub(crate) fn register_timer_signature(engine: &Engine) -> FuncType {
 
 /// the signature of this host function is:
 ///
+pub(crate) fn now_timestamp_signature(engine: &Engine) -> FuncType {
+    FuncType::new(&engine, [], [ValType::I32])
+}
+pub(crate) fn now_timestamp(
+    mut caller: Caller<'_, Runtime>,
+    _params: &[Val],
+    results: &mut [Val],
+) -> anyhow::Result<()> {
+    results[0] = Val::I32(Utc::now().timestamp() as i32);
+    Ok(())
+}
+
+/// the signature of this host function is:
+///
 pub(crate) fn register_timer<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],

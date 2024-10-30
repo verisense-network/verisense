@@ -190,5 +190,13 @@ impl FuncRegister for Runtime {
             )
             .unwrap();
         linker
+            .func_new(
+                "env",
+                "now_timestamp",
+                timer::now_timestamp_signature(engine),
+                timer::now_timestamp,
+            )
+            .unwrap();
+        linker
     }
 }

@@ -11,6 +11,10 @@ extern "C" {
         params_ptr: *const u8,
         params_len: i32,
     ) -> i32;
+    fn now_timestamp() -> i32;
+}
+pub fn now() -> i32 {
+    unsafe { now_timestamp() }
 }
 
 pub fn _set_timer(ts: Duration, func: &[u8], params: &[u8]) -> anyhow::Result<()> {
@@ -41,7 +45,7 @@ pub fn _set_timer(ts: Duration, func: &[u8], params: &[u8]) -> anyhow::Result<()
 
 #[macro_export]
 macro_rules! set_timer {
-    ($duration:expr, $func_name:ident, $($param:expr),* $(,)?) => {{
+    ($duration:expr, $func_name:ident $(, $param:expr)* $(,)?) => {{
 
         let __duration = std::time::Duration::from_secs($duration);
         // func_name
