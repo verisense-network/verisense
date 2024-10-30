@@ -6,7 +6,8 @@ members = [
     "nucleus/*",
     "primitives",
     "metadata",
-    "nucleus-examples"
+    "nucleus-examples",
+    "support"
 ]
 resolver = "2"
 
@@ -31,7 +32,7 @@ frame-support = { version = "36.0.0", default-features = false }
 frame-system = { version = "36.0.0", default-features = false }
 substrate-frame-rpc-system = { version = "36.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "33.0.0", default-features = false }
-
+frame-benchmarking = {version = "33.0.0", default-features = false}
 # frame pallets
 pallet-aura = { version = "35.0.0", default-features = false }
 pallet-balances = { version = "37.0.0", default-features = false }
@@ -41,7 +42,11 @@ pallet-timestamp = { version = "35.0.0", default-features = false }
 pallet-transaction-payment = { version = "36.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "38.0.0", default-features = true }
 pallet-transaction-payment-rpc-runtime-api = { version = "36.0.0", default-features = false }
-
+pallet-authorship = {version = "36.0.0", default-features = false }
+pallet-session = {version = "36.0.0", default-features = false }
+pallet-im-online = {version = "35.0.0", default-features = false }
+pallet-offences = {version = "35.0.0", default-features = false }
+parity-scale-codec = { version = "3.6.12", default-features = false }
 # primitives
 sp-api = { version = "33.0.0", default-features = false }
 sp-block-builder = { version = "33.0.0", default-features = false }
@@ -69,6 +74,6 @@ sp-genesis-builder = { version = "0.14.0", default-features = false }
 sp-io = { version = "37.0.0", default-features = false }
 sp-keyring = { version = "38.0.0", default-features = false }
 sp-blockchain = { version = "35.0.0", default-features = false }
-
+sp-staking = {version = "33.0.0", default-features = false}
 # wasmtime
 wasmtime = { version = "22.0.0" }
