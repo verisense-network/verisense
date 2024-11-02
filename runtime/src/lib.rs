@@ -4,6 +4,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_grandpa::AuthorityId as GrandpaId;
+use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -17,7 +18,6 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use pallet_session::historical as session_historical;
 
 pub use frame_support::{
     construct_runtime, derive_impl, parameter_types,
@@ -41,10 +41,10 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
+use sp_runtime::traits::{ConvertInto, OpaqueKeys};
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
-use sp_runtime::traits::{ConvertInto, OpaqueKeys};
 pub use vrs_primitives::*;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -67,6 +67,7 @@ pub mod opaque {
         pub struct SessionKeys {
             pub aura: Aura,
             pub grandpa: Grandpa,
+            pub mrp2p: Mrp2p, // TODO: impl a pallet_mrp2p in runtime
         }
     }
 }
@@ -250,8 +251,8 @@ impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf
 }
 
 parameter_types! {
-	pub const Period: u32 = MINUTES;
-	pub const Offset: u32 = 0;
+    pub const Period: u32 = MINUTES;
+    pub const Offset: u32 = 0;
 }
 
 impl pallet_session::Config for Runtime {
@@ -288,7 +289,7 @@ impl pallet_validators::Config for Runtime {
     type SessionInterface = Self;
     type VV = VV;
     type HistoryDepth = HistoryDepth;
-   // type ValidatorsProvider = ();
+    // type ValidatorsProvider = ();
 }
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
@@ -346,8 +347,6 @@ mod runtime {
 
     #[runtime::pallet_index(11)]
     pub type Nucleus = pallet_nucleus;
-
-
 }
 
 /// Block header type as expected by this runtime.

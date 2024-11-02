@@ -10,6 +10,7 @@ use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpS
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use sp_keystore::{Keystore, KeystorePtr};
 use std::str::FromStr;
 use std::{sync::Arc, time::Duration};
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
@@ -450,6 +451,62 @@ pub fn new_full<
     }
     network_starter.start_network();
     Ok(task_manager)
+}
+
+use sp_core::{crypto::KeyTypeId, sr25519, Pair};
+
+pub fn get_public_from_keystore(
+    // keystore: &dyn Keystore,
+    keystore: KeystorePtr,
+) -> Result<sr25519::Public, Box<dyn std::error::Error>> {
+    use super::chain_spec::MRP2P_KEY_TYPE;
+    // Get all public keys
+    let public_keys = keystore.sr25519_public_keys(MRP2P_KEY_TYPE);
+
+    // Get existing key or generate new one
+    let public_id = if let Some(pk) = public_keys.first() {
+        *pk
+    } else {
+        keystore.sr25519_generate_new(KEY_TYPE, None)?
+    };
+
+    Ok(public_id)
+}
+
+fn sign_message(
+    // keystore: &dyn Keystore,
+    keystore: KeystorePtr,
+    message: &[u8],
+) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
+    use super::chain_spec::MRP2P_KEY_TYPE;
+    // Get public key
+    let public = keystore
+        .sr25519_public_keys(MRP2P_KEY_TYPE)
+        .first()
+        .copied()
+        .ok_or("No public key found")?;
+
+    // Sign the message
+    let signature = keystore
+        .sr25519_sign(KEY_TYPE, &public, message)?
+        .ok_or("Message signing failed")?;
+
+    Ok(signature)
+}
+
+// 2. Sign with specific public key
+fn sign_with_public(
+    // keystore: &dyn Keystore,
+    keystore: KeystorePtr,
+    public: &sr25519::Public,
+    message: &[u8],
+) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
+    use super::chain_spec::MRP2P_KEY_TYPE;
+    let signature = keystore
+        .sr25519_sign(MRP2P_KEY_TYPE, public, message)?
+        .ok_or("Message signing failed")?;
+
+    Ok(signature)
 }
 
 async fn p2ptest_task(

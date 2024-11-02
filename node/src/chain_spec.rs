@@ -1,10 +1,21 @@
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
+use sp_core::crypto::KeyTypeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use vrs_runtime::{AccountId, Signature, WASM_BINARY};
 use vrs_runtime::opaque::SessionKeys;
+use vrs_runtime::{AccountId, Signature, WASM_BINARY};
+
+pub const MRP2P_KEY_TYPE: KeyTypeId = KeyTypeId(*b"mp2p");
+
+mod mrp2p {
+    use super::MRP2P_KEY_TYPE;
+    use sp_runtime::app_crypto::{app_crypto, sr25519};
+    app_crypto!(sr25519, MRP2P_KEY_TYPE);
+}
+
+pub use mrp2p::Public as Mrp2pId;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -31,7 +42,12 @@ where
 
 /// Generate an Aura authority key.
 pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId) {
-    (get_account_id_from_seed::<sr25519::Public>(&s), get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+    (
+        get_account_id_from_seed::<sr25519::Public>(&s),
+        get_from_seed::<AuraId>(s),
+        get_from_seed::<GrandpaId>(s),
+        get_from_seed::<Mrp2pId>(s),
+    )
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -98,7 +114,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId, Mrp2pId)>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
@@ -122,6 +138,7 @@ fn testnet_genesis(
                         session_keys(
                             x.1.clone(),
                             x.2.clone(),
+                            x.3.clone(),
                         ),
                     )
                 })
@@ -130,14 +147,10 @@ fn testnet_genesis(
     })
 }
 
-
-fn session_keys(
-    aura: AuraId,
-    grandpa: GrandpaId,
-) -> SessionKeys {
+fn session_keys(aura: AuraId, grandpa: GrandpaId, mrp2p: Mrp2pId) -> SessionKeys {
     SessionKeys {
         aura,
         grandpa,
+        mrp2p,
     }
 }
-
