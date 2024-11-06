@@ -310,6 +310,7 @@ pub fn new_full<
             tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
         ) = tokio::sync::mpsc::unbounded_channel();
         let params = vrs_nucleus_p2p::P2pParams {
+            keystore: keystore_container.keystore(),
             reqres_receiver,
             client: client.clone(),
             net_service: network.clone(),
@@ -327,6 +328,7 @@ pub fn new_full<
         );
 
         let params = vrs_nucleus_cage::CageParams {
+            keystore: keystore_container.keystore(),
             nucleus_rpc_rx,
             p2p_cage_rx,
             noti_sender,
@@ -451,62 +453,6 @@ pub fn new_full<
     }
     network_starter.start_network();
     Ok(task_manager)
-}
-
-use sp_core::{crypto::KeyTypeId, sr25519, Pair};
-
-pub fn get_public_from_keystore(
-    // keystore: &dyn Keystore,
-    keystore: KeystorePtr,
-) -> Result<sr25519::Public, Box<dyn std::error::Error>> {
-    use super::chain_spec::MRP2P_KEY_TYPE;
-    // Get all public keys
-    let public_keys = keystore.sr25519_public_keys(MRP2P_KEY_TYPE);
-
-    // Get existing key or generate new one
-    let public_id = if let Some(pk) = public_keys.first() {
-        *pk
-    } else {
-        keystore.sr25519_generate_new(KEY_TYPE, None)?
-    };
-
-    Ok(public_id)
-}
-
-fn sign_message(
-    // keystore: &dyn Keystore,
-    keystore: KeystorePtr,
-    message: &[u8],
-) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
-    use super::chain_spec::MRP2P_KEY_TYPE;
-    // Get public key
-    let public = keystore
-        .sr25519_public_keys(MRP2P_KEY_TYPE)
-        .first()
-        .copied()
-        .ok_or("No public key found")?;
-
-    // Sign the message
-    let signature = keystore
-        .sr25519_sign(KEY_TYPE, &public, message)?
-        .ok_or("Message signing failed")?;
-
-    Ok(signature)
-}
-
-// 2. Sign with specific public key
-fn sign_with_public(
-    // keystore: &dyn Keystore,
-    keystore: KeystorePtr,
-    public: &sr25519::Public,
-    message: &[u8],
-) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
-    use super::chain_spec::MRP2P_KEY_TYPE;
-    let signature = keystore
-        .sr25519_sign(MRP2P_KEY_TYPE, public, message)?
-        .ok_or("Message signing failed")?;
-
-    Ok(signature)
 }
 
 async fn p2ptest_task(

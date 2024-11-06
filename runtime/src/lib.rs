@@ -347,6 +347,9 @@ mod runtime {
 
     #[runtime::pallet_index(11)]
     pub type Nucleus = pallet_nucleus;
+
+    #[runtime::pallet_index(12)]
+    pub type Mrp2p = pallet_mrp2p;
 }
 
 /// Block header type as expected by this runtime.
