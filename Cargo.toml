@@ -64,7 +64,7 @@ sp-runtime = { features = [
 ], version = "38.0.0", default-features = false }
 sp-timestamp = { version = "33.0.0", default-features = false }
 sp-session = { version = "34.0.0", default-features = false }
-sp-keystore = { version = "34.0.0", default-features = false }
+sp-keystore = { version = "0.40.0", default-features = false }
 sp-std = { version = "14.0.0", default-features = false }
 sp-storage = { version = "21.0.0", default-features = false }
 sp-transaction-pool = { version = "33.0.0", default-features = false }

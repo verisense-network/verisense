@@ -8,7 +8,7 @@ use frame_support::{
     traits::{DisabledValidators, FindAuthor, Get, OnTimestampSet, OneSessionHandler},
     BoundedSlice, BoundedVec, ConsensusEngineId, Parameter,
 };
-use log;
+// use log;
 use sp_consensus_aura::{AuthorityIndex, ConsensusLog, Slot, AURA_ENGINE_ID};
 use sp_runtime::{
     generic::DigestItem,
@@ -58,14 +58,14 @@ pub mod pallet {
         }
     }
 
-    /// The current authority set.
+    // /// The current authority set.
     // #[pallet::storage]
     // pub type Authorities<T: Config> =
     //     StorageValue<_, BoundedVec<T::AuthorityId, T::MaxAuthorities>, ValueQuery>;
 
-    /// The current slot of this block.
-    ///
-    /// This will be set in `on_initialize`.
+    // /// The current slot of this block.
+    // ///
+    // /// This will be set in `on_initialize`.
     // #[pallet::storage]
     // pub type CurrentSlot<T: Config> = StorageValue<_, Slot, ValueQuery>;
 
@@ -89,3 +89,48 @@ pub mod pallet {
 impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
     type Public = T::AuthorityId;
 }
+
+impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+	type Key = T::AuthorityId;
+
+	fn on_genesis_session<'a, I: 'a>(validators: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		// let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
+		// Self::initialize_authorities(&authorities);
+	}
+
+	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		// instant changes
+		// if changed {
+		// 	let next_authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
+		// 	let last_authorities = Authorities::<T>::get();
+		// 	if last_authorities != next_authorities {
+		// 		if next_authorities.len() as u32 > T::MaxAuthorities::get() {
+		// 			log::warn!(
+		// 				target: LOG_TARGET,
+		// 				"next authorities list larger than {}, truncating",
+		// 				T::MaxAuthorities::get(),
+		// 			);
+		// 		}
+		// 		let bounded = <BoundedVec<_, T::MaxAuthorities>>::truncate_from(next_authorities);
+		// 		Self::change_authorities(bounded);
+		// 	}
+		// }
+	}
+
+	fn on_disabled(i: u32) {
+		// let log = DigestItem::Consensus(
+		// 	AURA_ENGINE_ID,
+		// 	ConsensusLog::<T::AuthorityId>::OnDisabled(i as AuthorityIndex).encode(),
+		// );
+
+		// <frame_system::Pallet<T>>::deposit_log(log);
+	}
+}
+
+

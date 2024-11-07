@@ -20,3 +20,5 @@ sp-api = { workspace = true }
 sp-keystore = { workspace = true }
 sp-blockchain = { workspace = true }
 sc-client-api = { version = "35.0.0" }
+scale-info.workspace = true
+# parity-scale-codec.workspace = true

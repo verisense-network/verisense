@@ -118,8 +118,8 @@ where
 
                     for node_id in nodes {
                         // sign the node_id, get a signature
-                        let public_key = get_public_from_keystore(keystore).map_err(|_| ())?;
-                        let signature = sign_message(keystore, &node_id.to_bytes()).map_err(|_| ())?;
+                        let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ()).expect("get public from keystore error.");
+                        let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ()).expect("sign msg error");
                         let payload = PayloadWithSignature {
                             payload: noti.clone(),
                             public_key: public_key.to_raw_vec(),
@@ -192,8 +192,8 @@ pub async fn send_request(
     node_id: &PeerId,
     data: Vec<u8>,
 ) -> Result<Vec<u8>, ()> {
-    let public_key = get_public_from_keystore(keystore).map_err(|_| ())?;
-    let signature = sign_message(keystore, &node_id.to_bytes()).map_err(|_| ())?;
+    let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
+    let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
         payload: data,
         public_key: public_key.to_raw_vec(),

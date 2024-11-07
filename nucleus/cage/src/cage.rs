@@ -167,11 +167,11 @@ where
                             let payload = req.payload;
                             // decode the payload to verify the signature
                             let payload_with_sig: PayloadWithSignature = payload.decode();
-                            let signature = sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            let public_key = sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
                             let msg = payload_with_sig.peer_id;
                             // verify the signature
-                            let verify_result = sr25519::Pair::verify(&signature, &msg, &public_key);
+                            let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
                             match verify_result {
                                 true => {
                                     // do stuff
@@ -195,11 +195,11 @@ where
                             // process notification here
                             let payload = noti.notification;
                             let payload_with_sig: PayloadWithSignature = payload.decode();
-                            let signature = sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            let public_key = sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
                             let msg = payload_with_sig.peer_id;
                             // verify the signature
-                            let verify_result = sr25519::Pair::verify(&signature, &msg, &public_key);
+                            let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
                             match verify_result {
                                 true => {
                                     // do stuff

@@ -63,6 +63,7 @@ sp-genesis-builder = { workspace = true, default-features = false }
 frame-system-rpc-runtime-api = { workspace = true, default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true, default-features = false }
 vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api", default-features = false }
+vrs-nucleus-p2p = { path = "../nucleus/p2p", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { optional = true, version = "24.0.0" }
