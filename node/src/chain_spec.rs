@@ -7,15 +7,15 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_runtime::opaque::SessionKeys;
 use vrs_runtime::{AccountId, Signature, WASM_BINARY};
 
-pub const MRP2P_KEY_TYPE: KeyTypeId = KeyTypeId(*b"mp2p");
+// pub const MRP2P_KEY_TYPE: KeyTypeId = KeyTypeId(*b"mp2p");
 
-mod mrp2p {
-    use super::MRP2P_KEY_TYPE;
-    use sp_runtime::app_crypto::{app_crypto, sr25519};
-    app_crypto!(sr25519, MRP2P_KEY_TYPE);
-}
+// mod mrp2p {
+//     use super::MRP2P_KEY_TYPE;
+//     use sp_runtime::app_crypto::{app_crypto, sr25519};
+//     app_crypto!(sr25519, MRP2P_KEY_TYPE);
+// }
 
-pub use mrp2p::Public as Mrp2pId;
+use vrs_nucleus_p2p::mrp2p::Mrp2pId;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";

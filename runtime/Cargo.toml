@@ -28,6 +28,7 @@ pallet-timestamp = { workspace = true, default-features = false }
 pallet-transaction-payment = { workspace = true, default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validators = {path = "../pallets/validators", default-features = false }
+pallet-mrp2p = { path = "../pallets/mrp2p", default-features = false }
 pallet-session = {workspace = true, default-features = false}
 pallet-im-online = {workspace = true, default-features = false}
 pallet-offences = {workspace = true, default-features = false}

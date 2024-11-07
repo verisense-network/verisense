@@ -224,7 +224,15 @@ pub async fn send_request(
     }
 }
 
+// === Important!!!
 pub const MRP2P_KEY_TYPE: KeyTypeId = KeyTypeId(*b"mp2p");
+pub mod mrp2p {
+    use super::MRP2P_KEY_TYPE;
+    use sp_runtime::app_crypto::{app_crypto, sr25519};
+    app_crypto!(sr25519, MRP2P_KEY_TYPE);
+}
+pub use mrp2p::Public as Mrp2pId;
+// ===
 
 pub fn get_public_from_keystore(
     // keystore: &dyn Keystore,
