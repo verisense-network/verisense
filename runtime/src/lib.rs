@@ -6,6 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use pallet_grandpa::AuthorityId as GrandpaId;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
+use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
@@ -44,7 +45,7 @@ use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier
 use sp_runtime::traits::{ConvertInto, OpaqueKeys};
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
+pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
 pub use vrs_primitives::*;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -67,7 +68,7 @@ pub mod opaque {
         pub struct SessionKeys {
             pub aura: Aura,
             pub grandpa: Grandpa,
-            pub mrp2p: Mrp2p, // TODO: impl a pallet_mrp2p in runtime
+            pub authority: AuthorityDiscovery,
         }
     }
 }
@@ -132,6 +133,7 @@ parameter_types! {
     pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
         ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
+    pub const MaxValidators: u32 = 256;
 }
 
 /// The default types are being injected by [`derive_impl`](`frame_support::derive_impl`) from
@@ -172,11 +174,6 @@ impl pallet_aura::Config for Runtime {
     type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
-use vrs_nucleus_p2p::mrp2p::Mrp2pId;
-impl pallet_mrp2p::Config for Runtime {
-    type AuthorityId = Mrp2pId;
-}
-
 impl pallet_grandpa::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
@@ -185,6 +182,10 @@ impl pallet_grandpa::Config for Runtime {
     type MaxSetIdSessionEntries = ConstU64<0>;
     type KeyOwnerProof = sp_core::Void;
     type EquivocationReportSystem = ();
+}
+
+impl pallet_authority_discovery::Config for Runtime {
+    type MaxAuthorities = MaxValidators;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -333,28 +334,28 @@ mod runtime {
     pub type Validators = pallet_validators;
 
     #[runtime::pallet_index(5)]
-    pub type Session = pallet_session;
+    pub type AuthorityDiscovery = pallet_authority_discovery;
 
     #[runtime::pallet_index(6)]
-    pub type Grandpa = pallet_grandpa;
+    pub type Session = pallet_session;
 
     #[runtime::pallet_index(7)]
-    pub type Historical = session_historical;
+    pub type Grandpa = pallet_grandpa;
 
     #[runtime::pallet_index(8)]
-    pub type Balances = pallet_balances;
+    pub type Historical = session_historical;
 
     #[runtime::pallet_index(9)]
-    pub type TransactionPayment = pallet_transaction_payment;
+    pub type Balances = pallet_balances;
 
     #[runtime::pallet_index(10)]
-    pub type Sudo = pallet_sudo;
+    pub type TransactionPayment = pallet_transaction_payment;
 
     #[runtime::pallet_index(11)]
-    pub type Nucleus = pallet_nucleus;
+    pub type Sudo = pallet_sudo;
 
     #[runtime::pallet_index(12)]
-    pub type Mrp2p = pallet_mrp2p;
+    pub type Nucleus = pallet_nucleus;
 }
 
 /// Block header type as expected by this runtime.

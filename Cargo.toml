@@ -39,6 +39,7 @@ pallet-balances = { version = "37.0.0", default-features = false }
 pallet-grandpa = { version = "36.0.0", default-features = false }
 pallet-sudo = { version = "36.0.0", default-features = false }
 pallet-timestamp = { version = "35.0.0", default-features = false }
+pallet-authority-discovery = { version = "36.0.0", default-features = false }
 pallet-transaction-payment = { version = "36.0.0", default-features = false }
 pallet-transaction-payment-rpc = { version = "38.0.0", default-features = true }
 pallet-transaction-payment-rpc-runtime-api = { version = "36.0.0", default-features = false }
@@ -53,6 +54,7 @@ sp-block-builder = { version = "33.0.0", default-features = false }
 sp-consensus-aura = { features = [
     "serde",
 ], version = "0.39.0", default-features = false }
+sp-authority-discovery = { version = "33.0.0", default-features = false }
 sp-consensus-grandpa = { features = [
     "serde",
 ], version = "20.0.0", default-features = false }
@@ -75,6 +77,8 @@ sp-genesis-builder = { version = "0.14.0", default-features = false }
 sp-io = { version = "37.0.0", default-features = false }
 sp-keyring = { version = "38.0.0", default-features = false }
 sp-blockchain = { version = "35.0.0", default-features = false }
-sp-staking = {version = "33.0.0", default-features = false}
+sp-application-crypto = { version = "37.0.0", default-features = false }
+sp-staking = { version = "33.0.0", default-features = false }
+
 # wasmtime
 wasmtime = { version = "22.0.0" }

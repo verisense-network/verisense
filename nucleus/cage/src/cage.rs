@@ -19,6 +19,7 @@ use sc_network::service::traits::NetworkService;
 use sc_network::PeerId;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
+use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 use stream::FuturesUnordered;
 // TODO use UnboundedSender to avoid blocking
@@ -36,7 +37,7 @@ use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::{AccountId, Hash, NodeId, NucleusId, NucleusInfo};
 
 pub struct CageParams<B, C, BN> {
-    keystore: KeystorePtr,
+    pub keystore: KeystorePtr,
     pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
     pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
     pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
@@ -164,16 +165,16 @@ where
                             // API: anywhere you want to send request, use like:
                             // let result = vrs_nucleus_p2p::send_request(net_service, keystore, peer_id, payload).await;
 
-                            let payload = req.payload;
+                            // let payload = req.payload;
                             // decode the payload to verify the signature
-                            let payload_with_sig: PayloadWithSignature = payload.decode();
-                            let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            let msg = payload_with_sig.peer_id;
+                            // let payload_with_sig: vrs_nucleus_p2p::PayloadWithSignature = payload.decode();
+                            // let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            // let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            // let msg = payload_with_sig.peer_id;
                             // verify the signature
-                            let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
-                            match verify_result {
-                                true => {
+                            // let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
+                            // match verify_result {
+                            //     true => {
                                     // do stuff
                                     // as a response role, use req.pending_response to send oneshot OutgoingResponse back
                                     // let outgoing_msg = OutgoingResponse {
@@ -182,34 +183,31 @@ where
                                     //     sent_feedback: None
                                     // };
                                     // _ = req.pending_response.send(outgoing_msg);
-
-                                }
-                                false => {
+                                // }
+                                // false => {
                                     // verified failed, do some report
 
-                                }
-                            }
+                            //     }
+                            // }
                         }
                         NucleusP2pMsg::Noti(noti) => {
                             log::info!("in cage: incoming notification: {:?}", noti);
                             // process notification here
-                            let payload = noti.notification;
-                            let payload_with_sig: PayloadWithSignature = payload.decode();
-                            let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            let msg = payload_with_sig.peer_id;
+                            // let payload = noti.notification;
+                            // let payload_with_sig: vrs_nucleus_p2p::PayloadWithSignature = payload.decode();
+                            // let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            // let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
+                            // let msg = payload_with_sig.peer_id;
                             // verify the signature
-                            let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
-                            match verify_result {
-                                true => {
+                            // let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
+                            // match verify_result {
+                            //     true => {
                                     // do stuff
-
-                                }
-                                false => {
+                                // }
+                                // false => {
                                     // verified failed, do some report
-
-                                }
-                            }
+                            //     }
+                            // }
 
                             // API: anywhere you want to send a notification, use like:
                             // the first param is the raw payload without signature, the second one Vec<> is the peer list
@@ -511,8 +509,8 @@ mod tests {
                 Gluon::TimerRequest {
                     endpoint: entry.func_name,
                     payload: entry.func_params,
-                    reply_to: Some(sender_reply),
-                    pending_timer_queue: sender_timer_reply,
+                    // reply_to: Some(sender_reply),
+                    // pending_timer_queue: sender_timer_reply,
                 },
             )) {
                 println!("fail to send timer entry: {:?}", err);

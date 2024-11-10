@@ -2,6 +2,8 @@ use codec::{Decode, Encode};
 use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sp_api::{Metadata, ProvideRuntimeApi};
+use sp_application_crypto::key_types::AUTHORITY_DISCOVERY;
+use sp_authority_discovery::AuthorityId;
 use sp_blockchain::HeaderBackend;
 use sp_core::ByteArray;
 use sp_core::{crypto::KeyTypeId, sr25519, Pair};
@@ -19,7 +21,7 @@ use sc_network::service::traits::ValidationResult;
 use sc_network::PeerId;
 
 pub struct P2pParams<B, C, BN> {
-    keystore: KeystorePtr,
+    pub keystore: KeystorePtr,
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
     pub client: Arc<C>,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
@@ -224,28 +226,18 @@ pub async fn send_request(
     }
 }
 
-// === Important!!!
-pub const MRP2P_KEY_TYPE: KeyTypeId = KeyTypeId(*b"mp2p");
-pub mod mrp2p {
-    use super::MRP2P_KEY_TYPE;
-    use sp_runtime::app_crypto::{app_crypto, sr25519};
-    app_crypto!(sr25519, MRP2P_KEY_TYPE);
-}
-pub use mrp2p::Public as Mrp2pId;
-// ===
-
 pub fn get_public_from_keystore(
     // keystore: &dyn Keystore,
     keystore: KeystorePtr,
 ) -> Result<sr25519::Public, Box<dyn std::error::Error>> {
     // Get all public keys
-    let public_keys = keystore.sr25519_public_keys(MRP2P_KEY_TYPE);
+    let public_keys = keystore.sr25519_public_keys(AUTHORITY_DISCOVERY);
 
     // Get existing key or generate new one
     let public_id = if let Some(pk) = public_keys.first() {
         *pk
     } else {
-        keystore.sr25519_generate_new(MRP2P_KEY_TYPE, None)?
+        keystore.sr25519_generate_new(AUTHORITY_DISCOVERY, None)?
     };
 
     Ok(public_id)
@@ -259,7 +251,7 @@ fn sign_with_public(
     message: &[u8],
 ) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
     let signature = keystore
-        .sr25519_sign(MRP2P_KEY_TYPE, public, message)?
+        .sr25519_sign(AUTHORITY_DISCOVERY, public, message)?
         .ok_or("Message signing failed")?;
 
     Ok(signature)
@@ -272,14 +264,14 @@ fn sign_message(
 ) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
     // Get public key
     let public = keystore
-        .sr25519_public_keys(MRP2P_KEY_TYPE)
+        .sr25519_public_keys(AUTHORITY_DISCOVERY)
         .first()
         .copied()
         .ok_or("No public key found")?;
 
     // Sign the message
     let signature = keystore
-        .sr25519_sign(MRP2P_KEY_TYPE, &public, message)?
+        .sr25519_sign(AUTHORITY_DISCOVERY, &public, message)?
         .ok_or("Message signing failed")?;
 
     Ok(signature)

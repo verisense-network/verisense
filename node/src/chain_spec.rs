@@ -1,4 +1,5 @@
 use sc_service::ChainType;
+use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::crypto::KeyTypeId;
@@ -6,19 +7,6 @@ use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_runtime::opaque::SessionKeys;
 use vrs_runtime::{AccountId, Signature, WASM_BINARY};
-
-// pub const MRP2P_KEY_TYPE: KeyTypeId = KeyTypeId(*b"mp2p");
-
-// mod mrp2p {
-//     use super::MRP2P_KEY_TYPE;
-//     use sp_runtime::app_crypto::{app_crypto, sr25519};
-//     app_crypto!(sr25519, MRP2P_KEY_TYPE);
-// }
-
-use vrs_nucleus_p2p::mrp2p::Mrp2pId;
-
-// The URL for the telemetry server.
-// const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec;
@@ -41,12 +29,12 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId) {
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, AuthorityId) {
     (
         get_account_id_from_seed::<sr25519::Public>(&s),
         get_from_seed::<AuraId>(s),
         get_from_seed::<GrandpaId>(s),
-        get_from_seed::<Mrp2pId>(s),
+        get_from_seed::<AuthorityId>(s),
     )
 }
 
@@ -114,7 +102,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-    initial_authorities: Vec<(AccountId, AuraId, GrandpaId, Mrp2pId)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId, AuthorityId)>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
@@ -147,10 +135,10 @@ fn testnet_genesis(
     })
 }
 
-fn session_keys(aura: AuraId, grandpa: GrandpaId, mrp2p: Mrp2pId) -> SessionKeys {
+fn session_keys(aura: AuraId, grandpa: GrandpaId, authority: AuthorityId) -> SessionKeys {
     SessionKeys {
         aura,
         grandpa,
-        mrp2p,
+        authority,
     }
 }
