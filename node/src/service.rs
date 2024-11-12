@@ -309,6 +309,7 @@ pub fn new_full<
             tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
         ) = tokio::sync::mpsc::unbounded_channel();
         let params = vrs_nucleus_p2p::P2pParams {
+            keystore: keystore_container.keystore(),
             reqres_receiver,
             client: client.clone(),
             net_service: network.clone(),
@@ -326,6 +327,7 @@ pub fn new_full<
         );
 
         let params = vrs_nucleus_cage::CageParams {
+            keystore: keystore_container.keystore(),
             nucleus_rpc_rx,
             p2p_cage_rx,
             noti_sender,

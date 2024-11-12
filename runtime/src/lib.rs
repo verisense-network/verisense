@@ -4,7 +4,9 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_grandpa::AuthorityId as GrandpaId;
+use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
+use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
@@ -17,7 +19,6 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use pallet_session::historical as session_historical;
 
 pub use frame_support::{
     construct_runtime, derive_impl, parameter_types,
@@ -41,10 +42,10 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
+use sp_runtime::traits::{ConvertInto, OpaqueKeys};
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
-use sp_runtime::traits::{ConvertInto, OpaqueKeys};
+pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
 pub use vrs_primitives::*;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -67,6 +68,7 @@ pub mod opaque {
         pub struct SessionKeys {
             pub aura: Aura,
             pub grandpa: Grandpa,
+            pub authority: AuthorityDiscovery,
         }
     }
 }
@@ -75,8 +77,8 @@ pub mod opaque {
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("verisence"),
-    impl_name: create_runtime_str!("verisence"),
+    spec_name: create_runtime_str!("verisense"),
+    impl_name: create_runtime_str!("verisense"),
     authoring_version: 1,
     // The version of the runtime specification. A full node will not attempt to use its native
     //   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
@@ -131,6 +133,7 @@ parameter_types! {
     pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
         ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
+    pub const MaxValidators: u32 = 256;
 }
 
 /// The default types are being injected by [`derive_impl`](`frame_support::derive_impl`) from
@@ -179,6 +182,10 @@ impl pallet_grandpa::Config for Runtime {
     type MaxSetIdSessionEntries = ConstU64<0>;
     type KeyOwnerProof = sp_core::Void;
     type EquivocationReportSystem = ();
+}
+
+impl pallet_authority_discovery::Config for Runtime {
+    type MaxAuthorities = MaxValidators;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -250,8 +257,8 @@ impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf
 }
 
 parameter_types! {
-	pub const Period: u32 = MINUTES;
-	pub const Offset: u32 = 0;
+    pub const Period: u32 = MINUTES;
+    pub const Offset: u32 = 0;
 }
 
 impl pallet_session::Config for Runtime {
@@ -288,7 +295,7 @@ impl pallet_validators::Config for Runtime {
     type SessionInterface = Self;
     type VV = VV;
     type HistoryDepth = HistoryDepth;
-   // type ValidatorsProvider = ();
+    // type ValidatorsProvider = ();
 }
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
@@ -327,27 +334,28 @@ mod runtime {
     pub type Validators = pallet_validators;
 
     #[runtime::pallet_index(5)]
-    pub type Session = pallet_session;
+    pub type AuthorityDiscovery = pallet_authority_discovery;
 
     #[runtime::pallet_index(6)]
-    pub type Grandpa = pallet_grandpa;
+    pub type Session = pallet_session;
 
     #[runtime::pallet_index(7)]
-    pub type Historical = session_historical;
+    pub type Grandpa = pallet_grandpa;
 
     #[runtime::pallet_index(8)]
-    pub type Balances = pallet_balances;
+    pub type Historical = session_historical;
 
     #[runtime::pallet_index(9)]
-    pub type TransactionPayment = pallet_transaction_payment;
+    pub type Balances = pallet_balances;
 
     #[runtime::pallet_index(10)]
-    pub type Sudo = pallet_sudo;
+    pub type TransactionPayment = pallet_transaction_payment;
 
     #[runtime::pallet_index(11)]
+    pub type Sudo = pallet_sudo;
+
+    #[runtime::pallet_index(12)]
     pub type Nucleus = pallet_nucleus;
-
-
 }
 
 /// Block header type as expected by this runtime.

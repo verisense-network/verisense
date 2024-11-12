@@ -1,13 +1,12 @@
 use sc_service::ChainType;
+use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
+use sp_core::crypto::KeyTypeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use vrs_runtime::{AccountId, Signature, WASM_BINARY};
 use vrs_runtime::opaque::SessionKeys;
-
-// The URL for the telemetry server.
-// const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
+use vrs_runtime::{AccountId, Signature, WASM_BINARY};
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec;
@@ -30,8 +29,13 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId) {
-    (get_account_id_from_seed::<sr25519::Public>(&s), get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, AuthorityId) {
+    (
+        get_account_id_from_seed::<sr25519::Public>(&s),
+        get_from_seed::<AuraId>(s),
+        get_from_seed::<GrandpaId>(s),
+        get_from_seed::<AuthorityId>(s),
+    )
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -98,7 +102,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-    initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId, AuthorityId)>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
@@ -122,6 +126,7 @@ fn testnet_genesis(
                         session_keys(
                             x.1.clone(),
                             x.2.clone(),
+                            x.3.clone(),
                         ),
                     )
                 })
@@ -130,14 +135,10 @@ fn testnet_genesis(
     })
 }
 
-
-fn session_keys(
-    aura: AuraId,
-    grandpa: GrandpaId,
-) -> SessionKeys {
+fn session_keys(aura: AuraId, grandpa: GrandpaId, authority: AuthorityId) -> SessionKeys {
     SessionKeys {
         aura,
         grandpa,
+        authority,
     }
 }
-

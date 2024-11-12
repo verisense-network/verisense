@@ -28,10 +28,11 @@ pallet-timestamp = { workspace = true, default-features = false }
 pallet-transaction-payment = { workspace = true, default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validators = {path = "../pallets/validators", default-features = false }
-pallet-session = {workspace = true, default-features = false}
-pallet-im-online = {workspace = true, default-features = false}
-pallet-offences = {workspace = true, default-features = false}
-pallet-authorship = {workspace = true, default-features = false}
+pallet-session = { workspace = true, default-features = false }
+pallet-im-online = { workspace = true, default-features = false }
+pallet-offences = { workspace = true, default-features = false }
+pallet-authorship = { workspace = true, default-features = false }
+pallet-authority-discovery = { workspace = true, default-features = false }
 # primitives
 vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
@@ -43,6 +44,7 @@ sp-staking = {workspace = true, default-features = false}
 sp-consensus-grandpa = { features = [
 	"serde",
 ], workspace = true, default-features = false }
+sp-authority-discovery = { workspace = true, default-features = false }
 sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-inherents = { workspace = true, default-features = false }
 sp-offchain = { workspace = true, default-features = false }
@@ -81,6 +83,7 @@ std = [
 	"pallet-grandpa/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-authority-discovery/std",
     "pallet-im-online/std",
 	"pallet-offences/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",

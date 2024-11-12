@@ -22,6 +22,7 @@ futures = { features = ["thread-pool"], version = "0.3.30" }
 sp-core = { workspace = true }
 sp-api = { workspace = true }
 sp-blockchain = { workspace = true }
+sp-keystore = { version = "0.40.0" }
 sc-client-api = { version = "35.0.0" }
 hex = { version = "0.4" }
 thiserror = "1"

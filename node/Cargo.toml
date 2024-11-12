@@ -43,6 +43,7 @@ sp-keyring = { workspace = true, default-features = true }
 sp-api = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
 sp-block-builder = { workspace = true, default-features = true }
+sp-authority-discovery = { workspace = true, default-features = true }
 #sp-state-machine = { workspace = true, default-features = true }
 
 frame-system = { workspace = true, default-features = true }
@@ -58,6 +59,8 @@ vrs-nucleus-cage = { path = "../nucleus/cage" }
 vrs-nucleus-p2p = { path = "../nucleus/p2p" }
 tokio = { version = "1", features = ["full"] }
 async-channel = "1.8.0"
+# scale-info.workspace = true
+# parity-scale-codec.workspace = true
 
 
 [build-dependencies]
