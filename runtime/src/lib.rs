@@ -3,6 +3,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::Encode;
 use pallet_grandpa::AuthorityId as GrandpaId;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
@@ -38,15 +39,21 @@ use frame_support::{
     genesis_builder_helper::{build_state, get_preset},
     traits::VariantCountOf,
 };
+use frame_support::__private::log;
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
-use sp_runtime::traits::{ConvertInto, OpaqueKeys};
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
 pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
+use sp_runtime::generic::Era;
+use sp_runtime::traits::{ConvertInto, Extrinsic, OpaqueKeys};
+
 pub use vrs_primitives::*;
+
+use pallet_restaking::sr25519::AuthorityId as VerisenseRestakingId;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -69,6 +76,7 @@ pub mod opaque {
             pub aura: Aura,
             pub grandpa: Grandpa,
             pub authority: AuthorityDiscovery,
+            pub restaking: Restaking,
         }
     }
 }
@@ -124,7 +132,6 @@ const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
     pub const Version: RuntimeVersion = VERSION;
-    /// We allow for 2 seconds of compute with a 6 second average block time.
     pub BlockWeights: frame_system::limits::BlockWeights =
         frame_system::limits::BlockWeights::with_sensible_defaults(
             Weight::from_parts(2u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX),
@@ -273,17 +280,12 @@ impl pallet_session::Config for Runtime {
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
-const vx: AccountId = AccountId::new(hex_literal::hex!(
-    "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
-));
-
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 3;
     pub const BondingDuration: u32 = 24 * 21;
     pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 3;
     pub const HistoryDepth: u32 = 100;
     pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
-    pub const VV: AccountId = vx;
 }
 
 impl pallet_validators::Config for Runtime {
@@ -293,13 +295,105 @@ impl pallet_validators::Config for Runtime {
     type UnixTime = Timestamp;
     type SessionsPerEra = SessionsPerEra;
     type SessionInterface = Self;
-    type VV = VV;
     type HistoryDepth = HistoryDepth;
-    // type ValidatorsProvider = ();
+    type ValidatorsProvider = Restaking;
 }
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
     type EventHandler = (Validators,);
+}
+
+pub struct VerisenseRestakingAppCrypto;
+
+impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
+for VerisenseRestakingAppCrypto
+{
+    type RuntimeAppPublic = pallet_restaking::sr25519::AuthorityId;
+    type GenericPublic = sp_core::sr25519::Public;
+    type GenericSignature = sp_core::sr25519::Signature;
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+    where
+        RuntimeCall: From<C>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = RuntimeCall;
+}
+
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+    where
+        RuntimeCall: From<LocalCall>,
+{
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+        call: RuntimeCall,
+        public: <Signature as Verify>::Signer,
+        account: AccountId,
+        nonce: u32,
+    ) -> Option<(
+        RuntimeCall,
+        <UncheckedExtrinsic as Extrinsic>::SignaturePayload,
+    )> {
+        use sp_runtime::traits::StaticLookup;
+        use sp_runtime::SaturatedConversion;
+        let tip = 0;
+        // take the biggest period possible.
+        let period = BlockHashCount::get()
+            .checked_next_power_of_two()
+            .map(|c| c / 2)
+            .unwrap_or(2) as u64;
+        let current_block = System::block_number()
+            .saturated_into::<u64>()
+            // The `System::block_number` is initialized with `n+1`,
+            // so the actual block number is `n`.
+            .saturating_sub(1);
+        let era = Era::mortal(period, current_block);
+        let extra = (
+            frame_system::CheckNonZeroSender::<Runtime>::new(),
+            frame_system::CheckSpecVersion::<Runtime>::new(),
+            frame_system::CheckTxVersion::<Runtime>::new(),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckEra::<Runtime>::from(era),
+            frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckWeight::<Runtime>::new(),
+            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+        );
+        let raw_payload = SignedPayload::new(call, extra)
+            .map_err(|e| {
+                log::warn!("Unable to create signed payload: {:?}", e);
+            })
+            .ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let address = <Runtime as frame_system::Config>::Lookup::unlookup(account); //TODO Self to Runtime
+        let (call, extra, _) = raw_payload.deconstruct();
+        Some((call, (address, signature.into(), extra)))
+    }
+}
+
+parameter_types! {
+    pub const MaxAuthorities: u32 = 100;
+    pub const MaxKeys: u32 = 10_000;
+    pub const MaxPeerInHeartbeats: u32 = 10_000;
+    pub const MaxPeerDataEncodingSize: u32 = 1_000;
+    pub const RequestEventLimit: u32 = 10;
+    pub const UnsignedPriority: u64 = 1 << 21;
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as Verify>::Signer;
+    type Signature = Signature;
+}
+
+impl pallet_restaking::Config for Runtime {
+    type AuthorityId = pallet_restaking::sr25519::AuthorityId;
+
+    type AppCrypto = VerisenseRestakingAppCrypto;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type UnsignedPriority = UnsignedPriority;
+    type RequestEventLimit = RequestEventLimit;
+    type MaxValidators = MaxAuthorities;
+    type ValidatorsInterface = Validators;
 }
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
@@ -331,30 +425,33 @@ mod runtime {
     pub type Authorship = pallet_authorship;
 
     #[runtime::pallet_index(4)]
-    pub type Validators = pallet_validators;
+    pub type Restaking = pallet_restaking;
 
     #[runtime::pallet_index(5)]
     pub type AuthorityDiscovery = pallet_authority_discovery;
-
+    
     #[runtime::pallet_index(6)]
+    pub type Validators = pallet_validators;
+    
+    #[runtime::pallet_index(7)]
     pub type Session = pallet_session;
 
-    #[runtime::pallet_index(7)]
+    #[runtime::pallet_index(8)]
     pub type Grandpa = pallet_grandpa;
 
-    #[runtime::pallet_index(8)]
+    #[runtime::pallet_index(9)]
     pub type Historical = session_historical;
 
-    #[runtime::pallet_index(9)]
+    #[runtime::pallet_index(10)]
     pub type Balances = pallet_balances;
 
-    #[runtime::pallet_index(10)]
+    #[runtime::pallet_index(11)]
     pub type TransactionPayment = pallet_transaction_payment;
 
-    #[runtime::pallet_index(11)]
+    #[runtime::pallet_index(12)]
     pub type Sudo = pallet_sudo;
 
-    #[runtime::pallet_index(12)]
+    #[runtime::pallet_index(13)]
     pub type Nucleus = pallet_nucleus;
 }
 
@@ -584,28 +681,6 @@ impl_runtime_apis! {
             Nucleus::get_nucleus_info(&nucleus_id)
         }
     }
-
-    // #[cfg(feature = "try-runtime")]
-    // impl frame_try_runtime::TryRuntime<Block> for Runtime {
-    //     fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
-    //         // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
-    //         // have a backtrace here. If any of the pre/post migration checks fail, we shall stop
-    //         // right here and right now.
-    //         let weight = Executive::try_runtime_upgrade(checks).unwrap();
-    //         (weight, BlockWeights::get().max_block)
-    //     }
-
-    //     fn execute_block(
-    //         block: Block,
-    //         state_root_check: bool,
-    //         signature_check: bool,
-    //         select: frame_try_runtime::TryStateSelect
-    //     ) -> Weight {
-    //         // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
-    //         // have a backtrace here.
-    //         Executive::try_execute_block(block, state_root_check, signature_check, select).expect("execute-block failed")
-    //     }
-    // }
 
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {

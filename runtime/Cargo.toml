@@ -33,6 +33,7 @@ pallet-im-online = { workspace = true, default-features = false }
 pallet-offences = { workspace = true, default-features = false }
 pallet-authorship = { workspace = true, default-features = false }
 pallet-authority-discovery = { workspace = true, default-features = false }
+pallet-restaking = {path = "../pallets/restaking", default-features = false }
 # primitives
 vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
@@ -89,6 +90,7 @@ std = [
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
 	"pallet-validators/std",
+	"pallet-restaking/std",
 	"vrs-primitives/std",
 	"vrs-nucleus-runtime-api/std",
 	"sp-api/std",

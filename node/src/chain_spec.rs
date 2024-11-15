@@ -3,6 +3,7 @@ use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::crypto::KeyTypeId;
+use pallet_restaking::sr25519::AuthorityId as RestakingId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_runtime::opaque::SessionKeys;
@@ -29,12 +30,14 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, AuthorityId) {
+
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId, AuthorityId, RestakingId) {
     (
         get_account_id_from_seed::<sr25519::Public>(&s),
         get_from_seed::<AuraId>(s),
         get_from_seed::<GrandpaId>(s),
         get_from_seed::<AuthorityId>(s),
+        get_from_seed::<RestakingId>(s)
     )
 }
 
@@ -102,7 +105,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-    initial_authorities: Vec<(AccountId, AuraId, GrandpaId, AuthorityId)>,
+    initial_authorities: Vec<(AccountId, AuraId, GrandpaId, AuthorityId, RestakingId)>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
@@ -116,6 +119,11 @@ fn testnet_genesis(
             // Assign network admin rights.
             "key": Some(root_key),
         },
+        "restaking": {
+            "validators":[
+                ("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", 10000)
+            ]
+        },
          "session":  {
             "keys": initial_authorities
                 .iter()
@@ -127,6 +135,7 @@ fn testnet_genesis(
                             x.1.clone(),
                             x.2.clone(),
                             x.3.clone(),
+                            x.4.clone(),
                         ),
                     )
                 })
@@ -135,10 +144,16 @@ fn testnet_genesis(
     })
 }
 
-fn session_keys(aura: AuraId, grandpa: GrandpaId, authority: AuthorityId) -> SessionKeys {
+fn session_keys(
+    aura: AuraId,
+    grandpa: GrandpaId,
+        authority: AuthorityId,
+    restaking: RestakingId,
+) -> SessionKeys {
     SessionKeys {
         aura,
         grandpa,
         authority,
+        restaking,
     }
 }
