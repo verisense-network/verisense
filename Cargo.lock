@@ -5557,6 +5557,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-restaking"
+version = "0.0.1"
+dependencies = [
+ "base64 0.13.1",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "verisense-support",
+]
+
+[[package]]
 name = "pallet-session"
 version = "36.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10407,6 +10429,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "log",
+ "pallet-restaking",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
@@ -10636,6 +10659,7 @@ dependencies = [
  "pallet-im-online",
  "pallet-nucleus",
  "pallet-offences",
+ "pallet-restaking",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",

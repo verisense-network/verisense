@@ -1,6 +1,6 @@
 [package]
 name = "pallet-validators"
-description = "FRAME pallet restaking for managing validators"
+description = "FRAME pallet for managing validators"
 version.workspace = true
 edition.workspace = true
 publish = false
