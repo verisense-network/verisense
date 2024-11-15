@@ -2,6 +2,7 @@
 members = [
     "node",
     "runtime",
+    "metadata",
     "pallets/*",
     "nucleus/*",
     "primitives",
