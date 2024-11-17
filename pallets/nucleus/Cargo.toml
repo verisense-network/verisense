@@ -10,7 +10,9 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 codec = { features = ["derive"], workspace = true, default-features = false }
-scale-info = { features = ["derive"], workspace = true, default-features = false }
+scale-info = { features = [
+	"derive",
+], workspace = true, default-features = false }
 
 # frame deps
 frame-support = { workspace = true, default-features = false }
@@ -19,6 +21,8 @@ sp-std = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
+verisense-support = { path = "../../support", default-features = false }
+pallet-vrf = { path = "../vrf", default-features = false }
 
 [dev-dependencies]
 sp-io = { workspace = true, default-features = true }

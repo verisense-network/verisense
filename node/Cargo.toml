@@ -50,7 +50,8 @@ frame-system = { workspace = true, default-features = true }
 substrate-frame-rpc-system = { workspace = true, default-features = true }
 pallet-transaction-payment = { workspace = true, default-features = true }
 pallet-transaction-payment-rpc = { workspace = true, default-features = true }
-pallet-restaking = {path = "../pallets/restaking"}
+pallet-restaking = { path = "../pallets/restaking" }
+pallet-vrf = { path = "../pallets/vrf" }
 vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
 vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api" }

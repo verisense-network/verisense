@@ -4,7 +4,9 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Encode;
+use frame_system::pallet;
 use pallet_grandpa::AuthorityId as GrandpaId;
+use pallet_im_online::sr25519;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId;
@@ -21,6 +23,7 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
+use frame_support::__private::log;
 pub use frame_support::{
     construct_runtime, derive_impl, parameter_types,
     traits::{
@@ -39,7 +42,6 @@ use frame_support::{
     genesis_builder_helper::{build_state, get_preset},
     traits::VariantCountOf,
 };
-use frame_support::__private::log;
 pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
@@ -47,9 +49,9 @@ use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
 use sp_runtime::generic::Era;
 use sp_runtime::traits::{ConvertInto, Extrinsic, OpaqueKeys};
+pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
 
 pub use vrs_primitives::*;
 
@@ -77,6 +79,7 @@ pub mod opaque {
             pub grandpa: Grandpa,
             pub authority: AuthorityDiscovery,
             pub restaking: Restaking,
+            pub vrf:Vrf,
         }
     }
 }
@@ -190,6 +193,15 @@ impl pallet_grandpa::Config for Runtime {
     type KeyOwnerProof = sp_core::Void;
     type EquivocationReportSystem = ();
 }
+impl pallet_vrf::Config for Runtime {
+    type WeightInfo = ();
+    type NucleusId = NucleusId;
+    type VrfId = pallet_vrf::sr25519::VrfId;
+    type VrfSignature = pallet_vrf::sr25519::VrfSignature;
+    type Validators = Validators;
+
+    type RuntimeEvent = RuntimeEvent;
+}
 
 impl pallet_authority_discovery::Config for Runtime {
     type MaxAuthorities = MaxValidators;
@@ -249,6 +261,8 @@ impl pallet_nucleus::Config for Runtime {
     type NucleusId = NucleusId;
     type NodeId = NodeId;
     type ControllerLookup = Nucleus;
+
+    type Vrf = Vrf;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -306,7 +320,7 @@ impl pallet_authorship::Config for Runtime {
 pub struct VerisenseRestakingAppCrypto;
 
 impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
-for VerisenseRestakingAppCrypto
+    for VerisenseRestakingAppCrypto
 {
     type RuntimeAppPublic = pallet_restaking::sr25519::AuthorityId;
     type GenericPublic = sp_core::sr25519::Public;
@@ -314,16 +328,16 @@ for VerisenseRestakingAppCrypto
 }
 
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
-    where
-        RuntimeCall: From<C>,
+where
+    RuntimeCall: From<C>,
 {
     type Extrinsic = UncheckedExtrinsic;
     type OverarchingCall = RuntimeCall;
 }
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
-    where
-        RuntimeCall: From<LocalCall>,
+where
+    RuntimeCall: From<LocalCall>,
 {
     fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
         call: RuntimeCall,
@@ -429,10 +443,10 @@ mod runtime {
 
     #[runtime::pallet_index(5)]
     pub type AuthorityDiscovery = pallet_authority_discovery;
-    
+
     #[runtime::pallet_index(6)]
     pub type Validators = pallet_validators;
-    
+
     #[runtime::pallet_index(7)]
     pub type Session = pallet_session;
 
@@ -453,6 +467,9 @@ mod runtime {
 
     #[runtime::pallet_index(13)]
     pub type Nucleus = pallet_nucleus;
+
+    #[runtime::pallet_index(14)]
+    pub type Vrf = pallet_vrf;
 }
 
 /// Block header type as expected by this runtime.

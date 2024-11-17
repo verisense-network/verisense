@@ -26,14 +26,15 @@ pallet-grandpa = { workspace = true, default-features = false }
 pallet-sudo = { workspace = true, default-features = false }
 pallet-timestamp = { workspace = true, default-features = false }
 pallet-transaction-payment = { workspace = true, default-features = false }
+pallet-vrf = { path = "../pallets/vrf", default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
-pallet-validators = {path = "../pallets/validators", default-features = false }
+pallet-validators = { path = "../pallets/validators", default-features = false }
 pallet-session = { workspace = true, default-features = false }
 pallet-im-online = { workspace = true, default-features = false }
 pallet-offences = { workspace = true, default-features = false }
 pallet-authorship = { workspace = true, default-features = false }
 pallet-authority-discovery = { workspace = true, default-features = false }
-pallet-restaking = {path = "../pallets/restaking", default-features = false }
+pallet-restaking = { path = "../pallets/restaking", default-features = false }
 # primitives
 vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
@@ -41,7 +42,7 @@ sp-block-builder = { workspace = true, default-features = false }
 sp-consensus-aura = { features = [
 	"serde",
 ], workspace = true, default-features = false }
-sp-staking = {workspace = true, default-features = false}
+sp-staking = { workspace = true, default-features = false }
 sp-consensus-grandpa = { features = [
 	"serde",
 ], workspace = true, default-features = false }
@@ -85,7 +86,7 @@ std = [
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-authority-discovery/std",
-    "pallet-im-online/std",
+	"pallet-im-online/std",
 	"pallet-offences/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
