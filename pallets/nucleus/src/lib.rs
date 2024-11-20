@@ -8,8 +8,8 @@ pub use pallet::*;
 // mod tests;
 
 pub mod weights;
+use verisense_support::VrfInterface;
 pub use weights::*;
-
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -48,6 +48,7 @@ pub mod pallet {
             + core::fmt::Debug
             + MaybeDisplay
             + MaxEncodedLen;
+        type Vrf: VrfInterface<Self::NucleusId, BlockNumberFor<Self>, Self::AccountId>;
 
         type NodeId: Parameter + Member + core::fmt::Debug;
 
@@ -114,7 +115,7 @@ pub mod pallet {
         NucleusNotFound,
         NotAuthorized,
     }
-
+    use frame_system::{self as system, pallet_prelude::*};
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -192,7 +193,12 @@ pub mod pallet {
         // TODO just for testing
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::mock_register())]
-        pub fn mock_register(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult {
+        pub fn mock_register(
+            origin: OriginFor<T>,
+            nucleus_id: T::NucleusId,
+            validators_num: u32,
+            // seed: Vec<u8>,
+        ) -> DispatchResult {
             let controller = ensure_signed(origin)?;
             Instances::<T>::mutate(&nucleus_id, |cages| {
                 // TODO
@@ -200,10 +206,26 @@ pub mod pallet {
             });
             let node_id = T::ControllerLookup::lookup(controller.clone()).ok();
             Self::deposit_event(Event::InstanceRegistered {
-                id: nucleus_id,
-                controller,
+                id: nucleus_id.clone(),
+                controller: controller.clone(),
                 node_id,
             });
+            T::Vrf::register_nucleus_blocknumber(
+                nucleus_id,
+                <system::Pallet<T>>::block_number(),
+                validators_num,
+            )?;
+            // RegisterBlockNumber::<T>::insert(
+            //     &nucleus_id.clone(),
+            //     <system::Pallet<T>>::block_number(),
+            // );
+            // Self::deposit_event(Event::VRFSeedsUpdated {
+            //     nucleus_id,
+            //     account_id: controller,
+
+            //     seed,
+            // });
+
             Ok(())
         }
     }

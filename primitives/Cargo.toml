@@ -17,6 +17,11 @@ sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 sc-network-types = { version = "0.12.1", optional = true }
 
+
+[dependencies.sp-application-crypto]
+version = "37.0.0"
+default-features = false
+
 [features]
 std = [
     "codec/std",

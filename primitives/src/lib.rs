@@ -34,6 +34,7 @@ pub type Address = MultiAddress<AccountId, ()>;
 pub type NucleusId = AccountId32;
 
 pub type NodeId = sp_core::OpaquePeerId;
+pub type VrfId = sp_runtime::app_crypto::sr25519::Public;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
 pub struct NucleusInfo<AccountId, Hash, NodeId> {
@@ -46,3 +47,35 @@ pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub root_state: Hash,
     pub peers: alloc::vec::Vec<NodeId>,
 }
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
+pub struct SeedsInfo<AccountId, NucleusId, VrfId> {
+    pub nucleus_id: NucleusId,
+    pub account_id: AccountId,
+    pub vrf_id: VrfId,
+    pub seed: alloc::vec::Vec<u8>,
+}
+
+#[cfg(feature = "bls-experimental")]
+use sp_core::{bls377, bls381};
+use sp_core::{
+    crypto::{Pair, UncheckedFrom},
+    ecdsa, ed25519, sr25519,
+};
+mod app_sr25519 {
+    use sp_application_crypto::{app_crypto, sr25519};
+    use sp_core::crypto::KeyTypeId;
+    app_crypto!(sr25519, KeyTypeId(*b"fuba"));
+}
+
+sp_application_crypto::with_pair! {
+    /// An i'm online keypair using sr25519 as its crypto.
+    pub type AuthorityPair = app_sr25519::Pair;
+}
+
+/// An i'm online signature using sr25519 as its crypto.
+pub type AuthoritySignature = app_sr25519::Signature;
+
+/// An i'm online identifier using sr25519 as its crypto.
+pub type CryptoApproach = app_sr25519::Public;
+/// An i'm online identifier using sr25519 as its crypto.
+pub type AppCryptoApproach = sp_application_crypto::sr25519::AppPublic;
