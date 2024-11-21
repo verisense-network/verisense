@@ -133,7 +133,7 @@ where
         // TODO what if our node is far behind the best block?
         let metadata =
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
-        let mut registry_monitor = client.every_import_notification_stream();
+        let mut block_monitor = client.every_import_notification_stream();
         let timer_scheduler = Arc::new(crate::host_func::timer::SchedulerAsync::new());
         let mut timers_receivers: FuturesUnordered<oneshot::Receiver<Vec<TimerEntry>>> =
             FuturesUnordered::new();
@@ -216,7 +216,7 @@ where
                         }
                     }
                 },
-                block = registry_monitor.next() => {
+                block = block_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
                     // TODO handle deregister as well
                     if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
