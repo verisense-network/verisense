@@ -36,9 +36,7 @@ To enable efficient state synchronization for Nucleus instances, Verisense intro
 For more details, please check our [paper](https://arxiv.org/abs/2408.16094).
 
 ### 4. **Restaking**
-After Eigenlayer issued the idea, restaking becomes popular. Verisense harnesses the power of restaking, reusing the staking mechanisms of existing tokens to provide decentralized security for its consensus layer instead of bootstrapping a new PoS network from scratch.
-
-Currently we are working with [Karak](https://karak.network/) and [Symbiotic](https://symbiotic.fi/) as security providers.
+Verisense leverages the power of restaking by utilizing existing token staking mechanisms to deliver decentralized security for its consensus layer, eliminating the need to establish a new Proof of Stake (PoS) network from scratch. Through partnerships with leading restaking platforms such as EigenLayer, Karak, and Symbiotic, Verisense plays a pivotal role in enhancing blockchain security infrastructure. Acting as a crucial intermediary, it restructures and redistributes pooled security from cross-chain restaking protocols to decentralized applications (AVS). These applications often vary significantly in their business models, security requirements, degrees of decentralization, and budget constraints, making Verisense an essential component in meeting their diverse needs effectively.
 
 ## Getting start
 
