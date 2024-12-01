@@ -8,7 +8,7 @@ use crate::{
     Event, Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, TimerEntry, TimersReplyTo,
     WasmCodeRef, WasmInfo,
 };
-use codec::Encode;
+use codec::{Decode, Encode};
 use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::request_responses::IncomingRequest;
@@ -140,6 +140,7 @@ where
 
         let (http_register, mut http_executor) = crate::host_func::http::new_http_manager();
         let http_register = Arc::new(http_register);
+
         // TODO mock monadring
         //////////////////////////////////////////////////////
         let (token_tx, mut token_rx) = mpsc::unbounded_channel::<NucleusId>();
@@ -153,6 +154,29 @@ where
             }
         });
         //////////////////////////////////////////////////////
+
+        let hash = client.info().best_hash;
+        let chosen = get_nuclei_for_node(client.clone(), controller.clone(), hash);
+        for (id, config) in chosen {
+            let nucleus_path = nucleus_home_dir.join(id.to_string());
+            start_nucleus::<B>(
+                id.clone(),
+                http_register.clone(),
+                timer_scheduler.clone(),
+                config,
+                nucleus_path,
+                &mut nuclei,
+            )
+            .expect("fail to start nucleus");
+
+            if let Some(nucleus) = nuclei.get_mut(&id) {
+                let (timer_sender, timer_receiver) = oneshot::channel();
+                timers_receivers.push(timer_receiver);
+                nucleus.forward(Gluon::TimerInitRequest {
+                    pending_timer_queue: timer_sender,
+                });
+            }
+        }
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
@@ -202,17 +226,15 @@ where
                             // let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
                             // match verify_result {
                             //     true => {
-                                    // do stuff
-                                // }
-                                // false => {
-                                    // verified failed, do some report
+                            // do stuff
+                            // }
+                            // false => {
+                            // verified failed, do some report
                             //     }
                             // }
-
                             // API: anywhere you want to send a notification, use like:
                             // the first param is the raw payload without signature, the second one Vec<> is the peer list
                             // _ = noti_sender.send((Vec<u8>, Vec<PeerId>)).await;
-
                         }
                     }
                 },
@@ -275,25 +297,6 @@ where
                         log::error!("🌐 No http reply");
                     }
                 },
-                // http_reply = http_executor.poll() => {
-                //     println!("ooooooo");
-                //     log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply);
-                //     if http_reply.is_err() {
-                //         log::error!("couldn't fork a coroutine to execute http, {:?}", http_reply.err());
-                //         continue;
-                //     }
-                //     let HttpResponseWithCallback {
-                //         nucleus_id,
-                //         req_id,
-                //         response,
-                //     } = http_reply.expect("already checked").expect("HttpCallRegister must exists;qed");
-                //     if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
-                //         nucleus.forward(Gluon::HttpCallback {
-                //             request_id: req_id,
-                //             payload: response,
-                //         });
-                //     }
-                // },
                 req = nucleus_rpc_rx.recv() => {
                     let (module, gluon) = req.expect("fail to receive nucleus request");
                     if let Some(nucleus) = nuclei.get_mut(&module) {
@@ -356,6 +359,42 @@ where
         })
         .collect::<Vec<_>>();
     Some(instances)
+}
+
+fn get_nuclei_for_node<B, D, C>(
+    client: Arc<C>,
+    id: AccountId,
+    hash: B::Hash,
+) -> Vec<(NucleusId, NucleusInfo<AccountId, Hash, NodeId>)>
+where
+    B: sp_runtime::traits::Block,
+    D: Backend<B>,
+    C: BlockBackend<B>
+        + StorageProvider<B, D>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + 'static,
+    C::Api: NucleusApi<B> + 'static,
+{
+    let api = client.runtime_api();
+    let key = codegen::storage().nucleus().instances_iter();
+    let instance_key = sp_core::storage::StorageKey(key.to_root_bytes());
+    let list = client
+        .storage(hash, &instance_key)
+        .ok()
+        .flatten()
+        .map(|data| <Vec<(NucleusId, Vec<AccountId>)> as Decode>::decode(&mut &data.0[..]).ok())
+        .flatten()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|(_, instances)| instances.iter().find(|&ist| *ist == id).is_some())
+        .filter_map(|(nucleus_id, _)| {
+            api.get_nucleus_info(hash, nucleus_id.clone())
+                .ok()?
+                .map(|info| (nucleus_id, info))
+        })
+        .collect::<Vec<_>>();
+    list
 }
 
 fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
