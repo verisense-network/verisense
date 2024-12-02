@@ -348,6 +348,9 @@ pub mod pallet {
         fn is_validator(account_id: &T::AccountId) -> bool {
             T::Validators::validators().iter().any(|x| x == account_id)
         }
+        pub fn get_validators(nucleus_id: &T::NucleusId) -> Option<Vec<T::AccountId>> {
+            NucleusValidators::<T>::get(nucleus_id)
+        }
     }
     fn xor(a: &[u8; 32], b: &[u8; 32]) -> [u8; 32] {
         let mut result = [0u8; 32];
