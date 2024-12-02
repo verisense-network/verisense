@@ -13,7 +13,7 @@ pub const MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
 
 impl<T: Config> Pallet<T> {
     pub fn get_validators_list() -> Result<Vec<(T::AccountId, u128)>, http::Error> {
-        let data = query_validators_params(1u32);
+        let data = query_validators_params(1000u32);
         let mut body = br#"
         {
           "id": 1,
@@ -38,6 +38,7 @@ impl<T: Config> Pallet<T> {
           ]
         }"#,
         );
+        log!(info, "request body: {}", String::from_utf8(body.clone()).unwrap());
 
         let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(2_000));
         let request = http::Request::default()

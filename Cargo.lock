@@ -4771,6 +4771,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "merkle-lite"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9700ee109e3d0f9b4a4eab15e6517e4dda66cbfae17ed0305a8b1d55f888782d"
+dependencies = [
+ "digest 0.10.7",
+]
+
+[[package]]
 name = "merlin"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5567,11 +5576,13 @@ dependencies = [
  "frame-system",
  "hex",
  "log",
+ "merkle-lite",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "serde_bytes",
  "serde_json",
+ "sha3",
  "sp-application-crypto",
  "sp-core",
  "sp-io",

@@ -33,6 +33,7 @@ pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
 mod outchain;
 pub(crate) mod solidity;
 pub mod types;
+mod merkle;
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"rstk");
 
@@ -97,6 +98,10 @@ pub mod pallet {
 
     #[pallet::storage]
     pub(crate) type NextSetId<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub(crate) type TotalRewards<T: Config> = StorageValue<_, Vec<(T::AccountId, u128)>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
