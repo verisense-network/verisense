@@ -3,6 +3,7 @@ mod cage;
 mod host_func;
 mod mem;
 mod nucleus;
+mod payload;
 mod runtime;
 mod state;
 mod vm;
