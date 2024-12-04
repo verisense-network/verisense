@@ -33,6 +33,12 @@ pub mod pallet {
         pub capacity: u8,
     }
 
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    pub struct NucleusChallenge<AuthorityId, Hash> {
+        pub submissions: Vec<(AuthorityId, Vec<u8>)>,
+        pub seed: Hash,
+    }
+
     #[pallet::pallet]
     pub struct Pallet<T>(_);
 
@@ -48,9 +54,12 @@ pub mod pallet {
             + core::fmt::Debug
             + MaybeDisplay
             + MaxEncodedLen;
-        type Vrf: VrfInterface<Self::NucleusId, BlockNumberFor<Self>, Self::AccountId>;
+
+        type AuthorityId: Parameter + Member + core::fmt::Debug + MaybeDisplay + MaxEncodedLen;
 
         type NodeId: Parameter + Member + core::fmt::Debug;
+
+        type RegistryDuration: Get<BlockNumberFor<Self>>;
 
         type ControllerLookup: StaticLookup<Source = Self::AccountId, Target = Self::NodeId>;
     }
@@ -83,6 +92,24 @@ pub mod pallet {
         QueryKind = ValueQuery,
     >;
 
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub type OnCreationNuclei<T: Config> = StorageMap<
+        Hasher = Blake2_128Concat,
+        Key = T::BlockNumber,
+        Value = Vec<T::NucleusId>,
+        QueryKind = ValueQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub type RegistrySubmissions<T: Config> = StorageMap<
+        Hasher = Blake2_128Concat,
+        Key = T::NucleusId,
+        Value = NucleusChallenge<T::AuthorityId, T::Hash>,
+        QueryKind = OptionQuery,
+    >;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -94,6 +121,7 @@ pub mod pallet {
             wasm_version: u32,
             energy: u128,
             capacity: u8,
+            seed: T::Hash,
         },
         NucleusUpgraded {
             id: T::NucleusId,
@@ -115,7 +143,7 @@ pub mod pallet {
         NucleusNotFound,
         NotAuthorized,
     }
-    use frame_system::{self as system, pallet_prelude::*};
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -125,6 +153,7 @@ pub mod pallet {
             name: Vec<u8>,
             wasm_hash: T::Hash,
             energy: Option<u128>,
+            // TODO check the capacity
             capacity: u8,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
@@ -134,6 +163,22 @@ pub mod pallet {
             ensure!(
                 !Nuclei::<T>::contains_key(&id),
                 Error::<T>::NucleusIdAlreadyExists
+            );
+            let current_block = frame_system::Pallet::<T>::block_number();
+            let seed = frame_system::Pallet::<T>::block_hash(current_block - 1);
+            OnCreationNuclei::<T>::try_mutate(
+                current_block + T::RegistryDuration::get(),
+                |pendings| {
+                    pendings.push(id.clone());
+                    Ok(())
+                },
+            )?;
+            RegistrySubmissions::<T>::insert(
+                &id,
+                NucleusChallenge {
+                    submissions: vec![],
+                    seed: seed.clone(),
+                },
             );
             Nuclei::<T>::insert(
                 &id,
@@ -157,6 +202,7 @@ pub mod pallet {
                 wasm_version: 0,
                 energy: energy.unwrap_or_default(),
                 capacity,
+                seed,
             });
             Ok(())
         }
@@ -190,31 +236,29 @@ pub mod pallet {
             Ok(())
         }
 
-        // TODO just for testing
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::mock_register())]
-        pub fn mock_register(
+        #[pallet::weight(T::WeightInfo::register())]
+        pub fn register(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
-            validators_num: u32,
-            // seed: Vec<u8>,
+            proof: Vec<u8>,
         ) -> DispatchResult {
-            let controller = ensure_signed(origin)?;
-            Instances::<T>::mutate(&nucleus_id, |cages| {
-                // TODO
-                cages.push(controller.clone());
-            });
-            let node_id = T::ControllerLookup::lookup(controller.clone()).ok();
-            Self::deposit_event(Event::InstanceRegistered {
-                id: nucleus_id.clone(),
-                controller: controller.clone(),
-                node_id,
-            });
-            T::Vrf::register_nucleus_blocknumber(
-                nucleus_id,
-                <system::Pallet<T>>::block_number(),
-                validators_num,
-            )?;
+            let submitter = ensure_signed(origin)?;
+            // Instances::<T>::mutate(&nucleus_id, |cages| {
+            //     // TODO
+            //     cages.push(controller.clone());
+            // });
+            // let node_id = T::ControllerLookup::lookup(controller.clone()).ok();
+            // Self::deposit_event(Event::InstanceRegistered {
+            //     id: nucleus_id.clone(),
+            //     controller: controller.clone(),
+            //     node_id,
+            // });
+            // T::Vrf::register_nucleus_blocknumber(
+            //     nucleus_id,
+            //     <system::Pallet<T>>::block_number(),
+            //     validators_num,
+            // )?;
             // RegisterBlockNumber::<T>::insert(
             //     &nucleus_id.clone(),
             //     <system::Pallet<T>>::block_number(),
@@ -222,7 +266,6 @@ pub mod pallet {
             // Self::deposit_event(Event::VRFSeedsUpdated {
             //     nucleus_id,
             //     account_id: controller,
-
             //     seed,
             // });
 
