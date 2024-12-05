@@ -8,15 +8,20 @@ pub use pallet::*;
 // mod tests;
 
 pub mod weights;
-use verisense_support::VrfInterface;
 pub use weights::*;
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use codec::{Decode, Encode};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, StaticLookup};
+    use sp_core::crypto::{VrfCrypto, VrfPublic};
+    use sp_core::sr25519::{
+        vrf::{VrfSignature, VrfTranscript},
+        Public,
+    };
+    use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup};
     use sp_std::prelude::*;
     use vrs_primitives::NucleusInfo;
 
@@ -33,14 +38,16 @@ pub mod pallet {
         pub capacity: u8,
     }
 
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct NucleusChallenge<AuthorityId, Hash> {
-        pub submissions: Vec<(AuthorityId, Vec<u8>)>,
-        pub seed: Hash,
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, Debug)]
+    pub struct NucleusChallenge<Hash> {
+        pub submissions: Vec<(Public, VrfSignature)>,
+        pub public_input: Hash,
     }
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
+
+    // pub type VrfSignature<T: Config> = <T::AuthorityId as VrfCrypto>::VrfSignature;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -55,7 +62,13 @@ pub mod pallet {
             + MaybeDisplay
             + MaxEncodedLen;
 
-        type AuthorityId: Parameter + Member + core::fmt::Debug + MaybeDisplay + MaxEncodedLen;
+        // type AuthorityId: Parameter
+        //     + Member
+        //     + core::fmt::Debug
+        //     + MaybeDisplay
+        //     + MaxEncodedLen
+        //     + VrfPublic
+        //     + From<Self::AccountId>;
 
         type NodeId: Parameter + Member + core::fmt::Debug;
 
@@ -96,7 +109,7 @@ pub mod pallet {
     #[pallet::unbounded]
     pub type OnCreationNuclei<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
-        Key = T::BlockNumber,
+        Key = BlockNumberFor<T>,
         Value = Vec<T::NucleusId>,
         QueryKind = ValueQuery,
     >;
@@ -106,7 +119,7 @@ pub mod pallet {
     pub type RegistrySubmissions<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = NucleusChallenge<T::AuthorityId, T::Hash>,
+        Value = NucleusChallenge<T::Hash>,
         QueryKind = OptionQuery,
     >;
 
@@ -121,7 +134,7 @@ pub mod pallet {
             wasm_version: u32,
             energy: u128,
             capacity: u8,
-            seed: T::Hash,
+            public_input: T::Hash,
         },
         NucleusUpgraded {
             id: T::NucleusId,
@@ -142,10 +155,14 @@ pub mod pallet {
         NucleusIdAlreadyExists,
         NucleusNotFound,
         NotAuthorized,
+        InvalidVrfProof,
     }
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {
+    impl<T: Config> Pallet<T>
+    where
+        T::AccountId: Into<[u8; 32]>,
+    {
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::create_nucleus())]
         pub fn create_nucleus(
@@ -165,19 +182,15 @@ pub mod pallet {
                 Error::<T>::NucleusIdAlreadyExists
             );
             let current_block = frame_system::Pallet::<T>::block_number();
-            let seed = frame_system::Pallet::<T>::block_hash(current_block - 1);
-            OnCreationNuclei::<T>::try_mutate(
-                current_block + T::RegistryDuration::get(),
-                |pendings| {
-                    pendings.push(id.clone());
-                    Ok(())
-                },
-            )?;
+            let public_input = frame_system::Pallet::<T>::block_hash(current_block - One::one());
+            OnCreationNuclei::<T>::mutate(current_block + T::RegistryDuration::get(), |pendings| {
+                pendings.push(id.clone());
+            });
             RegistrySubmissions::<T>::insert(
                 &id,
                 NucleusChallenge {
-                    submissions: vec![],
-                    seed: seed.clone(),
+                    submissions: Vec::new(),
+                    public_input: public_input.clone(),
                 },
             );
             Nuclei::<T>::insert(
@@ -202,7 +215,7 @@ pub mod pallet {
                 wasm_version: 0,
                 energy: energy.unwrap_or_default(),
                 capacity,
-                seed,
+                public_input,
             });
             Ok(())
         }
@@ -241,34 +254,25 @@ pub mod pallet {
         pub fn register(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
-            proof: Vec<u8>,
+            proof: VrfSignature,
         ) -> DispatchResult {
             let submitter = ensure_signed(origin)?;
-            // Instances::<T>::mutate(&nucleus_id, |cages| {
-            //     // TODO
-            //     cages.push(controller.clone());
-            // });
-            // let node_id = T::ControllerLookup::lookup(controller.clone()).ok();
-            // Self::deposit_event(Event::InstanceRegistered {
-            //     id: nucleus_id.clone(),
-            //     controller: controller.clone(),
-            //     node_id,
-            // });
-            // T::Vrf::register_nucleus_blocknumber(
-            //     nucleus_id,
-            //     <system::Pallet<T>>::block_number(),
-            //     validators_num,
-            // )?;
-            // RegisterBlockNumber::<T>::insert(
-            //     &nucleus_id.clone(),
-            //     <system::Pallet<T>>::block_number(),
-            // );
-            // Self::deposit_event(Event::VRFSeedsUpdated {
-            //     nucleus_id,
-            //     account_id: controller,
-            //     seed,
-            // });
-
+            // TODO check key owner
+            let public = Public::from_raw(submitter.into());
+            let challenge =
+                RegistrySubmissions::<T>::get(&nucleus_id).ok_or(Error::<T>::NucleusNotFound)?;
+            let data = VrfTranscript::new(
+                b"nucleus",
+                &[(b"register", challenge.public_input.as_ref())],
+            )
+            .into_sign_data();
+            if !public.vrf_verify(&data, &proof) {
+                return Err(Error::<T>::InvalidVrfProof.into());
+            }
+            RegistrySubmissions::<T>::mutate(&nucleus_id, |challenge| {
+                let challenge = challenge.as_mut().expect("already checked");
+                challenge.submissions.push((public, proof));
+            });
             Ok(())
         }
     }

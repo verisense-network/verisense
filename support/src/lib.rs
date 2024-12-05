@@ -24,6 +24,7 @@ pub trait ValidatorsInterface<AccountId> {
     fn active_stake_of(who: &AccountId) -> u128;
     fn active_total_stake() -> Option<u128>;
 }
+
 pub trait VrfInterface<NucleusId, BlockNumber, AccountId> {
     fn register_nucleus_blocknumber(
         nucleus_id: NucleusId,

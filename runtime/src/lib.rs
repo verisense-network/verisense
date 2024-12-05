@@ -79,7 +79,6 @@ pub mod opaque {
             pub grandpa: Grandpa,
             pub authority: AuthorityDiscovery,
             pub restaking: Restaking,
-            pub vrf:Vrf,
         }
     }
 }
@@ -193,15 +192,15 @@ impl pallet_grandpa::Config for Runtime {
     type KeyOwnerProof = sp_core::Void;
     type EquivocationReportSystem = ();
 }
-impl pallet_vrf::Config for Runtime {
-    type WeightInfo = ();
-    type NucleusId = NucleusId;
-    type VrfId = pallet_vrf::sr25519::VrfId;
-    type VrfSignature = pallet_vrf::sr25519::VrfSignature;
-    type Validators = Validators;
+// impl pallet_vrf::Config for Runtime {
+//     type WeightInfo = ();
+//     type NucleusId = NucleusId;
+//     type VrfId = pallet_vrf::sr25519::VrfId;
+//     type VrfSignature = pallet_vrf::sr25519::VrfSignature;
+//     type Validators = Validators;
 
-    type RuntimeEvent = RuntimeEvent;
-}
+//     type RuntimeEvent = RuntimeEvent;
+// }
 
 impl pallet_authority_discovery::Config for Runtime {
     type MaxAuthorities = MaxValidators;
@@ -255,14 +254,17 @@ impl pallet_sudo::Config for Runtime {
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub RegistryDuration: BlockNumber = 10;
+}
+
 impl pallet_nucleus::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_nucleus::weights::SubstrateWeight<Runtime>;
     type NucleusId = NucleusId;
     type NodeId = NodeId;
     type ControllerLookup = Nucleus;
-
-    type Vrf = Vrf;
+    type RegistryDuration = RegistryDuration;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -468,8 +470,8 @@ mod runtime {
     #[runtime::pallet_index(13)]
     pub type Nucleus = pallet_nucleus;
 
-    #[runtime::pallet_index(14)]
-    pub type Vrf = pallet_vrf;
+    // #[runtime::pallet_index(14)]
+    // pub type Vrf = pallet_vrf;
 }
 
 /// Block header type as expected by this runtime.
