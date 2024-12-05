@@ -10548,6 +10548,7 @@ dependencies = [
  "vrs-nucleus-rpc-proxy",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
+ "vrs-restaking-runtime-api",
  "vrs-runtime",
 ]
 
@@ -10724,6 +10725,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrs-restaking-runtime-api"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
+ "vrs-primitives",
+]
+
+[[package]]
 name = "vrs-runtime"
 version = "0.0.1"
 dependencies = [
@@ -10769,6 +10782,7 @@ dependencies = [
  "substrate-wasm-builder",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
+ "vrs-restaking-runtime-api",
 ]
 
 [[package]]

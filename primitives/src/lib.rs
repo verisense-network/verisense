@@ -8,6 +8,7 @@ use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
 };
+use alloc::string::String;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -54,6 +55,13 @@ pub struct SeedsInfo<AccountId, NucleusId, VrfId> {
     pub vrf_id: VrfId,
     pub seed: alloc::vec::Vec<u8>,
 }
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Default, TypeInfo)]
+pub struct RewardsProof {
+    pub proof: alloc::vec::Vec<String>,
+    pub amount: String,
+}
+
 
 #[cfg(feature = "bls-experimental")]
 use sp_core::{bls377, bls381};

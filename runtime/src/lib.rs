@@ -677,6 +677,14 @@ impl_runtime_apis! {
         }
     }
 
+    impl vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId> for Runtime {
+        fn get_rewards_proof(accountId: AccountId) -> RewardsProof {
+            RewardsProof {
+
+            proof: vec!["sfdsgfdgd".parse().unwrap()],amount: "100".parse().unwrap(),}
+        }
+    }
+
     impl vrs_nucleus_runtime_api::NucleusApi<Block> for Runtime {
         fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
