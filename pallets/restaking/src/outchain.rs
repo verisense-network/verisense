@@ -8,11 +8,12 @@ use sp_core::U256;
 use sp_runtime::offchain::http;
 use sp_runtime::offchain::http::Response;
 use sp_runtime::traits::TrailingZeroInput;
+
 pub const EVM_URL: &str = "https://ethereum-holesky-rpc.publicnode.com";
 pub const MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
 
 impl<T: Config> Pallet<T> {
-    pub fn get_validators_list() -> Result<Vec<(T::AccountId, u128)>, http::Error> {
+    pub fn get_validators_list() -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
         let data = query_validators_params(1000u32);
         let mut body = br#"
         {
@@ -75,6 +76,8 @@ impl<T: Config> Pallet<T> {
                         T::AccountId::decode(&mut TrailingZeroInput::new(d.key.as_slice()))
                             .unwrap(),
                         d.stake,
+                        d.evm_address,
+                        "symbiotic".to_string(), // //TODO
                     ));
                 }
                 Ok(v)

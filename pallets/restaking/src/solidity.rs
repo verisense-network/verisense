@@ -34,7 +34,8 @@ pub fn decode_query_validators_resp(resp: String) -> Vec<ValidatorData> {
     for i in 0..data_size {
         let stake = U256::from_big_endian(reader.read(32).as_slice()).as_u128();
         let key = reader.read(32);
-        v.push(ValidatorData { stake, key })
+        let evm_address = String::default();//TODO
+        v.push(ValidatorData { stake, evm_address, key })
     }
     v
 }
@@ -42,6 +43,7 @@ pub fn decode_query_validators_resp(resp: String) -> Vec<ValidatorData> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ValidatorData {
     pub stake: u128,
+    pub evm_address: String,
     pub key: Vec<u8>,
 }
 

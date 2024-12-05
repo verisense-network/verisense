@@ -60,7 +60,7 @@ pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use verisense_support::RestakingInterface;
+    use verisense_support::{EraRewardPoints, RestakingInterface};
 
     #[pallet::config]
     pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
@@ -101,12 +101,14 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::unbounded]
-    pub(crate) type TotalRewards<T: Config> = StorageValue<_, Vec<(T::AccountId, u128)>, ValueQuery>;
+    pub(crate) type PlannedValidators<T: Config> =
+        StorageValue<_, Vec<(T::AccountId, u128)>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
-    pub(crate) type PlannedValidators<T: Config> =
-        StorageValue<_, Vec<(T::AccountId, u128)>, ValueQuery>;
+    #[pallet::getter(fn validator_source)]
+    pub(crate) type ValidatorsSource<T: Config> =
+    StorageMap<_,Twox64Concat, T::AccountId, (String,String), ValueQuery>; //EvmAddr, restaking platform
 
     #[pallet::storage]
     pub(crate) type NextNotificationId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -135,6 +137,21 @@ pub mod pallet {
 
     #[pallet::storage]
     pub(crate) type NeedFetchRestakingValidators<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+    #[pallet::storage]
+    pub(crate) type LatestClosedEra<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn total_rewards)]
+    pub(crate) type TotalRewards<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u128, ValueQuery>;
+
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn rewards_root)]
+    pub(crate) type RewardsRoot<T: Config> = StorageValue<_, String, ValueQuery>;
+
 
     #[pallet::storage]
     #[pallet::unbounded]
@@ -199,6 +216,17 @@ pub mod pallet {
 
         fn plan_new_era() {
             NeedFetchRestakingValidators::<T>::put(true);
+        }
+
+        fn on_end_era(era_idx: u32, era_reward_points: EraRewardPoints<T::AccountId>) {
+            for (acc, point) in era_reward_points.individual {
+                TotalRewards::<T>::mutate(acc, |r| {
+                     *r += point;
+                });
+            };
+            LatestClosedEra::<T>::put(era_idx);
+            //calculate merkle root;
+           // Self::calculate_rewards_root();
         }
     }
 
@@ -296,8 +324,13 @@ pub mod pallet {
                 );
                 return Err(Error::<T>::NotValidator.into());
             }
-            let r = payload.observations;
-            PlannedValidators::<T>::put(r);
+            let validators_with_source = payload.observations;
+            let mut validators = vec![];
+            for x in validators_with_source {
+                ValidatorsSource::<T>::insert(x.0.clone(),(x.2, x.3));
+                validators.push((x.0, x.1));
+            }
+            PlannedValidators::<T>::put(validators);
             NeedFetchRestakingValidators::<T>::put(false);
             Self::deposit_event(Event::Simple);
             Ok(().into())

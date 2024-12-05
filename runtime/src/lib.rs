@@ -310,7 +310,7 @@ impl pallet_validators::Config for Runtime {
     type SessionsPerEra = SessionsPerEra;
     type SessionInterface = Self;
     type HistoryDepth = HistoryDepth;
-    type ValidatorsProvider = Restaking;
+    type RestakingInterface = Restaking;
 }
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
