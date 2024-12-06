@@ -34,7 +34,7 @@ pub fn decode_query_validators_resp(resp: String) -> Vec<ValidatorData> {
     for i in 0..data_size {
         let stake = U256::from_big_endian(reader.read(32).as_slice()).as_u128();
         let key = reader.read(32);
-        let evm_address = String::default();//TODO
+        let evm_address = "0x1212121212121212121212121212121212121212".parse().unwrap();//TODO
         v.push(ValidatorData { stake, evm_address, key })
     }
     v

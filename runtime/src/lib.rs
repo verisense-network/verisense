@@ -678,10 +678,8 @@ impl_runtime_apis! {
     }
 
     impl vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId> for Runtime {
-        fn get_rewards_proof(accountId: AccountId) -> RewardsProof {
-            RewardsProof {
-
-            proof: vec!["sfdsgfdgd".parse().unwrap()],amount: "100".parse().unwrap(),}
+        fn get_rewards_proof(account_id: AccountId) -> RewardsProof {
+            Restaking::get_reward_proof(account_id)
         }
     }
 

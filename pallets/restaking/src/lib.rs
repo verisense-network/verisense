@@ -225,22 +225,27 @@ pub mod pallet {
                 });
             };
             LatestClosedEra::<T>::put(era_idx);
-            //calculate merkle root;
-           // Self::calculate_rewards_root();
+            Self::calculate_rewards_root();
         }
     }
 
     #[pallet::genesis_config]
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
-        pub validators: Vec<(T::AccountId, u128)>,
+        pub validators: Vec<(T::AccountId, u128, String, String)>, //AccountId, total_staking, evm_addr, platform
+
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             <NextSetId<T>>::put(1); // set 0 is already in the genesis
-            <PlannedValidators<T>>::put(self.validators.clone());
+            let mut validators = vec![];
+            for v in self.validators.clone() {
+                validators.push((v.0.clone(), v.1));
+                <ValidatorsSource<T>>::insert(v.0,(v.2, v.3));
+            }
+            <PlannedValidators<T>>::put(validators);
         }
     }
 
@@ -269,7 +274,7 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn offchain_worker(block_number: BlockNumberFor<T>) {
-           /* if !NeedFetchRestakingValidators::<T>::get() {
+            if !NeedFetchRestakingValidators::<T>::get() {
                 return;
             }
             if !sp_io::offchain::is_validator() {
@@ -278,7 +283,7 @@ pub mod pallet {
             if let Some((public, key_data, validator_id)) = Self::get_validator_id() {
                 Self::submit_unsigned_transaction(block_number, public, key_data, validator_id)
                     .unwrap();
-            }*/
+            }
         }
     }
 
