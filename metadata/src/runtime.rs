@@ -166,9 +166,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                225u8, 136u8, 245u8, 26u8, 4u8, 5u8, 172u8, 251u8, 109u8, 228u8, 66u8, 167u8,
-                213u8, 4u8, 150u8, 139u8, 222u8, 121u8, 34u8, 196u8, 15u8, 168u8, 194u8, 155u8,
-                88u8, 193u8, 83u8, 199u8, 73u8, 59u8, 116u8, 53u8,
+                131u8, 200u8, 187u8, 38u8, 63u8, 78u8, 215u8, 152u8, 119u8, 43u8, 69u8, 134u8,
+                233u8, 11u8, 43u8, 141u8, 66u8, 194u8, 220u8, 71u8, 98u8, 186u8, 56u8, 89u8, 21u8,
+                247u8, 180u8, 206u8, 24u8, 6u8, 97u8, 88u8,
             ]
     }
     pub mod system {
@@ -5408,10 +5408,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            52u8, 1u8, 213u8, 24u8, 5u8, 101u8, 248u8, 241u8, 174u8, 161u8, 14u8,
-                            154u8, 140u8, 183u8, 98u8, 62u8, 125u8, 246u8, 178u8, 253u8, 3u8,
-                            190u8, 157u8, 67u8, 54u8, 26u8, 148u8, 135u8, 253u8, 165u8, 190u8,
-                            169u8,
+                            52u8, 166u8, 202u8, 217u8, 142u8, 33u8, 195u8, 147u8, 136u8, 183u8,
+                            96u8, 207u8, 181u8, 51u8, 123u8, 8u8, 140u8, 84u8, 238u8, 19u8, 133u8,
+                            163u8, 189u8, 114u8, 219u8, 54u8, 138u8, 41u8, 22u8, 144u8, 220u8,
+                            33u8,
                         ],
                     )
                 }
@@ -5429,10 +5429,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            43u8, 110u8, 232u8, 191u8, 14u8, 84u8, 128u8, 248u8, 163u8, 156u8,
-                            140u8, 150u8, 143u8, 12u8, 158u8, 159u8, 71u8, 185u8, 25u8, 202u8,
-                            244u8, 4u8, 194u8, 10u8, 223u8, 156u8, 218u8, 191u8, 18u8, 36u8, 157u8,
-                            233u8,
+                            198u8, 220u8, 112u8, 80u8, 9u8, 182u8, 221u8, 178u8, 163u8, 248u8,
+                            39u8, 15u8, 225u8, 132u8, 73u8, 38u8, 185u8, 228u8, 20u8, 87u8, 63u8,
+                            50u8, 177u8, 46u8, 64u8, 63u8, 16u8, 136u8, 196u8, 98u8, 218u8, 133u8,
                         ],
                     )
                 }
@@ -5464,9 +5463,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            245u8, 69u8, 182u8, 40u8, 182u8, 93u8, 69u8, 142u8, 142u8, 157u8, 6u8,
-                            229u8, 139u8, 142u8, 80u8, 254u8, 119u8, 192u8, 42u8, 18u8, 195u8,
-                            72u8, 89u8, 11u8, 129u8, 117u8, 232u8, 17u8, 106u8, 7u8, 97u8, 188u8,
+                            150u8, 180u8, 150u8, 9u8, 243u8, 17u8, 123u8, 230u8, 77u8, 117u8,
+                            124u8, 33u8, 173u8, 211u8, 234u8, 222u8, 25u8, 217u8, 81u8, 146u8,
+                            68u8, 89u8, 83u8, 60u8, 57u8, 18u8, 164u8, 149u8, 177u8, 62u8, 4u8,
+                            34u8,
                         ],
                     )
                 }
@@ -5682,12 +5682,12 @@ pub mod codegen {
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub struct Register {
                     pub nucleus_id: register::NucleusId,
-                    pub proof: register::Proof,
+                    pub signature: register::Signature,
                 }
                 pub mod register {
                     use super::runtime_types;
                     pub type NucleusId = ::subxt_core::utils::AccountId32;
-                    pub type Proof = runtime_types::sp_core::sr25519::vrf::VrfSignature;
+                    pub type Signature = runtime_types::sp_core::sr25519::vrf::VrfSignature;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Register {
                     const PALLET: &'static str = "Nucleus";
@@ -5746,16 +5746,19 @@ pub mod codegen {
                 pub fn register(
                     &self,
                     nucleus_id: types::register::NucleusId,
-                    proof: types::register::Proof,
+                    signature: types::register::Signature,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::Register> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "Nucleus",
                         "register",
-                        types::Register { nucleus_id, proof },
+                        types::Register {
+                            nucleus_id,
+                            signature,
+                        },
                         [
-                            53u8, 9u8, 76u8, 171u8, 213u8, 156u8, 152u8, 91u8, 87u8, 129u8, 192u8,
-                            40u8, 236u8, 89u8, 233u8, 22u8, 97u8, 38u8, 184u8, 104u8, 250u8, 16u8,
-                            31u8, 152u8, 173u8, 40u8, 183u8, 198u8, 252u8, 212u8, 38u8, 135u8,
+                            14u8, 184u8, 48u8, 27u8, 199u8, 115u8, 45u8, 147u8, 217u8, 239u8, 9u8,
+                            179u8, 130u8, 208u8, 35u8, 180u8, 101u8, 30u8, 189u8, 44u8, 189u8,
+                            96u8, 170u8, 13u8, 12u8, 209u8, 153u8, 246u8, 234u8, 48u8, 16u8, 153u8,
                         ],
                     )
                 }
@@ -5886,6 +5889,7 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type RegistrySubmissions =
                         runtime_types::pallet_nucleus::pallet::NucleusChallenge<
+                            ::subxt_core::utils::AccountId32,
                             ::subxt_core::utils::H256,
                         >;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
@@ -6079,10 +6083,9 @@ pub mod codegen {
                         "RegistrySubmissions",
                         (),
                         [
-                            29u8, 142u8, 39u8, 207u8, 240u8, 112u8, 225u8, 62u8, 121u8, 168u8,
-                            141u8, 206u8, 127u8, 159u8, 128u8, 21u8, 66u8, 209u8, 48u8, 100u8,
-                            133u8, 223u8, 67u8, 118u8, 234u8, 202u8, 101u8, 101u8, 126u8, 199u8,
-                            134u8, 140u8,
+                            82u8, 51u8, 109u8, 150u8, 245u8, 186u8, 132u8, 128u8, 78u8, 185u8,
+                            52u8, 41u8, 105u8, 179u8, 152u8, 117u8, 126u8, 75u8, 200u8, 101u8,
+                            77u8, 94u8, 79u8, 171u8, 12u8, 1u8, 202u8, 50u8, 24u8, 82u8, 17u8, 3u8,
                         ],
                     )
                 }
@@ -6103,10 +6106,9 @@ pub mod codegen {
                         "RegistrySubmissions",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            29u8, 142u8, 39u8, 207u8, 240u8, 112u8, 225u8, 62u8, 121u8, 168u8,
-                            141u8, 206u8, 127u8, 159u8, 128u8, 21u8, 66u8, 209u8, 48u8, 100u8,
-                            133u8, 223u8, 67u8, 118u8, 234u8, 202u8, 101u8, 101u8, 126u8, 199u8,
-                            134u8, 140u8,
+                            82u8, 51u8, 109u8, 150u8, 245u8, 186u8, 132u8, 128u8, 78u8, 185u8,
+                            52u8, 41u8, 105u8, 179u8, 152u8, 117u8, 126u8, 75u8, 200u8, 101u8,
+                            77u8, 94u8, 79u8, 171u8, 12u8, 1u8, 202u8, 50u8, 24u8, 82u8, 17u8, 3u8,
                         ],
                     )
                 }
@@ -7161,7 +7163,7 @@ pub mod codegen {
                     #[codec(index = 2)]
                     register {
                         nucleus_id: ::subxt_core::utils::AccountId32,
-                        proof: runtime_types::sp_core::sr25519::vrf::VrfSignature,
+                        signature: runtime_types::sp_core::sr25519::vrf::VrfSignature,
                     },
                 }
                 #[derive(
@@ -7230,12 +7232,10 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct NucleusChallenge<_0> {
-                    pub submissions: ::subxt_core::alloc::vec::Vec<(
-                        [::core::primitive::u8; 32usize],
-                        runtime_types::sp_core::sr25519::vrf::VrfSignature,
-                    )>,
-                    pub public_input: _0,
+                pub struct NucleusChallenge<_0, _1> {
+                    pub submissions: ::subxt_core::alloc::vec::Vec<(_0, ::core::primitive::u64)>,
+                    pub public_input: _1,
+                    pub requires: ::core::primitive::u8,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,

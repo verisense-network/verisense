@@ -23,6 +23,7 @@ pub mod pallet {
     };
     use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup};
     use sp_std::prelude::*;
+    use verisense_support::ValidatorsInterface;
     use vrs_primitives::NucleusInfo;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
@@ -39,15 +40,14 @@ pub mod pallet {
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, Debug)]
-    pub struct NucleusChallenge<Hash> {
-        pub submissions: Vec<(Public, VrfSignature)>,
+    pub struct NucleusChallenge<AccountId, Hash> {
+        pub submissions: Vec<(AccountId, u64)>,
         pub public_input: Hash,
+        pub requires: u8,
     }
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
-
-    // pub type VrfSignature<T: Config> = <T::AuthorityId as VrfCrypto>::VrfSignature;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -62,13 +62,7 @@ pub mod pallet {
             + MaybeDisplay
             + MaxEncodedLen;
 
-        // type AuthorityId: Parameter
-        //     + Member
-        //     + core::fmt::Debug
-        //     + MaybeDisplay
-        //     + MaxEncodedLen
-        //     + VrfPublic
-        //     + From<Self::AccountId>;
+        type Validators: ValidatorsInterface<Self::AccountId>;
 
         type NodeId: Parameter + Member + core::fmt::Debug;
 
@@ -119,7 +113,7 @@ pub mod pallet {
     pub type RegistrySubmissions<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::NucleusId,
-        Value = NucleusChallenge<T::Hash>,
+        Value = NucleusChallenge<T::AccountId, T::Hash>,
         QueryKind = OptionQuery,
     >;
 
@@ -191,6 +185,7 @@ pub mod pallet {
                 NucleusChallenge {
                     submissions: Vec::new(),
                     public_input: public_input.clone(),
+                    requires: capacity,
                 },
             );
             Nuclei::<T>::insert(
@@ -250,28 +245,37 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::register())]
+        #[pallet::weight((T::WeightInfo::register(), DispatchClass::Mandatory, Pays::No))]
         pub fn register(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
-            proof: VrfSignature,
+            signature: VrfSignature,
         ) -> DispatchResult {
             let submitter = ensure_signed(origin)?;
-            // TODO check key owner
-            let public = Public::from_raw(submitter.into());
+            let raw = submitter.into();
+            // TODO
+            let controller =
+                T::Validators::is_active_validator(sp_runtime::KeyTypeId(*b"nvrf"), &raw)
+                    .ok_or(Error::<T>::NotAuthorized)?;
+            let public = Public::from_raw(raw);
             let challenge =
                 RegistrySubmissions::<T>::get(&nucleus_id).ok_or(Error::<T>::NucleusNotFound)?;
-            let data = VrfTranscript::new(
+            let ctx = b"vrfq";
+            let input = VrfTranscript::new(
                 b"nucleus",
                 &[(b"register", challenge.public_input.as_ref())],
-            )
-            .into_sign_data();
-            if !public.vrf_verify(&data, &proof) {
+            );
+            let data = input.clone().into_sign_data();
+            if !public.vrf_verify(&data, &signature) {
                 return Err(Error::<T>::InvalidVrfProof.into());
             }
+            let out = public
+                .make_bytes::<8>(ctx, &input, &signature.pre_output)
+                .expect("make bytes won't fail;qed");
+            let out = u64::from_le_bytes(out);
             RegistrySubmissions::<T>::mutate(&nucleus_id, |challenge| {
                 let challenge = challenge.as_mut().expect("already checked");
-                challenge.submissions.push((public, proof));
+                challenge.submissions.push((controller, out));
             });
             Ok(())
         }
@@ -289,6 +293,38 @@ pub mod pallet {
         fn unlookup(_n: Self::Target) -> Self::Source {
             unimplemented!()
         }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(now: BlockNumberFor<T>) -> Weight {
+            let mut weight = Weight::from_parts(0, 500);
+            let nuclei = OnCreationNuclei::<T>::take(now);
+            for id in nuclei {
+                weight = weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+                let mut task = RegistrySubmissions::<T>::take(&id)
+                    .expect("this is a bug: registry submission not found");
+                task.submissions.sort_by_key(|(_, v)| *v);
+                task.submissions
+                    .into_iter()
+                    .take(task.requires as usize)
+                    .for_each(|(controller, _)| {
+                        weight = weight.saturating_add(T::DbWeight::get().writes(1));
+                        Instances::<T>::mutate(&id, |peers| {
+                            peers.push(controller.clone());
+                        });
+                        Self::deposit_event(Event::InstanceRegistered {
+                            id: id.clone(),
+                            controller,
+                            node_id: None,
+                        });
+                    });
+            }
+            // TODO rotate the members
+            weight
+        }
+
+        fn on_finalize(_now: BlockNumberFor<T>) {}
     }
 
     impl<T: Config> Pallet<T> {

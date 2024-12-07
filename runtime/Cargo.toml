@@ -26,7 +26,6 @@ pallet-grandpa = { workspace = true, default-features = false }
 pallet-sudo = { workspace = true, default-features = false }
 pallet-timestamp = { workspace = true, default-features = false }
 pallet-transaction-payment = { workspace = true, default-features = false }
-pallet-vrf = { path = "../pallets/vrf", default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validators = { path = "../pallets/validators", default-features = false }
 pallet-session = { workspace = true, default-features = false }

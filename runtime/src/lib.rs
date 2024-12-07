@@ -192,15 +192,6 @@ impl pallet_grandpa::Config for Runtime {
     type KeyOwnerProof = sp_core::Void;
     type EquivocationReportSystem = ();
 }
-// impl pallet_vrf::Config for Runtime {
-//     type WeightInfo = ();
-//     type NucleusId = NucleusId;
-//     type VrfId = pallet_vrf::sr25519::VrfId;
-//     type VrfSignature = pallet_vrf::sr25519::VrfSignature;
-//     type Validators = Validators;
-
-//     type RuntimeEvent = RuntimeEvent;
-// }
 
 impl pallet_authority_discovery::Config for Runtime {
     type MaxAuthorities = MaxValidators;
@@ -265,6 +256,7 @@ impl pallet_nucleus::Config for Runtime {
     type NodeId = NodeId;
     type ControllerLookup = Nucleus;
     type RegistryDuration = RegistryDuration;
+    type Validators = Validators;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -314,6 +306,7 @@ impl pallet_validators::Config for Runtime {
     type HistoryDepth = HistoryDepth;
     type ValidatorsProvider = Restaking;
 }
+
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
     type EventHandler = (Validators,);
@@ -402,7 +395,6 @@ impl frame_system::offchain::SigningTypes for Runtime {
 
 impl pallet_restaking::Config for Runtime {
     type AuthorityId = pallet_restaking::sr25519::AuthorityId;
-
     type AppCrypto = VerisenseRestakingAppCrypto;
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
@@ -469,9 +461,6 @@ mod runtime {
 
     #[runtime::pallet_index(13)]
     pub type Nucleus = pallet_nucleus;
-
-    // #[runtime::pallet_index(14)]
-    // pub type Vrf = pallet_vrf;
 }
 
 /// Block header type as expected by this runtime.
