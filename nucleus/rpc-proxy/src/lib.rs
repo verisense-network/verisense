@@ -29,9 +29,6 @@ pub trait NucleusRpc<Hash> {
 
     #[method(name = "nucleus_deploy")]
     async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
-
-    #[subscription(name = "nucleus_subscribeState", unsubscribe = "nucleus_unsubscribeState", item = Bytes)]
-    fn subscribe_state(&self, nucleus: NucleusId, key: String);
 }
 
 pub struct NucleusEntry<P, C> {
@@ -210,8 +207,6 @@ where
             }
         }
     }
-
-    fn subscribe_state(&self, sink: PendingSubscriptionSink, nucleus: NucleusId, key: String) {}
 }
 
 mod constants {

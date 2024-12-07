@@ -8,16 +8,22 @@ pub use pallet::*;
 // mod tests;
 
 pub mod weights;
-use verisense_support::VrfInterface;
 pub use weights::*;
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use codec::{Decode, Encode};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, StaticLookup};
+    use sp_core::crypto::{VrfCrypto, VrfPublic};
+    use sp_core::sr25519::{
+        vrf::{VrfSignature, VrfTranscript},
+        Public,
+    };
+    use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup};
     use sp_std::prelude::*;
+    use verisense_support::ValidatorsInterface;
     use vrs_primitives::NucleusInfo;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
@@ -31,6 +37,13 @@ pub mod pallet {
         pub current_event: u64,
         pub root_state: Hash,
         pub capacity: u8,
+    }
+
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, Debug)]
+    pub struct NucleusChallenge<AccountId, Hash> {
+        pub submissions: Vec<(AccountId, u64)>,
+        pub public_input: Hash,
+        pub requires: u8,
     }
 
     #[pallet::pallet]
@@ -48,9 +61,12 @@ pub mod pallet {
             + core::fmt::Debug
             + MaybeDisplay
             + MaxEncodedLen;
-        type Vrf: VrfInterface<Self::NucleusId, BlockNumberFor<Self>, Self::AccountId>;
+
+        type Validators: ValidatorsInterface<Self::AccountId>;
 
         type NodeId: Parameter + Member + core::fmt::Debug;
+
+        type RegistryDuration: Get<BlockNumberFor<Self>>;
 
         type ControllerLookup: StaticLookup<Source = Self::AccountId, Target = Self::NodeId>;
     }
@@ -83,6 +99,24 @@ pub mod pallet {
         QueryKind = ValueQuery,
     >;
 
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub type OnCreationNuclei<T: Config> = StorageMap<
+        Hasher = Blake2_128Concat,
+        Key = BlockNumberFor<T>,
+        Value = Vec<T::NucleusId>,
+        QueryKind = ValueQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    pub type RegistrySubmissions<T: Config> = StorageMap<
+        Hasher = Blake2_128Concat,
+        Key = T::NucleusId,
+        Value = NucleusChallenge<T::AccountId, T::Hash>,
+        QueryKind = OptionQuery,
+    >;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -94,6 +128,7 @@ pub mod pallet {
             wasm_version: u32,
             energy: u128,
             capacity: u8,
+            public_input: T::Hash,
         },
         NucleusUpgraded {
             id: T::NucleusId,
@@ -114,10 +149,14 @@ pub mod pallet {
         NucleusIdAlreadyExists,
         NucleusNotFound,
         NotAuthorized,
+        InvalidVrfProof,
     }
-    use frame_system::{self as system, pallet_prelude::*};
+
     #[pallet::call]
-    impl<T: Config> Pallet<T> {
+    impl<T: Config> Pallet<T>
+    where
+        T::AccountId: Into<[u8; 32]>,
+    {
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::create_nucleus())]
         pub fn create_nucleus(
@@ -125,6 +164,7 @@ pub mod pallet {
             name: Vec<u8>,
             wasm_hash: T::Hash,
             energy: Option<u128>,
+            // TODO check the capacity
             capacity: u8,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
@@ -134,6 +174,19 @@ pub mod pallet {
             ensure!(
                 !Nuclei::<T>::contains_key(&id),
                 Error::<T>::NucleusIdAlreadyExists
+            );
+            let current_block = frame_system::Pallet::<T>::block_number();
+            let public_input = frame_system::Pallet::<T>::block_hash(current_block - One::one());
+            OnCreationNuclei::<T>::mutate(current_block + T::RegistryDuration::get(), |pendings| {
+                pendings.push(id.clone());
+            });
+            RegistrySubmissions::<T>::insert(
+                &id,
+                NucleusChallenge {
+                    submissions: Vec::new(),
+                    public_input: public_input.clone(),
+                    requires: capacity,
+                },
             );
             Nuclei::<T>::insert(
                 &id,
@@ -157,6 +210,7 @@ pub mod pallet {
                 wasm_version: 0,
                 energy: energy.unwrap_or_default(),
                 capacity,
+                public_input,
             });
             Ok(())
         }
@@ -190,42 +244,39 @@ pub mod pallet {
             Ok(())
         }
 
-        // TODO just for testing
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::mock_register())]
-        pub fn mock_register(
+        #[pallet::weight((T::WeightInfo::register(), DispatchClass::Mandatory, Pays::No))]
+        pub fn register(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
-            validators_num: u32,
-            // seed: Vec<u8>,
+            signature: VrfSignature,
         ) -> DispatchResult {
-            let controller = ensure_signed(origin)?;
-            Instances::<T>::mutate(&nucleus_id, |cages| {
-                // TODO
-                cages.push(controller.clone());
+            let submitter = ensure_signed(origin)?;
+            let raw = submitter.into();
+            // TODO
+            let controller =
+                T::Validators::is_active_validator(sp_runtime::KeyTypeId(*b"nvrf"), &raw)
+                    .ok_or(Error::<T>::NotAuthorized)?;
+            let public = Public::from_raw(raw);
+            let challenge =
+                RegistrySubmissions::<T>::get(&nucleus_id).ok_or(Error::<T>::NucleusNotFound)?;
+            let ctx = b"vrfq";
+            let input = VrfTranscript::new(
+                b"nucleus",
+                &[(b"register", challenge.public_input.as_ref())],
+            );
+            let data = input.clone().into_sign_data();
+            if !public.vrf_verify(&data, &signature) {
+                return Err(Error::<T>::InvalidVrfProof.into());
+            }
+            let out = public
+                .make_bytes::<8>(ctx, &input, &signature.pre_output)
+                .expect("make bytes won't fail;qed");
+            let out = u64::from_le_bytes(out);
+            RegistrySubmissions::<T>::mutate(&nucleus_id, |challenge| {
+                let challenge = challenge.as_mut().expect("already checked");
+                challenge.submissions.push((controller, out));
             });
-            let node_id = T::ControllerLookup::lookup(controller.clone()).ok();
-            Self::deposit_event(Event::InstanceRegistered {
-                id: nucleus_id.clone(),
-                controller: controller.clone(),
-                node_id,
-            });
-            T::Vrf::register_nucleus_blocknumber(
-                nucleus_id,
-                <system::Pallet<T>>::block_number(),
-                validators_num,
-            )?;
-            // RegisterBlockNumber::<T>::insert(
-            //     &nucleus_id.clone(),
-            //     <system::Pallet<T>>::block_number(),
-            // );
-            // Self::deposit_event(Event::VRFSeedsUpdated {
-            //     nucleus_id,
-            //     account_id: controller,
-
-            //     seed,
-            // });
-
             Ok(())
         }
     }
@@ -242,6 +293,38 @@ pub mod pallet {
         fn unlookup(_n: Self::Target) -> Self::Source {
             unimplemented!()
         }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(now: BlockNumberFor<T>) -> Weight {
+            let mut weight = Weight::from_parts(0, 500);
+            let nuclei = OnCreationNuclei::<T>::take(now);
+            for id in nuclei {
+                weight = weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+                let mut task = RegistrySubmissions::<T>::take(&id)
+                    .expect("this is a bug: registry submission not found");
+                task.submissions.sort_by_key(|(_, v)| *v);
+                task.submissions
+                    .into_iter()
+                    .take(task.requires as usize)
+                    .for_each(|(controller, _)| {
+                        weight = weight.saturating_add(T::DbWeight::get().writes(1));
+                        Instances::<T>::mutate(&id, |peers| {
+                            peers.push(controller.clone());
+                        });
+                        Self::deposit_event(Event::InstanceRegistered {
+                            id: id.clone(),
+                            controller,
+                            node_id: None,
+                        });
+                    });
+            }
+            // TODO rotate the members
+            weight
+        }
+
+        fn on_finalize(_now: BlockNumberFor<T>) {}
     }
 
     impl<T: Config> Pallet<T> {
