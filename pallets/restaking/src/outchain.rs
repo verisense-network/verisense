@@ -14,7 +14,7 @@ pub const MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
 
 impl<T: Config> Pallet<T> {
     pub fn get_validators_list() -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
-        let data = query_validators_params(1000u32);
+        let data = query_validators_params();
         let mut body = br#"
         {
           "id": 1,
@@ -70,6 +70,7 @@ impl<T: Config> Pallet<T> {
             Ok(r) => {
                 log!(info, "{:?}", &r);
                 let mut v = vec![];
+                log!(info, "query validators result {}", r.result.clone());
                 let vd = decode_query_validators_resp(r.result);
                 for d in vd {
                     v.push((
