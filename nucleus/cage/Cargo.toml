@@ -38,7 +38,7 @@ http-body-util = "0.1.0"
 tokio-native-tls = "0.3"
 pin-project-lite = "0.2.4"
 xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
-
+blake2 = "0.10.6"
 
 [dev-dependencies]
 temp-dir = "0.1.13"

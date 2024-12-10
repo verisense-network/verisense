@@ -1,6 +1,6 @@
 use crate::{
-    runtime::{ContextAware, FuncRegister},
-    vm::Vm,
+    runtime::{ContextAware, FuncRegister, Runtime},
+    vm::{Vm, WasmCallError},
     ReplyTo, TimerEntry, TimersReplyTo, WasmInfo,
 };
 use codec::{Decode, Encode};
@@ -13,6 +13,7 @@ use vrs_core_sdk::{
 pub struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
     vm: Option<Vm<R>>,
+    runtime: R,
 }
 
 #[derive(Debug)]
@@ -20,6 +21,7 @@ pub enum Gluon {
     CodeUpgrade {
         version: u32,
         digest: [u8; 32],
+        wasm: Option<WasmInfo>,
     },
     PostRequest {
         endpoint: String,
@@ -50,7 +52,9 @@ pub enum Gluon {
 impl From<&Gluon> for Event {
     fn from(gluon: &Gluon) -> Self {
         match gluon {
-            Gluon::CodeUpgrade { version, digest } => Event::CodeUpgrade {
+            Gluon::CodeUpgrade {
+                version, digest, ..
+            } => Event::CodeUpgrade {
                 version: *version,
                 digest: *digest,
             },
@@ -86,7 +90,9 @@ impl From<&Gluon> for Event {
 impl Into<Event> for Gluon {
     fn into(self) -> Event {
         match self {
-            Self::CodeUpgrade { version, digest } => Event::CodeUpgrade { version, digest },
+            Self::CodeUpgrade {
+                version, digest, ..
+            } => Event::CodeUpgrade { version, digest },
             Self::PostRequest {
                 endpoint, payload, ..
             } => Event::PostRequest { endpoint, payload },
@@ -157,24 +163,14 @@ const VM_ERROR: i32 = 0x00000001;
 
 impl<R> Nucleus<R>
 where
-    R: ContextAware + FuncRegister<Runtime = R>,
+    R: ContextAware + FuncRegister<Runtime = R> + Clone,
 {
-    pub(crate) fn init(
-        receiver: Receiver<(u64, Gluon)>,
-        runtime: R,
-        code: WasmInfo,
-    ) -> anyhow::Result<Self> {
-        let vm = Vm::new_instance(&code, runtime).inspect_err(|e| {
-            log::error!(
-                "fail to create vm instance for AVS {} due to: {:?}",
-                &code.name,
-                e
-            )
-        })?;
-        Ok(Nucleus {
+    pub(crate) fn init(receiver: Receiver<(u64, Gluon)>, runtime: R) -> Self {
+        Self {
             receiver,
-            vm: Some(vm),
-        })
+            vm: None,
+            runtime,
+        }
     }
 
     pub(crate) fn run(&mut self) {
@@ -189,86 +185,103 @@ where
     }
 
     fn accept(&mut self, msg: Gluon) -> anyhow::Result<()> {
-        let vm = self
-            .vm
-            .as_mut()
-            .ok_or(anyhow::anyhow!("VM not initialized"))?;
         match msg {
-            Gluon::CodeUpgrade { version, digest } => {
-                // TODO load new module from storage
+            Gluon::CodeUpgrade {
+                version,
+                digest,
+                wasm,
+            } => {
+                let wasm = wasm.expect("lookup wasm after deserializing `Event::CodeUpgrade`");
+                let vm = Vm::new_instance(&wasm, &self.runtime).inspect_err(|e| {
+                    log::error!("Init vm for nucleus {} failed due to {:?}", &wasm.id, e)
+                });
+                if let Ok(vm) = vm {
+                    self.vm.replace(vm);
+                }
             }
             Gluon::HttpCallback {
                 request_id,
                 payload,
             } => {
+                let vm = self
+                    .vm
+                    .as_mut()
+                    .ok_or(anyhow::anyhow!("VM not initialized"))?;
                 let _ = vm.call_inner("__nucleus_http_callback", (request_id, payload));
             }
             Gluon::GetRequest {
                 endpoint,
                 payload,
                 reply_to,
-            } => {
-                let vm_result = vm.call_get(&endpoint, payload).map_err(|e| {
-                    log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
-                    (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                });
-                if let Some(reply_to) = reply_to {
-                    let _ = reply_to.send(vm_result);
+            } => match self.vm {
+                Some(ref mut vm) => {
+                    let vm_result = vm.call_get(&endpoint, payload).map_err(|e| {
+                        log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
+                        (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                    });
+                    if let Some(reply_to) = reply_to {
+                        let _ = reply_to.send(vm_result);
+                    }
                 }
-            }
+                None => {
+                    if let Some(reply_to) = reply_to {
+                        let _ = reply_to.send(Err(WasmCallError::WasmNotInitialized.into()));
+                    }
+                }
+            },
             Gluon::PostRequest {
                 endpoint,
                 payload,
                 reply_to,
-            } => {
-                let vm_result = vm.call_post(&endpoint, payload.clone()).map_err(|e| {
-                    log::error!("fail to call post endpoint: {} due to: {:?}", &endpoint, e);
-                    (VM_ERROR << 10 + e.to_error_code(), e.to_string())
-                });
-                // when reply events, there is no `reply_to`
-                if let Some(reply_to) = reply_to {
-                    // we don't need to handle this error if the connection dropped
-                    let _ = reply_to.send(vm_result);
+            } => match self.vm {
+                Some(ref mut vm) => {
+                    let vm_result = vm.call_post(&endpoint, payload.clone()).map_err(|e| {
+                        log::error!("fail to call post endpoint: {} due to: {:?}", &endpoint, e);
+                        (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                    });
+                    if let Some(reply_to) = reply_to {
+                        let _ = reply_to.send(vm_result);
+                    }
                 }
-            }
+                None => {
+                    if let Some(reply_to) = reply_to {
+                        let _ = reply_to.send(Err(WasmCallError::WasmNotInitialized.into()));
+                    }
+                }
+            },
             Gluon::TimerRequest {
                 endpoint,
                 payload,
                 reply_to,
                 pending_timer_queue,
-            } => match self.vm {
-                Some(ref mut vm) => {
-                    let vm_result = vm.call_timer(&endpoint, payload.clone());
-                    match vm_result {
-                        Ok((result, entries)) => {
-                            if let Some(reply_to) = reply_to {
-                                if let Err(err) = reply_to.send(Ok(result)) {
-                                    log::error!("⏲️ Fail to send reply to: {:?}", err);
-                                }
+            } => {
+                let vm = self
+                    .vm
+                    .as_mut()
+                    .ok_or(anyhow::anyhow!("VM not initialized"))?;
+                let vm_result = vm.call_timer(&endpoint, payload.clone());
+                match vm_result {
+                    Ok((result, entries)) => {
+                        if let Some(reply_to) = reply_to {
+                            if let Err(err) = reply_to.send(Ok(result)) {
+                                log::error!("⏲️ Fail to send reply to: {:?}", err);
                             }
-                            pending_timer_queue.send(entries).unwrap();
                         }
-                        Err(e) => {
-                            log::error!(
-                                "fail to call timer endpoint: {} due to: {:?}",
-                                &endpoint,
-                                e
-                            );
+                        pending_timer_queue.send(entries).unwrap();
+                    }
+                    Err(e) => {
+                        log::error!("fail to call timer endpoint: {} due to: {:?}", &endpoint, e);
 
-                            if let Some(reply_to) = reply_to {
-                                if let Err(err) = reply_to
-                                    .send(Err((VM_ERROR << 10 + e.to_error_code(), e.to_string())))
-                                {
-                                    log::error!("⏲️ Fail to send reply to: {:?}", err);
-                                }
+                        if let Some(reply_to) = reply_to {
+                            if let Err(err) = reply_to
+                                .send(Err((VM_ERROR << 10 + e.to_error_code(), e.to_string())))
+                            {
+                                log::error!("⏲️ Fail to send reply to: {:?}", err);
                             }
                         }
                     }
                 }
-                None => {
-                    log::error!("vm not initialized");
-                }
-            },
+            }
             Gluon::TimerInitRequest {
                 pending_timer_queue,
             } => match self.vm {
