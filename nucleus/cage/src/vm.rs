@@ -1,6 +1,6 @@
 use crate::{
     runtime::{ContextAware, FuncRegister},
-    TimerEntry, WasmCodeRef, WasmInfo,
+    TimerEntry, WasmInfo,
 };
 use codec::Decode;
 use thiserror::Error;
@@ -16,64 +16,62 @@ pub struct Vm<R> {
 pub enum WasmCallError {
     #[error("Endpoint not found")]
     EndpointNotFound,
-
     #[error("No memory exported")]
     NoMemoryExported,
-
     #[error("Arguments size exceeds 64KB limit")]
     ArgumentsSizeExceeded,
-
     #[error("Result size exceeds 64KB limit")]
     ResultSizeExceeded,
-
     #[error("Result pointer error")]
     ResultPointerError,
-
     #[error("Memory error: {0}")]
     MemoryError(String),
-
     #[error("Function call error: {0}")]
     FunctionCallError(String),
-
     #[error("Decode error: {0}")]
     DecodeError(#[from] codec::Error),
-
     #[error("Wasm internal error: {0}")]
     WasmInternalError(String),
+    #[error("Wasm not initialized")]
+    WasmNotInitialized,
+}
+
+impl Into<(i32, String)> for WasmCallError {
+    fn into(self) -> (i32, String) {
+        (self.to_error_code() as i32, self.to_string())
+    }
 }
 
 impl WasmCallError {
-    pub fn to_error_code(&self) -> u32 {
+    pub fn to_error_code(&self) -> i32 {
         match self {
-            WasmCallError::EndpointNotFound => 0,
-            WasmCallError::NoMemoryExported => 1,
-            WasmCallError::ArgumentsSizeExceeded => 2,
-            WasmCallError::ResultSizeExceeded => 3,
-            WasmCallError::ResultPointerError => 4,
-            WasmCallError::MemoryError(_) => 5,
-            WasmCallError::FunctionCallError(_) => 6,
-            WasmCallError::DecodeError(_) => 7,
-            WasmCallError::WasmInternalError(_) => 8,
+            WasmCallError::EndpointNotFound => -5000,
+            WasmCallError::NoMemoryExported => -5001,
+            WasmCallError::ArgumentsSizeExceeded => -5002,
+            WasmCallError::ResultSizeExceeded => -5003,
+            WasmCallError::ResultPointerError => -5004,
+            WasmCallError::MemoryError(_) => -5005,
+            WasmCallError::FunctionCallError(_) => -5006,
+            WasmCallError::DecodeError(_) => -5007,
+            WasmCallError::WasmInternalError(_) => -5008,
+            WasmCallError::WasmNotInitialized => -5009,
         }
     }
 }
 
 impl<R> Vm<R>
 where
-    R: FuncRegister<Runtime = R> + ContextAware,
+    R: FuncRegister<Runtime = R> + ContextAware + Clone,
 {
-    pub fn new_instance(wasm: &WasmInfo, runtime: R) -> anyhow::Result<Self> {
+    pub fn new_instance(wasm: &WasmInfo, runtime: &R) -> anyhow::Result<Self> {
         let engine = Engine::default();
-        let module = match wasm.code {
-            WasmCodeRef::Blob(ref blob) => Module::from_binary(&engine, blob)?,
-            WasmCodeRef::File(ref path) => Module::from_file(&engine, path)?,
-        };
+        let module = Module::from_binary(&engine, &wasm.code)?;
         module.exports().for_each(|ty| {
             if let ExternType::Func(func) = ty.ty() {
                 log::info!("user wasm export: {} {}", func.to_string(), ty.name());
             }
         });
-        let mut store = Store::new(&engine, runtime);
+        let mut store = Store::new(&engine, runtime.clone());
         let linker = R::register_host_funcs(&engine);
         let instance = linker.instantiate(&mut store, &module).unwrap();
         let memory = instance
@@ -97,12 +95,12 @@ where
         self.call_no_returns(&func, args.encode())
             .inspect_err(|e| log::warn!("fail to invoke inner method, {:?}", e))
     }
+
     fn call_no_input_no_output(&mut self, func_name: &str) -> Result<(), WasmCallError> {
         let func = self
             .instance
             .get_func(&mut self.space, &func_name)
             .ok_or(WasmCallError::EndpointNotFound)?;
-        println!("FUNC{:?} {}", func, func_name);
         func.call(&mut self.space, &[], &mut [])
             .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
         Ok(())

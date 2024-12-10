@@ -170,13 +170,26 @@ where
                 None::<()>,
             ))? {
                 TransactionStatus::InBlock((block, _)) => {
-                    let dir = self
+                    let nucleus_info = api
+                        .get_nucleus_info(block, wasm_info.nucleus_id.clone())
+                        .ok()
+                        .flatten()
+                        .expect("just put into the block;qed");
+                    let path = self
                         .nucleus_home_dir
                         .as_path()
-                        .join(wasm_info.nucleus_id.to_string());
-                    // TODO rename the previous wasm file
-                    std::fs::create_dir_all(&dir)
-                        .and_then(|_| std::fs::File::create(dir.join("code.wasm")))
+                        .join(wasm_info.nucleus_id.to_string())
+                        .join("wasm");
+                    if !std::fs::exists(&path).unwrap_or(false) {
+                        std::fs::create_dir_all(&path).map_err(|e| {
+                            ErrorObjectOwned::owned(
+                                OS_ERR_CODE,
+                                format!("Couldn't write the wasm file, caused by {:?}", e),
+                                None::<()>,
+                            )
+                        })?;
+                    }
+                    std::fs::File::create(path.join(nucleus_info.wasm_version.to_string()))
                         .and_then(|mut f| f.write_all(&wasm.0))
                         .map_err(|e| {
                             ErrorObjectOwned::owned(

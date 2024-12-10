@@ -39,12 +39,14 @@ pub struct RuntimeParams {
     pub timer_scheduler: Arc<timer::SchedulerAsync>,
 }
 
+#[derive(Clone)]
 pub struct Runtime {
     pub(crate) id: NucleusId,
     pub(crate) state: Arc<NucleusState>,
     pub(crate) http: Arc<HttpCallRegister>,
     pub(crate) register_timer: Arc<PendingTimerQueue>,
     pub(crate) read_only: bool,
+    // TODO
     pub(crate) caller_infos: Vec<CallerInfo>,
     // TODO we need runtime storage to read
 }

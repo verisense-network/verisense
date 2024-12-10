@@ -12,7 +12,7 @@ pub mod test_suite;
 
 pub(crate) use host_func::timer_entry::*;
 
-pub use bytecode::{WasmCodeRef, WasmInfo};
+pub use bytecode::WasmInfo;
 pub use cage::{start_nucleus_cage, CageParams};
 pub use nucleus::{Event, Gluon};
 pub use runtime::{Runtime, RuntimeParams};
