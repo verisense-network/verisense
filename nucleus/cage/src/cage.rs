@@ -93,7 +93,9 @@ impl NucleusCage {
             }
         }
     }
-
+    pub fn state_root(&self) -> H256 {
+        self.state.root()
+    }
     fn forward(&mut self, gluon: Gluon) {
         if matches!(gluon, Gluon::GetRequest { .. }) {
             let _ = self.tunnel.send((0, gluon));
@@ -141,6 +143,7 @@ where
 
         let (http_register, mut http_executor) = crate::host_func::http::new_http_manager();
         let http_register = Arc::new(http_register);
+        let mut max_event_id: HashMap<NucleusId, u64> = HashMap::new();
 
         // TODO mock monadring
         //////////////////////////////////////////////////////
@@ -211,17 +214,38 @@ where
                                                 }
                                                 tmp_i  = (tmp_i + 1) % validators.len();
                                             }
+                                            let mut current_event_id = 0;
+                                            // get max event id from max_event_id
+                                            if let Some(max_event_id) = max_event_id.get(&token_payload.nucleus_id) {
+                                                if token_payload.max_events_id > *max_event_id{
+                                                    current_event_id = *max_event_id;
+
+                                                }else{
+                                                    //discard the request
+                                                    log::error!("The max event id is not greater than the max event id in the max_event_id.");
+                                                }
+                                            }
+                                            // ask other validators for event from currnet_event_id to max_event_id
                                             if nuclei.contains_key(&token_payload.nucleus_id) {
                                                 //drain the associated nucleus
                                                 if let Some(nucleus) = nuclei.get_mut(&token_payload.nucleus_id) {
                                                     for j in 1..token_payload.events.len(){
                                                         nucleus.drain(token_payload.events[j].events.clone());
                                                     }
+                                                    if nucleus.state_root() != token_payload.root {
+                                                        //discard the request
+                                                        log::error!("The state root is not equal to the state root in the nucleus.");
+                                                    }
                                                 }
+
                                             } else {
                                                 // nucleus not found
                                                 log::error!("Nucleus not found in the nuclei.");
                                             }
+                                        }
+                                        Payload::EventPayload(events) =>{
+                                            //move to p2p
+                                            storage
                                         }
                                         Payload::WasmFile(wasm_payload) => {
                                             if i == 0 {
