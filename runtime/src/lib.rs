@@ -499,7 +499,6 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
     Migrations,
 >;
-
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
@@ -667,7 +666,6 @@ impl_runtime_apis! {
             TransactionPayment::length_to_fee(length)
         }
     }
-
     impl vrs_nucleus_runtime_api::NucleusApi<Block> for Runtime {
         fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
@@ -688,7 +686,11 @@ impl_runtime_apis! {
         fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>> {
             Nucleus::get_nucleus_info(&nucleus_id)
         }
+        fn get_validators(nucleus_id: &NucleusId) -> Option<Vec<AccountId>> {
+            Vrf::get_validators(nucleus_id)
+        }
     }
+
 
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {

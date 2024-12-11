@@ -186,6 +186,12 @@ where
                         NucleusP2pMsg::ReqRes(req) => {
                             log::info!("in cage: incoming request: {:?}", req);
 
+                            let api = client.runtime_api();
+                            if let Some(validators) = api.get_validators(client.info().best_hash,nucleus_id).unwrap(){
+                                let next = validators.iter()
+                                .position(|x| *x == controller)
+                                .and_then(|i| validators.get(i + 1));
+                            }
                             // API: anywhere you want to send request, use like:
                             // let result = vrs_nucleus_p2p::send_request(net_service, keystore, peer_id, payload).await;
 
@@ -548,8 +554,8 @@ mod tests {
                 Gluon::TimerRequest {
                     endpoint: entry.func_name,
                     payload: entry.func_params,
-                    // reply_to: Some(sender_reply),
-                    // pending_timer_queue: sender_timer_reply,
+                    reply_to: todo!(),
+                    pending_timer_queue: todo!(),
                 },
             )) {
                 println!("fail to send timer entry: {:?}", err);
