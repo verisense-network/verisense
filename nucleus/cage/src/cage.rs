@@ -4,6 +4,7 @@ use crate::{
         timer::SchedulerAsync,
     },
     nucleus::Nucleus,
+    payload::Payload,
     state::NucleusState,
     Event, Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, TimerEntry, TimersReplyTo,
     WasmCodeRef, WasmInfo,
@@ -185,13 +186,66 @@ where
                     match msg {
                         NucleusP2pMsg::ReqRes(req) => {
                             log::info!("in cage: incoming request: {:?}", req);
-
+                            let payload = req.payload.clone();
+                            let payload = <Payload as Decode>::decode(&mut payload.as_slice()).unwrap();
                             let api = client.runtime_api();
-                            if let Some(validators) = api.get_validators(client.info().best_hash,nucleus_id).unwrap(){
-                                let next = validators.iter()
-                                .position(|x| *x == controller)
-                                .and_then(|i| validators.get(i + 1));
+                            if let Some(validators) = api.get_validators(client.info().best_hash, &payload.nucleus_id()).unwrap() {
+                                let index = validators.iter().position(|x| *x == controller);
+                                // 0 is me
+                                // 1 is next validator
+                                if let Some(i) = index {
+                                    log::debug!("The index of the controller is: {}", i);
+                                    match payload {
+                                        Payload::TokenPayload(token_payload) => {
+                                            // assert events length is equal to the validators length
+                                            if validators.len() != token_payload.events.len() {
+                                                //discard the request
+                                                log::error!("The events length is not equal to the validators length.");
+                                            }
+                                            let mut tmp_i = i;
+                                            for j in 0..token_payload.events.len(){
+                                                if validators[tmp_i] != token_payload.events[j].account_id {
+                                                    //discard the request
+                                                    log::error!("The validator is not equal to the validators list.");
+                                                    break;
+                                                }
+                                                tmp_i  = (tmp_i + 1) % validators.len();
+                                            }
+                                            if nuclei.contains_key(&token_payload.nucleus_id) {
+                                                //drain the associated nucleus
+                                                if let Some(nucleus) = nuclei.get_mut(&token_payload.nucleus_id) {
+                                                    for j in 1..token_payload.events.len(){
+                                                        nucleus.drain(token_payload.events[j].events.clone());
+                                                    }
+                                                }
+                                            } else {
+                                                // nucleus not found
+                                                log::error!("Nucleus not found in the nuclei.");
+                                            }
+                                        }
+                                        Payload::WasmFile(wasm_payload) => {
+                                            if i == 0 {
+                                                //controller
+                                                //validate the token
+                                                if nuclei.contains_key(&wasm_payload.nucleus_id) {
+                                                    //drain the associated nucleus
+                                                    if let Some(nucleus) = nuclei.get_mut(&wasm_payload.nucleus_id) {
+                                                        nucleus.drain(vec![]);
+                                                    }
+                                                }
+                                            } else {
+                                                //discard the request
+                                                println!("Controller not found in the validators list.");
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    //discard the request
+                                    println!("Controller not found in the validators list.");
+                                }
                             }
+
+
                             // API: anywhere you want to send request, use like:
                             // let result = vrs_nucleus_p2p::send_request(net_service, keystore, peer_id, payload).await;
 
@@ -547,7 +601,7 @@ mod tests {
             let sender = sender_cage_clone.clone();
             let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
             receivers.push(receiver_timer_reply);
-            let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+            let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel::<Vec<u8>>();
 
             if let Err(err) = sender.send((
                 0,
@@ -560,7 +614,7 @@ mod tests {
             )) {
                 println!("fail to send timer entry: {:?}", err);
             }
-            let reply = receiver_reply.await.unwrap().unwrap();
+            let reply = receiver_reply.await.unwrap();
             println!("reply: {:?}", reply);
             assert!(result[decode(reply.clone()) as usize] >= last);
             last = result[decode(reply) as usize];
