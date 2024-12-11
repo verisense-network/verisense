@@ -128,12 +128,13 @@ where
     } = params;
     async move {
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
-        log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
         let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
+        log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
         // TODO what if our node is far behind the best block?
         let metadata =
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
         let mut block_monitor = client.every_import_notification_stream();
+
         let timer_scheduler = Arc::new(crate::host_func::timer::SchedulerAsync::new());
         let mut timers_receivers: FuturesUnordered<oneshot::Receiver<Vec<TimerEntry>>> =
             FuturesUnordered::new();
@@ -179,79 +180,50 @@ where
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
+                // handle monadring protocol
                 Some(msg) = p2p_cage_rx.recv() => {
-                    // req type is IncomingRequest, process it.
                     match msg {
                         NucleusP2pMsg::ReqRes(req) => {
                             log::info!("in cage: incoming request: {:?}", req);
-
-                            // API: anywhere you want to send request, use like:
-                            // let result = vrs_nucleus_p2p::send_request(net_service, keystore, peer_id, payload).await;
-
-                            // let payload = req.payload;
-                            // decode the payload to verify the signature
-                            // let payload_with_sig: vrs_nucleus_p2p::PayloadWithSignature = payload.decode();
-                            // let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let msg = payload_with_sig.peer_id;
-                            // verify the signature
-                            // let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
-                            // match verify_result {
-                            //     true => {
-                                    // do stuff
-                                    // as a response role, use req.pending_response to send oneshot OutgoingResponse back
-                                    // let outgoing_msg = OutgoingResponse {
-                                    //     result: Ok(b"response from cage req/res handle.".to_vec()),
-                                    //     reputation_changes: vec![],
-                                    //     sent_feedback: None
-                                    // };
-                                    // _ = req.pending_response.send(outgoing_msg);
-                                // }
-                                // false => {
-                                    // verified failed, do some report
-
-                            //     }
-                            // }
                         }
                         NucleusP2pMsg::Noti(noti) => {
                             log::info!("in cage: incoming notification: {:?}", noti);
-                            // process notification here
-                            // let payload = noti.notification;
-                            // let payload_with_sig: vrs_nucleus_p2p::PayloadWithSignature = payload.decode();
-                            // let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let msg = payload_with_sig.peer_id;
-                            // verify the signature
-                            // let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
-                            // match verify_result {
-                            //     true => {
-                            // do stuff
-                            // }
-                            // false => {
-                            // verified failed, do some report
-                            //     }
-                            // }
-                            // API: anywhere you want to send a notification, use like:
-                            // the first param is the raw payload without signature, the second one Vec<> is the peer list
-                            // _ = noti_sender.send((Vec<u8>, Vec<PeerId>)).await;
                         }
                     }
                 },
+                // handle hostnet events
                 block = block_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
-                    extract_events(
-                        client.clone(),
-                        hash,
-                        metadata.clone(),
-                        |ev| {
+                    let events = extract_events::<_, _, _, SubstrateConfig>(client.clone(), hash, metadata.clone())
+                        .expect("fail to extract events");
+                    if events.is_none() {
+                        continue;
+                    }
+                    let events = events.unwrap();
+                    for event in events.iter() {
+                        if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
+                            let nucleus_id = ev.id;
+                            let public_input = ev.public_input;
+                            let signature = crate::keystore::sign_to_participate(
+                                keystore.clone(),
+                                sp_core::crypto::KeyTypeId(*b"nucl"),
+                                public_input.as_ref(),
+                            ).expect("fail to sign vrf signature");
+                        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
+                            // id: T::NucleusId,
+                            // wasm_hash: T::Hash,
+                            // wasm_version: u32,
+                            // wasm_location: T::NodeId,
+
+                        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
                             let id = ev.id;
                             let info = client
                                 .runtime_api()
                                 .get_nucleus_info(hash, NucleusId::from(id.0))
-                                .inspect_err(|e| log::error!("fail to get nucleus info while receiving instance registered event: {:?}", e))
+                                .inspect_err(|e| log::error!("fail to get nucleus info while receiving nucleus created event: {:?}", e))
                                 .ok()
                                 .flatten()
-                                .expect("fail to get nucleus info while receiving instance registered event");
+                                .expect("fail to get nucleus info while receiving nucleus created event");
                             let nucleus_path = nucleus_home_dir.join(id.to_string());
                             start_nucleus(
                                 NucleusId::from(id.0),
@@ -262,10 +234,8 @@ where
                                 &mut nuclei,
                             )
                             .expect("fail to start nucleus");
-                        },
-                        |ev| {},
-                        |ev| {},
-                    );
+                        }
+                    }
                 },
                 Some(timer_entries) = timers_receivers.next()=>{
                     log::info!("⏲️ Timer entries received: {:?}", timer_entries);
@@ -273,42 +243,34 @@ where
                         timer_scheduler.push(entry);
                     }
                 },
-                timer_entry = timer_scheduler.pop() => {
-                    log::info!("⏲️ Timer gluon sent: {:?}", timer_entry);
-                    if let Some(entry) = timer_entry {
-                        if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
-                            let (timer_sender, timer_receiver) = oneshot::channel();
-                            timers_receivers.push(timer_receiver);
-                            nucleus.forward(Gluon::TimerRequest {
-                                endpoint: entry.func_name,
-                                payload: entry.func_params,
-                                reply_to: None,
-                                pending_timer_queue: timer_sender,
-                            });
-                        }
+                Some(entry) = timer_scheduler.pop() => {
+                    log::info!("⏲️ Timer gluon sent: {:?}", entry);
+                    if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
+                        let (timer_sender, timer_receiver) = oneshot::channel();
+                        timers_receivers.push(timer_receiver);
+                        nucleus.forward(Gluon::TimerRequest {
+                            endpoint: entry.func_name,
+                            payload: entry.func_params,
+                            reply_to: None,
+                            pending_timer_queue: timer_sender,
+                        });
                     }
                 },
-                http_reply = http_executor.recv_response()=>{
+                Some(http_reply) = http_executor.recv_response() => {
                     log::info!("🌐 Http reply: {:?}", http_reply);
-
-                    if let Some(HttpResponseWithCallback {
+                    let HttpResponseWithCallback {
                         nucleus_id,
                         req_id,
                         response,
-                    }) = http_reply{
-                        if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
-                            nucleus.forward(Gluon::HttpCallback {
-                                request_id: req_id,
-                                payload: response,
-                            });
-                        }
-
-                    }else{
-                        log::error!("🌐 No http reply");
+                    } = http_reply;
+                    if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
+                        nucleus.forward(Gluon::HttpCallback {
+                            request_id: req_id,
+                            payload: response,
+                        });
                     }
                 },
-                req = nucleus_rpc_rx.recv() => {
-                    let (module, gluon) = req.expect("fail to receive nucleus request");
+                Some((module, gluon)) = nucleus_rpc_rx.recv() => {
                     if let Some(nucleus) = nuclei.get_mut(&module) {
                         nucleus.forward(gluon);
                     } else {
@@ -336,14 +298,12 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
     }
 }
 
-fn extract_events<B, D, C, F0, F1, F2>(
+fn extract_events<B, D, C, T>(
     client: Arc<C>,
     hash: B::Hash,
     metadata: RuntimeMetadata,
-    mut instance_register_handler: F0,
-    mut nucleus_create_handler: F1,
-    mut nucleus_upgrade_handler: F2,
-) where
+) -> Result<Option<events::Events<T>>, Box<dyn std::error::Error>>
+where
     B: sp_runtime::traits::Block,
     D: Backend<B>,
     C: BlockBackend<B>
@@ -352,43 +312,38 @@ fn extract_events<B, D, C, F0, F1, F2>(
         + ProvideRuntimeApi<B>
         + 'static,
     C::Api: NucleusApi<B> + 'static,
-    F0: FnMut(codegen::nucleus::events::InstanceRegistered),
-    F1: FnMut(codegen::nucleus::events::NucleusCreated),
-    F2: FnMut(codegen::nucleus::events::NucleusUpgraded),
+    T: vrs_metadata::Config,
 {
-    // TODO
+    // TODO change to use the storage key from metadata
     let storage_key = storage_key(b"System", b"Events");
-    let events = client
+    client
         .storage(hash, &storage_key)
         .inspect_err(|e| log::error!("failed to get events: {:?}", e))
-        .ok()
-        .flatten()
-        .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata));
-    if events.is_none() {
-        return;
-    }
-    let events = events.unwrap();
-    for event in events.iter() {
-        if let Ok(Some(ev)) = event.as_ref().map(|ev| {
-            ev.as_event::<codegen::nucleus::events::InstanceRegistered>()
-                .ok()
-                .flatten()
-        }) {
-            instance_register_handler(ev);
-        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| {
-            ev.as_event::<codegen::nucleus::events::NucleusCreated>()
-                .ok()
-                .flatten()
-        }) {
-            nucleus_create_handler(ev);
-        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| {
-            ev.as_event::<codegen::nucleus::events::NucleusUpgraded>()
-                .ok()
-                .flatten()
-        }) {
-            nucleus_upgrade_handler(ev);
-        }
-    }
+        .map(|b| b.map(|v| events::decode_from::<T>(v.0, metadata)))
+        .map_err(|e| e.into())
+
+    // let events = events.unwrap();
+    // for event in events.iter() {
+    //     if let Ok(Some(ev)) = event.as_ref().map(|ev| {
+    //         ev.as_event::<codegen::nucleus::events::InstanceRegistered>()
+    //             .ok()
+    //             .flatten()
+    //     }) {
+    //         instance_register_handler(ev);
+    //     } else if let Ok(Some(ev)) = event.as_ref().map(|ev| {
+    //         ev.as_event::<codegen::nucleus::events::NucleusCreated>()
+    //             .ok()
+    //             .flatten()
+    //     }) {
+    //         nucleus_create_handler(ev);
+    //     } else if let Ok(Some(ev)) = event.as_ref().map(|ev| {
+    //         ev.as_event::<codegen::nucleus::events::NucleusUpgraded>()
+    //             .ok()
+    //             .flatten()
+    //     }) {
+    //         nucleus_upgrade_handler(ev);
+    //     }
+    // }
 }
 
 fn get_nuclei_for_node<B, D, C>(
@@ -440,7 +395,7 @@ fn upgrade_nucleus_wasm(
     nucleus_root_path: &std::path::Path,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
 ) -> anyhow::Result<()> {
-    let wasm_path = nucleus_root_path.join(format!("code/{}.wasm", version));
+    let wasm_path = nucleus_root_path.join(format!("wasm/{}.wasm", version));
     let code = std::fs::read(&wasm_path)?;
     let wasm = WasmInfo {
         id: id.clone(),

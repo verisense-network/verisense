@@ -1,6 +1,7 @@
 mod bytecode;
 mod cage;
 mod host_func;
+mod keystore;
 mod mem;
 mod nucleus;
 mod runtime;
