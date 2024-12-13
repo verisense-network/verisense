@@ -34,7 +34,6 @@ pub type Address = MultiAddress<AccountId, ()>;
 pub type NucleusId = AccountId32;
 
 pub type NodeId = sp_core::OpaquePeerId;
-pub type VrfId = sp_runtime::app_crypto::sr25519::Public;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
 pub struct NucleusInfo<AccountId, Hash, NodeId> {
@@ -47,16 +46,7 @@ pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub root_state: Hash,
     pub peers: alloc::vec::Vec<NodeId>,
 }
-#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
-pub struct SeedsInfo<AccountId, NucleusId, VrfId> {
-    pub nucleus_id: NucleusId,
-    pub account_id: AccountId,
-    pub vrf_id: VrfId,
-    pub seed: alloc::vec::Vec<u8>,
-}
 
-#[cfg(feature = "bls-experimental")]
-use sp_core::{bls377, bls381};
 use sp_core::{
     crypto::{Pair, UncheckedFrom},
     ecdsa, ed25519, sr25519,

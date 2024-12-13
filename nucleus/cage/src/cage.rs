@@ -6,7 +6,7 @@ use crate::{
     nucleus::Nucleus,
     state::NucleusState,
     Event, Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, TimerEntry, TimersReplyTo,
-    WasmCodeRef, WasmInfo,
+    WasmInfo,
 };
 use codec::{Decode, Encode};
 use futures::prelude::*;
@@ -128,12 +128,13 @@ where
     } = params;
     async move {
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
-        log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
         let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
+        log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
         // TODO what if our node is far behind the best block?
         let metadata =
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
         let mut block_monitor = client.every_import_notification_stream();
+
         let timer_scheduler = Arc::new(crate::host_func::timer::SchedulerAsync::new());
         let mut timers_receivers: FuturesUnordered<oneshot::Receiver<Vec<TimerEntry>>> =
             FuturesUnordered::new();
@@ -157,103 +158,88 @@ where
 
         let hash = client.info().best_hash;
         let chosen = get_nuclei_for_node(client.clone(), controller.clone(), hash);
-        for (id, config) in chosen {
+        for (id, info) in chosen {
             let nucleus_path = nucleus_home_dir.join(id.to_string());
-            start_nucleus::<B>(
+            start_nucleus(
                 id.clone(),
+                info,
+                nucleus_path.as_path(),
                 http_register.clone(),
                 timer_scheduler.clone(),
-                config,
-                nucleus_path,
                 &mut nuclei,
             )
             .expect("fail to start nucleus");
-
-            if let Some(nucleus) = nuclei.get_mut(&id) {
-                let (timer_sender, timer_receiver) = oneshot::channel();
-                timers_receivers.push(timer_receiver);
-                nucleus.forward(Gluon::TimerInitRequest {
-                    pending_timer_queue: timer_sender,
-                });
-            }
+            // if let Some(nucleus) = nuclei.get_mut(&id) {
+            //     let (timer_sender, timer_receiver) = oneshot::channel();
+            //     timers_receivers.push(timer_receiver);
+            //     nucleus.forward(Gluon::TimerInitRequest {
+            //         pending_timer_queue: timer_sender,
+            //     });
+            // }
         }
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
             tokio::select! {
+                // handle monadring protocol
                 Some(msg) = p2p_cage_rx.recv() => {
-                    // req type is IncomingRequest, process it.
                     match msg {
                         NucleusP2pMsg::ReqRes(req) => {
                             log::info!("in cage: incoming request: {:?}", req);
-
-                            // API: anywhere you want to send request, use like:
-                            // let result = vrs_nucleus_p2p::send_request(net_service, keystore, peer_id, payload).await;
-
-                            // let payload = req.payload;
-                            // decode the payload to verify the signature
-                            // let payload_with_sig: vrs_nucleus_p2p::PayloadWithSignature = payload.decode();
-                            // let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let msg = payload_with_sig.peer_id;
-                            // verify the signature
-                            // let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
-                            // match verify_result {
-                            //     true => {
-                                    // do stuff
-                                    // as a response role, use req.pending_response to send oneshot OutgoingResponse back
-                                    // let outgoing_msg = OutgoingResponse {
-                                    //     result: Ok(b"response from cage req/res handle.".to_vec()),
-                                    //     reputation_changes: vec![],
-                                    //     sent_feedback: None
-                                    // };
-                                    // _ = req.pending_response.send(outgoing_msg);
-                                // }
-                                // false => {
-                                    // verified failed, do some report
-
-                            //     }
-                            // }
                         }
                         NucleusP2pMsg::Noti(noti) => {
                             log::info!("in cage: incoming notification: {:?}", noti);
-                            // process notification here
-                            // let payload = noti.notification;
-                            // let payload_with_sig: vrs_nucleus_p2p::PayloadWithSignature = payload.decode();
-                            // let signature = sp_core::sr25519::Signature::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let public_key = sp_core::sr25519::Public::from_raw(payload_with_sig.signature.try_into().unwrap());
-                            // let msg = payload_with_sig.peer_id;
-                            // verify the signature
-                            // let verify_result = sp_core::sr25519::Pair::verify(&signature, &msg, &public_key);
-                            // match verify_result {
-                            //     true => {
-                            // do stuff
-                            // }
-                            // false => {
-                            // verified failed, do some report
-                            //     }
-                            // }
-                            // API: anywhere you want to send a notification, use like:
-                            // the first param is the raw payload without signature, the second one Vec<> is the peer list
-                            // _ = noti_sender.send((Vec<u8>, Vec<PeerId>)).await;
                         }
                     }
                 },
+                // handle hostnet events
                 block = block_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
-                    // TODO handle deregister as well
-                    if let Some(instances) = map_to_nucleus(client.clone(), hash, metadata.clone()) {
-                        for (id, config) in instances {
-                            let nucleus_path = nucleus_home_dir.join(id.to_string());
-                            start_nucleus::<B>(id.clone(), http_register.clone(), timer_scheduler.clone(), config, nucleus_path, &mut nuclei).expect("fail to start nucleus");
-
-                            if let Some(nucleus) = nuclei.get_mut(&id) {
-                                let (timer_sender, timer_receiver) = oneshot::channel();
-                                timers_receivers.push(timer_receiver);
-                                nucleus.forward(Gluon::TimerInitRequest {
-                                    pending_timer_queue: timer_sender,
-                                });
-                            }
-
+                    let events = extract_events::<_, _, _, SubstrateConfig>(client.clone(), hash, metadata.clone())
+                        .expect("fail to extract events");
+                    if events.is_none() {
+                        continue;
+                    }
+                    let events = events.unwrap();
+                    for event in events.iter() {
+                        if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
+                            let nucleus_id = ev.id;
+                            let public_input = ev.public_input;
+                            let signature = crate::keystore::sign_to_participate(
+                                keystore.clone(),
+                                sp_core::crypto::KeyTypeId(*b"nucl"),
+                                public_input.as_ref(),
+                            ).expect("fail to sign vrf signature");
+                        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
+                            let nucleus_id = ev.id;
+                            let digest = ev.wasm_hash;
+                            let version = ev.wasm_version;
+                            // TODO download the wasm from ev.wasm_location
+                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
+                            upgrade_nucleus_wasm(
+                                NucleusId::from(nucleus_id.0),
+                                digest,
+                                version,
+                                nucleus_path.as_path(),
+                                &mut nuclei,
+                            ).expect("fail to upgrade nucleus wasm");
+                        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
+                            let nucleus_id = ev.id;
+                            let info = client
+                                .runtime_api()
+                                .get_nucleus_info(hash, NucleusId::from(nucleus_id.0))
+                                .inspect_err(|e| log::error!("fail to get nucleus info while receiving nucleus created event: {:?}", e))
+                                .ok()
+                                .flatten()
+                                .expect("fail to get nucleus info while receiving nucleus created event");
+                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
+                            start_nucleus(
+                                NucleusId::from(nucleus_id.0),
+                                info,
+                                nucleus_path.as_path(),
+                                http_register.clone(),
+                                timer_scheduler.clone(),
+                                &mut nuclei,
+                            ).expect("fail to start nucleus");
                         }
                     }
                 },
@@ -263,42 +249,34 @@ where
                         timer_scheduler.push(entry);
                     }
                 },
-                timer_entry = timer_scheduler.pop() => {
-                    log::info!("⏲️ Timer gluon sent: {:?}", timer_entry);
-                    if let Some(entry) = timer_entry {
-                        if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
-                            let (timer_sender, timer_receiver) = oneshot::channel();
-                            timers_receivers.push(timer_receiver);
-                            nucleus.forward(Gluon::TimerRequest {
-                                endpoint: entry.func_name,
-                                payload: entry.func_params,
-                                reply_to: None,
-                                pending_timer_queue: timer_sender,
-                            });
-                        }
+                Some(entry) = timer_scheduler.pop() => {
+                    log::info!("⏲️ Timer gluon sent: {:?}", entry);
+                    if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
+                        let (timer_sender, timer_receiver) = oneshot::channel();
+                        timers_receivers.push(timer_receiver);
+                        nucleus.forward(Gluon::TimerRequest {
+                            endpoint: entry.func_name,
+                            payload: entry.func_params,
+                            reply_to: None,
+                            pending_timer_queue: timer_sender,
+                        });
                     }
                 },
-                http_reply = http_executor.recv_response()=>{
+                Some(http_reply) = http_executor.recv_response() => {
                     log::info!("🌐 Http reply: {:?}", http_reply);
-
-                    if let Some(HttpResponseWithCallback {
+                    let HttpResponseWithCallback {
                         nucleus_id,
                         req_id,
                         response,
-                    }) = http_reply{
-                        if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
-                            nucleus.forward(Gluon::HttpCallback {
-                                request_id: req_id,
-                                payload: response,
-                            });
-                        }
-
-                    }else{
-                        log::error!("🌐 No http reply");
+                    } = http_reply;
+                    if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
+                        nucleus.forward(Gluon::HttpCallback {
+                            request_id: req_id,
+                            payload: response,
+                        });
                     }
                 },
-                req = nucleus_rpc_rx.recv() => {
-                    let (module, gluon) = req.expect("fail to receive nucleus request");
+                Some((module, gluon)) = nucleus_rpc_rx.recv() => {
                     if let Some(nucleus) = nuclei.get_mut(&module) {
                         nucleus.forward(gluon);
                     } else {
@@ -326,11 +304,11 @@ fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
     }
 }
 
-fn map_to_nucleus<B, D, C>(
+fn extract_events<B, D, C, T>(
     client: Arc<C>,
     hash: B::Hash,
     metadata: RuntimeMetadata,
-) -> Option<Vec<(NucleusId, NucleusInfo<AccountId, Hash, NodeId>)>>
+) -> Result<Option<events::Events<T>>, Box<dyn std::error::Error>>
 where
     B: sp_runtime::traits::Block,
     D: Backend<B>,
@@ -340,25 +318,15 @@ where
         + ProvideRuntimeApi<B>
         + 'static,
     C::Api: NucleusApi<B> + 'static,
+    T: vrs_metadata::Config,
 {
+    // TODO change to use the storage key from metadata
     let storage_key = storage_key(b"System", b"Events");
-    let events = client
+    client
         .storage(hash, &storage_key)
-        .ok()
-        .flatten()
-        .map(|v| events::decode_from::<SubstrateConfig>(v.0, metadata))?;
-
-    let api = client.runtime_api();
-    let instances = events
-        .find::<codegen::nucleus::events::InstanceRegistered>()
-        .filter_map(|ev| {
-            let id = ev.ok()?.id.0;
-            api.get_nucleus_info(hash, NucleusId::from(id))
-                .ok()?
-                .map(|info| (NucleusId::from(id), info))
-        })
-        .collect::<Vec<_>>();
-    Some(instances)
+        .inspect_err(|e| log::error!("failed to get events: {:?}", e))
+        .map(|b| b.map(|v| events::decode_from::<T>(v.0, metadata)))
+        .map_err(|e| e.into())
 }
 
 fn get_nuclei_for_node<B, D, C>(
@@ -403,18 +371,39 @@ fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
     sp_core::storage::StorageKey(bytes)
 }
 
-// TODO
-fn start_nucleus<B>(
+fn upgrade_nucleus_wasm(
     id: NucleusId,
+    digest: Hash,
+    version: u32,
+    nucleus_root_path: &std::path::Path,
+    nuclei: &mut HashMap<NucleusId, NucleusCage>,
+) -> anyhow::Result<()> {
+    let wasm_path = nucleus_root_path.join(format!("wasm/{}.wasm", version));
+    let code = std::fs::read(&wasm_path)?;
+    let wasm = WasmInfo {
+        id: id.clone(),
+        version,
+        code,
+    };
+    let mut cage = nuclei
+        .get_mut(&id)
+        .ok_or(anyhow::anyhow!("Nucleus not found"))?;
+    cage.forward(Gluon::CodeUpgrade {
+        version,
+        digest: wasm.digest(),
+        wasm: Some(wasm),
+    });
+    Ok(())
+}
+
+fn start_nucleus(
+    id: NucleusId,
+    nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
+    nucleus_root_path: &std::path::Path,
     http_register: Arc<HttpCallRegister>,
     timer_scheduler: Arc<SchedulerAsync>,
-    nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
-    nucleus_path: std::path::PathBuf,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
-) -> anyhow::Result<()>
-where
-    B: sp_runtime::traits::Block,
-{
+) -> anyhow::Result<()> {
     let NucleusInfo {
         name,
         manager,
@@ -425,39 +414,29 @@ where
         root_state,
         peers,
     } = nucleus_info;
-    let name = String::from_utf8(name)?;
-
-    let wasm = WasmInfo {
-        account: manager,
-        name,
-        version: wasm_version,
-        code: WasmCodeRef::File(nucleus_path.join("code.wasm")),
-    };
     let config = RuntimeParams {
         nucleus_id: id.clone(),
-        db_path: nucleus_path.join("db").into_boxed_path(),
+        db_path: nucleus_root_path.join("db").into_boxed_path(),
         http_register,
         timer_scheduler,
     };
     let runtime = Runtime::init(config)?;
     let state = runtime.state.clone();
     let (tx, rx) = std::sync::mpsc::channel();
-    if let Ok(mut nucleus) = Nucleus::init(rx, runtime, wasm) {
-        // FIXME how to notify the user that his code is invalid?
-        std::thread::spawn(move || {
-            nucleus.run();
-        });
-        nuclei.insert(
-            id.clone(),
-            NucleusCage {
-                nucleus_id: id,
-                tunnel: tx,
-                pending_requests: vec![],
-                event_id: current_event,
-                state,
-            },
-        );
-    }
+    let mut nucleus = Nucleus::init(rx, runtime);
+    std::thread::spawn(move || {
+        nucleus.run();
+    });
+    nuclei.insert(
+        id.clone(),
+        NucleusCage {
+            nucleus_id: id,
+            tunnel: tx,
+            pending_requests: vec![],
+            event_id: current_event,
+            state,
+        },
+    );
     Ok(())
 }
 

@@ -166,9 +166,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                131u8, 200u8, 187u8, 38u8, 63u8, 78u8, 215u8, 152u8, 119u8, 43u8, 69u8, 134u8,
-                233u8, 11u8, 43u8, 141u8, 66u8, 194u8, 220u8, 71u8, 98u8, 186u8, 56u8, 89u8, 21u8,
-                247u8, 180u8, 206u8, 24u8, 6u8, 97u8, 88u8,
+                232u8, 218u8, 219u8, 227u8, 47u8, 53u8, 53u8, 3u8, 33u8, 136u8, 67u8, 104u8, 245u8,
+                143u8, 247u8, 31u8, 101u8, 89u8, 55u8, 214u8, 1u8, 224u8, 75u8, 110u8, 66u8, 64u8,
+                190u8, 168u8, 203u8, 186u8, 85u8, 45u8,
             ]
     }
     pub mod system {
@@ -1134,10 +1134,10 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            81u8, 64u8, 80u8, 90u8, 207u8, 11u8, 95u8, 244u8, 20u8, 125u8, 91u8,
-                            134u8, 87u8, 239u8, 102u8, 129u8, 62u8, 161u8, 251u8, 146u8, 246u8,
-                            251u8, 180u8, 93u8, 241u8, 128u8, 126u8, 99u8, 166u8, 103u8, 127u8,
-                            228u8,
+                            17u8, 222u8, 228u8, 102u8, 193u8, 1u8, 52u8, 243u8, 211u8, 152u8, 8u8,
+                            92u8, 169u8, 249u8, 212u8, 241u8, 50u8, 195u8, 215u8, 245u8, 29u8,
+                            230u8, 136u8, 164u8, 113u8, 59u8, 227u8, 54u8, 241u8, 50u8, 110u8,
+                            53u8,
                         ],
                     )
                 }
@@ -5781,8 +5781,6 @@ pub mod codegen {
                 pub id: nucleus_created::Id,
                 pub name: nucleus_created::Name,
                 pub manager: nucleus_created::Manager,
-                pub wasm_hash: nucleus_created::WasmHash,
-                pub wasm_version: nucleus_created::WasmVersion,
                 pub energy: nucleus_created::Energy,
                 pub capacity: nucleus_created::Capacity,
                 pub public_input: nucleus_created::PublicInput,
@@ -5792,8 +5790,6 @@ pub mod codegen {
                 pub type Id = ::subxt_core::utils::AccountId32;
                 pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 pub type Manager = ::subxt_core::utils::AccountId32;
-                pub type WasmHash = ::subxt_core::utils::H256;
-                pub type WasmVersion = ::core::primitive::u32;
                 pub type Energy = ::core::primitive::u128;
                 pub type Capacity = ::core::primitive::u8;
                 pub type PublicInput = ::subxt_core::utils::H256;
@@ -7202,8 +7198,6 @@ pub mod codegen {
                         id: ::subxt_core::utils::AccountId32,
                         name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         manager: ::subxt_core::utils::AccountId32,
-                        wasm_hash: ::subxt_core::utils::H256,
-                        wasm_version: ::core::primitive::u32,
                         energy: ::core::primitive::u128,
                         capacity: ::core::primitive::u8,
                         public_input: ::subxt_core::utils::H256,

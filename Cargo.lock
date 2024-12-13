@@ -10536,6 +10536,7 @@ name = "vrs-nucleus-cage"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "blake2 0.10.6",
  "bytes",
  "chrono",
  "env_logger",

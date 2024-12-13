@@ -124,8 +124,6 @@ pub mod pallet {
             id: T::NucleusId,
             name: Vec<u8>,
             manager: T::AccountId,
-            wasm_hash: T::Hash,
-            wasm_version: u32,
             energy: u128,
             capacity: u8,
             public_input: T::Hash,
@@ -169,7 +167,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
             ensure!(name.len() <= 80, "Name too long");
-            let hash = T::Hashing::hash_of(&(manager.clone(), name.clone(), wasm_hash.clone()));
+            let hash = T::Hashing::hash_of(&(manager.clone(), name.clone()));
             let id = <T::NucleusId>::decode(&mut &hash.as_ref()[..]).expect("qed;");
             ensure!(
                 !Nuclei::<T>::contains_key(&id),
@@ -193,7 +191,7 @@ pub mod pallet {
                 NucleusEquation {
                     name: name.clone(),
                     manager: manager.clone(),
-                    wasm_hash,
+                    wasm_hash: Default::default(),
                     wasm_version: 0,
                     wasm_location: None,
                     energy: energy.unwrap_or_default(),
@@ -206,8 +204,6 @@ pub mod pallet {
                 id,
                 name,
                 manager,
-                wasm_hash,
-                wasm_version: 0,
                 energy: energy.unwrap_or_default(),
                 capacity,
                 public_input,
