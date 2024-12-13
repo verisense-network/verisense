@@ -36,8 +36,6 @@
 //! }
 //! ```
 
-mod constant;
-
 pub mod error;
 pub mod http;
 pub mod io;
@@ -45,7 +43,6 @@ pub mod storage;
 mod timer;
 
 pub use codec;
-pub use constant::*;
 pub use io::{_eprint, _print, nucleus_id};
 pub use paste;
 pub use timer::_set_timer;

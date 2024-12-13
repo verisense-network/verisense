@@ -1,6 +1,13 @@
 use std::time::Duration;
 
-use crate::{MAX_DELAY_SEC, MAX_FUNC_SIZE, MAX_PARAMS_SIZE};
+use constant::{MAX_DELAY_SEC, MAX_FUNC_SIZE, MAX_PARAMS_SIZE};
+
+mod constant {
+    pub const MAX_GET_RETURN_SIZE: usize = 65536 * 1024;
+    pub const MAX_DELAY_SEC: u64 = 60 * 60 * 24 * 365;
+    pub const MAX_PARAMS_SIZE: usize = 1024 * 1024;
+    pub const MAX_FUNC_SIZE: usize = 1024;
+}
 
 #[link(wasm_import_module = "env")]
 extern "C" {

@@ -210,30 +210,36 @@ where
                                 public_input.as_ref(),
                             ).expect("fail to sign vrf signature");
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
-                            // id: T::NucleusId,
-                            // wasm_hash: T::Hash,
-                            // wasm_version: u32,
-                            // wasm_location: T::NodeId,
-
+                            let nucleus_id = ev.id;
+                            let digest = ev.wasm_hash;
+                            let version = ev.wasm_version;
+                            // TODO download the wasm from ev.wasm_location
+                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
+                            upgrade_nucleus_wasm(
+                                NucleusId::from(nucleus_id.0),
+                                digest,
+                                version,
+                                nucleus_path.as_path(),
+                                &mut nuclei,
+                            ).expect("fail to upgrade nucleus wasm");
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
-                            let id = ev.id;
+                            let nucleus_id = ev.id;
                             let info = client
                                 .runtime_api()
-                                .get_nucleus_info(hash, NucleusId::from(id.0))
+                                .get_nucleus_info(hash, NucleusId::from(nucleus_id.0))
                                 .inspect_err(|e| log::error!("fail to get nucleus info while receiving nucleus created event: {:?}", e))
                                 .ok()
                                 .flatten()
                                 .expect("fail to get nucleus info while receiving nucleus created event");
-                            let nucleus_path = nucleus_home_dir.join(id.to_string());
+                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
                             start_nucleus(
-                                NucleusId::from(id.0),
+                                NucleusId::from(nucleus_id.0),
                                 info,
                                 nucleus_path.as_path(),
                                 http_register.clone(),
                                 timer_scheduler.clone(),
                                 &mut nuclei,
-                            )
-                            .expect("fail to start nucleus");
+                            ).expect("fail to start nucleus");
                         }
                     }
                 },
@@ -321,29 +327,6 @@ where
         .inspect_err(|e| log::error!("failed to get events: {:?}", e))
         .map(|b| b.map(|v| events::decode_from::<T>(v.0, metadata)))
         .map_err(|e| e.into())
-
-    // let events = events.unwrap();
-    // for event in events.iter() {
-    //     if let Ok(Some(ev)) = event.as_ref().map(|ev| {
-    //         ev.as_event::<codegen::nucleus::events::InstanceRegistered>()
-    //             .ok()
-    //             .flatten()
-    //     }) {
-    //         instance_register_handler(ev);
-    //     } else if let Ok(Some(ev)) = event.as_ref().map(|ev| {
-    //         ev.as_event::<codegen::nucleus::events::NucleusCreated>()
-    //             .ok()
-    //             .flatten()
-    //     }) {
-    //         nucleus_create_handler(ev);
-    //     } else if let Ok(Some(ev)) = event.as_ref().map(|ev| {
-    //         ev.as_event::<codegen::nucleus::events::NucleusUpgraded>()
-    //             .ok()
-    //             .flatten()
-    //     }) {
-    //         nucleus_upgrade_handler(ev);
-    //     }
-    // }
 }
 
 fn get_nuclei_for_node<B, D, C>(

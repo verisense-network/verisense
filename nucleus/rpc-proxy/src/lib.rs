@@ -189,7 +189,7 @@ where
                             )
                         })?;
                     }
-                    std::fs::File::create(path.join(nucleus_info.wasm_version.to_string()))
+                    std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version)))
                         .and_then(|mut f| f.write_all(&wasm.0))
                         .map_err(|e| {
                             ErrorObjectOwned::owned(
