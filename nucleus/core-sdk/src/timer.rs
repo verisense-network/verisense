@@ -49,21 +49,21 @@ pub fn _set_timer(ts: Duration, func: &[u8], params: &[u8]) -> anyhow::Result<()
         Ok(())
     }
 }
-
 #[macro_export]
 macro_rules! set_timer {
-    ($duration:expr, $func_name:ident $(, $param:expr)* $(,)?) => {{
+    ($duration:expr, $func_call:ident ( $($param:expr),* $(,)? )) => {{
+        let __duration: std::time::Duration = $duration;
 
-        let __duration = std::time::Duration::from_secs($duration);
-        // func_name
-        let __func_name_bytes = stringify!($func_name);
+        // Extract the function name as a string
+        let __func_name_bytes = stringify!($func_call);
         let __func_bytes = __func_name_bytes.as_bytes();
 
-        // params
+        // Handle parameters (or no parameters)
         ::vrs_core_sdk::paste::paste! {
-            let __params: [<_NUCLEUS_TIMER_PARAMS_TYPE_ $func_name>] = ($($param,)*);
-            let __params_bytes = <[<_NUCLEUS_TIMER_PARAMS_TYPE_ $func_name>] as ::vrs_core_sdk::codec::Encode>::encode(&__params);
+            let __params: [<_NUCLEUS_TIMER_PARAMS_TYPE_ $func_call>] = ($($param,)*);
+            let __params_bytes = <[<_NUCLEUS_TIMER_PARAMS_TYPE_ $func_call>] as ::vrs_core_sdk::codec::Encode>::encode(&__params);
         }
+
         ::vrs_core_sdk::_set_timer(__duration, __func_bytes, __params_bytes.as_slice())
     }};
 }

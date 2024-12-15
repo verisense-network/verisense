@@ -33,15 +33,9 @@ pub enum Gluon {
         payload: Vec<u8>,
         reply_to: Option<ReplyTo>,
     },
-    // TODO add task_id
     TimerRequest {
         endpoint: String,
         payload: Vec<u8>,
-        reply_to: Option<ReplyTo>,
-        pending_timer_queue: TimersReplyTo,
-    },
-    TimerInitRequest {
-        pending_timer_queue: TimersReplyTo,
     },
     HttpCallback {
         request_id: u64,
@@ -82,7 +76,6 @@ impl From<&Gluon> for Event {
                 request_id: *request_id,
                 payload: payload.clone(),
             },
-            Gluon::TimerInitRequest { .. } => Event::TimerInit {},
         }
     }
 }
@@ -114,9 +107,6 @@ impl Into<Event> for Gluon {
                 request_id,
                 payload,
             },
-            Self::TimerInitRequest {
-                pending_timer_queue,
-            } => Event::TimerInit {},
         }
     }
 }
@@ -158,9 +148,6 @@ pub enum Event {
     Dummy,
 }
 
-// define VM error type id
-const VM_ERROR: i32 = 0x00000001;
-
 impl<R> Nucleus<R>
 where
     R: ContextAware + FuncRegister<Runtime = R> + Clone,
@@ -195,8 +182,15 @@ where
                 let vm = Vm::new_instance(&wasm, &self.runtime).inspect_err(|e| {
                     log::error!("Init vm for nucleus {} failed due to {:?}", &wasm.id, e)
                 });
-                if let Ok(vm) = vm {
-                    self.vm.replace(vm);
+                if let Ok(mut vm) = vm {
+                    match vm.call_init() {
+                        Ok(_) => {
+                            self.vm.replace(vm);
+                        }
+                        Err(e) => {
+                            log::error!("Init vm for nucleus {} failed due to {:?}", &wasm.id, e);
+                        }
+                    }
                 }
             }
             Gluon::HttpCallback {
@@ -217,7 +211,7 @@ where
                 Some(ref mut vm) => {
                     let vm_result = vm.call_get(&endpoint, payload).map_err(|e| {
                         log::error!("fail to call get endpoint: {} due to: {:?}", &endpoint, e);
-                        (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                        (e.to_error_code(), e.to_string())
                     });
                     if let Some(reply_to) = reply_to {
                         let _ = reply_to.send(vm_result);
@@ -237,9 +231,11 @@ where
                 Some(ref mut vm) => {
                     let vm_result = vm.call_post(&endpoint, payload.clone()).map_err(|e| {
                         log::error!("fail to call post endpoint: {} due to: {:?}", &endpoint, e);
-                        (VM_ERROR << 10 + e.to_error_code(), e.to_string())
+                        (e.to_error_code(), e.to_string())
                     });
+                    println!("vm_result: {:?}", reply_to);
                     if let Some(reply_to) = reply_to {
+                        println!("send vm_result: {:?}", vm_result);
                         let _ = reply_to.send(vm_result);
                     }
                 }
@@ -249,63 +245,19 @@ where
                     }
                 }
             },
-            Gluon::TimerRequest {
-                endpoint,
-                payload,
-                reply_to,
-                pending_timer_queue,
-            } => {
+            Gluon::TimerRequest { endpoint, payload } => {
                 let vm = self
                     .vm
                     .as_mut()
                     .ok_or(anyhow::anyhow!("VM not initialized"))?;
                 let vm_result = vm.call_timer(&endpoint, payload.clone());
                 match vm_result {
-                    Ok((result, entries)) => {
-                        if let Some(reply_to) = reply_to {
-                            if let Err(err) = reply_to.send(Ok(result)) {
-                                log::error!("⏲️ Fail to send reply to: {:?}", err);
-                            }
-                        }
-                        pending_timer_queue.send(entries).unwrap();
-                    }
+                    Ok(_) => {}
                     Err(e) => {
                         log::error!("fail to call timer endpoint: {} due to: {:?}", &endpoint, e);
-
-                        if let Some(reply_to) = reply_to {
-                            if let Err(err) = reply_to
-                                .send(Err((VM_ERROR << 10 + e.to_error_code(), e.to_string())))
-                            {
-                                log::error!("⏲️ Fail to send reply to: {:?}", err);
-                            }
-                        }
                     }
                 }
             }
-            Gluon::TimerInitRequest {
-                pending_timer_queue,
-            } => match self.vm {
-                Some(ref mut vm) => {
-                    let vm_result = vm.call_init();
-                    match vm_result {
-                        Ok(entries) => {
-                            pending_timer_queue.send(entries).unwrap();
-                        }
-                        Err(e) => {
-                            log::error!(
-                                "fail to call timer endpoint: {} due to: {:?}",
-                                "TimerInit",
-                                e
-                            );
-                            pending_timer_queue.send(vec![]).unwrap();
-                        }
-                    }
-                }
-                None => {
-                    log::error!("vm not initialized");
-                    pending_timer_queue.send(vec![]).unwrap();
-                }
-            },
         }
         Ok(())
     }
@@ -313,8 +265,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::test_suite::new_mock_nucleus;
+
     use super::*;
-    use crate::test_suite::new_vm_with_executable;
     use codec::Decode;
     use std::sync::mpsc;
     use tokio::sync::oneshot;
@@ -322,21 +275,7 @@ mod tests {
     #[tokio::test]
     async fn test_nucleus_accept() {
         let wasm_path = "../../nucleus-examples/basic_macros.wasm";
-        let (vm, _) = new_vm_with_executable(wasm_path.to_string());
-        let (sender, receiver) = mpsc::channel();
-        let mut nucleus = Nucleus {
-            receiver,
-            vm: Some(vm),
-        };
-        let (tx_post, rx_post) = oneshot::channel();
-        let init_msg = Gluon::TimerInitRequest {
-            pending_timer_queue: tx_post,
-        };
-        sender.send((0, init_msg)).unwrap();
-        let (_, msg) = nucleus.receiver.recv().unwrap();
-        nucleus.accept(msg);
-
-        rx_post.await.unwrap();
+        let (out_of_run_time, sender) = new_mock_nucleus(format!("{}", wasm_path));
         let (tx_get, rx_get) = oneshot::channel();
         let get_msg = Gluon::GetRequest {
             endpoint: "get".to_string(),
@@ -367,11 +306,6 @@ mod tests {
         };
         sender.send((1, post_msg)).unwrap();
 
-        for _ in 0..3 {
-            let (_, msg) = nucleus.receiver.recv().unwrap();
-            nucleus.accept(msg);
-        }
-
         let get_result = rx_get.await.unwrap().unwrap();
         let get_result = <i32 as Decode>::decode(&mut &get_result[..]).unwrap();
         assert_eq!(get_result, 5);
@@ -383,14 +317,14 @@ mod tests {
             Result::<String, String>::Ok("abababababababababab".to_owned())
         );
         let post_result = rx_post1.await.unwrap();
-        assert_eq!(post_result, Err((1024, "Endpoint not found".to_owned())))
+        assert_eq!(post_result, Err((-5000, "Endpoint not found".to_owned())))
     }
 }
 #[cfg(test)]
 mod forum_tests {
     use super::*;
     use crate::host_func::http::HttpResponseWithCallback;
-    use crate::test_suite::new_vm_with_executable;
+    use crate::test_suite::new_mock_nucleus;
     use codec::Decode;
     use codec::Encode;
     use core::time;
@@ -455,12 +389,7 @@ mod forum_tests {
     #[tokio::test]
     async fn test_nucleus_accept() {
         let wasm_path = "../../../veforum/veavs.wasm";
-        let (vm, mut http_executor) = new_vm_with_executable(wasm_path.to_string());
-        let (sender, receiver) = mpsc::channel();
-        let mut nucleus = Nucleus {
-            receiver,
-            vm: Some(vm),
-        };
+        let (mut out_of_runtime, sender) = new_mock_nucleus(format!("{}", wasm_path));
         let article = VeArticle {
             id: 0,
             title: "title".to_string(),
@@ -481,8 +410,6 @@ mod forum_tests {
             reply_to: Some(article_tx),
         };
         sender.send((0, article_post)).unwrap();
-        let (_, msg) = nucleus.receiver.recv().unwrap();
-        nucleus.accept(msg);
         let article_post_result = article_rx.await.unwrap().unwrap();
         let article_post_result =
             <Result<(), String> as Decode>::decode(&mut &article_post_result[..]).unwrap();
@@ -496,8 +423,6 @@ mod forum_tests {
             reply_to: Some(get_article_tx),
         };
         sender.send((0, article_get)).unwrap();
-        let (_, msg) = nucleus.receiver.recv().unwrap();
-        nucleus.accept(msg);
         let article_get_result = get_article_rx.await.unwrap().unwrap();
         let article_get_result =
             <Result<Vec<VeArticle>, String>>::decode(&mut &article_get_result[..]).unwrap();
@@ -512,8 +437,6 @@ mod forum_tests {
             reply_to: Some(get_article_tx),
         };
         sender.send((0, article_get)).unwrap();
-        let (_, msg) = nucleus.receiver.recv().unwrap();
-        nucleus.accept(msg);
         let article_get_result = get_article_rx.await.unwrap().unwrap();
         let article_get_result =
             <Result<bool, String>>::decode(&mut &article_get_result[..]).unwrap();
@@ -527,8 +450,6 @@ mod forum_tests {
             reply_to: Some(reply_article_tx),
         };
         sender.send((0, article_reply)).unwrap();
-        let (_, msg) = nucleus.receiver.recv().unwrap();
-        nucleus.accept(msg).unwrap();
 
         let article_reply_result = reply_article_rx.await.unwrap().unwrap();
         let article_reply_result =
@@ -544,8 +465,6 @@ mod forum_tests {
             reply_to: Some(get_article_tx),
         };
         sender.send((0, article_get)).unwrap();
-        let (_, msg) = nucleus.receiver.recv().unwrap();
-        nucleus.accept(msg);
         let article_get_result = get_article_rx.await.unwrap().unwrap();
         let article_get_result =
             <Result<bool, String>>::decode(&mut &article_get_result[..]).unwrap();
@@ -565,16 +484,22 @@ mod forum_tests {
         // });
         // let request = http_executor.http_executor.recv_request().await.unwrap();
         // http_executor.http_executor.process_request(request);
-        let http_reply = http_executor.http_executor.recv_response().await.unwrap();
+
+        let http_reply = out_of_runtime.http_executor.recv_response().await.unwrap();
         let HttpResponseWithCallback {
             nucleus_id,
             req_id,
             response,
         } = http_reply;
-        nucleus.accept(Gluon::HttpCallback {
-            request_id: req_id,
-            payload: response,
-        });
+        sender
+            .send((
+                0,
+                Gluon::HttpCallback {
+                    request_id: req_id,
+                    payload: response,
+                },
+            ))
+            .unwrap();
 
         // // check comment
         // let (check_comment_tx, check_comment_rx) = oneshot::channel();

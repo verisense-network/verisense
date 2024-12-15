@@ -17,11 +17,7 @@ pub struct D {
 }
 
 #[init]
-pub fn init(e: E, u: u32) {
-    let b = format!("b = {}, c = {}", e.b, e.c);
-    storage::put(&u.to_be_bytes(), b.as_bytes()).unwrap();
-    vrs_core_sdk::println!("nucleus id: {:?}", vrs_core_sdk::nucleus_id());
-}
+pub fn init() {}
 
 #[post]
 pub fn cc(a: String, b: String) -> Result<String, String> {
