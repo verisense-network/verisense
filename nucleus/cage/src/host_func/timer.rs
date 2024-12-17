@@ -13,10 +13,9 @@ use wasmtime::{Caller, Engine, FuncType, Val, ValType};
 
 impl ComponentProvider<PendingTimerQueue> for Runtime {
     fn get_component(&self) -> std::sync::Arc<PendingTimerQueue> {
-        self.register_timer.clone()
+        self.timer_register.clone()
     }
 }
-
 /// the signature of this host function is:
 ///
 pub(crate) fn register_timer_signature(engine: &Engine) -> FuncType {
@@ -112,6 +111,13 @@ impl PendingTimerQueue {
         pending_timer.is_empty()
     }
 }
+
+impl ComponentProvider<SchedulerAsync> for Runtime {
+    fn get_component(&self) -> std::sync::Arc<SchedulerAsync> {
+        self.timer_scheduler.clone()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct SchedulerAsync {
     tx: UnboundedSender<TimerEntry>,
@@ -134,14 +140,21 @@ impl SchedulerAsync {
 
     pub fn push(&self, entry: TimerEntry) {
         let tx = self.tx.clone();
-        tokio::spawn(async move {
-            let now = Utc::now();
-            if entry.timestamp > now {
-                tokio::time::sleep((entry.timestamp - now).to_std().unwrap()).await;
-            }
-            let mut entry = entry;
-            entry.triggered_time = Some(Utc::now());
-            let _ = tx.send(entry);
+        std::thread::spawn(move || {
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                let now = Utc::now();
+                if entry.timestamp > now {
+                    let delay = (entry.timestamp - now)
+                        .to_std()
+                        .unwrap_or_else(|_| tokio::time::Duration::from_secs(0));
+                    tokio::time::sleep(delay).await;
+                }
+                let mut entry = entry;
+                entry.triggered_time = Some(Utc::now());
+                if let Err(e) = tx.send(entry) {
+                    eprintln!("Failed to send entry: {}", e);
+                }
+            });
         });
     }
 }

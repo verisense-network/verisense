@@ -22,7 +22,8 @@ pub trait ContextAware {
 
     fn set_read_only(&mut self, read_only: bool);
 
-    fn pop_all_pending_timer(&self) -> Vec<TimerEntry>;
+    fn rollback_all_pending_timer(&self) -> Vec<TimerEntry>;
+    fn enqueue_all_pending_timer(&self);
 
     fn get_nucleus_id(&self) -> NucleusId;
 }
@@ -44,10 +45,11 @@ pub struct Runtime {
     pub(crate) id: NucleusId,
     pub(crate) state: Arc<NucleusState>,
     pub(crate) http: Arc<HttpCallRegister>,
-    pub(crate) register_timer: Arc<PendingTimerQueue>,
     pub(crate) read_only: bool,
     // TODO
     pub(crate) caller_infos: Vec<CallerInfo>,
+    pub(crate) timer_scheduler: Arc<timer::SchedulerAsync>,
+    pub(crate) timer_register: Arc<PendingTimerQueue>,
     // TODO we need runtime storage to read
 }
 
@@ -59,7 +61,8 @@ impl Runtime {
             http: config.http_register,
             read_only: false,
             caller_infos: vec![],
-            register_timer: Arc::new(PendingTimerQueue::new()),
+            timer_scheduler: config.timer_scheduler,
+            timer_register: Arc::new(PendingTimerQueue::new()),
         })
     }
 
@@ -89,12 +92,17 @@ impl ContextAware for Runtime {
         self.id.clone()
     }
 
-    fn pop_all_pending_timer(&self) -> Vec<TimerEntry> {
+    fn rollback_all_pending_timer(&self) -> Vec<TimerEntry> {
         let mut timers = vec![];
-        while let Some(e) = self.register_timer.pop() {
+        while let Some(e) = self.timer_register.pop() {
             timers.push(e);
         }
         timers
+    }
+    fn enqueue_all_pending_timer(&self) {
+        while let Some(e) = self.timer_register.pop() {
+            self.timer_scheduler.push(e);
+        }
     }
 }
 

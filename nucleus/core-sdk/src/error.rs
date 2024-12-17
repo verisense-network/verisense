@@ -1,12 +1,16 @@
 use codec::{Decode, Encode};
 
-// *DO NOT* change the sequence of the variants
 #[derive(Debug, Clone, Decode, Encode)]
 pub enum RuntimeError {
+    #[codec(index = 0)]
     DecodeReturnValueError,
+    #[codec(index = 1)]
     WriteIsNotAllowInGetMethod,
+    #[codec(index = 2)]
     MemoryAccessOutOfBounds,
+    #[codec(index = 3)]
     KvStorageError(String),
+    #[codec(index = 3)]
     HttpError(String),
 }
 

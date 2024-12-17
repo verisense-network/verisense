@@ -93,7 +93,13 @@ where
     ) -> Result<(), WasmCallError> {
         self.space.data_mut().set_read_only(false);
         self.call_no_returns(&func, args.encode())
-            .inspect_err(|e| log::warn!("fail to invoke inner method, {:?}", e))
+            .inspect_err(|e| {
+                log::warn!("fail to invoke inner method, {:?}", e);
+                self.space.data().rollback_all_pending_timer();
+            })
+            .inspect(|_| {
+                self.space.data().enqueue_all_pending_timer();
+            })
     }
 
     fn call_no_input_no_output(&mut self, func_name: &str) -> Result<(), WasmCallError> {
@@ -138,25 +144,33 @@ where
         Ok(())
     }
 
-    pub fn call_timer(
-        &mut self,
-        func: &str,
-        args: Vec<u8>,
-    ) -> Result<(Vec<u8>, Vec<TimerEntry>), WasmCallError> {
+    pub fn call_timer(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_timer_{}", func);
-        let result = self.call_method(&func, args)?;
-        let timer = self.space.data().pop_all_pending_timer();
-        Ok((result, timer))
+        self.call_method(&func, args)
+            .inspect(|_| {
+                self.space.data().enqueue_all_pending_timer();
+            })
+            .inspect_err(|e| {
+                log::warn!("fail to invoke timer method, {:?}", e);
+                self.space.data().rollback_all_pending_timer();
+            })
     }
-    pub fn call_init(&mut self) -> Result<Vec<TimerEntry>, WasmCallError> {
+    pub fn call_init(&mut self) -> Result<(), WasmCallError> {
         self.space.data_mut().set_read_only(false);
-        let func = "__nucleus_timer_init";
+        let func = "__nucleus_init";
         println!("call init");
-        let _ = self.call_no_input_no_output(&func)?;
-        let timer = self.space.data().pop_all_pending_timer();
-        println!("timer: {:?}", timer);
-        Ok(timer)
+        let _ = self
+            .call_no_input_no_output(&func)
+            .inspect(|_| {
+                self.space.data().enqueue_all_pending_timer();
+            })
+            .inspect_err(|e| {
+                log::warn!("fail to invoke init method, {:?}", e);
+                eprint!("fail to invoke init method, {:?}", e);
+                self.space.data().rollback_all_pending_timer();
+            });
+        Ok(())
     }
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(true);
@@ -168,8 +182,14 @@ where
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_post_{}", func);
-        let result = self.call_method(&func, args);
-        return result;
+        self.call_method(&func, args)
+            .inspect(|_| {
+                self.space.data().enqueue_all_pending_timer();
+            })
+            .inspect_err(|e| {
+                log::warn!("fail to invoke post method, {:?}", e);
+                self.space.data().rollback_all_pending_timer();
+            })
     }
 
     fn call_method(&mut self, func_name: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {

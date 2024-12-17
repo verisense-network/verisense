@@ -16,14 +16,53 @@ pub fn get(_attr: TokenStream, func: TokenStream) -> TokenStream {
 pub fn init(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func = parse_macro_input!(item as ItemFn);
     let func_name = format_ident!("__nucleus_init");
-    expand_no_return(func, func_name)
+    expand_init(func, func_name)
 }
 
+#[proc_macro_attribute]
+pub fn timer(_attr: TokenStream, func: TokenStream) -> TokenStream {
+    expand(func, "timer")
+}
 #[proc_macro_attribute]
 pub fn callback(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func = parse_macro_input!(item as ItemFn);
     let func_name = format_ident!("__nucleus_http_callback");
     expand_no_return(func, func_name)
+}
+fn expand_init(func: ItemFn, entry_name: Ident) -> TokenStream {
+    let func_block = &func.block;
+    let func_decl = &func.sig;
+    let origin_name = &func_decl.ident;
+    let func_generics = &func_decl.generics;
+    let func_inputs = &func_decl.inputs;
+    let func_output = &func_decl.output;
+
+    // Ensure the function has no generics
+    if !func_generics.params.is_empty() {
+        panic!("init function should not have generics");
+    }
+
+    // Ensure the function has no parameters
+    if !func_inputs.is_empty() {
+        panic!("init function should not have any parameters");
+    }
+
+    // Ensure the function has a default return type
+    if !matches!(func_output, ReturnType::Default) {
+        panic!("init function should have a default return type");
+    }
+
+    // Generate the code for a function with no parameters
+    let expanded = quote! {
+        #[no_mangle]
+        pub fn #entry_name() {
+            // Call the original function directly as it has no parameters
+            fn #origin_name() #func_block
+            #origin_name();
+        }
+    };
+
+    expanded.into()
 }
 
 fn expand_no_return(func: ItemFn, entry_name: Ident) -> TokenStream {

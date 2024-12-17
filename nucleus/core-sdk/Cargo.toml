@@ -4,14 +4,19 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
-
 [features]
 default = ["std"]
-std = ["codec/std"]
+std = [
+    "codec/std",
+    "hex/std",
+    "sp-core/std",
+]
+
 
 [dependencies]
 paste = "1.0"
 anyhow = { version = "1", default-features = false }
 codec = { workspace = true, features = ["derive"], default-features = false }
-vrs-metadata = { path = "../../metadata", default-features = false }
 vrs-core-macros = { path = "../core-macros" }
+sp-core = { workspace = true, default-features = false }
+hex = { version = "0.4.3", default-features = false }
