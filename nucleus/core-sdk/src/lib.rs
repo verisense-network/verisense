@@ -40,15 +40,15 @@ pub mod error;
 pub mod http;
 pub mod io;
 pub mod storage;
-mod timer;
+pub mod timer;
 
 pub use codec;
 pub use io::{_eprint, _print, nucleus_id};
 pub use paste;
+pub use sp_core::crypto::AccountId32 as AccountId;
 pub use timer::_set_timer;
 pub use timer::now;
 pub use vrs_core_macros::*;
-pub use vrs_metadata::utils::AccountId32 as AccountId;
 
 /// the buffer used for transfering data from host to wasm
 /// this should be equal to a page size
@@ -61,7 +61,7 @@ pub const NO_MORE_DATA: i32 = 0;
 pub type CallResult<T> = Result<T, error::RuntimeError>;
 
 /// the id of the nucleus, same as AccountId32
-pub type NucleusId = vrs_metadata::utils::AccountId32;
+pub type NucleusId = AccountId;
 
 #[inline]
 pub(crate) fn allocate_buffer() -> Vec<u8> {

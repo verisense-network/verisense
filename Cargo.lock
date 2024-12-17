@@ -10514,10 +10514,11 @@ name = "vrs-core-sdk"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "hex",
  "parity-scale-codec",
  "paste",
+ "sp-core",
  "vrs-core-macros",
- "vrs-metadata",
 ]
 
 [[package]]

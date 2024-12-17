@@ -55,7 +55,7 @@ sp-block-builder = { version = "33.0.0", default-features = false }
 sp-consensus-aura = { features = [
     "serde",
 ], version = "0.39.0", default-features = false }
-sp-authority-discovery = { version = "33.0.0", default-features = true }
+sp-authority-discovery = { version = "33.0.0", default-features = false }
 sp-consensus-grandpa = { features = [
     "serde",
 ], version = "20.0.0", default-features = false }
