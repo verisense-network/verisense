@@ -50,7 +50,7 @@ where
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[4].unwrap_i32();
     if caller.data().read_only() {
-        let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
+        let return_value = CallResult::<()>::Err(RuntimeError::ReadOnly);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
         mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
@@ -155,7 +155,7 @@ where
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[2].unwrap_i32();
     if caller.data().read_only() {
-        let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
+        let return_value = CallResult::<()>::Err(RuntimeError::ReadOnly);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
         mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");
@@ -369,7 +369,7 @@ where
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[4].unwrap_i32();
     if caller.data().read_only() {
-        let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
+        let return_value = CallResult::<()>::Err(RuntimeError::ReadOnly);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
         mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");

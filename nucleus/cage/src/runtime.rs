@@ -5,7 +5,7 @@ use crate::{
         timer::{self, PendingTimerQueue},
     },
     state::NucleusState,
-    CallerInfo, TimerEntry,
+    TimerEntry,
 };
 use std::sync::Arc;
 use vrs_primitives::NucleusId;
@@ -46,8 +46,6 @@ pub struct Runtime {
     pub(crate) state: Arc<NucleusState>,
     pub(crate) http: Arc<HttpCallRegister>,
     pub(crate) read_only: bool,
-    // TODO
-    pub(crate) caller_infos: Vec<CallerInfo>,
     pub(crate) timer_scheduler: Arc<timer::SchedulerAsync>,
     pub(crate) timer_register: Arc<PendingTimerQueue>,
     // TODO we need runtime storage to read
@@ -60,22 +58,9 @@ impl Runtime {
             state: Arc::new(NucleusState::new(config.db_path)?),
             http: config.http_register,
             read_only: false,
-            caller_infos: vec![],
             timer_scheduler: config.timer_scheduler,
             timer_register: Arc::new(PendingTimerQueue::new()),
         })
-    }
-
-    pub fn push_caller_info(&mut self, caller_info: CallerInfo) {
-        self.caller_infos.push(caller_info);
-    }
-
-    pub fn pop_caller_info(&mut self) -> Option<CallerInfo> {
-        self.caller_infos.pop()
-    }
-
-    pub fn replace_caller_infos(&mut self, caller_infos: Vec<CallerInfo>) {
-        self.caller_infos = caller_infos;
     }
 }
 

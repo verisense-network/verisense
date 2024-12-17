@@ -9,9 +9,9 @@ serde = { version = "1", features = ["derive"] }
 sp-runtime = { workspace = true }
 sc-network = { version = "0.42.0" }
 tokio = { version = "1", features = ["full"] }
-vrs-core-sdk = { path = "../core-sdk" }
 vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../runtime-api" }
+vrs-core-sdk = { version = "0.0.1" }
 codec = { workspace = true }
 wasmtime = { workspace = true }
 rocksdb = "0.21.0"

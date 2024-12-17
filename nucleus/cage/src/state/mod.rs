@@ -86,10 +86,6 @@ impl NucleusState {
 pub struct B256(pub [u8; 32]);
 
 impl B256 {
-    pub const fn zero() -> Self {
-        Self([0; 32])
-    }
-
     pub fn new(x: [u8; 32]) -> Self {
         Self(x)
     }

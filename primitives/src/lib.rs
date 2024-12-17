@@ -47,10 +47,6 @@ pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub peers: alloc::vec::Vec<NodeId>,
 }
 
-use sp_core::{
-    crypto::{Pair, UncheckedFrom},
-    ecdsa, ed25519, sr25519,
-};
 mod app_sr25519 {
     use sp_application_crypto::{app_crypto, sr25519};
     use sp_core::crypto::KeyTypeId;
@@ -64,7 +60,6 @@ sp_application_crypto::with_pair! {
 
 /// An i'm online signature using sr25519 as its crypto.
 pub type AuthoritySignature = app_sr25519::Signature;
-
 /// An i'm online identifier using sr25519 as its crypto.
 pub type CryptoApproach = app_sr25519::Public;
 /// An i'm online identifier using sr25519 as its crypto.

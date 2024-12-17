@@ -1,10 +1,8 @@
 use pallet_restaking::sr25519::AuthorityId as RestakingId;
-// use pallet_vrf::sr25519::VrfId;
 use sc_service::ChainType;
 use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
-use sp_core::crypto::KeyTypeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_runtime::opaque::SessionKeys;
