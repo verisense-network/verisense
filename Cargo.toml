@@ -7,7 +7,6 @@ members = [
     "nucleus/*",
     "primitives",
     "metadata",
-    "nucleus-examples",
     "support",
 ]
 resolver = "2"
@@ -26,7 +25,7 @@ scale-info = { features = [
     "derive",
     "serde",
 ], version = "2.11.1", default-features = false }
-
+vrs-core-sdk = { version = "0.0.2" }
 # frame
 frame-executive = { version = "36.0.0", default-features = false }
 frame-support = { version = "36.0.0", default-features = false }
@@ -80,6 +79,5 @@ sp-keyring = { version = "38.0.0", default-features = false }
 sp-blockchain = { version = "35.0.0", default-features = false }
 sp-application-crypto = { version = "37.0.0", default-features = false }
 sp-staking = { version = "33.0.0", default-features = false }
-
 # wasmtime
 wasmtime = { version = "22.0.0" }

@@ -5,12 +5,10 @@ use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
 use sc_network::PeerId;
-use sc_network::{NetworkRequest, NetworkStateInfo};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use std::str::FromStr;
 use std::{sync::Arc, time::Duration};
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 
@@ -342,16 +340,6 @@ pub fn new_full<
             None,
             vrs_nucleus_cage::start_nucleus_cage(params),
         );
-
-        // for tests
-        // let network2 = network.clone();
-        // task_manager.spawn_essential_handle().spawn_blocking(
-        //     "nucleus-p2p-tests",
-        //     None,
-        //     async move {
-        //         p2ptest_task(network2, test_sender).await;
-        //     },
-        // );
     }
 
     if role.is_authority() {
@@ -452,66 +440,4 @@ pub fn new_full<
     }
     network_starter.start_network();
     Ok(task_manager)
-}
-
-async fn p2ptest_task(
-    net_service: Arc<dyn sc_network::service::traits::NetworkService>,
-    sender: tokio::sync::mpsc::UnboundedSender<Vec<PeerId>>,
-) {
-    let service = net_service;
-    _ = tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(2));
-
-    for i in 1.. {
-        interval.tick().await;
-        log::info!("<---- P2p timer Tick ---->");
-
-        let mut peer_ids = Vec::new();
-
-        // Get the network state
-        if let Ok(state) = service.network_state().await {
-            // Extract connected peers
-            for (name, _) in state.connected_peers {
-                peer_ids.push(name);
-            }
-        }
-        log::info!("nodes id: {:?}", peer_ids);
-
-        let local_node = service.local_peer_id();
-        log::info!("local node id: {:?}", local_node);
-        let nodes: Vec<String> = peer_ids
-            .into_iter()
-            .filter(|x| x != &local_node.to_base58())
-            .collect();
-        let node_id;
-        if nodes.len() > 0 {
-            let peer_id = PeerId::from_str(&nodes[0]).expect("convert string to PeerId failed");
-            node_id = peer_id;
-        } else {
-            node_id = local_node;
-        }
-        log::info!("remote node id: {:?}", node_id);
-        _ = sender.send(vec![node_id]);
-
-        // send req/res msg
-        let test_data: Vec<u8> = format!("hello, request: {i}").as_bytes().to_vec();
-        let result = service
-            .request(
-                node_id,
-                sc_network::types::ProtocolName::Static("/nucleus/p2p/reqres"),
-                test_data,
-                None,
-                sc_network::IfDisconnected::ImmediateError,
-            )
-            .await;
-        if let Ok((res, name)) = result {
-            log::info!(
-                "Response of the request is: {}: {:?}",
-                name,
-                std::str::from_utf8(&res).expect("not a valid ascii string.")
-            );
-        } else {
-            log::error!("Error on response of the request {:?}", result);
-        }
-    }
 }

@@ -13,7 +13,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::{
     net::TcpStream,
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
-    task::JoinError,
 };
 use vrs_core_sdk::{error::RuntimeError, http::*, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use vrs_primitives::NucleusId;
@@ -52,7 +51,6 @@ pub struct HttpCallExecutor {
     response_receiver: UnboundedReceiver<HttpResponseWithCallback>,
 }
 
-use tokio::task::JoinHandle; // for `.map` on futures
 impl HttpCallExecutor {
     fn new(mut rx: UnboundedReceiver<HttpRequestWithCallback>) -> Self {
         let (rtx, rrx) = mpsc::unbounded_channel();
@@ -271,7 +269,7 @@ where
     result[0] = Val::I32(NO_MORE_DATA);
     let r_ptr = params[2].unwrap_i32();
     if caller.data().read_only() {
-        let return_value = CallResult::<()>::Err(RuntimeError::WriteIsNotAllowInGetMethod);
+        let return_value = CallResult::<()>::Err(RuntimeError::ReadOnly);
         let bytes = return_value.encode();
         assert!(bytes.len() <= BUFFER_LEN);
         mem::write_bytes_to_memory(&mut caller, r_ptr, &bytes).expect("write to wasm failed");

@@ -16,8 +16,7 @@ impl ComponentProvider<PendingTimerQueue> for Runtime {
         self.timer_register.clone()
     }
 }
-/// the signature of this host function is:
-///
+
 pub(crate) fn register_timer_signature(engine: &Engine) -> FuncType {
     FuncType::new(
         &engine,
@@ -32,13 +31,12 @@ pub(crate) fn register_timer_signature(engine: &Engine) -> FuncType {
     )
 }
 
-/// the signature of this host function is:
-///
 pub(crate) fn now_timestamp_signature(engine: &Engine) -> FuncType {
     FuncType::new(&engine, [], [ValType::I32])
 }
+
 pub(crate) fn now_timestamp(
-    mut caller: Caller<'_, Runtime>,
+    mut _caller: Caller<'_, Runtime>,
     _params: &[Val],
     results: &mut [Val],
 ) -> anyhow::Result<()> {
@@ -46,8 +44,6 @@ pub(crate) fn now_timestamp(
     Ok(())
 }
 
-/// the signature of this host function is:
-///
 pub(crate) fn register_timer<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],
@@ -73,9 +69,6 @@ where
             timestamp,
             func_name: String::from_utf8(func_name)?,
             triggered_time: None,
-            // TODO mark: we need to re-design the caller context, comment this to pass compile
-            // caller_infos: caller.data().caller_infos.clone(),
-            caller_infos: vec![],
             func_params,
         };
         let timer = caller.data_mut().get_component();
@@ -86,9 +79,11 @@ where
     }
     Ok(())
 }
+
 pub struct PendingTimerQueue {
     pending_timer: Arc<std::sync::Mutex<TimerQueue>>,
 }
+
 impl PendingTimerQueue {
     pub fn new() -> Self {
         PendingTimerQueue {
@@ -158,6 +153,7 @@ impl SchedulerAsync {
         });
     }
 }
+
 impl futures::Stream for SchedulerAsync {
     type Item = TimerEntry;
 

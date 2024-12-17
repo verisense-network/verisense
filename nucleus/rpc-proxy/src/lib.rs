@@ -2,12 +2,10 @@ use async_trait::async_trait;
 use codec::Decode;
 use constants::*;
 use futures::prelude::*;
-use jsonrpsee::{
-    core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned, PendingSubscriptionSink,
-};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
 use sc_network_types::PeerId;
 use sc_transaction_pool_api::{BlockHash, TransactionPool, TransactionSource, TransactionStatus};
-use sp_api::{ApiExt, ProvideRuntimeApi};
+use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::Bytes;
 use std::{io::Write, path::PathBuf, sync::Arc};

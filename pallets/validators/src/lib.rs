@@ -12,8 +12,8 @@ use sp_core::crypto::KeyTypeId;
 use sp_runtime::SaturatedConversion;
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
-use verisense_support::{log, ValidatorsInterface};
 use verisense_support::RestakingInterface;
+use verisense_support::{log, ValidatorsInterface};
 pub use weights::*;
 
 pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-validators";
@@ -123,7 +123,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight(1)]
-        pub fn submit_el_validators(origin: OriginFor<T>, something: u32) -> DispatchResult {
+        pub fn submit_el_validators(origin: OriginFor<T>) -> DispatchResult {
             Ok(())
         }
     }
@@ -165,7 +165,6 @@ impl<T: Config> ValidatorsInterface<T::AccountId> for Pallet<T> {
 }
 
 impl<T: Config> Pallet<T> {
-
     pub fn reward_by_ids(validators_points: impl IntoIterator<Item = (T::AccountId, u32)>) {
         if let Some(active_era) = Self::active_era() {
             <ErasRewardPoints<T>>::mutate(active_era.index, |era_rewards| {
@@ -190,8 +189,7 @@ impl<T: Config> Pallet<T> {
             log!(info, "Era length: {:?}", era_length);
             if era_length < T::SessionsPerEra::get() {
                 // The 5th session of the era.
-                if era_length == T::SessionsPerEra::get() - 1
-                {
+                if era_length == T::SessionsPerEra::get() - 1 {
                     T::ValidatorsProvider::plan_new_era();
                 }
                 return None;
@@ -418,9 +416,8 @@ impl<T: Config> historical::SessionManager<T::AccountId, u128> for Pallet<T> {
     }
 }
 
-
-use sp_std::vec;
 use crate::Event::EraStarted;
+use sp_std::vec;
 
 impl<T> pallet_authorship::EventHandler<T::AccountId, BlockNumberFor<T>> for Pallet<T>
 where

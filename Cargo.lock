@@ -10504,6 +10504,8 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 [[package]]
 name = "vrs-core-macros"
 version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ada7d99413255c6d1e0f0d501851263c9f439224bc6c863ea2b7a11b284af11b"
 dependencies = [
  "quote",
  "syn 2.0.87",
@@ -10512,6 +10514,8 @@ dependencies = [
 [[package]]
 name = "vrs-core-sdk"
 version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d85bbc68b828b0f170cedc4a308776260a55e34ed7218cbd450a9b7ffaf29595"
 dependencies = [
  "anyhow",
  "hex",
@@ -10571,14 +10575,6 @@ dependencies = [
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "wasmtime 22.0.1",
-]
-
-[[package]]
-name = "vrs-nucleus-examples"
-version = "0.0.1"
-dependencies = [
- "parity-scale-codec",
- "vrs-core-sdk",
 ]
 
 [[package]]

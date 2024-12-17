@@ -1,219 +1,214 @@
 use crate::{TimerEntry, TimerQueue};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use std::pin::Pin;
-use std::sync::mpsc;
-use std::sync::mpsc::Sender as SyncSender;
-use std::thread;
-use std::time::Duration;
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::time::Sleep;
-use tokio::time::{self, Instant};
+use tokio::sync::mpsc::Receiver;
+use tokio::time::{self, Instant, Sleep};
 
-pub struct WrappedScheduler {
-    sender: Sender<TimerEntry>,
-}
+// pub struct WrappedScheduler {
+//     sender: Sender<TimerEntry>,
+// }
 
-pub struct WrappedSchedulerSync {
-    sender: SyncSender<TimerEntry>,
-}
+// pub struct WrappedSchedulerSync {
+//     sender: SyncSender<TimerEntry>,
+// }
 
-impl WrappedScheduler {
-    pub fn new() -> (Self, Receiver<(DateTime<Utc>, TimerEntry)>) {
-        let (sender_cage, receiver_cage) = tokio::sync::mpsc::channel(100);
-        let (sender_nucleus, mut receiver_nucleus) = tokio::sync::mpsc::channel(100);
-        tokio::spawn(async move {
-            let mut timer = Box::pin(time::sleep(time::Duration::from_secs(0)));
-            let mut timer_queue = TimerQueue::new();
-            loop {
-                tokio::select! {
-                    Some(entry) = receiver_nucleus.recv() => {
-                        timer_queue.push(entry);
-                        if let Some(entry) = timer_queue.peek() {
-                            let now = Utc::now();
-                            if entry.timestamp > now {
-                                let duration = (entry.timestamp - now).to_std().unwrap_or_default();
-                                let deadline = Instant::now() + duration;
-                                timer.as_mut().reset(deadline);
-                            } else {
-                                timer.as_mut().reset(Instant::now());
-                            }
-                        }
-                    }
-                    _ = &mut timer => {
-                        if !timer_queue.is_empty() {
-                            let now = Utc::now();
-                            while let Some(entry) = timer_queue.peek() {
-                                if entry.timestamp <= now {
-                                    if let Some(entry) = timer_queue.pop() {
-                                        sender_cage.send((now,entry)).await.unwrap();
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
-                            if let Some(entry) = timer_queue.peek() {
-                                let now = Utc::now();
-                                if entry.timestamp > now {
-                                    let duration = (entry.timestamp - now).to_std().unwrap_or_default();
-                                    let deadline = Instant::now() + duration;
-                                    timer.as_mut().reset(deadline);
-                                } else {
-                                    timer.as_mut().reset(Instant::now());
-                                }
-                            }
-                        } else {
-                            timer.as_mut().reset(Instant::now() + time::Duration::from_secs(3600));
-                        }
-                    }
-                }
-            }
-        });
-        (
-            WrappedScheduler {
-                sender: sender_nucleus,
-            },
-            receiver_cage,
-        )
-    }
+// impl WrappedScheduler {
+//     pub fn new() -> (Self, Receiver<(DateTime<Utc>, TimerEntry)>) {
+//         let (sender_cage, receiver_cage) = tokio::sync::mpsc::channel(100);
+//         let (sender_nucleus, mut receiver_nucleus) = tokio::sync::mpsc::channel(100);
+//         tokio::spawn(async move {
+//             let mut timer = Box::pin(time::sleep(time::Duration::from_secs(0)));
+//             let mut timer_queue = TimerQueue::new();
+//             loop {
+//                 tokio::select! {
+//                     Some(entry) = receiver_nucleus.recv() => {
+//                         timer_queue.push(entry);
+//                         if let Some(entry) = timer_queue.peek() {
+//                             let now = Utc::now();
+//                             if entry.timestamp > now {
+//                                 let duration = (entry.timestamp - now).to_std().unwrap_or_default();
+//                                 let deadline = Instant::now() + duration;
+//                                 timer.as_mut().reset(deadline);
+//                             } else {
+//                                 timer.as_mut().reset(Instant::now());
+//                             }
+//                         }
+//                     }
+//                     _ = &mut timer => {
+//                         if !timer_queue.is_empty() {
+//                             let now = Utc::now();
+//                             while let Some(entry) = timer_queue.peek() {
+//                                 if entry.timestamp <= now {
+//                                     if let Some(entry) = timer_queue.pop() {
+//                                         sender_cage.send((now,entry)).await.unwrap();
+//                                     }
+//                                 } else {
+//                                     break;
+//                                 }
+//                             }
+//                             if let Some(entry) = timer_queue.peek() {
+//                                 let now = Utc::now();
+//                                 if entry.timestamp > now {
+//                                     let duration = (entry.timestamp - now).to_std().unwrap_or_default();
+//                                     let deadline = Instant::now() + duration;
+//                                     timer.as_mut().reset(deadline);
+//                                 } else {
+//                                     timer.as_mut().reset(Instant::now());
+//                                 }
+//                             }
+//                         } else {
+//                             timer.as_mut().reset(Instant::now() + time::Duration::from_secs(3600));
+//                         }
+//                     }
+//                 }
+//             }
+//         });
+//         (
+//             WrappedScheduler {
+//                 sender: sender_nucleus,
+//             },
+//             receiver_cage,
+//         )
+//     }
 
-    pub async fn push(
-        &self,
-        entry: TimerEntry,
-    ) -> Result<(), tokio::sync::mpsc::error::SendError<TimerEntry>> {
-        self.sender.send(entry).await
-    }
-}
+//     pub async fn push(
+//         &self,
+//         entry: TimerEntry,
+//     ) -> Result<(), tokio::sync::mpsc::error::SendError<TimerEntry>> {
+//         self.sender.send(entry).await
+//     }
+// }
 
-impl WrappedSchedulerSync {
-    pub fn new() -> (Self, mpsc::Receiver<(DateTime<Utc>, TimerEntry)>) {
-        let (sender_nucleus, receiver_nucleus) = mpsc::channel();
-        let (sender_cage, receiver_cage) = mpsc::channel();
+// impl WrappedSchedulerSync {
+//     pub fn new() -> (Self, mpsc::Receiver<(DateTime<Utc>, TimerEntry)>) {
+//         let (sender_nucleus, receiver_nucleus) = mpsc::channel();
+//         let (sender_cage, receiver_cage) = mpsc::channel();
 
-        thread::spawn(move || {
-            let mut timer_queue = TimerQueue::new();
-            loop {
-                let next_timeout = if let Some(entry) = timer_queue.peek() {
-                    let now = Utc::now();
-                    if entry.timestamp > now {
-                        (entry.timestamp - now).to_std().unwrap_or_default()
-                    } else {
-                        Duration::from_secs(0)
-                    }
-                } else {
-                    Duration::from_secs(3600)
-                };
+//         thread::spawn(move || {
+//             let mut timer_queue = TimerQueue::new();
+//             loop {
+//                 let next_timeout = if let Some(entry) = timer_queue.peek() {
+//                     let now = Utc::now();
+//                     if entry.timestamp > now {
+//                         (entry.timestamp - now).to_std().unwrap_or_default()
+//                     } else {
+//                         Duration::from_secs(0)
+//                     }
+//                 } else {
+//                     Duration::from_secs(3600)
+//                 };
 
-                let receiver_timeout = receiver_nucleus.recv_timeout(next_timeout);
+//                 let receiver_timeout = receiver_nucleus.recv_timeout(next_timeout);
 
-                match receiver_timeout {
-                    Ok(entry) => {
-                        timer_queue.push(entry);
-                    }
-                    Err(mpsc::RecvTimeoutError::Timeout) => {
-                        let now = Utc::now();
-                        while let Some(entry) = timer_queue.peek() {
-                            if entry.timestamp <= now {
-                                if let Some(entry) = timer_queue.pop() {
-                                    sender_cage.send((now, entry)).unwrap();
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                    Err(mpsc::RecvTimeoutError::Disconnected) => {
-                        break;
-                    }
-                }
-            }
-        });
+//                 match receiver_timeout {
+//                     Ok(entry) => {
+//                         timer_queue.push(entry);
+//                     }
+//                     Err(mpsc::RecvTimeoutError::Timeout) => {
+//                         let now = Utc::now();
+//                         while let Some(entry) = timer_queue.peek() {
+//                             if entry.timestamp <= now {
+//                                 if let Some(entry) = timer_queue.pop() {
+//                                     sender_cage.send((now, entry)).unwrap();
+//                                 }
+//                             } else {
+//                                 break;
+//                             }
+//                         }
+//                     }
+//                     Err(mpsc::RecvTimeoutError::Disconnected) => {
+//                         break;
+//                     }
+//                 }
+//             }
+//         });
 
-        (
-            WrappedSchedulerSync {
-                sender: sender_nucleus,
-            },
-            receiver_cage,
-        )
-    }
+//         (
+//             WrappedSchedulerSync {
+//                 sender: sender_nucleus,
+//             },
+//             receiver_cage,
+//         )
+//     }
 
-    pub fn push(&self, entry: TimerEntry) -> Result<(), std::sync::mpsc::SendError<TimerEntry>> {
-        self.sender.send(entry)
-    }
+//     pub fn push(&self, entry: TimerEntry) -> Result<(), std::sync::mpsc::SendError<TimerEntry>> {
+//         self.sender.send(entry)
+//     }
 
-    pub fn push_thread(&self, entry: TimerEntry) {
-        let sender = self.sender.clone();
-        thread::spawn(move || {
-            sender.send(entry).unwrap();
-        });
-    }
-}
+//     pub fn push_thread(&self, entry: TimerEntry) {
+//         let sender = self.sender.clone();
+//         thread::spawn(move || {
+//             sender.send(entry).unwrap();
+//         });
+//     }
+// }
 
-pub struct Scheduler {
-    receiver: Receiver<TimerEntry>,
-    timer_queue: TimerQueue,
-}
+// pub struct Scheduler {
+//     receiver: Receiver<TimerEntry>,
+//     timer_queue: TimerQueue,
+// }
 
-impl Scheduler {
-    pub fn new(receiver: Receiver<TimerEntry>) -> Self {
-        Scheduler {
-            receiver,
-            timer_queue: TimerQueue::new(),
-        }
-    }
+// impl Scheduler {
+//     pub fn new(receiver: Receiver<TimerEntry>) -> Self {
+//         Scheduler {
+//             receiver,
+//             timer_queue: TimerQueue::new(),
+//         }
+//     }
 
-    pub async fn start<F>(mut self, callback: F)
-    where
-        F: Fn(TimerEntry) + Send + 'static,
-    {
-        let mut timer = Box::pin(time::sleep(time::Duration::from_secs(0)));
+//     pub async fn start<F>(mut self, callback: F)
+//     where
+//         F: Fn(TimerEntry) + Send + 'static,
+//     {
+//         let mut timer = Box::pin(time::sleep(time::Duration::from_secs(0)));
 
-        loop {
-            tokio::select! {
-                Some(entry) = self.receiver.recv() => {
-                    self.timer_queue.push(entry);
-                    self.update_timer(&mut timer);
-                }
-                _ = &mut timer => {
-                    if !self.timer_queue.is_empty() {
-                        self.process_queue(&callback);
-                        self.update_timer(&mut timer);
-                    } else {
-                        timer.as_mut().reset(Instant::now() + time::Duration::from_secs(3600));
-                    }
-                }
-            }
-        }
-    }
+//         loop {
+//             tokio::select! {
+//                 Some(entry) = self.receiver.recv() => {
+//                     self.timer_queue.push(entry);
+//                     self.update_timer(&mut timer);
+//                 }
+//                 _ = &mut timer => {
+//                     if !self.timer_queue.is_empty() {
+//                         self.process_queue(&callback);
+//                         self.update_timer(&mut timer);
+//                     } else {
+//                         timer.as_mut().reset(Instant::now() + time::Duration::from_secs(3600));
+//                     }
+//                 }
+//             }
+//         }
+//     }
 
-    fn update_timer(&mut self, timer: &mut Pin<Box<Sleep>>) {
-        if let Some(entry) = self.timer_queue.peek() {
-            let now = Utc::now();
-            if entry.timestamp > now {
-                let duration = (entry.timestamp - now).to_std().unwrap_or_default();
-                let deadline = Instant::now() + duration;
-                timer.as_mut().reset(deadline);
-            } else {
-                timer.as_mut().reset(Instant::now());
-            }
-        }
-    }
+//     fn update_timer(&mut self, timer: &mut Pin<Box<Sleep>>) {
+//         if let Some(entry) = self.timer_queue.peek() {
+//             let now = Utc::now();
+//             if entry.timestamp > now {
+//                 let duration = (entry.timestamp - now).to_std().unwrap_or_default();
+//                 let deadline = Instant::now() + duration;
+//                 timer.as_mut().reset(deadline);
+//             } else {
+//                 timer.as_mut().reset(Instant::now());
+//             }
+//         }
+//     }
 
-    fn process_queue<F>(&mut self, callback: &F)
-    where
-        F: Fn(TimerEntry) + Send,
-    {
-        let now = Utc::now();
-        while let Some(entry) = self.timer_queue.peek() {
-            if entry.timestamp <= now {
-                if let Some(entry) = self.timer_queue.pop() {
-                    callback(entry);
-                }
-            } else {
-                break;
-            }
-        }
-    }
-}
+//     fn process_queue<F>(&mut self, callback: &F)
+//     where
+//         F: Fn(TimerEntry) + Send,
+//     {
+//         let now = Utc::now();
+//         while let Some(entry) = self.timer_queue.peek() {
+//             if entry.timestamp <= now {
+//                 if let Some(entry) = self.timer_queue.pop() {
+//                     callback(entry);
+//                 }
+//             } else {
+//                 break;
+//             }
+//         }
+//     }
+// }
 #[cfg(test)]
 mod tests {
     use super::*;

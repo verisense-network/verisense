@@ -5,8 +5,7 @@ use crate::{
 };
 use sc_cli::SubstrateCli;
 use sc_service::PartialComponents;
-use sp_keyring::Sr25519Keyring;
-use vrs_runtime::{Block, EXISTENTIAL_DEPOSIT};
+use vrs_runtime::Block;
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {

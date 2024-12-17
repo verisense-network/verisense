@@ -166,9 +166,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                232u8, 218u8, 219u8, 227u8, 47u8, 53u8, 53u8, 3u8, 33u8, 136u8, 67u8, 104u8, 245u8,
-                143u8, 247u8, 31u8, 101u8, 89u8, 55u8, 214u8, 1u8, 224u8, 75u8, 110u8, 66u8, 64u8,
-                190u8, 168u8, 203u8, 186u8, 85u8, 45u8,
+                173u8, 88u8, 64u8, 11u8, 169u8, 185u8, 182u8, 58u8, 28u8, 173u8, 9u8, 185u8, 56u8,
+                43u8, 179u8, 126u8, 189u8, 208u8, 180u8, 74u8, 254u8, 96u8, 53u8, 77u8, 33u8, 44u8,
+                178u8, 80u8, 83u8, 74u8, 106u8, 21u8,
             ]
     }
     pub mod system {
@@ -2316,13 +2316,7 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct SubmitElValidators {
-                    pub something: submit_el_validators::Something,
-                }
-                pub mod submit_el_validators {
-                    use super::runtime_types;
-                    pub type Something = ::core::primitive::u32;
-                }
+                pub struct SubmitElValidators;
                 impl ::subxt_core::blocks::StaticExtrinsic for SubmitElValidators {
                     const PALLET: &'static str = "Validators";
                     const CALL: &'static str = "submit_el_validators";
@@ -2332,18 +2326,16 @@ pub mod codegen {
             impl TransactionApi {
                 pub fn submit_el_validators(
                     &self,
-                    something: types::submit_el_validators::Something,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::SubmitElValidators>
                 {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "Validators",
                         "submit_el_validators",
-                        types::SubmitElValidators { something },
+                        types::SubmitElValidators {},
                         [
-                            76u8, 196u8, 184u8, 52u8, 36u8, 232u8, 79u8, 101u8, 219u8, 247u8,
-                            187u8, 6u8, 77u8, 147u8, 29u8, 57u8, 209u8, 189u8, 225u8, 67u8, 73u8,
-                            248u8, 128u8, 113u8, 76u8, 125u8, 243u8, 94u8, 182u8, 11u8, 178u8,
-                            121u8,
+                            67u8, 88u8, 247u8, 8u8, 95u8, 163u8, 219u8, 220u8, 182u8, 211u8, 19u8,
+                            137u8, 182u8, 125u8, 15u8, 252u8, 80u8, 74u8, 64u8, 96u8, 1u8, 48u8,
+                            76u8, 224u8, 147u8, 116u8, 56u8, 159u8, 246u8, 99u8, 150u8, 63u8,
                         ],
                     )
                 }
@@ -5408,10 +5400,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            52u8, 166u8, 202u8, 217u8, 142u8, 33u8, 195u8, 147u8, 136u8, 183u8,
-                            96u8, 207u8, 181u8, 51u8, 123u8, 8u8, 140u8, 84u8, 238u8, 19u8, 133u8,
-                            163u8, 189u8, 114u8, 219u8, 54u8, 138u8, 41u8, 22u8, 144u8, 220u8,
-                            33u8,
+                            238u8, 95u8, 189u8, 44u8, 145u8, 250u8, 191u8, 221u8, 85u8, 213u8,
+                            164u8, 175u8, 108u8, 194u8, 8u8, 185u8, 21u8, 184u8, 194u8, 236u8,
+                            214u8, 250u8, 18u8, 185u8, 126u8, 101u8, 79u8, 119u8, 163u8, 4u8, 52u8,
+                            97u8,
                         ],
                     )
                 }
@@ -5429,9 +5421,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            198u8, 220u8, 112u8, 80u8, 9u8, 182u8, 221u8, 178u8, 163u8, 248u8,
-                            39u8, 15u8, 225u8, 132u8, 73u8, 38u8, 185u8, 228u8, 20u8, 87u8, 63u8,
-                            50u8, 177u8, 46u8, 64u8, 63u8, 16u8, 136u8, 196u8, 98u8, 218u8, 133u8,
+                            19u8, 208u8, 65u8, 0u8, 209u8, 100u8, 14u8, 252u8, 73u8, 15u8, 168u8,
+                            164u8, 186u8, 208u8, 12u8, 49u8, 140u8, 109u8, 40u8, 135u8, 43u8,
+                            124u8, 172u8, 48u8, 21u8, 167u8, 199u8, 121u8, 249u8, 228u8, 209u8,
+                            218u8,
                         ],
                     )
                 }
@@ -5463,10 +5456,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            150u8, 180u8, 150u8, 9u8, 243u8, 17u8, 123u8, 230u8, 77u8, 117u8,
-                            124u8, 33u8, 173u8, 211u8, 234u8, 222u8, 25u8, 217u8, 81u8, 146u8,
-                            68u8, 89u8, 83u8, 60u8, 57u8, 18u8, 164u8, 149u8, 177u8, 62u8, 4u8,
-                            34u8,
+                            94u8, 137u8, 139u8, 15u8, 234u8, 208u8, 92u8, 215u8, 91u8, 94u8, 69u8,
+                            116u8, 168u8, 190u8, 97u8, 115u8, 79u8, 30u8, 152u8, 71u8, 58u8, 124u8,
+                            77u8, 216u8, 131u8, 79u8, 249u8, 84u8, 183u8, 158u8, 6u8, 199u8,
                         ],
                     )
                 }
@@ -7776,7 +7768,7 @@ pub mod codegen {
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub enum Call {
                     #[codec(index = 0)]
-                    submit_el_validators { something: ::core::primitive::u32 },
+                    submit_el_validators,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,

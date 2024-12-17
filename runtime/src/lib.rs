@@ -4,19 +4,16 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::Encode;
-use frame_system::pallet;
 use pallet_grandpa::AuthorityId as GrandpaId;
-use pallet_im_online::sr25519;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
-use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{BlakeTwo256, Block as BlockT, NumberFor, One, Verify},
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
+    ApplyExtrinsicResult,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -46,16 +43,12 @@ pub use frame_system::Call as SystemCall;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-
 use sp_runtime::generic::Era;
 use sp_runtime::traits::{ConvertInto, Extrinsic, OpaqueKeys};
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
-
 pub use vrs_primitives::*;
-
-use pallet_restaking::sr25519::AuthorityId as VerisenseRestakingId;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
