@@ -1,24 +1,18 @@
 use codec::{Decode, Encode};
 use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_network::{
+    request_responses::IncomingRequest,
+    service::traits::{NotificationEvent, NotificationService},
+    PeerId,
+};
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_application_crypto::key_types::AUTHORITY_DISCOVERY;
-use sp_authority_discovery::AuthorityId;
 use sp_blockchain::HeaderBackend;
-use sp_core::ByteArray;
-use sp_core::{crypto::KeyTypeId, sr25519, Pair};
+use sp_core::{sr25519, ByteArray, Pair};
 use sp_keystore::KeystorePtr;
-// use std::collections::HashMap;
-// use std::sync::mpsc::Sender as SyncSender;
-use std::str::FromStr;
-use std::sync::Arc;
-use vrs_primitives::{AccountId, Hash, NucleusId};
-
-use sc_network::request_responses::IncomingRequest;
-use sc_network::service::traits::NotificationEvent;
-use sc_network::service::traits::NotificationService;
-use sc_network::service::traits::ValidationResult;
-use sc_network::PeerId;
+use std::{str::FromStr, sync::Arc};
+use vrs_primitives::AccountId;
 
 pub struct P2pParams<B, C, BN> {
     pub keystore: KeystorePtr,
@@ -32,10 +26,6 @@ pub struct P2pParams<B, C, BN> {
     pub controller: AccountId,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
-
-struct NucleusP2p {}
-
-impl NucleusP2p {}
 
 #[derive(Debug)]
 pub struct P2pNotification {

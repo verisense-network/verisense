@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_runtime::{traits::BlockNumber, DispatchError, KeyTypeId};
+use sp_runtime::KeyTypeId;
 use sp_std::vec::Vec;
 
 #[macro_export]
