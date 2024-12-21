@@ -166,7 +166,7 @@ pub mod pallet {
 
     impl<T: Config> RestakingInterface<T::AccountId> for Pallet<T> {
         fn provide() -> Vec<(T::AccountId, u128)> {
-            <PlannedValidators<T>>::get()
+            PlannedValidators::<T>::get()
         }
 
         fn next_validators_set_id() -> u32 {

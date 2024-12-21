@@ -1,7 +1,7 @@
 use crate::{
     runtime::{ContextAware, FuncRegister, Runtime},
     vm::{Vm, WasmCallError},
-    ReplyTo, TimerEntry, TimersReplyTo, WasmInfo,
+    ReplyTo, WasmInfo,
 };
 use codec::{Decode, Encode};
 use std::sync::mpsc::Receiver;

@@ -10546,6 +10546,7 @@ dependencies = [
  "bytes",
  "chrono",
  "env_logger",
+ "frame-system-rpc-runtime-api",
  "futures",
  "hex",
  "http-body-util",
@@ -10575,6 +10576,7 @@ dependencies = [
  "vrs-nucleus-p2p",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
+ "vrs-runtime",
  "wasmtime 22.0.1",
 ]
 
@@ -10632,6 +10634,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-api",
+ "sp-core",
  "sp-runtime",
  "vrs-primitives",
 ]

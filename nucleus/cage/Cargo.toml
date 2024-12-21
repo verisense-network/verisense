@@ -26,6 +26,8 @@ sp-keystore = { version = "0.40.0" }
 sc-client-api = { version = "35.0.0" }
 hex = { version = "0.4" }
 thiserror = "1"
+frame-system-rpc-runtime-api = { workspace = true, default-features = false }
+vrs-runtime = { path = "../../runtime" }
 vrs-metadata = { path = "../../metadata" }
 vrs-nucleus-p2p= { path = "../../nucleus/p2p" }
 chrono = { version = "0.4" }

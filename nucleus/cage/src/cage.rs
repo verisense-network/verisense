@@ -16,6 +16,7 @@ use sp_blockchain::HeaderBackend;
 use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 // TODO use UnboundedSender to avoid blocking
+use frame_system_rpc_runtime_api::AccountNonceApi;
 use std::sync::mpsc::Sender as SyncSender;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -24,7 +25,7 @@ use vrs_metadata::{
 };
 use vrs_nucleus_p2p::NucleusP2pMsg;
 use vrs_nucleus_runtime_api::NucleusApi;
-use vrs_primitives::{AccountId, Hash, NodeId, NucleusId, NucleusInfo};
+use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
 
 pub struct CageParams<B, C, BN> {
     pub keystore: KeystorePtr,
@@ -103,7 +104,8 @@ where
         + HeaderBackend<B>
         + 'static,
     C::Api: Metadata<B> + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
+    C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
 {
     let CageParams {
         keystore,
@@ -126,9 +128,6 @@ where
         let mut block_monitor = client.every_import_notification_stream();
 
         let timer_scheduler = Arc::new(crate::host_func::timer::SchedulerAsync::new());
-        // let mut timers_receivers: FuturesUnordered<oneshot::Receiver<Vec<TimerEntry>>> =
-        //     FuturesUnordered::new();
-
         let (http_register, mut http_executor) = crate::host_func::http::new_http_manager();
         let http_register = Arc::new(http_register);
 
@@ -159,13 +158,6 @@ where
                 &mut nuclei,
             )
             .expect("fail to start nucleus");
-            // if let Some(nucleus) = nuclei.get_mut(&id) {
-            //     let (timer_sender, timer_receiver) = oneshot::channel();
-            //     timers_receivers.push(timer_receiver);
-            //     nucleus.forward(Gluon::TimerInitRequest {
-            //         pending_timer_queue: timer_sender,
-            //     });
-            // }
         }
         log::info!("🔌 Nucleus cage controller: {}", controller);
         loop {
@@ -194,12 +186,22 @@ where
                         if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let public_input = ev.public_input;
-                            let vrf = crate::keystore::sign_to_participate(
+                            let (submitter, vrf) = crate::keystore::sign_to_participate(
                                 keystore.clone(),
-                                sp_core::crypto::KeyTypeId(*b"nucl"),
+                                keys::NUCLEUS_VRF_KEY_TYPE,
                                 public_input.as_ref(),
                             ).expect("fail to sign vrf signature");
-
+                            let submitter: AccountId = submitter.into();
+                            let api = client.runtime_api();
+                            let nonce = api.account_nonce(hash, submitter.clone()).expect("failed to retrieve nonce of vrf submitter.");
+                            // TODO
+                            let (addr, call, extra) = api.compose_vrf_tx(
+                                hash,
+                                NucleusId::from(nucleus_id.0),
+                                submitter,
+                                nonce,
+                                vrf,
+                            ).expect("failed to compose vrf tx").unwrap();
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let digest = ev.wasm_hash;
@@ -215,8 +217,8 @@ where
                             ).expect("fail to upgrade nucleus wasm");
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
                             let nucleus_id = ev.id;
-                            let info = client
-                                .runtime_api()
+                            let api = client.runtime_api();
+                            let info = api
                                 .get_nucleus_info(hash, NucleusId::from(nucleus_id.0))
                                 .inspect_err(|e| log::error!("fail to get nucleus info while receiving nucleus created event: {:?}", e))
                                 .ok()
@@ -298,7 +300,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
     T: vrs_metadata::Config,
 {
     // TODO change to use the storage key from metadata
@@ -323,7 +325,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
 {
     let api = client.runtime_api();
     let key = codegen::storage().nucleus().instances_iter();
