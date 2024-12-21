@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use codec::Decode;
+use codec::{Codec, Decode};
 use constants::*;
 use futures::prelude::*;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
@@ -15,7 +15,7 @@ use tokio::sync::{
 };
 use vrs_nucleus_cage::{Gluon, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusApi;
-use vrs_primitives::NucleusId;
+use vrs_primitives::{Address, NucleusId};
 
 #[rpc(server)]
 pub trait NucleusRpc<Hash> {
@@ -29,15 +29,16 @@ pub trait NucleusRpc<Hash> {
     async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
 }
 
-pub struct NucleusEntry<P, C> {
+pub struct NucleusEntry<P, C, D, T> {
     sender: Sender<(NucleusId, Gluon)>,
     client: Arc<C>,
     pool: Arc<P>,
     node_id: PeerId,
     nucleus_home_dir: PathBuf,
+    _phantom: std::marker::PhantomData<(D, T)>,
 }
 
-impl<P, C> NucleusEntry<P, C> {
+impl<P, C, D, T> NucleusEntry<P, C, D, T> {
     pub fn new(
         sender: Sender<(NucleusId, Gluon)>,
         client: Arc<C>,
@@ -51,6 +52,7 @@ impl<P, C> NucleusEntry<P, C> {
             pool,
             node_id,
             nucleus_home_dir,
+            _phantom: Default::default(),
         }
     }
 
@@ -85,12 +87,14 @@ impl<P, C> NucleusEntry<P, C> {
 }
 
 #[async_trait]
-impl<P, C> NucleusRpcServer<BlockHash<P>> for NucleusEntry<P, C>
+impl<P, C, D, T> NucleusRpcServer<BlockHash<P>> for NucleusEntry<P, C, D, T>
 where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusApi<P::Block, Address, D, T> + 'static,
+    D: Codec + Send + Sync + 'static,
+    T: Codec + Send + Sync + 'static,
 {
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
         let (tx, rx) = oneshot::channel();

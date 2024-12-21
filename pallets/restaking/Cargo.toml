@@ -33,6 +33,8 @@ sp-io = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 verisense-support = { path = "../../support", default-features = false }
+vrs-primitives = { path = "../../primitives", default-features = false }
+
 [features]
 default = ["std"]
 std = [

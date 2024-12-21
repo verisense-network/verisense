@@ -24,7 +24,7 @@ pub mod pallet {
     use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup};
     use sp_std::prelude::*;
     use verisense_support::ValidatorsInterface;
-    use vrs_primitives::NucleusInfo;
+    use vrs_primitives::{keys::NUCLEUS_VRF_KEY_TYPE, NucleusInfo};
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NucleusEquation<AccountId, Hash, NodeId> {
@@ -249,10 +249,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let submitter = ensure_signed(origin)?;
             let raw = submitter.into();
-            // TODO
-            let controller =
-                T::Validators::is_active_validator(sp_runtime::KeyTypeId(*b"nvrf"), &raw)
-                    .ok_or(Error::<T>::NotAuthorized)?;
+            let controller = T::Validators::is_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
+                .ok_or(Error::<T>::NotAuthorized)?;
             let public = Public::from_raw(raw);
             let challenge =
                 RegistrySubmissions::<T>::get(&nucleus_id).ok_or(Error::<T>::NucleusNotFound)?;

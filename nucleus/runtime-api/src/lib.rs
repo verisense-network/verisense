@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use scale_info::TypeInfo;
+use sp_core::sr25519::vrf::VrfSignature;
 use vrs_primitives::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
@@ -12,9 +13,21 @@ pub struct NucleusUpgradingTxInfo {
 
 sp_api::decl_runtime_apis! {
     #[api_version(1)]
-    pub trait NucleusApi {
+    pub trait NucleusApi<Address, Call, Extra>
+    where
+        Address: Codec,
+        Call: Codec,
+        Extra: Codec,
+    {
         fn resolve_deploy_tx(uxt: Block::Extrinsic) -> Option<NucleusUpgradingTxInfo>;
 
         fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>>;
+
+        fn compose_vrf_tx(
+            nucleus_id: NucleusId,
+            account_id: AccountId,
+            nonce: u32,
+            vrf: VrfSignature,
+        ) -> Option<(Address, Call, Extra)>;
     }
 }
