@@ -310,7 +310,7 @@ pub struct VerisenseRestakingAppCrypto;
 impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
     for VerisenseRestakingAppCrypto
 {
-    type RuntimeAppPublic = pallet_restaking::sr25519::AuthorityId;
+    type RuntimeAppPublic = vrs_primitives::keys::restaking::AuthorityId;
     type GenericPublic = sp_core::sr25519::Public;
     type GenericSignature = sp_core::sr25519::Signature;
 }
@@ -387,7 +387,7 @@ impl frame_system::offchain::SigningTypes for Runtime {
 }
 
 impl pallet_restaking::Config for Runtime {
-    type AuthorityId = pallet_restaking::sr25519::AuthorityId;
+    type AuthorityId = vrs_primitives::keys::restaking::AuthorityId;
     type AppCrypto = VerisenseRestakingAppCrypto;
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;

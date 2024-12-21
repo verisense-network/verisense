@@ -5577,6 +5577,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "verisense-support",
+ "vrs-primitives",
 ]
 
 [[package]]

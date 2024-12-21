@@ -47,20 +47,41 @@ pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub peers: alloc::vec::Vec<NodeId>,
 }
 
-mod app_sr25519 {
-    use sp_application_crypto::{app_crypto, sr25519};
+pub mod keys {
     use sp_core::crypto::KeyTypeId;
-    app_crypto!(sr25519, KeyTypeId(*b"fuba"));
-}
 
-sp_application_crypto::with_pair! {
-    /// An i'm online keypair using sr25519 as its crypto.
-    pub type AuthorityPair = app_sr25519::Pair;
-}
+    pub const RESTAKING_KEY_TYPE: KeyTypeId = KeyTypeId(*b"rstk");
+    pub const NUCLEUS_VRF_KEY_TYPE: KeyTypeId = KeyTypeId(*b"nvrf");
 
-/// An i'm online signature using sr25519 as its crypto.
-pub type AuthoritySignature = app_sr25519::Signature;
-/// An i'm online identifier using sr25519 as its crypto.
-pub type CryptoApproach = app_sr25519::Public;
-/// An i'm online identifier using sr25519 as its crypto.
-pub type AppCryptoApproach = sp_application_crypto::sr25519::AppPublic;
+    pub mod restaking {
+        mod app_sr25519 {
+            use crate::keys::RESTAKING_KEY_TYPE;
+            use sp_runtime::app_crypto::{app_crypto, sr25519};
+            app_crypto!(sr25519, RESTAKING_KEY_TYPE);
+        }
+
+        sp_application_crypto::with_pair! {
+            pub type AuthorityPair = app_sr25519::Pair;
+        }
+
+        pub type AuthoritySignature = app_sr25519::Signature;
+
+        pub type AuthorityId = app_sr25519::Public;
+    }
+
+    pub mod vrf {
+        mod app_sr25519 {
+            use crate::keys::NUCLEUS_VRF_KEY_TYPE;
+            use sp_runtime::app_crypto::{app_crypto, sr25519};
+            app_crypto!(sr25519, NUCLEUS_VRF_KEY_TYPE);
+        }
+
+        sp_application_crypto::with_pair! {
+            pub type AuthorityPair = app_sr25519::Pair;
+        }
+
+        pub type AuthoritySignature = app_sr25519::Signature;
+
+        pub type AuthorityId = app_sr25519::Public;
+    }
+}

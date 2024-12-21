@@ -194,11 +194,12 @@ where
                         if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let public_input = ev.public_input;
-                            let signature = crate::keystore::sign_to_participate(
+                            let vrf = crate::keystore::sign_to_participate(
                                 keystore.clone(),
                                 sp_core::crypto::KeyTypeId(*b"nucl"),
                                 public_input.as_ref(),
                             ).expect("fail to sign vrf signature");
+
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let digest = ev.wasm_hash;

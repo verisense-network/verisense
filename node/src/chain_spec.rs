@@ -1,10 +1,10 @@
-use pallet_restaking::sr25519::AuthorityId as RestakingId;
 use sc_service::ChainType;
 use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use vrs_primitives::keys::restaking::AuthorityId as RestakingId;
 use vrs_runtime::opaque::SessionKeys;
 use vrs_runtime::{AccountId, Signature, WASM_BINARY};
 
@@ -113,17 +113,13 @@ fn testnet_genesis(
 ) -> serde_json::Value {
     serde_json::json!({
         "balances": {
-            // Configure endowed accounts with initial balance of 1 << 60.
             "balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
         },
         "sudo": {
-            // Assign network admin rights.
             "key": Some(root_key),
         },
         "restaking": {
-            "validators":[
-                ("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", 10000)
-            ]
+            "validators": endowed_accounts.iter().cloned().map(|k| (k, 10000)).collect::<Vec<_>>(),
         },
          "session":  {
             "keys": initial_authorities
