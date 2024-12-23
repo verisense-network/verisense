@@ -51,6 +51,7 @@ where
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce> + 'static,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> + 'static,
     C::Api: vrs_nucleus_runtime_api::NucleusApi<Block, Address> + 'static,
+    C::Api: vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId>,
     C::Api: BlockBuilder<Block> + 'static,
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};

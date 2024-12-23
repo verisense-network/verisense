@@ -54,6 +54,7 @@ pallet-restaking = { path = "../pallets/restaking" }
 vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
 vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api" }
+vrs-restaking-runtime-api = { path = "../pallets/restaking/runtime-api" }
 vrs-nucleus-rpc-proxy = { path = "../nucleus/rpc-proxy" }
 vrs-nucleus-cage = { path = "../nucleus/cage" }
 vrs-nucleus-p2p = { path = "../nucleus/p2p" }

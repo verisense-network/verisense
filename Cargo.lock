@@ -2169,6 +2169,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethabi"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7413c5f74cc903ea37386a8965a936cbeb334bd270862fdece542c1b2dcbc898"
+dependencies = [
+ "ethereum-types",
+ "hex",
+ "serde",
+ "sha3",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
+name = "ethbloom"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c22d4b5885b6aa2fe5e8b9329fb8d232bf739e434e6b87347c63bdd00c120f60"
+dependencies = [
+ "crunchy",
+ "fixed-hash",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "ethereum-types"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02d215cbf040552efcbe99a38372fe80ab9d00268e20012b79fcd0f073edd8ee"
+dependencies = [
+ "ethbloom",
+ "fixed-hash",
+ "primitive-types",
+ "uint",
+]
+
+[[package]]
 name = "event-listener"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4771,6 +4808,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "merkle-lite"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9700ee109e3d0f9b4a4eab15e6517e4dda66cbfae17ed0305a8b1d55f888782d"
+dependencies = [
+ "digest 0.10.7",
+]
+
+[[package]]
 name = "merlin"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5562,15 +5608,18 @@ name = "pallet-restaking"
 version = "0.0.1"
 dependencies = [
  "base64 0.13.1",
+ "ethabi",
  "frame-support",
  "frame-system",
  "hex",
  "log",
+ "merkle-lite",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "serde_bytes",
  "serde_json",
+ "sha3",
  "sp-application-crypto",
  "sp-core",
  "sp-io",
@@ -10476,6 +10525,7 @@ dependencies = [
  "vrs-nucleus-rpc-proxy",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
+ "vrs-restaking-runtime-api",
  "vrs-runtime",
 ]
 
@@ -10645,6 +10695,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrs-restaking-runtime-api"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
+ "vrs-primitives",
+]
+
+[[package]]
 name = "vrs-runtime"
 version = "0.0.1"
 dependencies = [
@@ -10689,6 +10751,7 @@ dependencies = [
  "substrate-wasm-builder",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
+ "vrs-restaking-runtime-api",
  "vrs-support",
 ]
 
