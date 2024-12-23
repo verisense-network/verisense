@@ -691,7 +691,7 @@ impl_runtime_apis! {
             account_id: AccountId,
             nonce: u32,
             vrf: VrfSignature,
-        ) -> Option<(Address, RuntimeCall, SignedExtra)> {
+        ) -> (Address, RuntimeCall, SignedExtra) {
             use sp_runtime::traits::StaticLookup;
             use sp_runtime::SaturatedConversion;
             let tip = 0;
@@ -721,7 +721,7 @@ impl_runtime_apis! {
                 signature: vrf,
             });
             let address = <Runtime as frame_system::Config>::Lookup::unlookup(account_id);
-            Some((address, call, extra))
+            (address, call, extra)
         }
     }
 

@@ -28,6 +28,6 @@ sp_api::decl_runtime_apis! {
             account_id: AccountId,
             nonce: u32,
             vrf: VrfSignature,
-        ) -> Option<(Address, Call, Extra)>;
+        ) -> (Address, Call, Extra);
     }
 }

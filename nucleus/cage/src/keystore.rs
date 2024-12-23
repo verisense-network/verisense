@@ -32,8 +32,8 @@ pub(crate) fn sign_to_participate(
 pub(crate) fn sign_tx(
     keystore: KeystorePtr,
     key_type: KeyTypeId,
-    call: RuntimeCall,
     addr: Address,
+    call: RuntimeCall,
     extra: SignedExtra,
 ) -> Result<Signature, Box<dyn std::error::Error>> {
     let public = keystore

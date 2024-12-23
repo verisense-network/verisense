@@ -233,9 +233,7 @@ where
                         log::error!("fail to call post endpoint: {} due to: {:?}", &endpoint, e);
                         (e.to_error_code(), e.to_string())
                     });
-                    println!("vm_result: {:?}", reply_to);
                     if let Some(reply_to) = reply_to {
-                        println!("send vm_result: {:?}", vm_result);
                         let _ = reply_to.send(vm_result);
                     }
                 }

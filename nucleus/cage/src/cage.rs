@@ -5,7 +5,7 @@ use crate::{
     },
     nucleus::Nucleus,
     state::NucleusState,
-    Event, Gluon, NucleusResponse, ReplyTo, Runtime, RuntimeParams, WasmInfo,
+    Event, Gluon, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
 };
 use codec::{Decode, Encode};
 use futures::prelude::*;
@@ -186,22 +186,9 @@ where
                         if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let public_input = ev.public_input;
-                            let (submitter, vrf) = crate::keystore::sign_to_participate(
-                                keystore.clone(),
-                                keys::NUCLEUS_VRF_KEY_TYPE,
-                                public_input.as_ref(),
-                            ).expect("fail to sign vrf signature");
-                            let submitter: AccountId = submitter.into();
-                            let api = client.runtime_api();
-                            let nonce = api.account_nonce(hash, submitter.clone()).expect("failed to retrieve nonce of vrf submitter.");
-                            // TODO
-                            let (addr, call, extra) = api.compose_vrf_tx(
-                                hash,
-                                NucleusId::from(nucleus_id.0),
-                                submitter,
-                                nonce,
-                                vrf,
-                            ).expect("failed to compose vrf tx").unwrap();
+                            submit_vrf(client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash)
+                                .inspect_err(|e| log::error!("fail to submit vrf: {:?}", e))
+                                .expect("fail to submit vrf");
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let digest = ev.wasm_hash;
@@ -310,6 +297,45 @@ where
         .inspect_err(|e| log::error!("failed to get events: {:?}", e))
         .map(|b| b.map(|v| events::decode_from::<T>(v.0, metadata)))
         .map_err(|e| e.into())
+}
+
+fn submit_vrf<B, D, C>(
+    client: Arc<C>,
+    nucleus_id: NucleusId,
+    keystore: KeystorePtr,
+    public_input: &[u8],
+    hash: B::Hash,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    B: sp_runtime::traits::Block,
+    D: Backend<B>,
+    C: BlockBackend<B>
+        + StorageProvider<B, D>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + 'static,
+    C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
+    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
+{
+    let (submitter, vrf) = crate::keystore::sign_to_participate(
+        keystore.clone(),
+        keys::NUCLEUS_VRF_KEY_TYPE,
+        public_input,
+    )?;
+    let submitter: AccountId = submitter.into();
+    let api = client.runtime_api();
+    let nonce = api.account_nonce(hash, submitter.clone())?;
+    // TODO
+    let (addr, call, extra) = api.compose_vrf_tx(hash, nucleus_id, submitter, nonce, vrf)?;
+    let signature = crate::keystore::sign_tx(
+        keystore.clone(),
+        keys::NUCLEUS_VRF_KEY_TYPE,
+        addr.clone(),
+        call.clone(),
+        extra.clone(),
+    )?;
+    let tx = vrs_runtime::UncheckedExtrinsic::new_signed(call, addr, signature, extra);
+    Ok(())
 }
 
 fn get_nuclei_for_node<B, D, C>(
