@@ -24,15 +24,18 @@ serde_bytes = { version = "0.11", default-features = false, features = [
     "alloc",
 ] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-
 frame-support = { workspace = true, default-features = false }
 frame-system = { workspace = true, default-features = false }
 sp-application-crypto = { workspace = true, default-features = false }
-sp-core = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false, features = ["serde"] }
 sp-io = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 verisense-support = { path = "../../support", default-features = false }
+merkle-lite = { version = "0.1.0" }
+sha3 = {version = "0.10.8", default-features = false}
+ethabi = {version = "18.0.0", default-features = false}
+vrs-primitives = { path = "../../primitives", default-features = false }
 [features]
 default = ["std"]
 std = [
@@ -52,4 +55,7 @@ std = [
     "sp-runtime/std",
     "verisense-support/std",
     "sp-std/std",
+    "sha3/std",
+    "vrs-primitives/std",
+    "ethabi/std",
 ]

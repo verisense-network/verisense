@@ -139,7 +139,7 @@ fn testnet_genesis(
         },
         "restaking": {
             "validators":[
-                ("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", 10000)
+                ("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", 10000, "0x0000000000000000000000000000000000000000", "Original")
             ]
         },
          "session":  {
