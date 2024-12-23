@@ -173,9 +173,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                202u8, 56u8, 220u8, 43u8, 117u8, 193u8, 243u8, 219u8, 183u8, 68u8, 93u8, 223u8,
-                144u8, 16u8, 202u8, 79u8, 218u8, 54u8, 82u8, 8u8, 157u8, 202u8, 119u8, 136u8,
-                152u8, 2u8, 250u8, 40u8, 156u8, 11u8, 103u8, 142u8,
+                29u8, 161u8, 53u8, 131u8, 144u8, 73u8, 131u8, 87u8, 159u8, 118u8, 228u8, 86u8,
+                248u8, 241u8, 82u8, 255u8, 120u8, 64u8, 66u8, 16u8, 209u8, 93u8, 166u8, 24u8,
+                164u8, 233u8, 215u8, 61u8, 203u8, 176u8, 49u8, 164u8,
             ]
     }
     pub mod system {
@@ -1706,6 +1706,21 @@ pub mod codegen {
                     const PALLET: &'static str = "Restaking";
                     const CALL: &'static str = "update_validators";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AddRestakingPlatform;
+                impl ::subxt_core::blocks::StaticExtrinsic for AddRestakingPlatform {
+                    const PALLET: &'static str = "Restaking";
+                    const CALL: &'static str = "add_restaking_platform";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -1723,6 +1738,22 @@ pub mod codegen {
                             52u8, 254u8, 15u8, 7u8, 236u8, 27u8, 127u8, 57u8, 108u8, 119u8, 197u8,
                             18u8, 220u8, 228u8, 237u8, 254u8, 74u8, 252u8, 182u8, 79u8, 82u8, 71u8,
                             119u8, 122u8, 119u8, 208u8, 196u8, 235u8, 63u8, 190u8, 228u8, 131u8,
+                        ],
+                    )
+                }
+                pub fn add_restaking_platform(
+                    &self,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AddRestakingPlatform>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Restaking",
+                        "add_restaking_platform",
+                        types::AddRestakingPlatform {},
+                        [
+                            65u8, 144u8, 9u8, 190u8, 115u8, 59u8, 190u8, 216u8, 254u8, 10u8, 136u8,
+                            143u8, 215u8, 219u8, 239u8, 32u8, 242u8, 17u8, 184u8, 192u8, 52u8,
+                            96u8, 73u8, 100u8, 163u8, 244u8, 74u8, 154u8, 159u8, 141u8, 40u8,
+                            178u8,
                         ],
                     )
                 }
@@ -1931,6 +1962,14 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type TotalRewards = ::core::primitive::u128;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
+                }
+                pub mod restaking_platform {
+                    use super::runtime_types;
+                    pub type RestakingPlatform = (
+                        ::subxt_core::alloc::string::String,
+                        ::subxt_core::alloc::string::String,
+                    );
+                    pub type Param0 = ::core::primitive::str;
                 }
                 pub mod rewards_root {
                     use super::runtime_types;
@@ -2332,6 +2371,49 @@ pub mod codegen {
                             167u8, 16u8, 159u8, 4u8, 129u8, 186u8, 200u8, 245u8, 58u8, 93u8, 50u8,
                             114u8, 125u8, 222u8, 185u8, 140u8, 158u8, 155u8, 42u8, 134u8, 41u8,
                             192u8, 79u8, 72u8, 126u8, 23u8, 37u8, 211u8, 106u8, 177u8, 162u8, 25u8,
+                        ],
+                    )
+                }
+                pub fn restaking_platform_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::restaking_platform::RestakingPlatform,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "RestakingPlatform",
+                        (),
+                        [
+                            229u8, 48u8, 143u8, 25u8, 186u8, 82u8, 189u8, 138u8, 37u8, 212u8, 57u8,
+                            95u8, 35u8, 164u8, 223u8, 39u8, 51u8, 132u8, 86u8, 139u8, 231u8, 43u8,
+                            181u8, 128u8, 198u8, 116u8, 105u8, 70u8, 178u8, 20u8, 84u8, 235u8,
+                        ],
+                    )
+                }
+                pub fn restaking_platform(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::restaking_platform::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::restaking_platform::Param0,
+                    >,
+                    types::restaking_platform::RestakingPlatform,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "RestakingPlatform",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            229u8, 48u8, 143u8, 25u8, 186u8, 82u8, 189u8, 138u8, 37u8, 212u8, 57u8,
+                            95u8, 35u8, 164u8, 223u8, 39u8, 51u8, 132u8, 86u8, 139u8, 231u8, 43u8,
+                            181u8, 128u8, 198u8, 116u8, 105u8, 70u8, 178u8, 20u8, 84u8, 235u8,
                         ],
                     )
                 }
@@ -5639,10 +5721,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            228u8, 28u8, 103u8, 17u8, 11u8, 65u8, 243u8, 63u8, 244u8, 228u8, 216u8,
-                            92u8, 170u8, 168u8, 112u8, 117u8, 145u8, 186u8, 19u8, 211u8, 123u8,
-                            133u8, 98u8, 190u8, 222u8, 32u8, 195u8, 140u8, 64u8, 97u8, 113u8,
-                            218u8,
+                            164u8, 139u8, 125u8, 214u8, 211u8, 48u8, 240u8, 72u8, 50u8, 198u8,
+                            177u8, 94u8, 40u8, 232u8, 75u8, 115u8, 192u8, 119u8, 86u8, 246u8,
+                            127u8, 234u8, 50u8, 27u8, 119u8, 183u8, 195u8, 93u8, 27u8, 197u8,
+                            210u8, 3u8,
                         ],
                     )
                 }
@@ -5660,9 +5742,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            98u8, 75u8, 19u8, 222u8, 18u8, 220u8, 204u8, 11u8, 202u8, 159u8, 0u8,
-                            191u8, 214u8, 189u8, 121u8, 26u8, 21u8, 202u8, 24u8, 189u8, 216u8,
-                            245u8, 5u8, 201u8, 42u8, 124u8, 15u8, 228u8, 86u8, 151u8, 190u8, 78u8,
+                            153u8, 96u8, 49u8, 14u8, 180u8, 90u8, 134u8, 223u8, 230u8, 166u8,
+                            216u8, 40u8, 164u8, 42u8, 55u8, 247u8, 182u8, 61u8, 14u8, 94u8, 212u8,
+                            61u8, 42u8, 228u8, 12u8, 249u8, 113u8, 156u8, 46u8, 97u8, 123u8, 71u8,
                         ],
                     )
                 }
@@ -5694,10 +5776,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            177u8, 107u8, 142u8, 68u8, 235u8, 211u8, 34u8, 161u8, 80u8, 185u8,
-                            29u8, 182u8, 139u8, 182u8, 197u8, 116u8, 58u8, 30u8, 233u8, 226u8,
-                            230u8, 84u8, 245u8, 4u8, 48u8, 191u8, 191u8, 178u8, 129u8, 1u8, 38u8,
-                            39u8,
+                            183u8, 204u8, 22u8, 149u8, 55u8, 126u8, 156u8, 148u8, 102u8, 157u8,
+                            189u8, 250u8, 87u8, 236u8, 13u8, 148u8, 109u8, 53u8, 212u8, 179u8,
+                            139u8, 98u8, 62u8, 74u8, 254u8, 20u8, 236u8, 185u8, 52u8, 49u8, 203u8,
+                            167u8,
                         ],
                     )
                 }
@@ -7765,6 +7847,8 @@ pub mod codegen {
                         >,
                         signature: runtime_types::sp_runtime::MultiSignature,
                     },
+                    #[codec(index = 1)]
+                    add_restaking_platform,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,

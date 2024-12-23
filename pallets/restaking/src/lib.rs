@@ -142,6 +142,11 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::unbounded]
+    #[pallet::getter(fn restaking_platform)]
+    pub(crate) type RestakingPlatform<T: Config> = StorageMap<_, Blake2_128Concat, String, (String, String), OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
     #[pallet::getter(fn rewards_root)]
     pub(crate) type RewardsRoot<T: Config> = StorageValue<_, String, ValueQuery>;
 
@@ -336,6 +341,16 @@ pub mod pallet {
             PlannedValidators::<T>::put(validators);
             NeedFetchRestakingValidators::<T>::put(false);
             Self::deposit_event(Event::Simple);
+            Ok(().into())
+        }
+
+        #[pallet::weight(1)]
+        pub fn add_restaking_platform(
+            origin: OriginFor<T>,
+
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+
             Ok(().into())
         }
     }
