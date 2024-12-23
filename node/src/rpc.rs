@@ -15,8 +15,8 @@ use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use tokio::sync::mpsc::Sender;
 use vrs_nucleus_cage::Gluon;
-use vrs_primitives::NucleusId;
-use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce};
+use vrs_primitives::{Address, NucleusId};
+use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce, RuntimeCall, SignedExtra};
 
 pub use sc_rpc_api::DenyUnsafe;
 
@@ -50,7 +50,7 @@ where
     C: Send + Sync + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce> + 'static,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> + 'static,
-    C::Api: vrs_nucleus_runtime_api::NucleusApi<Block>,
+    C::Api: vrs_nucleus_runtime_api::NucleusApi<Block, Address, RuntimeCall, SignedExtra> + 'static,
     C::Api: BlockBuilder<Block> + 'static,
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};

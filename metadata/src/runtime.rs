@@ -7347,23 +7347,6 @@ pub mod codegen {
                     Simple,
                 }
             }
-            pub mod sr25519 {
-                use super::runtime_types;
-                pub mod app_sr25519 {
-                    use super::runtime_types;
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct Public(pub [::core::primitive::u8; 32usize]);
-                }
-            }
             pub mod types {
                 use super::runtime_types;
                 #[derive(
@@ -8875,6 +8858,29 @@ pub mod codegen {
                 pub write: ::core::primitive::u64,
             }
         }
+        pub mod vrs_primitives {
+            use super::runtime_types;
+            pub mod keys {
+                use super::runtime_types;
+                pub mod restaking {
+                    use super::runtime_types;
+                    pub mod app_sr25519 {
+                        use super::runtime_types;
+                        #[derive(
+                            :: subxt_core :: ext :: codec :: Decode,
+                            :: subxt_core :: ext :: codec :: Encode,
+                            :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                            :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                            Debug,
+                        )]
+                        # [codec (crate = :: subxt_core :: ext :: codec)]
+                        #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                        #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                        pub struct Public(pub [::core::primitive::u8; 32usize]);
+                    }
+                }
+            }
+        }
         pub mod vrs_runtime {
             use super::runtime_types;
             pub mod opaque {
@@ -8893,7 +8899,8 @@ pub mod codegen {
                     pub aura: runtime_types::sp_consensus_aura::sr25519::app_sr25519::Public,
                     pub grandpa: runtime_types::sp_consensus_grandpa::app::Public,
                     pub authority: runtime_types::sp_authority_discovery::app::Public,
-                    pub restaking: runtime_types::pallet_restaking::sr25519::app_sr25519::Public,
+                    pub restaking:
+                        runtime_types::vrs_primitives::keys::restaking::app_sr25519::Public,
                 }
             }
             #[derive(

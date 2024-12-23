@@ -2,48 +2,8 @@ use chrono::{DateTime, Utc};
 use core::fmt;
 use std::cmp::Reverse;
 use std::hash::{Hash, Hasher};
-use std::{cmp::Ordering, collections::BinaryHeap, hash::DefaultHasher, rc::Rc};
+use std::{cmp::Ordering, collections::BinaryHeap, hash::DefaultHasher};
 use vrs_primitives::NucleusId;
-
-// #[derive(Debug, Clone, Hash)]
-// pub enum CallerType {
-//     Post,
-//     Get,
-//     Entry,
-// }
-
-// #[derive(Clone, Hash)]
-// pub struct CallerInfo {
-//     pub func: String,
-//     pub params: Vec<u8>,
-//     pub thread_id: u64,
-//     pub caller_type: CallerType,
-// }
-
-// impl CallerInfo {
-//     pub fn hash_u64(&self) -> u64 {
-//         let mut hasher = DefaultHasher::new();
-//         self.hash(&mut hasher);
-//         hasher.finish()
-//     }
-// }
-
-// impl fmt::Debug for CallerInfo {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         f.debug_struct("CallerInfo")
-//             .field("func", &self.func)
-//             .field("thread_id", &self.thread_id)
-//             .field("caller_type", &self.caller_type)
-//             .field("hash", &format!("{:016x}", self.hash_u64()))
-//             .finish()
-//     }
-// }
-
-// impl fmt::Display for CallerInfo {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{:?}\nHash: {:016x}", self, self.hash_u64())
-//     }
-// }
 
 #[derive(Clone, Hash)]
 pub struct TimerEntry {
