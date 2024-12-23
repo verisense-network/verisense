@@ -1,20 +1,21 @@
+use alloc::format;
 use core::str::FromStr;
 
 use codec::Encode;
-use ethabi::{Address, encode, Token};
+use ethabi::{Address, Token};
 use frame_support::IterableStorageMap;
-use merkle_lite::MerkleTree;
 use serde::{Deserialize, Serialize};
 use sp_core::{Bytes, keccak_256, U256};
 use sp_core::bounded::alloc;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use alloc::format;
-use crate::{Config, Pallet};
-use crate::pallet::{RewardsRoot, TotalRewards, ValidatorsSource};
-use crate::String;
+
 use vrs_primitives::RewardsProof;
+
+use crate::{Config, Pallet};
+use crate::pallet::{RewardsRoot, TotalRewards};
+use crate::String;
 
 impl<T: Config> Pallet<T> {
     pub fn calculate_rewards_root() {

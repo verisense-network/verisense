@@ -1,11 +1,13 @@
+use sc_cli::SubstrateCli;
+use sc_service::PartialComponents;
+
+use vrs_runtime::Block;
+
 use crate::{
     chain_spec,
     cli::{Cli, Subcommand},
     service,
 };
-use sc_cli::SubstrateCli;
-use sc_service::PartialComponents;
-use vrs_runtime::Block;
 
 impl SubstrateCli for Cli {
     fn impl_name() -> String {

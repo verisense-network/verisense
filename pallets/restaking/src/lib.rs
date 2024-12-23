@@ -347,10 +347,12 @@ pub mod pallet {
         #[pallet::weight(1)]
         pub fn add_restaking_platform(
             origin: OriginFor<T>,
-
+            platform_source_name: String,
+            url: String,
+            middleware_address: String,
         ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
-
+            RestakingPlatform::<T>::insert(platform_source_name, (url, middleware_address));
             Ok(().into())
         }
     }

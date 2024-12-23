@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_runtime::KeyTypeId;
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
 use sp_runtime::{traits::BlockNumber, DispatchError, KeyTypeId};

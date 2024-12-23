@@ -6,7 +6,7 @@ pub mod codegen {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 15usize] = [
+    pub static PALLETS: [&str; 14usize] = [
         "System",
         "Timestamp",
         "Aura",
@@ -21,7 +21,6 @@ pub mod codegen {
         "TransactionPayment",
         "Sudo",
         "Nucleus",
-        "Vrf",
     ];
     pub static RUNTIME_APIS: [&str; 0usize] = [];
     #[doc = r" The error type returned when there is a runtime issue."]
@@ -127,9 +126,6 @@ pub mod codegen {
         pub fn nucleus(&self) -> nucleus::storage::StorageApi {
             nucleus::storage::StorageApi
         }
-        pub fn vrf(&self) -> vrf::storage::StorageApi {
-            vrf::storage::StorageApi
-        }
     }
     pub struct TransactionApi;
     impl TransactionApi {
@@ -160,9 +156,6 @@ pub mod codegen {
         pub fn nucleus(&self) -> nucleus::calls::TransactionApi {
             nucleus::calls::TransactionApi
         }
-        pub fn vrf(&self) -> vrf::calls::TransactionApi {
-            vrf::calls::TransactionApi
-        }
     }
     #[doc = r" check whether the metadata provided is aligned with this statically generated code."]
     pub fn is_codegen_valid_for(metadata: &::subxt_core::Metadata) -> bool {
@@ -173,9 +166,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                29u8, 161u8, 53u8, 131u8, 144u8, 73u8, 131u8, 87u8, 159u8, 118u8, 228u8, 86u8,
-                248u8, 241u8, 82u8, 255u8, 120u8, 64u8, 66u8, 16u8, 209u8, 93u8, 166u8, 24u8,
-                164u8, 233u8, 215u8, 61u8, 203u8, 176u8, 49u8, 164u8,
+                138u8, 154u8, 91u8, 72u8, 70u8, 60u8, 173u8, 1u8, 19u8, 83u8, 51u8, 196u8, 37u8,
+                205u8, 64u8, 184u8, 143u8, 89u8, 236u8, 1u8, 52u8, 6u8, 58u8, 250u8, 171u8, 245u8,
+                179u8, 239u8, 49u8, 208u8, 10u8, 214u8,
             ]
     }
     pub mod system {
@@ -1141,10 +1134,10 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            156u8, 178u8, 27u8, 161u8, 61u8, 199u8, 115u8, 78u8, 100u8, 246u8,
-                            103u8, 37u8, 151u8, 236u8, 250u8, 239u8, 167u8, 124u8, 167u8, 180u8,
-                            107u8, 88u8, 21u8, 209u8, 181u8, 139u8, 55u8, 52u8, 225u8, 247u8, 87u8,
-                            210u8,
+                            17u8, 222u8, 228u8, 102u8, 193u8, 1u8, 52u8, 243u8, 211u8, 152u8, 8u8,
+                            92u8, 169u8, 249u8, 212u8, 241u8, 50u8, 195u8, 215u8, 245u8, 29u8,
+                            230u8, 136u8, 164u8, 113u8, 59u8, 227u8, 54u8, 241u8, 50u8, 110u8,
+                            53u8,
                         ],
                     )
                 }
@@ -1716,7 +1709,17 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct AddRestakingPlatform;
+                pub struct AddRestakingPlatform {
+                    pub platform_source_name: add_restaking_platform::PlatformSourceName,
+                    pub url: add_restaking_platform::Url,
+                    pub middleware_address: add_restaking_platform::MiddlewareAddress,
+                }
+                pub mod add_restaking_platform {
+                    use super::runtime_types;
+                    pub type PlatformSourceName = ::subxt_core::alloc::string::String;
+                    pub type Url = ::subxt_core::alloc::string::String;
+                    pub type MiddlewareAddress = ::subxt_core::alloc::string::String;
+                }
                 impl ::subxt_core::blocks::StaticExtrinsic for AddRestakingPlatform {
                     const PALLET: &'static str = "Restaking";
                     const CALL: &'static str = "add_restaking_platform";
@@ -1743,17 +1746,24 @@ pub mod codegen {
                 }
                 pub fn add_restaking_platform(
                     &self,
+                    platform_source_name: types::add_restaking_platform::PlatformSourceName,
+                    url: types::add_restaking_platform::Url,
+                    middleware_address: types::add_restaking_platform::MiddlewareAddress,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::AddRestakingPlatform>
                 {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "Restaking",
                         "add_restaking_platform",
-                        types::AddRestakingPlatform {},
+                        types::AddRestakingPlatform {
+                            platform_source_name,
+                            url,
+                            middleware_address,
+                        },
                         [
-                            65u8, 144u8, 9u8, 190u8, 115u8, 59u8, 190u8, 216u8, 254u8, 10u8, 136u8,
-                            143u8, 215u8, 219u8, 239u8, 32u8, 242u8, 17u8, 184u8, 192u8, 52u8,
-                            96u8, 73u8, 100u8, 163u8, 244u8, 74u8, 154u8, 159u8, 141u8, 40u8,
-                            178u8,
+                            48u8, 5u8, 59u8, 152u8, 103u8, 190u8, 187u8, 208u8, 128u8, 221u8,
+                            153u8, 117u8, 79u8, 109u8, 48u8, 77u8, 21u8, 192u8, 182u8, 192u8,
+                            216u8, 248u8, 33u8, 146u8, 161u8, 129u8, 121u8, 12u8, 150u8, 30u8,
+                            38u8, 153u8,
                         ],
                     )
                 }
@@ -2626,13 +2636,7 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct SubmitElValidators {
-                    pub something: submit_el_validators::Something,
-                }
-                pub mod submit_el_validators {
-                    use super::runtime_types;
-                    pub type Something = ::core::primitive::u32;
-                }
+                pub struct SubmitElValidators;
                 impl ::subxt_core::blocks::StaticExtrinsic for SubmitElValidators {
                     const PALLET: &'static str = "Validators";
                     const CALL: &'static str = "submit_el_validators";
@@ -2642,18 +2646,16 @@ pub mod codegen {
             impl TransactionApi {
                 pub fn submit_el_validators(
                     &self,
-                    something: types::submit_el_validators::Something,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::SubmitElValidators>
                 {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "Validators",
                         "submit_el_validators",
-                        types::SubmitElValidators { something },
+                        types::SubmitElValidators {},
                         [
-                            76u8, 196u8, 184u8, 52u8, 36u8, 232u8, 79u8, 101u8, 219u8, 247u8,
-                            187u8, 6u8, 77u8, 147u8, 29u8, 57u8, 209u8, 189u8, 225u8, 67u8, 73u8,
-                            248u8, 128u8, 113u8, 76u8, 125u8, 243u8, 94u8, 182u8, 11u8, 178u8,
-                            121u8,
+                            67u8, 88u8, 247u8, 8u8, 95u8, 163u8, 219u8, 220u8, 182u8, 211u8, 19u8,
+                            137u8, 182u8, 125u8, 15u8, 252u8, 80u8, 74u8, 64u8, 96u8, 1u8, 48u8,
+                            76u8, 224u8, 147u8, 116u8, 56u8, 159u8, 246u8, 99u8, 150u8, 63u8,
                         ],
                     )
                 }
@@ -2775,7 +2777,7 @@ pub mod codegen {
                 }
                 pub mod eras_reward_points {
                     use super::runtime_types;
-                    pub type ErasRewardPoints = runtime_types::verisense_support::EraRewardPoints<
+                    pub type ErasRewardPoints = runtime_types::vrs_support::EraRewardPoints<
                         ::subxt_core::utils::AccountId32,
                     >;
                     pub type Param0 = ::core::primitive::u32;
@@ -5721,10 +5723,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            164u8, 139u8, 125u8, 214u8, 211u8, 48u8, 240u8, 72u8, 50u8, 198u8,
-                            177u8, 94u8, 40u8, 232u8, 75u8, 115u8, 192u8, 119u8, 86u8, 246u8,
-                            127u8, 234u8, 50u8, 27u8, 119u8, 183u8, 195u8, 93u8, 27u8, 197u8,
-                            210u8, 3u8,
+                            245u8, 51u8, 73u8, 243u8, 217u8, 201u8, 235u8, 80u8, 161u8, 74u8, 56u8,
+                            8u8, 18u8, 86u8, 171u8, 157u8, 204u8, 56u8, 39u8, 7u8, 43u8, 231u8,
+                            42u8, 24u8, 242u8, 172u8, 166u8, 230u8, 102u8, 193u8, 179u8, 197u8,
                         ],
                     )
                 }
@@ -5742,9 +5743,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            153u8, 96u8, 49u8, 14u8, 180u8, 90u8, 134u8, 223u8, 230u8, 166u8,
-                            216u8, 40u8, 164u8, 42u8, 55u8, 247u8, 182u8, 61u8, 14u8, 94u8, 212u8,
-                            61u8, 42u8, 228u8, 12u8, 249u8, 113u8, 156u8, 46u8, 97u8, 123u8, 71u8,
+                            12u8, 151u8, 178u8, 49u8, 222u8, 117u8, 116u8, 202u8, 186u8, 176u8,
+                            19u8, 181u8, 78u8, 37u8, 19u8, 173u8, 250u8, 211u8, 27u8, 142u8, 245u8,
+                            118u8, 42u8, 36u8, 216u8, 197u8, 149u8, 253u8, 158u8, 7u8, 123u8,
+                            108u8,
                         ],
                     )
                 }
@@ -5776,10 +5778,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            183u8, 204u8, 22u8, 149u8, 55u8, 126u8, 156u8, 148u8, 102u8, 157u8,
-                            189u8, 250u8, 87u8, 236u8, 13u8, 148u8, 109u8, 53u8, 212u8, 179u8,
-                            139u8, 98u8, 62u8, 74u8, 254u8, 20u8, 236u8, 185u8, 52u8, 49u8, 203u8,
-                            167u8,
+                            60u8, 240u8, 53u8, 89u8, 82u8, 31u8, 164u8, 3u8, 90u8, 64u8, 20u8,
+                            204u8, 58u8, 158u8, 14u8, 135u8, 1u8, 80u8, 193u8, 24u8, 76u8, 252u8,
+                            145u8, 21u8, 125u8, 232u8, 209u8, 33u8, 176u8, 3u8, 124u8, 232u8,
                         ],
                     )
                 }
@@ -5993,18 +5994,18 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct MockRegister {
-                    pub nucleus_id: mock_register::NucleusId,
-                    pub validators_num: mock_register::ValidatorsNum,
+                pub struct Register {
+                    pub nucleus_id: register::NucleusId,
+                    pub signature: register::Signature,
                 }
-                pub mod mock_register {
+                pub mod register {
                     use super::runtime_types;
                     pub type NucleusId = ::subxt_core::utils::AccountId32;
-                    pub type ValidatorsNum = ::core::primitive::u32;
+                    pub type Signature = runtime_types::sp_core::sr25519::vrf::VrfSignature;
                 }
-                impl ::subxt_core::blocks::StaticExtrinsic for MockRegister {
+                impl ::subxt_core::blocks::StaticExtrinsic for Register {
                     const PALLET: &'static str = "Nucleus";
-                    const CALL: &'static str = "mock_register";
+                    const CALL: &'static str = "register";
                 }
             }
             pub struct TransactionApi;
@@ -6056,23 +6057,22 @@ pub mod codegen {
                         ],
                     )
                 }
-                pub fn mock_register(
+                pub fn register(
                     &self,
-                    nucleus_id: types::mock_register::NucleusId,
-                    validators_num: types::mock_register::ValidatorsNum,
-                ) -> ::subxt_core::tx::payload::StaticPayload<types::MockRegister> {
+                    nucleus_id: types::register::NucleusId,
+                    signature: types::register::Signature,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::Register> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "Nucleus",
-                        "mock_register",
-                        types::MockRegister {
+                        "register",
+                        types::Register {
                             nucleus_id,
-                            validators_num,
+                            signature,
                         },
                         [
-                            219u8, 252u8, 84u8, 87u8, 228u8, 122u8, 145u8, 222u8, 24u8, 34u8, 89u8,
-                            231u8, 142u8, 188u8, 107u8, 230u8, 193u8, 210u8, 200u8, 8u8, 169u8,
-                            163u8, 138u8, 132u8, 69u8, 245u8, 244u8, 222u8, 90u8, 109u8, 79u8,
-                            127u8,
+                            14u8, 184u8, 48u8, 27u8, 199u8, 115u8, 45u8, 147u8, 217u8, 239u8, 9u8,
+                            179u8, 130u8, 208u8, 35u8, 180u8, 101u8, 30u8, 189u8, 44u8, 189u8,
+                            96u8, 170u8, 13u8, 12u8, 209u8, 153u8, 246u8, 234u8, 48u8, 16u8, 153u8,
                         ],
                     )
                 }
@@ -6095,20 +6095,18 @@ pub mod codegen {
                 pub id: nucleus_created::Id,
                 pub name: nucleus_created::Name,
                 pub manager: nucleus_created::Manager,
-                pub wasm_hash: nucleus_created::WasmHash,
-                pub wasm_version: nucleus_created::WasmVersion,
                 pub energy: nucleus_created::Energy,
                 pub capacity: nucleus_created::Capacity,
+                pub public_input: nucleus_created::PublicInput,
             }
             pub mod nucleus_created {
                 use super::runtime_types;
                 pub type Id = ::subxt_core::utils::AccountId32;
                 pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 pub type Manager = ::subxt_core::utils::AccountId32;
-                pub type WasmHash = ::subxt_core::utils::H256;
-                pub type WasmVersion = ::core::primitive::u32;
                 pub type Energy = ::core::primitive::u128;
                 pub type Capacity = ::core::primitive::u8;
+                pub type PublicInput = ::subxt_core::utils::H256;
             }
             impl ::subxt_core::events::StaticEvent for NucleusCreated {
                 const PALLET: &'static str = "Nucleus";
@@ -6189,6 +6187,21 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type Instances =
                         ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
+                    pub type Param0 = ::subxt_core::utils::AccountId32;
+                }
+                pub mod on_creation_nuclei {
+                    use super::runtime_types;
+                    pub type OnCreationNuclei =
+                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
+                    pub type Param0 = ::core::primitive::u32;
+                }
+                pub mod registry_submissions {
+                    use super::runtime_types;
+                    pub type RegistrySubmissions =
+                        runtime_types::pallet_nucleus::pallet::NucleusChallenge<
+                            ::subxt_core::utils::AccountId32,
+                            ::subxt_core::utils::H256,
+                        >;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
             }
@@ -6323,373 +6336,89 @@ pub mod codegen {
                         ],
                     )
                 }
-            }
-        }
-    }
-    pub mod vrf {
-        use super::root_mod;
-        use super::runtime_types;
-        pub type Error = runtime_types::pallet_vrf::pallet::Error;
-        pub type Call = runtime_types::pallet_vrf::pallet::Call;
-        pub mod calls {
-            use super::root_mod;
-            use super::runtime_types;
-            type DispatchError = runtime_types::sp_runtime::DispatchError;
-            pub mod types {
-                use super::runtime_types;
-                #[derive(
-                    :: subxt_core :: ext :: codec :: Decode,
-                    :: subxt_core :: ext :: codec :: Encode,
-                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                    Debug,
-                )]
-                # [codec (crate = :: subxt_core :: ext :: codec)]
-                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct RegisterVrf {
-                    pub nucleus_id: register_vrf::NucleusId,
-                    pub vrf_id: register_vrf::VrfId,
-                    pub seed: register_vrf::Seed,
-                    pub signature: register_vrf::Signature,
-                }
-                pub mod register_vrf {
-                    use super::runtime_types;
-                    pub type NucleusId = ::subxt_core::utils::AccountId32;
-                    pub type VrfId = runtime_types::pallet_vrf::sr25519::app_sr25519::Public;
-                    pub type Seed = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
-                    pub type Signature = runtime_types::pallet_vrf::sr25519::app_sr25519::Signature;
-                }
-                impl ::subxt_core::blocks::StaticExtrinsic for RegisterVrf {
-                    const PALLET: &'static str = "Vrf";
-                    const CALL: &'static str = "register_vrf";
-                }
-                #[derive(
-                    :: subxt_core :: ext :: codec :: Decode,
-                    :: subxt_core :: ext :: codec :: Encode,
-                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                    Debug,
-                )]
-                # [codec (crate = :: subxt_core :: ext :: codec)]
-                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct RegisterVrf25519 {
-                    pub nucleus_id: register_vrf25519::NucleusId,
-                    pub vrf_id: register_vrf25519::VrfId,
-                    pub vrf_public: register_vrf25519::VrfPublic,
-                    pub vrf_signature: register_vrf25519::VrfSignature,
-                }
-                pub mod register_vrf25519 {
-                    use super::runtime_types;
-                    pub type NucleusId = ::subxt_core::utils::AccountId32;
-                    pub type VrfId = runtime_types::pallet_vrf::sr25519::app_sr25519::Public;
-                    pub type VrfPublic = [::core::primitive::u8; 32usize];
-                    pub type VrfSignature = runtime_types::sp_core::sr25519::vrf::VrfSignature;
-                }
-                impl ::subxt_core::blocks::StaticExtrinsic for RegisterVrf25519 {
-                    const PALLET: &'static str = "Vrf";
-                    const CALL: &'static str = "register_vrf_25519";
-                }
-            }
-            pub struct TransactionApi;
-            impl TransactionApi {
-                pub fn register_vrf(
-                    &self,
-                    nucleus_id: types::register_vrf::NucleusId,
-                    vrf_id: types::register_vrf::VrfId,
-                    seed: types::register_vrf::Seed,
-                    signature: types::register_vrf::Signature,
-                ) -> ::subxt_core::tx::payload::StaticPayload<types::RegisterVrf> {
-                    ::subxt_core::tx::payload::StaticPayload::new_static(
-                        "Vrf",
-                        "register_vrf",
-                        types::RegisterVrf {
-                            nucleus_id,
-                            vrf_id,
-                            seed,
-                            signature,
-                        },
-                        [
-                            21u8, 45u8, 133u8, 116u8, 98u8, 206u8, 2u8, 138u8, 209u8, 103u8, 89u8,
-                            235u8, 106u8, 103u8, 50u8, 196u8, 82u8, 92u8, 172u8, 242u8, 220u8,
-                            17u8, 4u8, 143u8, 112u8, 100u8, 72u8, 206u8, 46u8, 228u8, 208u8, 145u8,
-                        ],
-                    )
-                }
-                pub fn register_vrf_25519(
-                    &self,
-                    nucleus_id: types::register_vrf25519::NucleusId,
-                    vrf_id: types::register_vrf25519::VrfId,
-                    vrf_public: types::register_vrf25519::VrfPublic,
-                    vrf_signature: types::register_vrf25519::VrfSignature,
-                ) -> ::subxt_core::tx::payload::StaticPayload<types::RegisterVrf25519>
-                {
-                    ::subxt_core::tx::payload::StaticPayload::new_static(
-                        "Vrf",
-                        "register_vrf_25519",
-                        types::RegisterVrf25519 {
-                            nucleus_id,
-                            vrf_id,
-                            vrf_public,
-                            vrf_signature,
-                        },
-                        [
-                            247u8, 48u8, 171u8, 49u8, 184u8, 39u8, 45u8, 247u8, 18u8, 96u8, 141u8,
-                            8u8, 212u8, 91u8, 85u8, 61u8, 248u8, 198u8, 134u8, 251u8, 157u8, 187u8,
-                            38u8, 42u8, 131u8, 80u8, 68u8, 167u8, 35u8, 116u8, 231u8, 177u8,
-                        ],
-                    )
-                }
-            }
-        }
-        pub type Event = runtime_types::pallet_vrf::pallet::Event;
-        pub mod events {
-            use super::runtime_types;
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct VRFSeedsUpdated {
-                pub nucleus_id: vrf_seeds_updated::NucleusId,
-                pub account_id: vrf_seeds_updated::AccountId,
-                pub vrf_id: vrf_seeds_updated::VrfId,
-                pub seed: vrf_seeds_updated::Seed,
-            }
-            pub mod vrf_seeds_updated {
-                use super::runtime_types;
-                pub type NucleusId = ::subxt_core::utils::AccountId32;
-                pub type AccountId = ::subxt_core::utils::AccountId32;
-                pub type VrfId = runtime_types::pallet_vrf::sr25519::app_sr25519::Public;
-                pub type Seed = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
-            }
-            impl ::subxt_core::events::StaticEvent for VRFSeedsUpdated {
-                const PALLET: &'static str = "Vrf";
-                const EVENT: &'static str = "VRFSeedsUpdated";
-            }
-        }
-        pub mod storage {
-            use super::runtime_types;
-            pub mod types {
-                use super::runtime_types;
-                pub mod vrf_seeds {
-                    use super::runtime_types;
-                    pub type VrfSeeds = (
-                        ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                        runtime_types::pallet_vrf::sr25519::app_sr25519::Public,
-                    );
-                    pub type Param0 = ::subxt_core::utils::AccountId32;
-                    pub type Param1 = ::subxt_core::utils::AccountId32;
-                }
-                pub mod active_nucleus {
-                    use super::runtime_types;
-                    pub type ActiveNucleus = ::subxt_core::alloc::vec::Vec<(
-                        ::subxt_core::utils::AccountId32,
-                        ::core::primitive::u32,
-                    )>;
-                }
-                pub mod active_nucleus_map {
-                    use super::runtime_types;
-                    pub type ActiveNucleusMap = (
-                        ::core::primitive::u32,
-                        ::core::primitive::u32,
-                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>,
-                    );
-                    pub type Param0 = ::subxt_core::utils::AccountId32;
-                }
-                pub mod nucleus_validators {
-                    use super::runtime_types;
-                    pub type NucleusValidators =
-                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
-                    pub type Param0 = ::subxt_core::utils::AccountId32;
-                }
-            }
-            pub struct StorageApi;
-            impl StorageApi {
-                pub fn vrf_seeds_iter(
+                pub fn on_creation_nuclei_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
                     (),
-                    types::vrf_seeds::VrfSeeds,
+                    types::on_creation_nuclei::OnCreationNuclei,
                     (),
-                    (),
+                    ::subxt_core::utils::Yes,
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "VRFSeeds",
+                        "Nucleus",
+                        "OnCreationNuclei",
                         (),
                         [
-                            178u8, 106u8, 143u8, 110u8, 4u8, 87u8, 172u8, 244u8, 254u8, 88u8,
-                            252u8, 37u8, 246u8, 80u8, 241u8, 114u8, 70u8, 3u8, 76u8, 136u8, 153u8,
-                            245u8, 88u8, 177u8, 157u8, 235u8, 236u8, 51u8, 122u8, 227u8, 160u8,
-                            59u8,
+                            68u8, 239u8, 23u8, 253u8, 15u8, 226u8, 83u8, 6u8, 190u8, 131u8, 177u8,
+                            157u8, 223u8, 192u8, 82u8, 50u8, 78u8, 237u8, 91u8, 61u8, 130u8, 21u8,
+                            79u8, 56u8, 125u8, 223u8, 94u8, 57u8, 150u8, 216u8, 127u8, 188u8,
                         ],
                     )
                 }
-                pub fn vrf_seeds_iter1(
+                pub fn on_creation_nuclei(
                     &self,
-                    _0: impl ::core::borrow::Borrow<types::vrf_seeds::Param0>,
-                ) -> ::subxt_core::storage::address::StaticAddress<
-                    ::subxt_core::storage::address::StaticStorageKey<types::vrf_seeds::Param0>,
-                    types::vrf_seeds::VrfSeeds,
-                    (),
-                    (),
-                    ::subxt_core::utils::Yes,
-                > {
-                    ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "VRFSeeds",
-                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
-                        [
-                            178u8, 106u8, 143u8, 110u8, 4u8, 87u8, 172u8, 244u8, 254u8, 88u8,
-                            252u8, 37u8, 246u8, 80u8, 241u8, 114u8, 70u8, 3u8, 76u8, 136u8, 153u8,
-                            245u8, 88u8, 177u8, 157u8, 235u8, 236u8, 51u8, 122u8, 227u8, 160u8,
-                            59u8,
-                        ],
-                    )
-                }
-                pub fn vrf_seeds(
-                    &self,
-                    _0: impl ::core::borrow::Borrow<types::vrf_seeds::Param0>,
-                    _1: impl ::core::borrow::Borrow<types::vrf_seeds::Param1>,
-                ) -> ::subxt_core::storage::address::StaticAddress<
-                    (
-                        ::subxt_core::storage::address::StaticStorageKey<types::vrf_seeds::Param0>,
-                        ::subxt_core::storage::address::StaticStorageKey<types::vrf_seeds::Param1>,
-                    ),
-                    types::vrf_seeds::VrfSeeds,
-                    ::subxt_core::utils::Yes,
-                    (),
-                    (),
-                > {
-                    ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "VRFSeeds",
-                        (
-                            ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
-                            ::subxt_core::storage::address::StaticStorageKey::new(_1.borrow()),
-                        ),
-                        [
-                            178u8, 106u8, 143u8, 110u8, 4u8, 87u8, 172u8, 244u8, 254u8, 88u8,
-                            252u8, 37u8, 246u8, 80u8, 241u8, 114u8, 70u8, 3u8, 76u8, 136u8, 153u8,
-                            245u8, 88u8, 177u8, 157u8, 235u8, 236u8, 51u8, 122u8, 227u8, 160u8,
-                            59u8,
-                        ],
-                    )
-                }
-                pub fn active_nucleus(
-                    &self,
-                ) -> ::subxt_core::storage::address::StaticAddress<
-                    (),
-                    types::active_nucleus::ActiveNucleus,
-                    ::subxt_core::utils::Yes,
-                    ::subxt_core::utils::Yes,
-                    (),
-                > {
-                    ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "ActiveNucleus",
-                        (),
-                        [
-                            57u8, 181u8, 54u8, 171u8, 153u8, 50u8, 210u8, 100u8, 57u8, 110u8,
-                            105u8, 6u8, 208u8, 193u8, 49u8, 101u8, 88u8, 241u8, 201u8, 193u8,
-                            178u8, 100u8, 40u8, 63u8, 37u8, 94u8, 29u8, 34u8, 25u8, 76u8, 19u8,
-                            128u8,
-                        ],
-                    )
-                }
-                pub fn active_nucleus_map_iter(
-                    &self,
-                ) -> ::subxt_core::storage::address::StaticAddress<
-                    (),
-                    types::active_nucleus_map::ActiveNucleusMap,
-                    (),
-                    (),
-                    ::subxt_core::utils::Yes,
-                > {
-                    ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "ActiveNucleusMap",
-                        (),
-                        [
-                            29u8, 159u8, 41u8, 211u8, 144u8, 39u8, 247u8, 229u8, 119u8, 204u8,
-                            197u8, 222u8, 130u8, 199u8, 96u8, 32u8, 56u8, 64u8, 162u8, 131u8, 44u8,
-                            75u8, 49u8, 24u8, 220u8, 135u8, 0u8, 145u8, 50u8, 194u8, 15u8, 234u8,
-                        ],
-                    )
-                }
-                pub fn active_nucleus_map(
-                    &self,
-                    _0: impl ::core::borrow::Borrow<types::active_nucleus_map::Param0>,
+                    _0: impl ::core::borrow::Borrow<types::on_creation_nuclei::Param0>,
                 ) -> ::subxt_core::storage::address::StaticAddress<
                     ::subxt_core::storage::address::StaticStorageKey<
-                        types::active_nucleus_map::Param0,
+                        types::on_creation_nuclei::Param0,
                     >,
-                    types::active_nucleus_map::ActiveNucleusMap,
+                    types::on_creation_nuclei::OnCreationNuclei,
                     ::subxt_core::utils::Yes,
-                    (),
+                    ::subxt_core::utils::Yes,
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "ActiveNucleusMap",
+                        "Nucleus",
+                        "OnCreationNuclei",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            29u8, 159u8, 41u8, 211u8, 144u8, 39u8, 247u8, 229u8, 119u8, 204u8,
-                            197u8, 222u8, 130u8, 199u8, 96u8, 32u8, 56u8, 64u8, 162u8, 131u8, 44u8,
-                            75u8, 49u8, 24u8, 220u8, 135u8, 0u8, 145u8, 50u8, 194u8, 15u8, 234u8,
+                            68u8, 239u8, 23u8, 253u8, 15u8, 226u8, 83u8, 6u8, 190u8, 131u8, 177u8,
+                            157u8, 223u8, 192u8, 82u8, 50u8, 78u8, 237u8, 91u8, 61u8, 130u8, 21u8,
+                            79u8, 56u8, 125u8, 223u8, 94u8, 57u8, 150u8, 216u8, 127u8, 188u8,
                         ],
                     )
                 }
-                pub fn nucleus_validators_iter(
+                pub fn registry_submissions_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
                     (),
-                    types::nucleus_validators::NucleusValidators,
+                    types::registry_submissions::RegistrySubmissions,
                     (),
                     (),
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "NucleusValidators",
+                        "Nucleus",
+                        "RegistrySubmissions",
                         (),
                         [
-                            140u8, 192u8, 55u8, 118u8, 14u8, 240u8, 154u8, 234u8, 177u8, 240u8,
-                            198u8, 137u8, 231u8, 187u8, 125u8, 86u8, 77u8, 22u8, 144u8, 207u8,
-                            93u8, 140u8, 157u8, 162u8, 27u8, 189u8, 27u8, 153u8, 66u8, 133u8, 6u8,
-                            207u8,
+                            82u8, 51u8, 109u8, 150u8, 245u8, 186u8, 132u8, 128u8, 78u8, 185u8,
+                            52u8, 41u8, 105u8, 179u8, 152u8, 117u8, 126u8, 75u8, 200u8, 101u8,
+                            77u8, 94u8, 79u8, 171u8, 12u8, 1u8, 202u8, 50u8, 24u8, 82u8, 17u8, 3u8,
                         ],
                     )
                 }
-                pub fn nucleus_validators(
+                pub fn registry_submissions(
                     &self,
-                    _0: impl ::core::borrow::Borrow<types::nucleus_validators::Param0>,
+                    _0: impl ::core::borrow::Borrow<types::registry_submissions::Param0>,
                 ) -> ::subxt_core::storage::address::StaticAddress<
                     ::subxt_core::storage::address::StaticStorageKey<
-                        types::nucleus_validators::Param0,
+                        types::registry_submissions::Param0,
                     >,
-                    types::nucleus_validators::NucleusValidators,
+                    types::registry_submissions::RegistrySubmissions,
                     ::subxt_core::utils::Yes,
                     (),
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Vrf",
-                        "NucleusValidators",
+                        "Nucleus",
+                        "RegistrySubmissions",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            140u8, 192u8, 55u8, 118u8, 14u8, 240u8, 154u8, 234u8, 177u8, 240u8,
-                            198u8, 137u8, 231u8, 187u8, 125u8, 86u8, 77u8, 22u8, 144u8, 207u8,
-                            93u8, 140u8, 157u8, 162u8, 27u8, 189u8, 27u8, 153u8, 66u8, 133u8, 6u8,
-                            207u8,
+                            82u8, 51u8, 109u8, 150u8, 245u8, 186u8, 132u8, 128u8, 78u8, 185u8,
+                            52u8, 41u8, 105u8, 179u8, 152u8, 117u8, 126u8, 75u8, 200u8, 101u8,
+                            77u8, 94u8, 79u8, 171u8, 12u8, 1u8, 202u8, 50u8, 24u8, 82u8, 17u8, 3u8,
                         ],
                     )
                 }
@@ -6916,20 +6645,6 @@ pub mod codegen {
                     #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                     #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                     pub struct CheckMortality(pub runtime_types::sp_runtime::generic::era::Era);
-                }
-                pub mod check_non_zero_sender {
-                    use super::runtime_types;
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct CheckNonZeroSender;
                 }
                 pub mod check_nonce {
                     use super::runtime_types;
@@ -7742,9 +7457,9 @@ pub mod codegen {
                         hash: ::subxt_core::utils::H256,
                     },
                     #[codec(index = 2)]
-                    mock_register {
+                    register {
                         nucleus_id: ::subxt_core::utils::AccountId32,
-                        validators_num: ::core::primitive::u32,
+                        signature: runtime_types::sp_core::sr25519::vrf::VrfSignature,
                     },
                 }
                 #[derive(
@@ -7764,6 +7479,8 @@ pub mod codegen {
                     NucleusNotFound,
                     #[codec(index = 2)]
                     NotAuthorized,
+                    #[codec(index = 3)]
+                    InvalidVrfProof,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -7781,10 +7498,9 @@ pub mod codegen {
                         id: ::subxt_core::utils::AccountId32,
                         name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         manager: ::subxt_core::utils::AccountId32,
-                        wasm_hash: ::subxt_core::utils::H256,
-                        wasm_version: ::core::primitive::u32,
                         energy: ::core::primitive::u128,
                         capacity: ::core::primitive::u8,
+                        public_input: ::subxt_core::utils::H256,
                     },
                     #[codec(index = 1)]
                     NucleusUpgraded {
@@ -7799,6 +7515,21 @@ pub mod codegen {
                         controller: ::subxt_core::utils::AccountId32,
                         node_id: ::core::option::Option<runtime_types::sp_core::OpaquePeerId>,
                     },
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct NucleusChallenge<_0, _1> {
+                    pub submissions: ::subxt_core::alloc::vec::Vec<(_0, ::core::primitive::u64)>,
+                    pub public_input: _1,
+                    pub requires: ::core::primitive::u8,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -7848,7 +7579,11 @@ pub mod codegen {
                         signature: runtime_types::sp_runtime::MultiSignature,
                     },
                     #[codec(index = 1)]
-                    add_restaking_platform,
+                    add_restaking_platform {
+                        platform_source_name: ::subxt_core::alloc::string::String,
+                        url: ::subxt_core::alloc::string::String,
+                        middleware_address: ::subxt_core::alloc::string::String,
+                    },
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -7924,23 +7659,6 @@ pub mod codegen {
                     },
                     #[codec(index = 4)]
                     Simple,
-                }
-            }
-            pub mod sr25519 {
-                use super::runtime_types;
-                pub mod app_sr25519 {
-                    use super::runtime_types;
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct Public(pub [::core::primitive::u8; 32usize]);
                 }
             }
             pub mod types {
@@ -8352,7 +8070,7 @@ pub mod codegen {
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub enum Call {
                     #[codec(index = 0)]
-                    submit_el_validators { something: ::core::primitive::u32 },
+                    submit_el_validators,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -8428,105 +8146,6 @@ pub mod codegen {
                     ForceNone,
                     #[codec(index = 3)]
                     ForceAlways,
-                }
-            }
-        }
-        pub mod pallet_vrf {
-            use super::runtime_types;
-            pub mod pallet {
-                use super::runtime_types;
-                #[derive(
-                    :: subxt_core :: ext :: codec :: Decode,
-                    :: subxt_core :: ext :: codec :: Encode,
-                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                    Debug,
-                )]
-                # [codec (crate = :: subxt_core :: ext :: codec)]
-                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub enum Call {
-                    #[codec(index = 0)]
-                    register_vrf {
-                        nucleus_id: ::subxt_core::utils::AccountId32,
-                        vrf_id: runtime_types::pallet_vrf::sr25519::app_sr25519::Public,
-                        seed: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                        signature: runtime_types::pallet_vrf::sr25519::app_sr25519::Signature,
-                    },
-                    #[codec(index = 1)]
-                    register_vrf_25519 {
-                        nucleus_id: ::subxt_core::utils::AccountId32,
-                        vrf_id: runtime_types::pallet_vrf::sr25519::app_sr25519::Public,
-                        vrf_public: [::core::primitive::u8; 32usize],
-                        vrf_signature: runtime_types::sp_core::sr25519::vrf::VrfSignature,
-                    },
-                }
-                #[derive(
-                    :: subxt_core :: ext :: codec :: Decode,
-                    :: subxt_core :: ext :: codec :: Encode,
-                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                    Debug,
-                )]
-                # [codec (crate = :: subxt_core :: ext :: codec)]
-                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub enum Error {
-                    #[codec(index = 0)]
-                    NotValidator,
-                    #[codec(index = 1)]
-                    VrfTimeExpired,
-                    #[codec(index = 2)]
-                    NoNucleusId,
-                    #[codec(index = 3)]
-                    VerificationNotPass,
-                }
-                #[derive(
-                    :: subxt_core :: ext :: codec :: Decode,
-                    :: subxt_core :: ext :: codec :: Encode,
-                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                    Debug,
-                )]
-                # [codec (crate = :: subxt_core :: ext :: codec)]
-                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub enum Event {
-                    #[codec(index = 0)]
-                    VRFSeedsUpdated {
-                        nucleus_id: ::subxt_core::utils::AccountId32,
-                        account_id: ::subxt_core::utils::AccountId32,
-                        vrf_id: runtime_types::pallet_vrf::sr25519::app_sr25519::Public,
-                        seed: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                    },
-                }
-            }
-            pub mod sr25519 {
-                use super::runtime_types;
-                pub mod app_sr25519 {
-                    use super::runtime_types;
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct Public(pub [::core::primitive::u8; 32usize]);
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct Signature(pub [::core::primitive::u8; 64usize]);
                 }
             }
         }
@@ -9544,21 +9163,44 @@ pub mod codegen {
                 pub write: ::core::primitive::u64,
             }
         }
-        pub mod verisense_support {
+        pub mod vrs_primitives {
             use super::runtime_types;
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct EraRewardPoints<_0> {
-                pub total: ::core::primitive::u128,
-                pub individual: ::subxt_core::utils::KeyedVec<_0, ::core::primitive::u128>,
+            pub mod keys {
+                use super::runtime_types;
+                pub mod restaking {
+                    use super::runtime_types;
+                    pub mod app_sr25519 {
+                        use super::runtime_types;
+                        #[derive(
+                            :: subxt_core :: ext :: codec :: Decode,
+                            :: subxt_core :: ext :: codec :: Encode,
+                            :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                            :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                            Debug,
+                        )]
+                        # [codec (crate = :: subxt_core :: ext :: codec)]
+                        #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                        #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                        pub struct Public(pub [::core::primitive::u8; 32usize]);
+                    }
+                }
+                pub mod vrf {
+                    use super::runtime_types;
+                    pub mod app_sr25519 {
+                        use super::runtime_types;
+                        #[derive(
+                            :: subxt_core :: ext :: codec :: Decode,
+                            :: subxt_core :: ext :: codec :: Encode,
+                            :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                            :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                            Debug,
+                        )]
+                        # [codec (crate = :: subxt_core :: ext :: codec)]
+                        #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                        #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                        pub struct Public(pub [::core::primitive::u8; 32usize]);
+                    }
+                }
             }
         }
         pub mod vrs_runtime {
@@ -9579,8 +9221,9 @@ pub mod codegen {
                     pub aura: runtime_types::sp_consensus_aura::sr25519::app_sr25519::Public,
                     pub grandpa: runtime_types::sp_consensus_grandpa::app::Public,
                     pub authority: runtime_types::sp_authority_discovery::app::Public,
-                    pub restaking: runtime_types::pallet_restaking::sr25519::app_sr25519::Public,
-                    pub vrf: runtime_types::pallet_vrf::sr25519::app_sr25519::Public,
+                    pub restaking:
+                        runtime_types::vrs_primitives::keys::restaking::app_sr25519::Public,
+                    pub vrf: runtime_types::vrs_primitives::keys::vrf::app_sr25519::Public,
                 }
             }
             #[derive(
@@ -9623,8 +9266,6 @@ pub mod codegen {
                 Sudo(runtime_types::pallet_sudo::pallet::Call),
                 #[codec(index = 13)]
                 Nucleus(runtime_types::pallet_nucleus::pallet::Call),
-                #[codec(index = 14)]
-                Vrf(runtime_types::pallet_vrf::pallet::Call),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -9653,8 +9294,6 @@ pub mod codegen {
                 Sudo(runtime_types::pallet_sudo::pallet::Error),
                 #[codec(index = 13)]
                 Nucleus(runtime_types::pallet_nucleus::pallet::Error),
-                #[codec(index = 14)]
-                Vrf(runtime_types::pallet_vrf::pallet::Error),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -9685,8 +9324,6 @@ pub mod codegen {
                 Sudo(runtime_types::pallet_sudo::pallet::Event),
                 #[codec(index = 13)]
                 Nucleus(runtime_types::pallet_nucleus::pallet::Event),
-                #[codec(index = 14)]
-                Vrf(runtime_types::pallet_vrf::pallet::Event),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -9710,6 +9347,23 @@ pub mod codegen {
             #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
             pub enum RuntimeHoldReason {}
+        }
+        pub mod vrs_support {
+            use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct EraRewardPoints<_0> {
+                pub total: ::core::primitive::u128,
+                pub individual: ::subxt_core::utils::KeyedVec<_0, ::core::primitive::u128>,
+            }
         }
     }
 }

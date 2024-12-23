@@ -94,10 +94,13 @@ impl<T: Config> Pallet<T> {
 
     }
     pub fn get_validators_list() -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
-        let mut r = Self::request_validators_list(SYMBIOTIC_EVM_URL, SYMBIOTIC_MIDDLEWARE, "symbiotic")?;
-        let mut r1 = Self::request_validators_list(KARAK_EVM_URL, KARAK_MIDDLEWARE, "karak")?;
-        r.append(&mut r1);
-        Ok(r)
+        let mut vc = vec![];
+
+        for (k, v) in RestakingPlatform::<T>::iter() {
+            let mut r = Self::request_validators_list(v.0.as_str(), v.1.as_str(), k.as_str())?;
+            vc.append(&mut r);
+        }
+        Ok(vc)
     }
 
     pub fn submit_unsigned_transaction(
