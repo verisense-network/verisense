@@ -72,6 +72,7 @@ pub mod opaque {
             pub grandpa: Grandpa,
             pub authority: AuthorityDiscovery,
             pub restaking: Restaking,
+            pub vrf: Nucleus,
         }
     }
 }
@@ -245,6 +246,7 @@ parameter_types! {
 impl pallet_nucleus::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_nucleus::weights::SubstrateWeight<Runtime>;
+    type AuthorityId = vrs_primitives::keys::vrf::AuthorityId;
     type NucleusId = NucleusId;
     type NodeId = NodeId;
     type ControllerLookup = Nucleus;
