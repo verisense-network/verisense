@@ -333,7 +333,6 @@ pub fn new_full<
             net_service: network.clone(),
             client: client.clone(),
             nucleus_home_dir,
-            controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             _phantom: std::marker::PhantomData,
         };
         task_manager.spawn_essential_handle().spawn_blocking(

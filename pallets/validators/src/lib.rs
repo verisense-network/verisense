@@ -12,8 +12,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_runtime::SaturatedConversion;
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
-use verisense_support::RestakingInterface;
-use verisense_support::{log, ValidatorsInterface};
+use vrs_support::{log, RestakingInterface, ValidatorsInterface};
 pub use weights::*;
 
 pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-validators";

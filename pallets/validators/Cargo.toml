@@ -15,7 +15,7 @@ parity-scale-codec = { workspace =true, default-features = false, features = [
 log = { version = "0.4.20", default-features = false }
 pallet-session = { workspace = true,  default-features = false, features = ["historical"]}
 sp-staking = { workspace = true , default-features = false }
-verisense-support = { path = "../../support", default-features =  false }
+vrs-support = { path = "../../support", default-features =  false }
 serde = { version = "1.0.197", default-features = false, features = ["derive"] }
 pallet-authorship = { workspace = true, default-features = false }
 scale-info = { features = ["derive"], workspace = true, default-features = false }
@@ -30,7 +30,7 @@ default = ["std"]
 std = [
     "parity-scale-codec/std",
     "frame-support/std",
-    "verisense-support/std",
+    "vrs-support/std",
     "frame-system/std",
     "scale-info/std",
     "pallet-session/std",
