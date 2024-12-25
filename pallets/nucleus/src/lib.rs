@@ -14,14 +14,17 @@ pub use weights::*;
 pub mod pallet {
     use super::*;
     use codec::{Decode, Encode};
-    use frame_support::pallet_prelude::*;
+    use frame_support::{pallet_prelude::*, traits::OneSessionHandler};
     use frame_system::pallet_prelude::*;
     use sp_core::crypto::{VrfCrypto, VrfPublic};
     use sp_core::sr25519::{
         vrf::{VrfSignature, VrfTranscript},
         Public,
     };
-    use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup};
+    use sp_runtime::{
+        traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup},
+        RuntimeAppPublic,
+    };
     use sp_std::prelude::*;
     use vrs_primitives::{keys::NUCLEUS_VRF_KEY_TYPE, NucleusInfo};
     use vrs_support::ValidatorsInterface;
@@ -54,6 +57,8 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type WeightInfo: WeightInfo;
+
+        type AuthorityId: Member + Parameter + RuntimeAppPublic + MaybeSerializeDeserialize;
 
         type NucleusId: Parameter
             + Member
@@ -286,6 +291,32 @@ pub mod pallet {
 
         fn unlookup(_n: Self::Target) -> Self::Source {
             unimplemented!()
+        }
+    }
+
+    impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
+        type Public = T::AuthorityId;
+    }
+
+    impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+        type Key = T::AuthorityId;
+
+        fn on_genesis_session<'a, I: 'a>(_authorities: I)
+        where
+            I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
+        {
+            // ignore
+        }
+
+        fn on_new_session<'a, I: 'a>(_changed: bool, _validators: I, _queued_validators: I)
+        where
+            I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
+        {
+            // ignore
+        }
+
+        fn on_disabled(_i: u32) {
+            // ignore
         }
     }
 
