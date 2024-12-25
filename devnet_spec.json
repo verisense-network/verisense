@@ -37,10 +37,10 @@
               "5GxCNDyhqv2hx2zcQfse58vLWcueJKMjXPTgzcJbi9khtNrf",
               "5GxCNDyhqv2hx2zcQfse58vLWcueJKMjXPTgzcJbi9khtNrf",
               {
-                "aura": "",
-                "authority": "",
-                "grandpa": "",
-                "restaking": ""
+                "aura": "5EAAV6yrbgQHyUXqVH1nAnBiGdFDxfR7A9Htysi7JWkFPtKY",
+                "authority": "5EAAV6yrbgQHyUXqVH1nAnBiGdFDxfR7A9Htysi7JWkFPtKY",
+                "grandpa": "5EGKTmaF6eUkpvLrHLqpuj515qy2YhNRsEYBL1ckgpZYPXRh",
+                "restaking": "5EAAV6yrbgQHyUXqVH1nAnBiGdFDxfR7A9Htysi7JWkFPtKY"
               }
             ]
           ]
