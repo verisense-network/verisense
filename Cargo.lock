@@ -5535,8 +5535,8 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "verisense-support",
  "vrs-primitives",
+ "vrs-support",
 ]
 
 [[package]]
@@ -5576,8 +5576,8 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "verisense-support",
  "vrs-primitives",
+ "vrs-support",
 ]
 
 [[package]]
@@ -5704,7 +5704,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
- "verisense-support",
+ "vrs-support",
 ]
 
 [[package]]
@@ -10480,17 +10480,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "verisense-support"
-version = "0.0.1"
-dependencies = [
- "frame-support",
- "parity-scale-codec",
- "scale-info",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10699,6 +10688,18 @@ dependencies = [
  "substrate-wasm-builder",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
+ "vrs-support",
+]
+
+[[package]]
+name = "vrs-support"
+version = "0.0.1"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

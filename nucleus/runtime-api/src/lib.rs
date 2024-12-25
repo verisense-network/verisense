@@ -1,7 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use codec::{Codec, Decode, Encode};
 use scale_info::TypeInfo;
+use sp_core::crypto::KeyTypeId;
 use sp_core::sr25519::vrf::VrfSignature;
+use sp_runtime::Vec;
 use vrs_primitives::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
@@ -29,5 +31,12 @@ sp_api::decl_runtime_apis! {
             nonce: u32,
             vrf: VrfSignature,
         ) -> (Address, Call, Extra);
+    }
+}
+
+sp_api::decl_runtime_apis! {
+    #[api_version(1)]
+    pub trait ValidatorApi {
+        fn is_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId>;
     }
 }

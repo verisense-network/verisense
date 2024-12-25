@@ -1,5 +1,5 @@
 [package]
-name = "verisense-support"
+name = "vrs-support"
 edition.workspace = true
 version.workspace = true
 publish = false
