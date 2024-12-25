@@ -1,5 +1,5 @@
 use codec::Encode;
-use sp_core::crypto::{KeyTypeId, VrfCrypto, VrfPublic};
+use sp_core::crypto::KeyTypeId;
 use sp_core::sr25519::{
     vrf::{VrfSignature, VrfTranscript},
     Public,

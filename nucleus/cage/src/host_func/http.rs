@@ -5,7 +5,6 @@ use crate::{
 };
 use bytes::Bytes;
 use codec::{Decode, Encode};
-use futures::FutureExt;
 use http_body_util::{BodyExt, Full};
 use hyper::{body::Incoming, Method, Request, Response, Uri};
 use hyper_util::{client::legacy::Client, rt::TokioExecutor};

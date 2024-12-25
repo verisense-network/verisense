@@ -10559,6 +10559,8 @@ dependencies = [
  "rocksdb",
  "sc-client-api",
  "sc-network",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
  "serde",
  "sp-api",
  "sp-blockchain",

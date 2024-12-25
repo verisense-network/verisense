@@ -326,6 +326,7 @@ pub fn new_full<
 
         let params = vrs_nucleus_cage::CageParams {
             keystore: keystore_container.keystore(),
+            transaction_pool: transaction_pool.clone(),
             nucleus_rpc_rx,
             p2p_cage_rx,
             noti_sender,

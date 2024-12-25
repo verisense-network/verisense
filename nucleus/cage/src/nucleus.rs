@@ -1,5 +1,5 @@
 use crate::{
-    runtime::{ContextAware, FuncRegister, Runtime},
+    runtime::{ContextAware, FuncRegister},
     vm::{Vm, WasmCallError},
     ReplyTo, WasmInfo,
 };

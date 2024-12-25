@@ -11,6 +11,7 @@ use codec::{Decode, Encode};
 use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::{service::traits::NetworkService, PeerId};
+use sc_transaction_pool_api::{TransactionPool, TransactionSource};
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use sp_keystore::KeystorePtr;
@@ -27,8 +28,9 @@ use vrs_nucleus_p2p::NucleusP2pMsg;
 use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
 
-pub struct CageParams<B, C, BN> {
+pub struct CageParams<P, B, C, BN> {
     pub keystore: KeystorePtr,
+    pub transaction_pool: Arc<P>,
     pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
     pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
     pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
@@ -93,10 +95,11 @@ impl NucleusCage {
     }
 }
 
-pub fn start_nucleus_cage<B, C, BN>(params: CageParams<B, C, BN>) -> impl Future<Output = ()>
+pub fn start_nucleus_cage<P, B, C, BN>(params: CageParams<P, B, C, BN>) -> impl Future<Output = ()>
 where
-    B: sp_runtime::traits::Block,
+    B: sp_runtime::traits::Block<Extrinsic = sp_runtime::OpaqueExtrinsic>,
     BN: Backend<B>,
+    P: TransactionPool<Block = B, Hash = B::Hash> + 'static,
     C: BlockBackend<B>
         + StorageProvider<B, BN>
         + BlockchainEvents<B>
@@ -109,6 +112,7 @@ where
 {
     let CageParams {
         keystore,
+        transaction_pool,
         mut nucleus_rpc_rx,
         mut p2p_cage_rx,
         mut noti_sender,
@@ -186,7 +190,8 @@ where
                         if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let public_input = ev.public_input;
-                            submit_vrf(client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash)
+                            submit_vrf(transaction_pool.clone(), client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash)
+                                .await
                                 .inspect_err(|e| log::error!("fail to submit vrf: {:?}", e))
                                 .expect("fail to submit vrf");
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
@@ -299,7 +304,8 @@ where
         .map_err(|e| e.into())
 }
 
-fn submit_vrf<B, D, C>(
+async fn submit_vrf<P, B, D, C>(
+    pool: Arc<P>,
     client: Arc<C>,
     nucleus_id: NucleusId,
     keystore: KeystorePtr,
@@ -307,7 +313,8 @@ fn submit_vrf<B, D, C>(
     hash: B::Hash,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
-    B: sp_runtime::traits::Block,
+    B: sp_runtime::traits::Block<Extrinsic = sp_runtime::OpaqueExtrinsic> + 'static,
+    P: TransactionPool<Block = B, Hash = B::Hash> + 'static,
     D: Backend<B>,
     C: BlockBackend<B>
         + StorageProvider<B, D>
@@ -335,6 +342,9 @@ where
         extra.clone(),
     )?;
     let tx = vrs_runtime::UncheckedExtrinsic::new_signed(call, addr, signature, extra);
+    let xt = sp_runtime::OpaqueExtrinsic::from(tx);
+    pool.submit_one(hash, TransactionSource::External, xt)
+        .await?;
     Ok(())
 }
 

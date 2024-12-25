@@ -1,6 +1,6 @@
 use crate::{
     runtime::{ContextAware, FuncRegister},
-    TimerEntry, WasmInfo,
+    WasmInfo,
 };
 use codec::Decode;
 use thiserror::Error;
