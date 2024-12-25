@@ -3,7 +3,6 @@ mod backend;
 use self::backend::RocksDbBackend;
 use codec::{Decode, Encode};
 use rocksdb::{DBIterator, IteratorMode};
-use tokio::sync::broadcast::Sender;
 use xmt::{blake2b::Blake2bHasher, SparseMerkleTree};
 
 // we only store the hash of each value since we need to scan the keys

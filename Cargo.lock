@@ -5577,6 +5577,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "verisense-support",
+ "vrs-primitives",
 ]
 
 [[package]]
@@ -10545,6 +10546,7 @@ dependencies = [
  "bytes",
  "chrono",
  "env_logger",
+ "frame-system-rpc-runtime-api",
  "futures",
  "hex",
  "http-body-util",
@@ -10557,6 +10559,8 @@ dependencies = [
  "rocksdb",
  "sc-client-api",
  "sc-network",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
  "serde",
  "sp-api",
  "sp-blockchain",
@@ -10574,6 +10578,7 @@ dependencies = [
  "vrs-nucleus-p2p",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
+ "vrs-runtime",
  "wasmtime 22.0.1",
 ]
 
@@ -10631,6 +10636,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-api",
+ "sp-core",
  "sp-runtime",
  "vrs-primitives",
 ]
