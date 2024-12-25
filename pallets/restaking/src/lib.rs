@@ -26,8 +26,8 @@ use types::{
     AppchainNotification, NotificationResult, Observation, ObservationType, ObservationsPayload,
     Validator, ValidatorSet,
 };
-use verisense_support::{log, ValidatorsInterface};
 use vrs_primitives::keys::RESTAKING_KEY_TYPE as KEY_TYPE;
+use vrs_support::{log, ValidatorsInterface};
 
 mod outchain;
 pub(crate) mod solidity;
@@ -40,7 +40,7 @@ pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use verisense_support::RestakingInterface;
+    use vrs_support::RestakingInterface;
 
     #[pallet::config]
     pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {

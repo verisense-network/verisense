@@ -23,8 +23,8 @@ pub mod pallet {
     };
     use sp_runtime::traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup};
     use sp_std::prelude::*;
-    use verisense_support::ValidatorsInterface;
     use vrs_primitives::{keys::NUCLEUS_VRF_KEY_TYPE, NucleusInfo};
+    use vrs_support::ValidatorsInterface;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NucleusEquation<AccountId, Hash, NodeId> {

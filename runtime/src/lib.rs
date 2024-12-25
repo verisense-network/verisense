@@ -13,7 +13,7 @@ use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{BlakeTwo256, Block as BlockT, NumberFor, One, Verify},
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult,
+    ApplyExtrinsicResult, Vec,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -662,6 +662,12 @@ impl_runtime_apis! {
         }
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl vrs_nucleus_runtime_api::ValidatorApi<Block> for Runtime {
+        fn is_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
+            <Validators as vrs_support::ValidatorsInterface<AccountId>>::is_active_validator(id, key_data.as_ref())
         }
     }
 

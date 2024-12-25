@@ -25,7 +25,7 @@ use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata, METADATA_BYTES,
 };
 use vrs_nucleus_p2p::NucleusP2pMsg;
-use vrs_nucleus_runtime_api::NucleusApi;
+use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
 
 pub struct CageParams<P, B, C, BN> {
@@ -37,7 +37,6 @@ pub struct CageParams<P, B, C, BN> {
     pub net_service: Arc<dyn NetworkService>,
     // pub noti_service: Box<dyn NotificationService>,
     pub client: Arc<C>,
-    pub controller: AccountId,
     pub nucleus_home_dir: std::path::PathBuf,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
@@ -107,6 +106,7 @@ where
         + HeaderBackend<B>
         + 'static,
     C::Api: Metadata<B> + 'static,
+    C::Api: ValidatorApi<B> + 'static,
     C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
     C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
 {
@@ -118,7 +118,6 @@ where
         mut noti_sender,
         mut net_service,
         client,
-        controller,
         nucleus_home_dir,
         _phantom,
     } = params;
@@ -126,11 +125,12 @@ where
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
         let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
         log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
+
         // TODO what if our node is far behind the best block?
         let metadata =
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
-        let mut block_monitor = client.every_import_notification_stream();
 
+        let mut block_monitor = client.every_import_notification_stream();
         let timer_scheduler = Arc::new(crate::host_func::timer::SchedulerAsync::new());
         let (http_register, mut http_executor) = crate::host_func::http::new_http_manager();
         let http_register = Arc::new(http_register);
@@ -148,8 +148,22 @@ where
             }
         });
         //////////////////////////////////////////////////////
+        let author = keystore
+            .sr25519_public_keys(sp_core::crypto::key_types::AURA)
+            .first()
+            .copied()
+            .expect("No essential session key found, please insert one");
 
         let hash = client.info().best_hash;
+        let api = client.runtime_api();
+        let controller = api
+            .is_active_validator(hash, sp_core::crypto::key_types::AURA, author.to_vec())
+            .expect("couldn't load runtime api");
+        if controller.is_none() {
+            log::warn!("Our node is not a validator!");
+            return;
+        }
+        let controller = controller.unwrap();
         let chosen = get_nuclei_for_node(client.clone(), controller.clone(), hash);
         for (id, info) in chosen {
             let nucleus_path = nucleus_home_dir.join(id.to_string());

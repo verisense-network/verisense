@@ -35,6 +35,7 @@ pallet-authorship = { workspace = true, default-features = false }
 pallet-authority-discovery = { workspace = true, default-features = false }
 pallet-restaking = { path = "../pallets/restaking", default-features = false }
 # primitives
+vrs-support = { path = "../support", default-features =  false }
 vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
 sp-block-builder = { workspace = true, default-features = false }

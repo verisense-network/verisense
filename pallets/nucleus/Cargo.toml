@@ -21,7 +21,7 @@ sp-std = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
-verisense-support = { path = "../../support", default-features = false }
+vrs-support = { path = "../../support", default-features = false }
 
 [dev-dependencies]
 sp-io = { workspace = true, default-features = true }
@@ -37,4 +37,5 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"vrs-primitives/std",
+	"vrs-support/std",
 ]
