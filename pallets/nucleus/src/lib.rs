@@ -16,7 +16,7 @@ pub mod pallet {
     use codec::{Decode, Encode};
     use frame_support::{pallet_prelude::*, traits::OneSessionHandler};
     use frame_system::pallet_prelude::*;
-    use sp_core::crypto::{VrfCrypto, VrfPublic};
+    use sp_core::crypto::VrfPublic;
     use sp_core::sr25519::{
         vrf::{VrfSignature, VrfTranscript},
         Public,
@@ -246,7 +246,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight((T::WeightInfo::register(), DispatchClass::Mandatory, Pays::No))]
+        #[pallet::weight((T::WeightInfo::register(), Pays::No))]
         pub fn register(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,

@@ -12,7 +12,7 @@ use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::{service::traits::NetworkService, PeerId};
 use sc_transaction_pool_api::{TransactionPool, TransactionSource};
-use sp_api::{Metadata, ProvideRuntimeApi};
+use sp_api::{Core, Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
@@ -105,9 +105,10 @@ where
         + ProvideRuntimeApi<B>
         + HeaderBackend<B>
         + 'static,
+    C::Api: Core<B> + 'static,
     C::Api: Metadata<B> + 'static,
     C::Api: ValidatorApi<B> + 'static,
-    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
     C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
 {
     let CageParams {
@@ -204,10 +205,10 @@ where
                         if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let public_input = ev.public_input;
-                            submit_vrf(transaction_pool.clone(), client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash)
-                                .await
+                            let tx = gen_vrf_tx(client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash, metadata.clone())
                                 .inspect_err(|e| log::error!("fail to submit vrf: {:?}", e))
                                 .expect("fail to submit vrf");
+                            transaction_pool.submit_one(hash, TransactionSource::External, tx).await.expect("fail to submit tx");
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let digest = ev.wasm_hash;
@@ -306,11 +307,11 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
     T: vrs_metadata::Config,
 {
-    // TODO change to use the storage key from metadata
-    let storage_key = storage_key(b"System", b"Events");
+    let key = vrs_metadata::codegen::storage().system().events();
+    let storage_key = sp_core::storage::StorageKey(key.to_root_bytes());
     client
         .storage(hash, &storage_key)
         .inspect_err(|e| log::error!("failed to get events: {:?}", e))
@@ -318,25 +319,21 @@ where
         .map_err(|e| e.into())
 }
 
-async fn submit_vrf<P, B, D, C>(
-    pool: Arc<P>,
+fn gen_vrf_tx<B, D, C>(
     client: Arc<C>,
     nucleus_id: NucleusId,
     keystore: KeystorePtr,
     public_input: &[u8],
     hash: B::Hash,
-) -> Result<(), Box<dyn std::error::Error>>
+    metadata: RuntimeMetadata,
+) -> Result<sp_runtime::OpaqueExtrinsic, Box<dyn std::error::Error>>
 where
     B: sp_runtime::traits::Block<Extrinsic = sp_runtime::OpaqueExtrinsic> + 'static,
-    P: TransactionPool<Block = B, Hash = B::Hash> + 'static,
     D: Backend<B>,
-    C: BlockBackend<B>
-        + StorageProvider<B, D>
-        + BlockchainEvents<B>
-        + ProvideRuntimeApi<B>
-        + 'static,
+    C: BlockBackend<B> + StorageProvider<B, D> + ProvideRuntimeApi<B> + 'static,
+    C::Api: Core<B> + 'static,
     C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
-    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
 {
     let (submitter, vrf) = crate::keystore::sign_to_participate(
         keystore.clone(),
@@ -344,22 +341,54 @@ where
         public_input,
     )?;
     let submitter: AccountId = submitter.into();
+    // let key = vrs_metadata::codegen::storage().system().block_hash(0);
+    // TODO for unknown reasons, the key is none so we just hard-code the key here
+    let key = hex::decode(
+        "26aa394eea5630e07c48ae0c9558cef7a44704b568d21667356a5a050c118746b4def25cfda6ef3a00000000",
+    )
+    .unwrap();
+    let storage_key = sp_core::storage::StorageKey(key);
+    let genesis_hash = client
+        .storage(hash, &storage_key)
+        .ok()
+        .flatten()
+        .expect("couldn't get genesis hash");
+    let genesis_hash = sp_core::H256::from_slice(&genesis_hash.0);
     let api = client.runtime_api();
     let nonce = api.account_nonce(hash, submitter.clone())?;
-    // TODO
-    let (addr, call, extra) = api.compose_vrf_tx(hash, nucleus_id, submitter, nonce, vrf)?;
-    let signature = crate::keystore::sign_tx(
-        keystore.clone(),
-        keys::NUCLEUS_VRF_KEY_TYPE,
-        addr.clone(),
-        call.clone(),
-        extra.clone(),
-    )?;
-    let tx = vrs_runtime::UncheckedExtrinsic::new_signed(call, addr, signature, extra);
-    let xt = sp_runtime::OpaqueExtrinsic::from(tx);
-    pool.submit_one(hash, TransactionSource::External, xt)
-        .await?;
-    Ok(())
+    let version = api.version(hash)?;
+    let state = vrs_metadata::tx::ClientState::<SubstrateConfig> {
+        metadata,
+        genesis_hash,
+        runtime_version: vrs_metadata::tx::RuntimeVersion {
+            spec_version: version.spec_version,
+            transaction_version: version.transaction_version,
+        },
+    };
+    let call = vrs_metadata::codegen::tx().nucleus().register(
+        vrs_metadata::utils::AccountId32(nucleus_id.into()),
+        vrs_metadata::codegen::runtime_types::sp_core::sr25519::vrf::VrfSignature {
+            pre_output: vrf
+                .pre_output
+                .encode()
+                .try_into()
+                .expect("invalid vrf output"),
+            proof: vrf.proof.encode().try_into().expect("invalid vrf proof"),
+        },
+    );
+    let params = vrs_metadata::config::DefaultExtrinsicParamsBuilder::new()
+        .nonce(nonce as u64)
+        .build();
+    let unsigned_tx = vrs_metadata::tx::create_partial_signed(&call, &state, params)
+        .expect("couldn't create paritial transaction");
+    let raw = unsigned_tx.signer_payload();
+    let signature = crate::keystore::sign_tx(keystore.clone(), keys::NUCLEUS_VRF_KEY_TYPE, raw)?;
+    let addr =
+        vrs_metadata::utils::MultiAddress::Id(vrs_metadata::utils::AccountId32(submitter.into()));
+    let signature = vrs_metadata::utils::MultiSignature::Sr25519(signature);
+    let signed = unsigned_tx.sign_with_address_and_signature(&addr, &signature);
+    let tx = sp_runtime::OpaqueExtrinsic::from_bytes(signed.encoded())?;
+    Ok(tx)
 }
 
 fn get_nuclei_for_node<B, D, C>(
@@ -375,7 +404,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B, Address, vrs_runtime::RuntimeCall, vrs_runtime::SignedExtra> + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
 {
     let api = client.runtime_api();
     let key = codegen::storage().nucleus().instances_iter();
@@ -624,263 +653,3 @@ mod tests {
         // }
     }
 }
-
-#[cfg(test)]
-mod forum_tests {
-    use super::*;
-    use crate::nucleus::Nucleus;
-    use crate::test_suite::new_mock_nucleus;
-    use codec::Decode;
-    use serde::{Deserialize, Serialize};
-    use std::sync::Arc;
-    use std::thread;
-    use stream::FuturesUnordered;
-    use tokio::task;
-
-    struct ResultProcessor {
-        receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
-    }
-    impl ResultProcessor {
-        fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
-            let (sender, receiver) = tokio::sync::oneshot::channel();
-            thread::spawn(move || async move {
-                let reply_to = receiver.await;
-                println!("reply: {:?}", reply_to);
-            });
-            sender
-        }
-    }
-    fn decode(data: Vec<u8>) -> i32 {
-        let mut reply = data.as_slice();
-        let reply = <Result<i32, String> as codec::Decode>::decode(&mut reply)
-            .unwrap()
-            .unwrap();
-        reply
-    }
-    #[derive(Debug, Decode, Encode, Deserialize, Serialize)]
-    pub struct VeArticle {
-        pub id: u64,
-        pub title: String,
-        pub content: String,
-        pub author_id: u64,
-        pub author_nickname: String,
-        pub subspace_id: u64,
-        pub ext_link: String,
-        pub status: i16,
-        pub weight: i16,
-        pub created_time: i64,
-        pub updated_time: i64,
-    }
-    // #[tokio::test]
-    // async fn test_forum() {
-    //     let wasm_path = "../../../veforum/veavs.wasm";
-    //     let (sender_cage, receiver_cage) = std::sync::mpsc::channel();
-    //     let (mut nucleus, mut out_of_runtime): (Nucleus<Runtime>, crate::test_suite::OutOfRuntime) =
-    //         new_mock_nucleus(receiver_cage, wasm_path.to_string());
-    //     let sender_cage_clone = sender_cage.clone();
-    //     let sc = Arc::new(crate::host_func::timer::SchedulerAsync::new());
-    //     task::spawn_blocking(move || {
-    //         nucleus.run();
-    //     });
-    //     let mut receivers = FuturesUnordered::new();
-    //     let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
-    //     receivers.push(receiver_timer_reply);
-    //     // sender_cage
-    //     //     .send((
-    //     //         0,
-    //     //         Gluon::TimerInitRequest {
-    //     //             pending_timer_queue: sender_timer_reply,
-    //     //         },
-    //     //     ))
-    //     //     .unwrap();
-    //     // let reply = receiver_reply.await.unwrap().unwrap();
-    //     let es = receivers.next().await.unwrap().unwrap();
-    //     println!("{}", es.len());
-    //     for e in es.into_iter() {
-    //         sc.push(e);
-    //     }
-
-    //     tokio::spawn(async move {
-    //         while let Some(entry) = sc.pop().await {
-    //             let sender = sender_cage_clone.clone();
-    //             // let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
-    //             // receivers.push(receiver_timer_reply);
-    //             let sender = sender_cage_clone.clone();
-    //             let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
-    //             receivers.push(receiver_timer_reply);
-    //             let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-
-    //             if let Err(err) = sender.send((
-    //                 0,
-    //                 Gluon::TimerRequest {
-    //                     endpoint: entry.func_name,
-    //                     payload: entry.func_params,
-    //                 },
-    //             )) {
-    //                 println!("fail to send timer entry: {:?}", err);
-    //             }
-    //             let reply = receiver_reply.await.unwrap().unwrap();
-    //             let es = receivers.next().await.unwrap().unwrap();
-    //             for e in es.into_iter() {
-    //                 sc.push(e);
-    //             }
-    //         }
-    //     });
-
-    //     let sender = sender_cage.clone();
-    //     tokio::spawn(async move {
-    //         loop {
-    //             let article = VeArticle {
-    //                 id: 0,
-    //                 title: "title".to_string(),
-    //                 content: "Today is a good day".to_string(),
-    //                 author_id: 0,
-    //                 author_nickname: "AI Assistant".to_string(),
-    //                 subspace_id: 0,
-    //                 ext_link: "ext_link".to_string(),
-    //                 status: 0,
-    //                 weight: 0,
-    //                 created_time: chrono::Utc::now().timestamp(),
-    //                 updated_time: 0,
-    //             };
-    //             let (article_tx, article_rx) = oneshot::channel();
-    //             let article_post = Gluon::PostRequest {
-    //                 endpoint: "add_article".to_string(),
-    //                 payload: article.encode(),
-    //                 reply_to: Some(article_tx),
-    //             };
-    //             sender.clone().send((0, article_post)).unwrap();
-    //             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-    //         }
-    //     });
-    //     tokio::spawn(async move {
-    //         loop {
-    //             let http_reply = out_of_runtime.http_executor.recv_response().await.unwrap();
-    //             let HttpResponseWithCallback {
-    //                 nucleus_id,
-    //                 req_id,
-    //                 response,
-    //             } = http_reply;
-    //             // let http_reply = out_of_runtime.http_executor.poll().await;
-    //             // let HttpResponseWithCallback {
-    //             //     nucleus_id,
-    //             //     req_id,
-    //             //     response,
-    //             // } = http_reply
-    //             //     .expect("already checked")
-    //             //     .expect("HttpCallRegister must exists;qed");
-    //             sender_cage
-    //                 .clone()
-    //                 .send((
-    //                     0,
-    //                     Gluon::HttpCallback {
-    //                         request_id: req_id,
-    //                         payload: response,
-    //                     },
-    //                 ))
-    //                 .unwrap();
-    //         }
-    //     });
-    //     tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
-    // }
-}
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::{nucleus::Nucleus, scheduler, vm::Vm, Scheduler, WrappedSchedulerSync};
-//     use codec::Decode;
-//     use futures::channel::mpsc::SendError;
-//     use rocksdb::Options;
-//     use std::thread;
-//     use std::{sync::Arc, time::Duration};
-//     use temp_dir::TempDir;
-//     use tokio::sync::oneshot;
-//     use tokio::{sync::mpsc, task, time};
-//     use vrs_core_sdk::AccountId;
-//     struct ResultProcessor {
-//         receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
-//     }
-//     impl ResultProcessor {
-//         fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
-//             let (sender, receiver) = tokio::sync::oneshot::channel();
-//             thread::spawn(move || async move {
-//                 let reply_to = receiver.await;
-//                 println!("reply: {:?}", reply_to);
-//             });
-//             sender
-//         }
-//     }
-//     #[test]
-//     fn test_scheduler() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("0").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let (sender_cage, receiver_cage) = std::sync::mpsc::channel();
-//         let (scheduler, receiver_entry_cage) = WrappedSchedulerSync::new();
-//         let scheduler = Arc::new(scheduler);
-//         let mut nucleus = Nucleus::new(receiver_cage, scheduler, context, wasm);
-//         let sender_cage_clone = sender_cage.clone();
-//         thread::spawn(move || {
-//             nucleus.run();
-//         });
-
-//         thread::spawn(move || {
-//             let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-//             let send_r = sender_cage.send((
-//                 0,
-//                 Gluon::PostRequest {
-//                     endpoint: "test_set_perfect_tree_mod_timer".to_owned(),
-//                     payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
-//                     // reply_to: Some(sender_reply),
-//                     reply_to: Some(sender_reply),
-//                 },
-//             ));
-//             println!("reply to original: {:?}", send_r);
-//             thread::spawn(move || {
-//                 let reply = receiver_reply.blocking_recv().unwrap();
-//                 println!("reply: {:?}", reply);
-//             });
-//         });
-//         thread::spawn(move || {
-//             while let Ok(entry) = receiver_entry_cage.recv() {
-//                 println!("{:?}", entry);
-//                 let sender = sender_cage_clone.clone();
-
-//                 thread::spawn(move || {
-//                     let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-//                     if let Err(err) = sender.send((
-//                         0,
-//                         Gluon::PostRequest {
-//                             endpoint: entry.1.func_name,
-//                             payload: entry.1.func_params,
-//                             reply_to: Some(sender_reply),
-//                         },
-//                     )) {
-//                         println!("fail to send timer entry: {:?}", err);
-//                     }
-//                     thread::spawn(move || {
-//                         let reply = receiver_reply.blocking_recv().unwrap();
-//                         println!("reply: {:?}", reply);
-//                     });
-
-//                     // task::spawn_blocking(move || async move {
-//                     //     let reply = receiver_reply.await.unwrap();
-//                     //     println!("reply: {:?}", reply);
-//                     // });
-//                 });
-//             }
-//         });
-//         std::thread::sleep(Duration::from_secs(12));
-//     }
-// }

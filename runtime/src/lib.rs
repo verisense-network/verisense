@@ -8,7 +8,7 @@ use pallet_grandpa::AuthorityId as GrandpaId;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::KeyTypeId, sr25519::vrf::VrfSignature, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{BlakeTwo256, Block as BlockT, NumberFor, One, Verify},
@@ -353,12 +353,11 @@ where
             .saturating_sub(1);
         let era = Era::mortal(period, current_block);
         let extra = (
-            frame_system::CheckNonZeroSender::<Runtime>::new(),
             frame_system::CheckSpecVersion::<Runtime>::new(),
             frame_system::CheckTxVersion::<Runtime>::new(),
-            frame_system::CheckGenesis::<Runtime>::new(),
-            frame_system::CheckEra::<Runtime>::from(era),
             frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckMortality::<Runtime>::from(era),
             frame_system::CheckWeight::<Runtime>::new(),
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
         );
@@ -467,12 +466,11 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
-    frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
     frame_system::CheckNonce<Runtime>,
+    frame_system::CheckGenesis<Runtime>,
+    frame_system::CheckMortality<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
@@ -673,7 +671,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl vrs_nucleus_runtime_api::NucleusApi<Block, Address, RuntimeCall, SignedExtra> for Runtime {
+    impl vrs_nucleus_runtime_api::NucleusApi<Block, Address> for Runtime {
         fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
                 nucleus_id,
@@ -692,44 +690,6 @@ impl_runtime_apis! {
 
         fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>> {
             Nucleus::get_nucleus_info(&nucleus_id)
-        }
-
-        fn compose_vrf_tx(
-            nucleus_id: NucleusId,
-            account_id: AccountId,
-            nonce: u32,
-            vrf: VrfSignature,
-        ) -> (Address, RuntimeCall, SignedExtra) {
-            use sp_runtime::traits::StaticLookup;
-            use sp_runtime::SaturatedConversion;
-            let tip = 0;
-            // take the biggest period possible.
-            let period = BlockHashCount::get()
-                .checked_next_power_of_two()
-                .map(|c| c / 2)
-                .unwrap_or(2) as u64;
-            let current_block = System::block_number()
-                .saturated_into::<u64>()
-                // The `System::block_number` is initialized with `n+1`,
-                // so the actual block number is `n`.
-                .saturating_sub(1);
-            let era = Era::mortal(period, current_block);
-            let extra = (
-                frame_system::CheckNonZeroSender::<Runtime>::new(),
-                frame_system::CheckSpecVersion::<Runtime>::new(),
-                frame_system::CheckTxVersion::<Runtime>::new(),
-                frame_system::CheckGenesis::<Runtime>::new(),
-                frame_system::CheckEra::<Runtime>::from(era),
-                frame_system::CheckNonce::<Runtime>::from(nonce),
-                frame_system::CheckWeight::<Runtime>::new(),
-                pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-            );
-            let call = RuntimeCall::Nucleus(pallet_nucleus::Call::register {
-                nucleus_id,
-                signature: vrf,
-            });
-            let address = <Runtime as frame_system::Config>::Lookup::unlookup(account_id);
-            (address, call, extra)
         }
     }
 

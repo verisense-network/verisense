@@ -10554,6 +10554,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-core",
+ "sp-io",
  "sp-keystore",
  "sp-runtime",
  "sparse-merkle-tree",
