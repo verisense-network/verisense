@@ -166,9 +166,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                136u8, 235u8, 147u8, 0u8, 229u8, 39u8, 84u8, 83u8, 238u8, 178u8, 181u8, 69u8, 2u8,
-                199u8, 123u8, 9u8, 179u8, 12u8, 167u8, 173u8, 21u8, 235u8, 64u8, 153u8, 199u8,
-                159u8, 192u8, 39u8, 125u8, 110u8, 95u8, 139u8,
+                41u8, 92u8, 4u8, 223u8, 244u8, 79u8, 154u8, 161u8, 196u8, 84u8, 183u8, 70u8, 103u8,
+                35u8, 43u8, 35u8, 204u8, 183u8, 188u8, 72u8, 162u8, 231u8, 95u8, 58u8, 11u8, 25u8,
+                170u8, 152u8, 222u8, 146u8, 114u8, 88u8,
             ]
     }
     pub mod system {
@@ -6324,20 +6324,6 @@ pub mod codegen {
                     #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                     #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                     pub struct CheckMortality(pub runtime_types::sp_runtime::generic::era::Era);
-                }
-                pub mod check_non_zero_sender {
-                    use super::runtime_types;
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct CheckNonZeroSender;
                 }
                 pub mod check_nonce {
                     use super::runtime_types;

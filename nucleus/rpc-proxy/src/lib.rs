@@ -29,16 +29,15 @@ pub trait NucleusRpc<Hash> {
     async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
 }
 
-pub struct NucleusEntry<P, C, D, T> {
+pub struct NucleusEntry<P, C> {
     sender: Sender<(NucleusId, Gluon)>,
     client: Arc<C>,
     pool: Arc<P>,
     node_id: PeerId,
     nucleus_home_dir: PathBuf,
-    _phantom: std::marker::PhantomData<(D, T)>,
 }
 
-impl<P, C, D, T> NucleusEntry<P, C, D, T> {
+impl<P, C> NucleusEntry<P, C> {
     pub fn new(
         sender: Sender<(NucleusId, Gluon)>,
         client: Arc<C>,
@@ -52,7 +51,6 @@ impl<P, C, D, T> NucleusEntry<P, C, D, T> {
             pool,
             node_id,
             nucleus_home_dir,
-            _phantom: Default::default(),
         }
     }
 
@@ -87,14 +85,12 @@ impl<P, C, D, T> NucleusEntry<P, C, D, T> {
 }
 
 #[async_trait]
-impl<P, C, D, T> NucleusRpcServer<BlockHash<P>> for NucleusEntry<P, C, D, T>
+impl<P, C> NucleusRpcServer<BlockHash<P>> for NucleusEntry<P, C>
 where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block, Address, D, T> + 'static,
-    D: Codec + Send + Sync + 'static,
-    T: Codec + Send + Sync + 'static,
+    C::Api: NucleusApi<P::Block, Address> + 'static,
 {
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
         let (tx, rx) = oneshot::channel();
