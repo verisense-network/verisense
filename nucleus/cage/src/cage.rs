@@ -125,8 +125,18 @@ where
     async move {
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
         let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
+        if !std::fs::exists(&nucleus_home_dir)
+            .expect("fail to check nucleus directory, make sure the you have access right on the directory.")
+        {
+            std::fs::create_dir_all(&nucleus_home_dir).inspect_err(|e| {
+                log::error!(
+                    "fail to create nucleus directory at {:?}, due to {:?}",
+                    nucleus_home_dir,
+                    e
+                )
+            }).expect("fail to create nucleus directory");
+        }
         log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
-
         // TODO what if our node is far behind the best block?
         let metadata =
             metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
@@ -215,13 +225,16 @@ where
                             let version = ev.wasm_version;
                             // TODO download the wasm from ev.wasm_location
                             let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
-                            upgrade_nucleus_wasm(
+                            if let Err(e) = upgrade_nucleus_wasm(
                                 NucleusId::from(nucleus_id.0),
                                 digest,
                                 version,
                                 nucleus_path.as_path(),
                                 &mut nuclei,
-                            ).expect("fail to upgrade nucleus wasm");
+                            ) {
+                                log::error!("Upgrading nucleus {} wasm failed: {:?}", nucleus_id, e);
+                                panic!("fail to upgrade nucleus wasm, there is nothing we can do.");
+                            }
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let api = client.runtime_api();
@@ -437,31 +450,38 @@ fn upgrade_nucleus_wasm(
     id: NucleusId,
     digest: Hash,
     version: u32,
-    nucleus_root_path: &std::path::Path,
+    nucleus_path: &std::path::Path,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
 ) -> anyhow::Result<()> {
-    let wasm_path = nucleus_root_path.join(format!("wasm/{}.wasm", version));
-    let code = std::fs::read(&wasm_path)?;
-    let wasm = WasmInfo {
-        id: id.clone(),
-        version,
-        code,
-    };
-    let mut cage = nuclei
-        .get_mut(&id)
-        .ok_or(anyhow::anyhow!("Nucleus not found"))?;
-    cage.forward(Gluon::CodeUpgrade {
-        version,
-        digest: wasm.digest(),
-        wasm: Some(wasm),
-    });
+    let wasm = try_load_wasm(id.clone(), nucleus_path, version)?;
+    log::info!("🔨 Upgrading nucleus {} to version {}.", id, version,);
+    if let Some(mut cage) = nuclei.get_mut(&id) {
+        cage.forward(Gluon::CodeUpgrade {
+            version,
+            digest: wasm.digest(),
+            wasm: Some(wasm),
+        });
+    }
     Ok(())
 }
 
+fn try_load_wasm(
+    id: NucleusId,
+    nucleus_path: &std::path::Path,
+    version: u32,
+) -> anyhow::Result<WasmInfo> {
+    let wasm_path = nucleus_path.join(format!("wasm/{}.wasm", version));
+    let code = std::fs::read(&wasm_path)?;
+    log::info!("📦 Loaded wasm for nucleus {} version {}.", id, version);
+    Ok(WasmInfo { id, version, code })
+}
+
+// TODO lookup wasm before starting nucleus
+// the `CodeUpgrade` might happen before `InstanceRegistered` event
 fn start_nucleus(
     id: NucleusId,
     nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
-    nucleus_root_path: &std::path::Path,
+    nucleus_path: &std::path::Path,
     http_register: Arc<HttpCallRegister>,
     timer_scheduler: Arc<SchedulerAsync>,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
@@ -478,7 +498,7 @@ fn start_nucleus(
     } = nucleus_info;
     let config = RuntimeParams {
         nucleus_id: id.clone(),
-        db_path: nucleus_root_path.join("db").into_boxed_path(),
+        db_path: nucleus_path.join("db").into_boxed_path(),
         http_register,
         timer_scheduler,
     };
@@ -489,16 +509,28 @@ fn start_nucleus(
     std::thread::spawn(move || {
         nucleus.run();
     });
+    log::info!("🚀 Nucleus {} started.", id);
     nuclei.insert(
         id.clone(),
         NucleusCage {
-            nucleus_id: id,
+            nucleus_id: id.clone(),
             tunnel: tx,
             pending_requests: vec![],
             event_id: current_event,
             state,
         },
     );
+    // TODO if start before wasm uploaded, we should skip this, but we must ensure the wasm is downloaded to local
+    if let Ok(wasm) = try_load_wasm(id.clone(), nucleus_path, wasm_version) {
+        let mut cage = nuclei
+            .get_mut(&id)
+            .expect("just inserted nucleus, should be found;qed");
+        cage.forward(Gluon::CodeUpgrade {
+            version: wasm_version,
+            digest: wasm_hash.into(),
+            wasm: Some(wasm),
+        });
+    }
     Ok(())
 }
 
