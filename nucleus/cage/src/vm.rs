@@ -35,7 +35,8 @@ pub enum WasmCallError {
     #[error("Wasm not initialized")]
     WasmNotInitialized,
 }
-
+const PAGE_SIZE: usize = 65536;
+const MAX_PAGE_COUNT: usize = 1024;
 impl Into<(i32, String)> for WasmCallError {
     fn into(self) -> (i32, String) {
         (self.to_error_code() as i32, self.to_string())
@@ -78,7 +79,7 @@ where
             .get_memory(&mut store, "memory")
             .ok_or(anyhow::anyhow!("no memory exported"))?;
         let ptr = memory.data_size(&store) as i32;
-        memory.grow(&mut store, 1).unwrap();
+        memory.grow(&mut store, MAX_PAGE_COUNT as u64).unwrap();
         Ok(Self {
             space: store,
             instance,
@@ -122,7 +123,7 @@ where
             .get_memory(&mut self.space, "memory")
             .ok_or(WasmCallError::NoMemoryExported)?;
 
-        if args.len() > 65536 {
+        if args.len() > PAGE_SIZE * MAX_PAGE_COUNT {
             return Err(WasmCallError::ArgumentsSizeExceeded);
         }
 
@@ -202,7 +203,7 @@ where
             .get_memory(&mut self.space, "memory")
             .ok_or(WasmCallError::NoMemoryExported)?;
 
-        if args.len() > 65536 {
+        if args.len() > PAGE_SIZE * MAX_PAGE_COUNT {
             return Err(WasmCallError::ArgumentsSizeExceeded);
         }
 
