@@ -299,7 +299,7 @@ impl pallet_validators::Config for Runtime {
     type SessionsPerEra = SessionsPerEra;
     type SessionInterface = Self;
     type HistoryDepth = HistoryDepth;
-    type ValidatorsProvider = Restaking;
+    type RestakingInterface = Restaking;
 }
 
 impl pallet_authorship::Config for Runtime {
@@ -662,6 +662,12 @@ impl_runtime_apis! {
         }
         fn query_length_to_fee(length: u32) -> Balance {
             TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId> for Runtime {
+        fn get_rewards_proof(account_id: AccountId) -> RewardsProof {
+            Restaking::get_reward_proof(account_id)
         }
     }
 

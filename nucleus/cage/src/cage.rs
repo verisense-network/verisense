@@ -266,7 +266,7 @@ where
                     }
                 },
                 Some(http_reply) = http_executor.recv_response() => {
-                    log::debug!("🌐 Http reply: {:?}", http_reply);
+                    log::info!("🌐 Http reply: {:?}", "http_reply");
                     let HttpResponseWithCallback {
                         nucleus_id,
                         req_id,

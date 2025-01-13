@@ -134,7 +134,7 @@ fn testnet_genesis(
             "key": Some(root_key),
         },
         "restaking": {
-            "validators": endowed_accounts.iter().cloned().map(|k| (k, 10000)).collect::<Vec<_>>(),
+            "validators": endowed_accounts.iter().cloned().map(|k| (k, 10000, "0x0000000000000000000000000000000000000000", "Original")).collect::<Vec<_>>(),
         },
          "session":  {
             "keys": initial_authorities
