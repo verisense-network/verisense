@@ -166,9 +166,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                41u8, 92u8, 4u8, 223u8, 244u8, 79u8, 154u8, 161u8, 196u8, 84u8, 183u8, 70u8, 103u8,
-                35u8, 43u8, 35u8, 204u8, 183u8, 188u8, 72u8, 162u8, 231u8, 95u8, 58u8, 11u8, 25u8,
-                170u8, 152u8, 222u8, 146u8, 114u8, 88u8,
+                138u8, 154u8, 91u8, 72u8, 70u8, 60u8, 173u8, 1u8, 19u8, 83u8, 51u8, 196u8, 37u8,
+                205u8, 64u8, 184u8, 143u8, 89u8, 236u8, 1u8, 52u8, 6u8, 58u8, 250u8, 171u8, 245u8,
+                179u8, 239u8, 49u8, 208u8, 10u8, 214u8,
             ]
     }
     pub mod system {
@@ -1699,6 +1699,31 @@ pub mod codegen {
                     const PALLET: &'static str = "Restaking";
                     const CALL: &'static str = "update_validators";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AddRestakingPlatform {
+                    pub platform_source_name: add_restaking_platform::PlatformSourceName,
+                    pub url: add_restaking_platform::Url,
+                    pub middleware_address: add_restaking_platform::MiddlewareAddress,
+                }
+                pub mod add_restaking_platform {
+                    use super::runtime_types;
+                    pub type PlatformSourceName = ::subxt_core::alloc::string::String;
+                    pub type Url = ::subxt_core::alloc::string::String;
+                    pub type MiddlewareAddress = ::subxt_core::alloc::string::String;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AddRestakingPlatform {
+                    const PALLET: &'static str = "Restaking";
+                    const CALL: &'static str = "add_restaking_platform";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -1713,10 +1738,32 @@ pub mod codegen {
                         "update_validators",
                         types::UpdateValidators { payload, signature },
                         [
-                            161u8, 152u8, 196u8, 180u8, 237u8, 40u8, 133u8, 201u8, 161u8, 126u8,
-                            138u8, 228u8, 77u8, 195u8, 184u8, 21u8, 197u8, 112u8, 245u8, 252u8,
-                            75u8, 57u8, 132u8, 183u8, 89u8, 32u8, 221u8, 65u8, 17u8, 6u8, 236u8,
-                            43u8,
+                            52u8, 254u8, 15u8, 7u8, 236u8, 27u8, 127u8, 57u8, 108u8, 119u8, 197u8,
+                            18u8, 220u8, 228u8, 237u8, 254u8, 74u8, 252u8, 182u8, 79u8, 82u8, 71u8,
+                            119u8, 122u8, 119u8, 208u8, 196u8, 235u8, 63u8, 190u8, 228u8, 131u8,
+                        ],
+                    )
+                }
+                pub fn add_restaking_platform(
+                    &self,
+                    platform_source_name: types::add_restaking_platform::PlatformSourceName,
+                    url: types::add_restaking_platform::Url,
+                    middleware_address: types::add_restaking_platform::MiddlewareAddress,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AddRestakingPlatform>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Restaking",
+                        "add_restaking_platform",
+                        types::AddRestakingPlatform {
+                            platform_source_name,
+                            url,
+                            middleware_address,
+                        },
+                        [
+                            48u8, 5u8, 59u8, 152u8, 103u8, 190u8, 187u8, 208u8, 128u8, 221u8,
+                            153u8, 117u8, 79u8, 109u8, 48u8, 77u8, 21u8, 192u8, 182u8, 192u8,
+                            216u8, 248u8, 33u8, 146u8, 161u8, 129u8, 121u8, 12u8, 150u8, 30u8,
+                            38u8, 153u8,
                         ],
                     )
                 }
@@ -1860,6 +1907,10 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type IsActivated = ::core::primitive::bool;
                 }
+                pub mod rewards_amount_per_point {
+                    use super::runtime_types;
+                    pub type RewardsAmountPerPoint = ::core::primitive::u128;
+                }
                 pub mod next_set_id {
                     use super::runtime_types;
                     pub type NextSetId = ::core::primitive::u32;
@@ -1870,6 +1921,14 @@ pub mod codegen {
                         ::subxt_core::utils::AccountId32,
                         ::core::primitive::u128,
                     )>;
+                }
+                pub mod validators_source {
+                    use super::runtime_types;
+                    pub type ValidatorsSource = (
+                        ::subxt_core::alloc::string::String,
+                        ::subxt_core::alloc::string::String,
+                    );
+                    pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
                 pub mod next_notification_id {
                     use super::runtime_types;
@@ -1900,6 +1959,32 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type NeedFetchRestakingValidators = ::core::primitive::bool;
                 }
+                pub mod latest_closed_era {
+                    use super::runtime_types;
+                    pub type LatestClosedEra = ::core::primitive::u32;
+                }
+                pub mod era_total_rewards {
+                    use super::runtime_types;
+                    pub type EraTotalRewards = ::core::primitive::u128;
+                    pub type Param0 = ::core::primitive::u32;
+                }
+                pub mod total_rewards {
+                    use super::runtime_types;
+                    pub type TotalRewards = ::core::primitive::u128;
+                    pub type Param0 = ::subxt_core::utils::AccountId32;
+                }
+                pub mod restaking_platform {
+                    use super::runtime_types;
+                    pub type RestakingPlatform = (
+                        ::subxt_core::alloc::string::String,
+                        ::subxt_core::alloc::string::String,
+                    );
+                    pub type Param0 = ::core::primitive::str;
+                }
+                pub mod rewards_root {
+                    use super::runtime_types;
+                    pub type RewardsRoot = ::subxt_core::alloc::string::String;
+                }
                 pub mod notification_history {
                     use super::runtime_types;
                     pub type NotificationHistory = ::core::option::Option<
@@ -1927,6 +2012,26 @@ pub mod codegen {
                             116u8, 219u8, 77u8, 197u8, 135u8, 165u8, 182u8, 68u8, 25u8, 140u8,
                             241u8, 13u8, 151u8, 221u8, 15u8, 175u8, 54u8, 36u8, 236u8, 63u8, 191u8,
                             244u8, 122u8, 95u8, 66u8, 230u8, 124u8, 134u8, 31u8, 163u8, 86u8, 35u8,
+                        ],
+                    )
+                }
+                pub fn rewards_amount_per_point(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::rewards_amount_per_point::RewardsAmountPerPoint,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "RewardsAmountPerPoint",
+                        (),
+                        [
+                            219u8, 180u8, 79u8, 203u8, 41u8, 36u8, 241u8, 50u8, 7u8, 50u8, 85u8,
+                            43u8, 169u8, 199u8, 83u8, 86u8, 166u8, 82u8, 181u8, 207u8, 39u8, 225u8,
+                            203u8, 113u8, 56u8, 11u8, 143u8, 88u8, 36u8, 166u8, 152u8, 237u8,
                         ],
                     )
                 }
@@ -1969,6 +2074,51 @@ pub mod codegen {
                             17u8, 182u8, 35u8, 88u8, 49u8, 251u8, 233u8, 70u8, 223u8, 141u8, 202u8,
                             108u8, 132u8, 140u8, 232u8, 42u8, 17u8, 199u8, 240u8, 26u8, 202u8,
                             117u8,
+                        ],
+                    )
+                }
+                pub fn validators_source_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::validators_source::ValidatorsSource,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "ValidatorsSource",
+                        (),
+                        [
+                            217u8, 127u8, 75u8, 175u8, 192u8, 93u8, 107u8, 84u8, 125u8, 245u8,
+                            140u8, 29u8, 76u8, 157u8, 20u8, 196u8, 245u8, 174u8, 60u8, 66u8, 200u8,
+                            146u8, 185u8, 254u8, 214u8, 228u8, 232u8, 40u8, 134u8, 238u8, 14u8,
+                            226u8,
+                        ],
+                    )
+                }
+                pub fn validators_source(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::validators_source::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::validators_source::Param0,
+                    >,
+                    types::validators_source::ValidatorsSource,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "ValidatorsSource",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            217u8, 127u8, 75u8, 175u8, 192u8, 93u8, 107u8, 84u8, 125u8, 245u8,
+                            140u8, 29u8, 76u8, 157u8, 20u8, 196u8, 245u8, 174u8, 60u8, 66u8, 200u8,
+                            146u8, 185u8, 254u8, 214u8, 228u8, 232u8, 40u8, 134u8, 238u8, 14u8,
+                            226u8,
                         ],
                     )
                 }
@@ -2124,6 +2274,176 @@ pub mod codegen {
                             249u8, 93u8, 10u8, 85u8, 254u8, 46u8, 42u8, 54u8, 133u8, 194u8, 30u8,
                             238u8, 32u8, 192u8, 13u8, 229u8, 240u8, 91u8, 48u8, 245u8, 89u8, 50u8,
                             167u8, 63u8, 201u8, 88u8, 23u8, 79u8, 57u8, 213u8, 61u8, 255u8,
+                        ],
+                    )
+                }
+                pub fn latest_closed_era(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::latest_closed_era::LatestClosedEra,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "LatestClosedEra",
+                        (),
+                        [
+                            216u8, 117u8, 180u8, 222u8, 25u8, 117u8, 103u8, 60u8, 192u8, 125u8,
+                            81u8, 255u8, 110u8, 62u8, 69u8, 188u8, 56u8, 223u8, 112u8, 189u8,
+                            128u8, 203u8, 221u8, 68u8, 230u8, 253u8, 182u8, 209u8, 23u8, 215u8,
+                            180u8, 121u8,
+                        ],
+                    )
+                }
+                pub fn era_total_rewards_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::era_total_rewards::EraTotalRewards,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "EraTotalRewards",
+                        (),
+                        [
+                            68u8, 13u8, 136u8, 143u8, 251u8, 67u8, 177u8, 214u8, 11u8, 245u8, 81u8,
+                            17u8, 102u8, 65u8, 34u8, 128u8, 252u8, 175u8, 181u8, 35u8, 214u8,
+                            119u8, 238u8, 234u8, 47u8, 248u8, 243u8, 216u8, 125u8, 126u8, 204u8,
+                            142u8,
+                        ],
+                    )
+                }
+                pub fn era_total_rewards(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::era_total_rewards::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::era_total_rewards::Param0,
+                    >,
+                    types::era_total_rewards::EraTotalRewards,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "EraTotalRewards",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            68u8, 13u8, 136u8, 143u8, 251u8, 67u8, 177u8, 214u8, 11u8, 245u8, 81u8,
+                            17u8, 102u8, 65u8, 34u8, 128u8, 252u8, 175u8, 181u8, 35u8, 214u8,
+                            119u8, 238u8, 234u8, 47u8, 248u8, 243u8, 216u8, 125u8, 126u8, 204u8,
+                            142u8,
+                        ],
+                    )
+                }
+                pub fn total_rewards_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::total_rewards::TotalRewards,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "TotalRewards",
+                        (),
+                        [
+                            167u8, 16u8, 159u8, 4u8, 129u8, 186u8, 200u8, 245u8, 58u8, 93u8, 50u8,
+                            114u8, 125u8, 222u8, 185u8, 140u8, 158u8, 155u8, 42u8, 134u8, 41u8,
+                            192u8, 79u8, 72u8, 126u8, 23u8, 37u8, 211u8, 106u8, 177u8, 162u8, 25u8,
+                        ],
+                    )
+                }
+                pub fn total_rewards(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::total_rewards::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<types::total_rewards::Param0>,
+                    types::total_rewards::TotalRewards,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "TotalRewards",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            167u8, 16u8, 159u8, 4u8, 129u8, 186u8, 200u8, 245u8, 58u8, 93u8, 50u8,
+                            114u8, 125u8, 222u8, 185u8, 140u8, 158u8, 155u8, 42u8, 134u8, 41u8,
+                            192u8, 79u8, 72u8, 126u8, 23u8, 37u8, 211u8, 106u8, 177u8, 162u8, 25u8,
+                        ],
+                    )
+                }
+                pub fn restaking_platform_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::restaking_platform::RestakingPlatform,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "RestakingPlatform",
+                        (),
+                        [
+                            229u8, 48u8, 143u8, 25u8, 186u8, 82u8, 189u8, 138u8, 37u8, 212u8, 57u8,
+                            95u8, 35u8, 164u8, 223u8, 39u8, 51u8, 132u8, 86u8, 139u8, 231u8, 43u8,
+                            181u8, 128u8, 198u8, 116u8, 105u8, 70u8, 178u8, 20u8, 84u8, 235u8,
+                        ],
+                    )
+                }
+                pub fn restaking_platform(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::restaking_platform::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::restaking_platform::Param0,
+                    >,
+                    types::restaking_platform::RestakingPlatform,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "RestakingPlatform",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            229u8, 48u8, 143u8, 25u8, 186u8, 82u8, 189u8, 138u8, 37u8, 212u8, 57u8,
+                            95u8, 35u8, 164u8, 223u8, 39u8, 51u8, 132u8, 86u8, 139u8, 231u8, 43u8,
+                            181u8, 128u8, 198u8, 116u8, 105u8, 70u8, 178u8, 20u8, 84u8, 235u8,
+                        ],
+                    )
+                }
+                pub fn rewards_root(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::rewards_root::RewardsRoot,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Restaking",
+                        "RewardsRoot",
+                        (),
+                        [
+                            3u8, 183u8, 58u8, 159u8, 10u8, 47u8, 33u8, 204u8, 43u8, 80u8, 108u8,
+                            77u8, 30u8, 76u8, 210u8, 9u8, 118u8, 161u8, 160u8, 209u8, 140u8, 104u8,
+                            90u8, 115u8, 62u8, 139u8, 238u8, 78u8, 86u8, 167u8, 84u8, 128u8,
                         ],
                     )
                 }
@@ -2457,10 +2777,9 @@ pub mod codegen {
                 }
                 pub mod eras_reward_points {
                     use super::runtime_types;
-                    pub type ErasRewardPoints =
-                        runtime_types::pallet_validators::types::EraRewardPoints<
-                            ::subxt_core::utils::AccountId32,
-                        >;
+                    pub type ErasRewardPoints = runtime_types::vrs_support::EraRewardPoints<
+                        ::subxt_core::utils::AccountId32,
+                    >;
                     pub type Param0 = ::core::primitive::u32;
                 }
                 pub mod bonded_eras {
@@ -2675,9 +2994,10 @@ pub mod codegen {
                         "ErasRewardPoints",
                         (),
                         [
-                            135u8, 0u8, 85u8, 241u8, 213u8, 133u8, 30u8, 192u8, 251u8, 191u8, 41u8,
-                            38u8, 233u8, 236u8, 218u8, 246u8, 166u8, 93u8, 46u8, 37u8, 48u8, 187u8,
-                            172u8, 48u8, 251u8, 178u8, 75u8, 203u8, 60u8, 188u8, 204u8, 207u8,
+                            99u8, 244u8, 134u8, 185u8, 156u8, 245u8, 230u8, 55u8, 101u8, 128u8,
+                            78u8, 202u8, 180u8, 253u8, 240u8, 166u8, 146u8, 117u8, 138u8, 52u8,
+                            99u8, 235u8, 62u8, 10u8, 189u8, 1u8, 34u8, 8u8, 162u8, 101u8, 240u8,
+                            100u8,
                         ],
                     )
                 }
@@ -2698,9 +3018,10 @@ pub mod codegen {
                         "ErasRewardPoints",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            135u8, 0u8, 85u8, 241u8, 213u8, 133u8, 30u8, 192u8, 251u8, 191u8, 41u8,
-                            38u8, 233u8, 236u8, 218u8, 246u8, 166u8, 93u8, 46u8, 37u8, 48u8, 187u8,
-                            172u8, 48u8, 251u8, 178u8, 75u8, 203u8, 60u8, 188u8, 204u8, 207u8,
+                            99u8, 244u8, 134u8, 185u8, 156u8, 245u8, 230u8, 55u8, 101u8, 128u8,
+                            78u8, 202u8, 180u8, 253u8, 240u8, 166u8, 146u8, 117u8, 138u8, 52u8,
+                            99u8, 235u8, 62u8, 10u8, 189u8, 1u8, 34u8, 8u8, 162u8, 101u8, 240u8,
+                            100u8,
                         ],
                     )
                 }
@@ -5402,10 +5723,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            148u8, 255u8, 106u8, 195u8, 127u8, 108u8, 4u8, 35u8, 127u8, 222u8,
-                            112u8, 121u8, 109u8, 187u8, 112u8, 16u8, 15u8, 41u8, 233u8, 4u8, 253u8,
-                            235u8, 52u8, 40u8, 110u8, 123u8, 237u8, 251u8, 185u8, 23u8, 104u8,
-                            44u8,
+                            245u8, 51u8, 73u8, 243u8, 217u8, 201u8, 235u8, 80u8, 161u8, 74u8, 56u8,
+                            8u8, 18u8, 86u8, 171u8, 157u8, 204u8, 56u8, 39u8, 7u8, 43u8, 231u8,
+                            42u8, 24u8, 242u8, 172u8, 166u8, 230u8, 102u8, 193u8, 179u8, 197u8,
                         ],
                     )
                 }
@@ -5423,9 +5743,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            38u8, 187u8, 131u8, 85u8, 141u8, 243u8, 196u8, 236u8, 12u8, 160u8,
-                            161u8, 34u8, 33u8, 176u8, 169u8, 8u8, 81u8, 172u8, 104u8, 216u8, 27u8,
-                            75u8, 188u8, 77u8, 247u8, 178u8, 227u8, 11u8, 72u8, 41u8, 255u8, 156u8,
+                            12u8, 151u8, 178u8, 49u8, 222u8, 117u8, 116u8, 202u8, 186u8, 176u8,
+                            19u8, 181u8, 78u8, 37u8, 19u8, 173u8, 250u8, 211u8, 27u8, 142u8, 245u8,
+                            118u8, 42u8, 36u8, 216u8, 197u8, 149u8, 253u8, 158u8, 7u8, 123u8,
+                            108u8,
                         ],
                     )
                 }
@@ -5457,9 +5778,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            230u8, 234u8, 35u8, 71u8, 109u8, 1u8, 25u8, 59u8, 228u8, 185u8, 233u8,
-                            51u8, 203u8, 251u8, 18u8, 168u8, 163u8, 16u8, 203u8, 75u8, 42u8, 200u8,
-                            211u8, 162u8, 99u8, 162u8, 94u8, 106u8, 19u8, 156u8, 164u8, 164u8,
+                            60u8, 240u8, 53u8, 89u8, 82u8, 31u8, 164u8, 3u8, 90u8, 64u8, 20u8,
+                            204u8, 58u8, 158u8, 14u8, 135u8, 1u8, 80u8, 193u8, 24u8, 76u8, 252u8,
+                            145u8, 21u8, 125u8, 232u8, 209u8, 33u8, 176u8, 3u8, 124u8, 232u8,
                         ],
                     )
                 }
@@ -7257,6 +7578,12 @@ pub mod codegen {
                         >,
                         signature: runtime_types::sp_runtime::MultiSignature,
                     },
+                    #[codec(index = 1)]
+                    add_restaking_platform {
+                        platform_source_name: ::subxt_core::alloc::string::String,
+                        url: ::subxt_core::alloc::string::String,
+                        middleware_address: ::subxt_core::alloc::string::String,
+                    },
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -7462,7 +7789,12 @@ pub mod codegen {
                     pub public: _1,
                     pub key_data: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                     pub block_number: _2,
-                    pub observations: ::subxt_core::alloc::vec::Vec<(_0, ::core::primitive::u128)>,
+                    pub observations: ::subxt_core::alloc::vec::Vec<(
+                        _0,
+                        ::core::primitive::u128,
+                        ::subxt_core::alloc::string::String,
+                        ::subxt_core::alloc::string::String,
+                    )>,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -7794,20 +8126,6 @@ pub mod codegen {
                     pub index: ::core::primitive::u32,
                     pub set_id: ::core::primitive::u32,
                     pub start: ::core::option::Option<::core::primitive::u64>,
-                }
-                #[derive(
-                    :: subxt_core :: ext :: codec :: Decode,
-                    :: subxt_core :: ext :: codec :: Encode,
-                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                    Debug,
-                )]
-                # [codec (crate = :: subxt_core :: ext :: codec)]
-                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct EraRewardPoints<_0> {
-                    pub total: ::core::primitive::u32,
-                    pub individual: ::subxt_core::utils::KeyedVec<_0, ::core::primitive::u32>,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -9029,6 +9347,23 @@ pub mod codegen {
             #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
             pub enum RuntimeHoldReason {}
+        }
+        pub mod vrs_support {
+            use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct EraRewardPoints<_0> {
+                pub total: ::core::primitive::u128,
+                pub individual: ::subxt_core::utils::KeyedVec<_0, ::core::primitive::u128>,
+            }
         }
     }
 }

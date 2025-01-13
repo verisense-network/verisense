@@ -1,3 +1,4 @@
+use std::alloc::System;
 use crate::{
     mem,
     runtime::{ComponentProvider, ContextAware},
@@ -9,6 +10,7 @@ use http_body_util::{BodyExt, Full};
 use hyper::{body::Incoming, Method, Request, Response, Uri};
 use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::SystemTime;
 use tokio::{
     net::TcpStream,
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -63,10 +65,11 @@ impl HttpCallExecutor {
                     tokio::spawn(async move {
                         let response = tokio::select! {
                             response = Self::send_request(req) => {
-                                log::info!("🌐 Http response: {:?}", response);
+
+                                //log::info!("🌐 Http response: {:?}", response.clone().unwrap().head);
                                 response
                             },
-                            _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+                            _ = tokio::time::sleep(std::time::Duration::from_secs(60)) => {
                                 log::info!("🌐 Http response: timeout");
                                 Err(RuntimeError::HttpError("timeout".to_string()))
                             },
@@ -164,15 +167,21 @@ impl HttpCallExecutor {
     }
 
     async fn send_request(req: HttpRequestWithCallback) -> CallResult<HttpResponse> {
+        log::info!("time1:{:?}", SystemTime::now());
         let https = hyper_tls::HttpsConnector::new();
+        log::info!("time2:{:?}", SystemTime::now());
         let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
+        log::info!("time3:{:?}", SystemTime::now());
         let response = client
             .request(req.request)
             .await
             .map_err(|e| RuntimeError::HttpError(e.to_string()))?;
-        Self::accumulate_frames(response)
+        log::info!("time4:{:?}", SystemTime::now());
+        let r = Self::accumulate_frames(response)
             .await
-            .map_err(|e| RuntimeError::HttpError(e.to_string()))
+            .map_err(|e| RuntimeError::HttpError(e.to_string()));
+        log::info!("time5:{:?}", SystemTime::now());
+        r
     }
 }
 

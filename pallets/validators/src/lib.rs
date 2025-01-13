@@ -5,14 +5,14 @@ pub mod weights;
 
 use crate::types::{ActiveEraInfo, Forcing, SessionInterface};
 use frame_support::pallet_prelude::*;
-use frame_support::traits::DefensiveSaturating;
+use frame_support::traits::{DefensiveSaturating, UnixTime};
 use frame_system::pallet_prelude::*;
 use pallet_session::historical;
 use sp_core::crypto::KeyTypeId;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{Percent, SaturatedConversion};
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
-use vrs_support::{log, RestakingInterface, ValidatorsInterface};
+use vrs_support::{log, RestakingInterface, ValidatorsInterface, EraRewardPoints};
 pub use weights::*;
 
 pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-validators";
@@ -20,7 +20,7 @@ pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-validators";
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use crate::types::{ActiveEraInfo, EraRewardPoints, SessionInterface};
+    use crate::types::{ActiveEraInfo, SessionInterface};
     use frame_support::traits::UnixTime;
     use sp_runtime::Percent;
     use sp_staking::EraIndex;
@@ -45,7 +45,7 @@ pub mod pallet {
         #[pallet::constant]
         type HistoryDepth: Get<u32>;
 
-        type ValidatorsProvider: RestakingInterface<Self::AccountId>;
+        type RestakingInterface: RestakingInterface<Self::AccountId>;
     }
 
     #[pallet::storage]
@@ -164,7 +164,7 @@ impl<T: Config> ValidatorsInterface<T::AccountId> for Pallet<T> {
 }
 
 impl<T: Config> Pallet<T> {
-    pub fn reward_by_ids(validators_points: impl IntoIterator<Item = (T::AccountId, u32)>) {
+    pub fn reward_by_ids(validators_points: impl IntoIterator<Item = (T::AccountId, u128)>) {
         if let Some(active_era) = Self::active_era() {
             <ErasRewardPoints<T>>::mutate(active_era.index, |era_rewards| {
                 for (validator, points) in validators_points.into_iter() {
@@ -188,8 +188,9 @@ impl<T: Config> Pallet<T> {
             log!(info, "Era length: {:?}", era_length);
             if era_length < T::SessionsPerEra::get() {
                 // The 5th session of the era.
-                if era_length == T::SessionsPerEra::get() - 1 {
-                    T::ValidatorsProvider::plan_new_era();
+                if era_length == T::SessionsPerEra::get() - 1
+                {
+                    T::RestakingInterface::plan_new_era();
                 }
                 return None;
             }
@@ -230,7 +231,7 @@ impl<T: Config> Pallet<T> {
 
     fn start_era(start_session: SessionIndex) {
         let active_era = ActiveEra::<T>::mutate(|active_era| {
-            let next_set_id = T::ValidatorsProvider::next_validators_set_id();
+            let next_set_id = T::RestakingInterface::next_validators_set_id();
             let new_index = active_era.as_ref().map(|info| info.index + 1).unwrap_or(0);
             *active_era = Some(ActiveEraInfo {
                 index: new_index,
@@ -259,38 +260,8 @@ impl<T: Config> Pallet<T> {
     }
 
     fn end_era(active_era: ActiveEraInfo, _session_index: SessionIndex) {
-        /* if let Some(active_era_start) = active_era.start {
-            let now_as_millis_u64 = T::UnixTime::now().as_millis().saturated_into::<u64>();
-            let era_duration = (now_as_millis_u64.defensive_saturating_sub(active_era_start))
-                .saturated_into::<u64>();
-            let staked = Self::eras_total_stake(&active_era.index);
-            let issuance = T::Currency::total_issuance();
-            let total_payout = Self::era_payout();
-            let max_staked_rewards =
-                MaxStakedRewards::<T>::get().unwrap_or(Percent::from_percent(100));
-            let validator_payout = total_payout * max_staked_rewards;
-
-            let total_payout = validator_payout.saturating_add(remainder);
-            let max_staked_rewards =
-                MaxStakedRewards::<T>::get().unwrap_or(Percent::from_percent(100));
-
-            // apply cap to validators payout and add difference to remainder.
-            let validator_payout = validator_payout.min(max_staked_rewards * total_payout);
-            let remainder = total_payout.saturating_sub(validator_payout);
-
-            Self::deposit_event(Event::<T>::EraPaid {
-                era_index: active_era.index,
-                validator_payout,
-                staker_payout: 0 //default //TODO
-            });
-
-            // Set ending era reward.
-            <ErasValidatorReward<T>>::insert(&active_era.index, validator_payout);
-            T::RewardRemainder::on_unbalanced(T::Currency::issue(remainder));
-            //TODO
-            // Clear offending validators.
-        //	<OffendingValidators<T>>::kill();
-        }*/
+        let v = Self::eras_reward_points(active_era.index);
+        T::RestakingInterface::on_end_era(active_era.index, v);
     }
 
     fn validators_with_exposure(validators: Vec<T::AccountId>) -> Vec<(T::AccountId, u128)> {
@@ -311,7 +282,7 @@ impl<T: Config> Pallet<T> {
         start_session_index: SessionIndex,
         _is_genesis: bool,
     ) -> Option<Vec<T::AccountId>> {
-        let validators = T::ValidatorsProvider::provide();
+        let validators = T::RestakingInterface::provide();
         Self::deposit_event(Event::TriggerNewEra);
         Some(Self::trigger_new_era(start_session_index, validators))
     }
@@ -423,6 +394,6 @@ where
     T: Config + pallet_authorship::Config + pallet_session::Config,
 {
     fn note_author(author: T::AccountId) {
-        Self::reward_by_ids(vec![(author, 1)])
+        Self::reward_by_ids(vec![(author, 1u128)])
     }
 }

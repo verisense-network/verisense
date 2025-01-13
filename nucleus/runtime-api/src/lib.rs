@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use codec::{Codec, Decode, Encode};
 use scale_info::TypeInfo;
+use sp_core::bytes::to_hex;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::Vec;
 use vrs_primitives::*;
@@ -29,4 +30,19 @@ sp_api::decl_runtime_apis! {
     pub trait ValidatorApi {
         fn is_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId>;
     }
+}
+
+#[derive(Decode, Encode)]
+pub struct TT {
+    b:u64,
+    v:u32,
+}
+
+#[test]
+pub fn test() {
+    let r = TT {
+        b: 840000,
+        v: 846,
+    };
+    println!("{:?}", to_hex(r.encode().as_slice(), false));
 }

@@ -7,7 +7,6 @@ use sp_runtime::KeyTypeId;
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
-pub type RewardPoint = u32;
 
 #[derive(
     Copy,
@@ -35,20 +34,7 @@ impl Default for Forcing {
     }
 }
 
-#[derive(PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct EraRewardPoints<AccountId: Ord> {
-    pub total: RewardPoint,
-    pub individual: BTreeMap<AccountId, RewardPoint>,
-}
 
-impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
-    fn default() -> Self {
-        EraRewardPoints {
-            total: Default::default(),
-            individual: BTreeMap::new(),
-        }
-    }
-}
 
 /// Information regarding the active era (era in used in session).
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]

@@ -32,6 +32,7 @@ use vrs_support::{log, ValidatorsInterface};
 mod outchain;
 pub(crate) mod solidity;
 pub mod types;
+mod merkle;
 
 pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
 
@@ -40,7 +41,7 @@ pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use vrs_support::RestakingInterface;
+    use vrs_support::{EraRewardPoints, RestakingInterface};
 
     #[pallet::config]
     pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
@@ -76,6 +77,16 @@ pub mod pallet {
     #[pallet::unbounded]
     pub(crate) type IsActivated<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+    #[pallet::type_value]
+    pub fn DefaultRewardsPerPoint<T: Config>() -> u128 {
+        1u128
+    }
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn rewards_per_point)]
+    pub(crate) type RewardsAmountPerPoint<T: Config> = StorageValue<_, u128, ValueQuery,DefaultRewardsPerPoint<T>>;
+
     #[pallet::storage]
     pub(crate) type NextSetId<T: Config> = StorageValue<_, u32, ValueQuery>;
 
@@ -83,6 +94,12 @@ pub mod pallet {
     #[pallet::unbounded]
     pub(crate) type PlannedValidators<T: Config> =
         StorageValue<_, Vec<(T::AccountId, u128)>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn validator_source)]
+    pub(crate) type ValidatorsSource<T: Config> =
+    StorageMap<_,Twox64Concat, T::AccountId, (String,String), ValueQuery>; //EvmAddr, restaking platform
 
     #[pallet::storage]
     pub(crate) type NextNotificationId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -111,6 +128,27 @@ pub mod pallet {
 
     #[pallet::storage]
     pub(crate) type NeedFetchRestakingValidators<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+    #[pallet::storage]
+    pub(crate) type LatestClosedEra<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+    #[pallet::storage]
+    pub(crate) type EraTotalRewards<T: Config> = StorageMap<_, Blake2_128Concat, u32, u128, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn total_rewards)]
+    pub(crate) type TotalRewards<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u128, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn restaking_platform)]
+    pub(crate) type RestakingPlatform<T: Config> = StorageMap<_, Blake2_128Concat, String, (String, String), OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn rewards_root)]
+    pub(crate) type RewardsRoot<T: Config> = StorageValue<_, String, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
@@ -176,19 +214,40 @@ pub mod pallet {
         fn plan_new_era() {
             NeedFetchRestakingValidators::<T>::put(true);
         }
+
+        fn on_end_era(era_idx: u32, era_reward_points: EraRewardPoints<T::AccountId>) {
+            let reward_per_point = Self::rewards_per_point();
+            let mut total_era_rewards = 0u128;
+            for (acc, point) in era_reward_points.individual {
+                let rewds = point * reward_per_point;
+                total_era_rewards += rewds;
+                TotalRewards::<T>::mutate(acc, |r| {
+                     *r += rewds;
+                });
+            };
+            EraTotalRewards::<T>::insert(era_idx, total_era_rewards);
+            LatestClosedEra::<T>::put(era_idx);
+            Self::calculate_rewards_root();
+        }
     }
 
     #[pallet::genesis_config]
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
-        pub validators: Vec<(T::AccountId, u128)>,
+        pub validators: Vec<(T::AccountId, u128, String, String)>, //AccountId, total_staking, evm_addr, platform
+
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             <NextSetId<T>>::put(1); // set 0 is already in the genesis
-            <PlannedValidators<T>>::put(self.validators.clone());
+            let mut validators = vec![];
+            for v in self.validators.clone() {
+                validators.push((v.0.clone(), v.1));
+                <ValidatorsSource<T>>::insert(v.0,(v.2, v.3));
+            }
+            <PlannedValidators<T>>::put(validators);
         }
     }
 
@@ -273,10 +332,27 @@ pub mod pallet {
                 );
                 return Err(Error::<T>::NotValidator.into());
             }
-            let r = payload.observations;
-            PlannedValidators::<T>::put(r);
+            let validators_with_source = payload.observations;
+            let mut validators = vec![];
+            for x in validators_with_source {
+                ValidatorsSource::<T>::insert(x.0.clone(),(x.2, x.3));
+                validators.push((x.0, x.1));
+            }
+            PlannedValidators::<T>::put(validators);
             NeedFetchRestakingValidators::<T>::put(false);
             Self::deposit_event(Event::Simple);
+            Ok(().into())
+        }
+
+        #[pallet::weight(1)]
+        pub fn add_restaking_platform(
+            origin: OriginFor<T>,
+            platform_source_name: String,
+            url: String,
+            middleware_address: String,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+            RestakingPlatform::<T>::insert(platform_source_name, (url, middleware_address));
             Ok(().into())
         }
     }

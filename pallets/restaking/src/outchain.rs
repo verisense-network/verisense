@@ -8,12 +8,16 @@ use sp_core::U256;
 use sp_runtime::offchain::http;
 use sp_runtime::offchain::http::Response;
 use sp_runtime::traits::TrailingZeroInput;
-pub const EVM_URL: &str = "https://ethereum-holesky-rpc.publicnode.com";
-pub const MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
+
+const SYMBIOTIC_EVM_URL: &str = "https://ethereum-holesky-rpc.publicnode.com";
+const SYMBIOTIC_MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
+const KARAK_EVM_URL: &str = "https://ethereum-holesky-rpc.publicnode.com";
+const KARAK_MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
 
 impl<T: Config> Pallet<T> {
-    pub fn get_validators_list() -> Result<Vec<(T::AccountId, u128)>, http::Error> {
-        let data = query_validators_params(1u32);
+
+    fn request_validators_list(rpc_url: &str, middleware: &str, source: &str) -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
+        let data = query_validators_params();
         let mut body = br#"
         {
           "id": 1,
@@ -29,7 +33,7 @@ impl<T: Config> Pallet<T> {
             br#"",
               "to": ""#,
         );
-        body.extend(MIDDLEWARE.as_bytes().to_vec());
+        body.extend(middleware.as_bytes().to_vec());
         body.extend(
             br#"",
               "type": "0x02"
@@ -38,11 +42,12 @@ impl<T: Config> Pallet<T> {
           ]
         }"#,
         );
+        log!(info, "request body: {}", String::from_utf8(body.clone()).unwrap());
 
         let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(2_000));
         let request = http::Request::default()
             .method(http::Method::Post)
-            .url(EVM_URL)
+            .url(rpc_url)
             .body(vec![body])
             .add_header("Content-Type", "application/json");
         let pending = request
@@ -68,12 +73,15 @@ impl<T: Config> Pallet<T> {
             Ok(r) => {
                 log!(info, "{:?}", &r);
                 let mut v = vec![];
+                log!(info, "query validators result {}", r.result.clone());
                 let vd = decode_query_validators_resp(r.result);
                 for d in vd {
                     v.push((
                         T::AccountId::decode(&mut TrailingZeroInput::new(d.key.as_slice()))
                             .unwrap(),
                         d.stake,
+                        d.evm_address,
+                        source.to_string(),
                     ));
                 }
                 Ok(v)
@@ -83,6 +91,16 @@ impl<T: Config> Pallet<T> {
                 return Ok(vec![]);
             }
         }
+
+    }
+    pub fn get_validators_list() -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
+        let mut vc = vec![];
+
+        for (k, v) in RestakingPlatform::<T>::iter() {
+            let mut r = Self::request_validators_list(v.0.as_str(), v.1.as_str(), k.as_str())?;
+            vc.append(&mut r);
+        }
+        Ok(vc)
     }
 
     pub fn submit_unsigned_transaction(

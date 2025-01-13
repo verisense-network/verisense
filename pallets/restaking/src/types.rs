@@ -168,7 +168,7 @@ pub struct ObservationsPayload<AccountId, Public, BlockNumber> {
     pub public: Public,
     pub key_data: Vec<u8>,
     pub block_number: BlockNumber,
-    pub observations: Vec<(AccountId, u128)>,
+    pub observations: Vec<(AccountId, u128, String, String)>,
 }
 
 impl<T: SigningTypes> SignedPayload<T>

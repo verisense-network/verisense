@@ -8,6 +8,7 @@ use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
 };
+use alloc::string::String;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -45,6 +46,12 @@ pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub current_event: u64,
     pub root_state: Hash,
     pub peers: alloc::vec::Vec<NodeId>,
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, Default, TypeInfo)]
+pub struct RewardsProof {
+    pub proof: alloc::vec::Vec<String>,
+    pub amount: String,
 }
 
 pub mod keys {
