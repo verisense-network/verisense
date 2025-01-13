@@ -166,9 +166,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                138u8, 154u8, 91u8, 72u8, 70u8, 60u8, 173u8, 1u8, 19u8, 83u8, 51u8, 196u8, 37u8,
-                205u8, 64u8, 184u8, 143u8, 89u8, 236u8, 1u8, 52u8, 6u8, 58u8, 250u8, 171u8, 245u8,
-                179u8, 239u8, 49u8, 208u8, 10u8, 214u8,
+                178u8, 135u8, 133u8, 173u8, 123u8, 172u8, 144u8, 187u8, 216u8, 103u8, 26u8, 86u8,
+                237u8, 124u8, 201u8, 170u8, 119u8, 186u8, 51u8, 35u8, 76u8, 147u8, 46u8, 197u8,
+                46u8, 192u8, 223u8, 146u8, 224u8, 59u8, 18u8, 73u8,
             ]
     }
     pub mod system {
@@ -5723,9 +5723,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            245u8, 51u8, 73u8, 243u8, 217u8, 201u8, 235u8, 80u8, 161u8, 74u8, 56u8,
-                            8u8, 18u8, 86u8, 171u8, 157u8, 204u8, 56u8, 39u8, 7u8, 43u8, 231u8,
-                            42u8, 24u8, 242u8, 172u8, 166u8, 230u8, 102u8, 193u8, 179u8, 197u8,
+                            236u8, 164u8, 134u8, 179u8, 172u8, 101u8, 110u8, 177u8, 125u8, 123u8,
+                            81u8, 244u8, 78u8, 30u8, 114u8, 250u8, 12u8, 120u8, 84u8, 236u8, 223u8,
+                            199u8, 54u8, 40u8, 22u8, 245u8, 33u8, 20u8, 132u8, 179u8, 222u8, 43u8,
                         ],
                     )
                 }
@@ -5743,10 +5743,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            12u8, 151u8, 178u8, 49u8, 222u8, 117u8, 116u8, 202u8, 186u8, 176u8,
-                            19u8, 181u8, 78u8, 37u8, 19u8, 173u8, 250u8, 211u8, 27u8, 142u8, 245u8,
-                            118u8, 42u8, 36u8, 216u8, 197u8, 149u8, 253u8, 158u8, 7u8, 123u8,
-                            108u8,
+                            79u8, 105u8, 17u8, 22u8, 177u8, 23u8, 246u8, 193u8, 29u8, 2u8, 45u8,
+                            138u8, 138u8, 206u8, 181u8, 61u8, 195u8, 217u8, 199u8, 45u8, 227u8,
+                            11u8, 204u8, 253u8, 36u8, 233u8, 97u8, 154u8, 114u8, 62u8, 128u8,
+                            116u8,
                         ],
                     )
                 }
@@ -5778,9 +5778,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            60u8, 240u8, 53u8, 89u8, 82u8, 31u8, 164u8, 3u8, 90u8, 64u8, 20u8,
-                            204u8, 58u8, 158u8, 14u8, 135u8, 1u8, 80u8, 193u8, 24u8, 76u8, 252u8,
-                            145u8, 21u8, 125u8, 232u8, 209u8, 33u8, 176u8, 3u8, 124u8, 232u8,
+                            201u8, 74u8, 94u8, 13u8, 219u8, 19u8, 82u8, 122u8, 245u8, 139u8, 250u8,
+                            90u8, 25u8, 68u8, 56u8, 142u8, 109u8, 17u8, 220u8, 184u8, 191u8, 120u8,
+                            237u8, 36u8, 119u8, 189u8, 99u8, 11u8, 26u8, 215u8, 74u8, 102u8,
                         ],
                     )
                 }
@@ -5944,14 +5944,12 @@ pub mod codegen {
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub struct CreateNucleus {
                     pub name: create_nucleus::Name,
-                    pub wasm_hash: create_nucleus::WasmHash,
                     pub energy: create_nucleus::Energy,
                     pub capacity: create_nucleus::Capacity,
                 }
                 pub mod create_nucleus {
                     use super::runtime_types;
                     pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
-                    pub type WasmHash = ::subxt_core::utils::H256;
                     pub type Energy = ::core::option::Option<::core::primitive::u128>;
                     pub type Capacity = ::core::primitive::u8;
                 }
@@ -6013,7 +6011,6 @@ pub mod codegen {
                 pub fn create_nucleus(
                     &self,
                     name: types::create_nucleus::Name,
-                    wasm_hash: types::create_nucleus::WasmHash,
                     energy: types::create_nucleus::Energy,
                     capacity: types::create_nucleus::Capacity,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::CreateNucleus>
@@ -6023,15 +6020,14 @@ pub mod codegen {
                         "create_nucleus",
                         types::CreateNucleus {
                             name,
-                            wasm_hash,
                             energy,
                             capacity,
                         },
                         [
-                            235u8, 228u8, 147u8, 80u8, 107u8, 191u8, 232u8, 154u8, 130u8, 137u8,
-                            139u8, 85u8, 204u8, 206u8, 117u8, 21u8, 194u8, 194u8, 131u8, 76u8,
-                            146u8, 147u8, 144u8, 17u8, 44u8, 163u8, 238u8, 98u8, 210u8, 75u8,
-                            141u8, 18u8,
+                            121u8, 246u8, 119u8, 72u8, 41u8, 123u8, 241u8, 130u8, 82u8, 219u8,
+                            114u8, 99u8, 110u8, 32u8, 248u8, 10u8, 85u8, 149u8, 213u8, 94u8, 13u8,
+                            217u8, 115u8, 93u8, 181u8, 213u8, 219u8, 160u8, 220u8, 217u8, 218u8,
+                            118u8,
                         ],
                     )
                 }
@@ -7446,7 +7442,6 @@ pub mod codegen {
                     #[codec(index = 0)]
                     create_nucleus {
                         name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                        wasm_hash: ::subxt_core::utils::H256,
                         energy: ::core::option::Option<::core::primitive::u128>,
                         capacity: ::core::primitive::u8,
                     },
