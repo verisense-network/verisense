@@ -160,14 +160,13 @@ pub mod pallet {
     where
         T::AccountId: Into<[u8; 32]>,
     {
+        // TODO check the capacity
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::create_nucleus())]
         pub fn create_nucleus(
             origin: OriginFor<T>,
             name: Vec<u8>,
-            wasm_hash: T::Hash,
             energy: Option<u128>,
-            // TODO check the capacity
             capacity: u8,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
