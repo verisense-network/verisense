@@ -35,7 +35,9 @@
           "validators": [
             [
               "5GxCNDyhqv2hx2zcQfse58vLWcueJKMjXPTgzcJbi9khtNrf",
-              10000
+              10000,
+              "0x0000000000000000000000000000000000000000",
+              "Original"
             ]
           ]
         },
