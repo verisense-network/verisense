@@ -1,22 +1,672 @@
-mod bytecode;
-mod cage;
-mod host_func;
 mod keystore;
-mod mem;
-mod nucleus;
-mod runtime;
-mod state;
-mod vm;
+
+use codec::{Decode, Encode};
+use frame_system_rpc_runtime_api::AccountNonceApi;
+use futures::prelude::*;
+use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_network::{service::traits::NetworkService, PeerId};
+use sc_transaction_pool_api::{TransactionPool, TransactionSource};
+use sp_api::{Core, Metadata, ProvideRuntimeApi};
+use sp_blockchain::HeaderBackend;
+use sp_keystore::KeystorePtr;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::mpsc::{self, Receiver, Sender};
+use vrs_metadata::{
+    codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata, METADATA_BYTES,
+};
+use vrs_nucleus_executor::{
+    host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync},
+    Event, Gluon, Nucleus, NucleusResponse, NucleusState, NucleusTunnel, Runtime, RuntimeParams,
+    WasmInfo,
+};
+use vrs_nucleus_p2p::NucleusP2pMsg;
+use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
+use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
+
+pub struct CageParams<P, B, C, BN> {
+    pub keystore: KeystorePtr,
+    pub transaction_pool: Arc<P>,
+    pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
+    pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
+    pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
+    pub net_service: Arc<dyn NetworkService>,
+    // pub noti_service: Box<dyn NotificationService>,
+    pub client: Arc<C>,
+    pub nucleus_home_dir: std::path::PathBuf,
+    pub _phantom: std::marker::PhantomData<(B, BN)>,
+}
+
+struct NucleusCage {
+    nucleus_id: NucleusId,
+    tunnel: NucleusTunnel,
+    pending_requests: Vec<Gluon>,
+    event_id: u64,
+    state: Arc<NucleusState>,
+    // TODO monadring-related
+}
+
+impl NucleusCage {
+    fn validate_token(&self) -> bool {
+        true
+    }
+
+    fn pre_commit(&self, id: u64, msg: &[u8]) -> anyhow::Result<()> {
+        // let handle = self.db.cf_handle("seq").unwrap();
+        // self.db.put_cf(handle, &id.to_be_bytes(), msg)?;
+        Ok(())
+    }
+
+    fn drain(&mut self, imports: Vec<Event>) {
+        // TODO handle imports first
+        // for `TimerRegister` and `HttpRequest`, we need to check its id
+        let pipe = self.pending_requests.drain(..).collect::<Vec<_>>();
+        for gluon in pipe.into_iter() {
+            self.event_id += 1;
+            let event = Event::from(&gluon);
+            if let Err(e) = self.pre_commit(self.event_id, &event.encode()) {
+                log::error!(
+                    "couldn't save event {} of nucleus {}: {:?}",
+                    self.event_id,
+                    self.nucleus_id,
+                    e
+                );
+                // TODO only reply request from rpc
+                // if let Some(reply_to) = gluon.2 {
+                //     let _ = reply_to.send(Err((-42000, "Event persistence failed.".to_string())));
+                // }
+            } else {
+                let _ = self.tunnel.send((self.event_id, gluon));
+            }
+        }
+    }
+
+    fn forward(&mut self, gluon: Gluon) {
+        if matches!(gluon, Gluon::GetRequest { .. }) {
+            let _ = self.tunnel.send((0, gluon));
+        } else {
+            self.pending_requests.push(gluon);
+        }
+    }
+}
+
+pub fn start_nucleus_cage<P, B, C, BN>(params: CageParams<P, B, C, BN>) -> impl Future<Output = ()>
+where
+    B: sp_runtime::traits::Block<Extrinsic = sp_runtime::OpaqueExtrinsic>,
+    BN: Backend<B>,
+    P: TransactionPool<Block = B, Hash = B::Hash> + 'static,
+    C: BlockBackend<B>
+        + StorageProvider<B, BN>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + HeaderBackend<B>
+        + 'static,
+    C::Api: Core<B> + 'static,
+    C::Api: Metadata<B> + 'static,
+    C::Api: ValidatorApi<B> + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
+    C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
+{
+    let CageParams {
+        keystore,
+        transaction_pool,
+        mut nucleus_rpc_rx,
+        mut p2p_cage_rx,
+        mut noti_sender,
+        mut net_service,
+        client,
+        nucleus_home_dir,
+        _phantom,
+    } = params;
+    async move {
+        let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
+        let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
+        if !std::fs::exists(&nucleus_home_dir)
+            .expect("fail to check nucleus directory, make sure the you have access right on the directory.")
+        {
+            std::fs::create_dir_all(&nucleus_home_dir).inspect_err(|e| {
+                log::error!(
+                    "fail to create nucleus directory at {:?}, due to {:?}",
+                    nucleus_home_dir,
+                    e
+                )
+            }).expect("fail to create nucleus directory");
+        }
+        log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
+        // TODO what if our node is far behind the best block?
+        let metadata =
+            metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
+
+        let mut block_monitor = client.every_import_notification_stream();
+        let timer_scheduler = Arc::new(host_func::SchedulerAsync::new());
+        let (http_register, mut http_executor) = host_func::new_http_manager();
+        let http_register = Arc::new(http_register);
+
+        // TODO mock monadring
+        //////////////////////////////////////////////////////
+        let (token_tx, mut token_rx) = mpsc::unbounded_channel::<NucleusId>();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                match token_tx.send(NucleusId::from([0u8; 32])) {
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+        });
+        //////////////////////////////////////////////////////
+        let author = keystore
+            .sr25519_public_keys(sp_core::crypto::key_types::AURA)
+            .first()
+            .copied()
+            .expect("No essential session key found, please insert one");
+
+        let hash = client.info().best_hash;
+        let api = client.runtime_api();
+        let controller = api
+            .is_active_validator(hash, sp_core::crypto::key_types::AURA, author.to_vec())
+            .expect("couldn't load runtime api");
+        if controller.is_none() {
+            log::warn!("Our node is not a validator!");
+            return;
+        }
+        let controller = controller.unwrap();
+        let chosen = get_nuclei_for_node(client.clone(), controller.clone(), hash);
+        for (id, info) in chosen {
+            let nucleus_path = nucleus_home_dir.join(id.to_string());
+            start_nucleus(
+                id.clone(),
+                info,
+                nucleus_path.as_path(),
+                http_register.clone(),
+                timer_scheduler.clone(),
+                &mut nuclei,
+            )
+            .expect("fail to start nucleus");
+        }
+        log::info!("🔌 Nucleus cage controller: {}", controller);
+        loop {
+            tokio::select! {
+                // handle monadring protocol
+                Some(msg) = p2p_cage_rx.recv() => {
+                    match msg {
+                        NucleusP2pMsg::ReqRes(req) => {
+                            log::info!("in cage: incoming request: {:?}", req);
+                        }
+                        NucleusP2pMsg::Noti(noti) => {
+                            log::info!("in cage: incoming notification: {:?}", noti);
+                        }
+                    }
+                },
+                // handle hostnet events
+                block = block_monitor.next() => {
+                    let hash = block.expect("block importing error").hash;
+                    let events = extract_events::<_, _, _, SubstrateConfig>(client.clone(), hash, metadata.clone())
+                        .expect("fail to extract events");
+                    if events.is_none() {
+                        continue;
+                    }
+                    let events = events.unwrap();
+                    for event in events.iter() {
+                        if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusCreated>().ok().flatten()) {
+                            let nucleus_id = ev.id;
+                            let public_input = ev.public_input;
+                            let tx = gen_vrf_tx(client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash, metadata.clone())
+                                .inspect_err(|e| log::error!("fail to submit vrf: {:?}", e))
+                                .expect("fail to submit vrf");
+                            transaction_pool.submit_one(hash, TransactionSource::External, tx).await.expect("fail to submit tx");
+                        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
+                            let nucleus_id = ev.id;
+                            let digest = ev.wasm_hash;
+                            let version = ev.wasm_version;
+                            // TODO download the wasm from ev.wasm_location
+                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
+                            if let Err(e) = upgrade_nucleus_wasm(
+                                NucleusId::from(nucleus_id.0),
+                                digest,
+                                version,
+                                nucleus_path.as_path(),
+                                &mut nuclei,
+                            ) {
+                                log::error!("Upgrading nucleus {} wasm failed: {:?}", nucleus_id, e);
+                                panic!("fail to upgrade nucleus wasm, there is nothing we can do.");
+                            }
+                        } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
+                            let nucleus_id = ev.id;
+                            let api = client.runtime_api();
+                            let info = api
+                                .get_nucleus_info(hash, NucleusId::from(nucleus_id.0))
+                                .inspect_err(|e| log::error!("fail to get nucleus info while receiving nucleus created event: {:?}", e))
+                                .ok()
+                                .flatten()
+                                .expect("fail to get nucleus info while receiving nucleus created event");
+                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
+                            start_nucleus(
+                                NucleusId::from(nucleus_id.0),
+                                info,
+                                nucleus_path.as_path(),
+                                http_register.clone(),
+                                timer_scheduler.clone(),
+                                &mut nuclei,
+                            ).expect("fail to start nucleus");
+                        }
+                    }
+                },
+                Some(entry) = timer_scheduler.pop() => {
+                    log::info!("⏲️ Timer triggered: {:?}", entry);
+                    if let Some(nucleus) = nuclei.get_mut(&entry.nucleus_id) {
+                        nucleus.forward(Gluon::TimerTrigger {
+                            task_id: 0,
+                            endpoint: entry.func_name,
+                            payload: entry.func_params,
+                        });
+                    }
+                },
+                Some(http_reply) = http_executor.recv_response() => {
+                    log::info!("🌐 Http reply: {:?}", http_reply);
+                    let HttpResponseWithCallback {
+                        nucleus_id,
+                        req_id,
+                        response,
+                    } = http_reply;
+                    if let Some(nucleus) = nuclei.get_mut(&nucleus_id) {
+                        nucleus.forward(Gluon::HttpCallback {
+                            request_id: req_id,
+                            payload: response,
+                        });
+                    }
+                },
+                Some((module, gluon)) = nucleus_rpc_rx.recv() => {
+                    if let Some(nucleus) = nuclei.get_mut(&module) {
+                        nucleus.forward(gluon);
+                    } else {
+                        reply_directly(gluon, Err((-40004, "Nucleus not found.".to_string())));
+                    }
+                },
+                // TODO replace this with token received
+                token = token_rx.recv() => {
+                    log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
+                    // TODO only drain the associated nucleus
+                    nuclei.values_mut().for_each(|nucleus| nucleus.drain(vec![]));
+                }
+            }
+        }
+    }
+}
+
+fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
+    match gluon {
+        Gluon::PostRequest { reply_to, .. } | Gluon::GetRequest { reply_to, .. } => {
+            // TODO not sure the code upgrade will be handled here in the future
+            let _ = reply_to.expect("").send(msg);
+        }
+        _ => {}
+    }
+}
+
+fn extract_events<B, D, C, T>(
+    client: Arc<C>,
+    hash: B::Hash,
+    metadata: RuntimeMetadata,
+) -> Result<Option<events::Events<T>>, Box<dyn std::error::Error>>
+where
+    B: sp_runtime::traits::Block,
+    D: Backend<B>,
+    C: BlockBackend<B>
+        + StorageProvider<B, D>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
+    T: vrs_metadata::Config,
+{
+    let key = vrs_metadata::codegen::storage().system().events();
+    let storage_key = sp_core::storage::StorageKey(key.to_root_bytes());
+    client
+        .storage(hash, &storage_key)
+        .inspect_err(|e| log::error!("failed to get events: {:?}", e))
+        .map(|b| b.map(|v| events::decode_from::<T>(v.0, metadata)))
+        .map_err(|e| e.into())
+}
+
+fn gen_vrf_tx<B, D, C>(
+    client: Arc<C>,
+    nucleus_id: NucleusId,
+    keystore: KeystorePtr,
+    public_input: &[u8],
+    hash: B::Hash,
+    metadata: RuntimeMetadata,
+) -> Result<sp_runtime::OpaqueExtrinsic, Box<dyn std::error::Error>>
+where
+    B: sp_runtime::traits::Block<Extrinsic = sp_runtime::OpaqueExtrinsic> + 'static,
+    D: Backend<B>,
+    C: BlockBackend<B> + StorageProvider<B, D> + ProvideRuntimeApi<B> + 'static,
+    C::Api: Core<B> + 'static,
+    C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
+{
+    let (submitter, vrf) = crate::keystore::sign_to_participate(
+        keystore.clone(),
+        keys::NUCLEUS_VRF_KEY_TYPE,
+        public_input,
+    )?;
+    let submitter: AccountId = submitter.into();
+    // let key = vrs_metadata::codegen::storage().system().block_hash(0);
+    // TODO for unknown reasons, the key is none so we just hard-code the key here
+    let key = hex::decode(
+        "26aa394eea5630e07c48ae0c9558cef7a44704b568d21667356a5a050c118746b4def25cfda6ef3a00000000",
+    )
+    .unwrap();
+    let storage_key = sp_core::storage::StorageKey(key);
+    let genesis_hash = client
+        .storage(hash, &storage_key)
+        .ok()
+        .flatten()
+        .expect("couldn't get genesis hash");
+    let genesis_hash = sp_core::H256::from_slice(&genesis_hash.0);
+    let api = client.runtime_api();
+    let nonce = api.account_nonce(hash, submitter.clone())?;
+    let version = api.version(hash)?;
+    let state = vrs_metadata::tx::ClientState::<SubstrateConfig> {
+        metadata,
+        genesis_hash,
+        runtime_version: vrs_metadata::tx::RuntimeVersion {
+            spec_version: version.spec_version,
+            transaction_version: version.transaction_version,
+        },
+    };
+    let call = vrs_metadata::codegen::tx().nucleus().register(
+        vrs_metadata::utils::AccountId32(nucleus_id.into()),
+        vrs_metadata::codegen::runtime_types::sp_core::sr25519::vrf::VrfSignature {
+            pre_output: vrf
+                .pre_output
+                .encode()
+                .try_into()
+                .expect("invalid vrf output"),
+            proof: vrf.proof.encode().try_into().expect("invalid vrf proof"),
+        },
+    );
+    let params = vrs_metadata::config::DefaultExtrinsicParamsBuilder::new()
+        .nonce(nonce as u64)
+        .build();
+    let unsigned_tx = vrs_metadata::tx::create_partial_signed(&call, &state, params)
+        .expect("couldn't create paritial transaction");
+    let raw = unsigned_tx.signer_payload();
+    let signature = crate::keystore::sign_tx(keystore.clone(), keys::NUCLEUS_VRF_KEY_TYPE, raw)?;
+    let addr =
+        vrs_metadata::utils::MultiAddress::Id(vrs_metadata::utils::AccountId32(submitter.into()));
+    let signature = vrs_metadata::utils::MultiSignature::Sr25519(signature);
+    let signed = unsigned_tx.sign_with_address_and_signature(&addr, &signature);
+    let tx = sp_runtime::OpaqueExtrinsic::from_bytes(signed.encoded())?;
+    Ok(tx)
+}
+
+fn get_nuclei_for_node<B, D, C>(
+    client: Arc<C>,
+    id: AccountId,
+    hash: B::Hash,
+) -> Vec<(NucleusId, NucleusInfo<AccountId, Hash, NodeId>)>
+where
+    B: sp_runtime::traits::Block,
+    D: Backend<B>,
+    C: BlockBackend<B>
+        + StorageProvider<B, D>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + 'static,
+    C::Api: NucleusApi<B, Address> + 'static,
+{
+    let api = client.runtime_api();
+    let key = codegen::storage().nucleus().instances_iter();
+    let instance_key = sp_core::storage::StorageKey(key.to_root_bytes());
+    let list = client
+        .storage(hash, &instance_key)
+        .ok()
+        .flatten()
+        .map(|data| <Vec<(NucleusId, Vec<AccountId>)> as Decode>::decode(&mut &data.0[..]).ok())
+        .flatten()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|(_, instances)| instances.iter().find(|&ist| *ist == id).is_some())
+        .filter_map(|(nucleus_id, _)| {
+            api.get_nucleus_info(hash, nucleus_id.clone())
+                .ok()?
+                .map(|info| (nucleus_id, info))
+        })
+        .collect::<Vec<_>>();
+    list
+}
+
+fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
+    let mut bytes = sp_core::twox_128(module).to_vec();
+    bytes.extend(&sp_core::twox_128(storage)[..]);
+    sp_core::storage::StorageKey(bytes)
+}
+
+fn upgrade_nucleus_wasm(
+    id: NucleusId,
+    digest: Hash,
+    version: u32,
+    nucleus_path: &std::path::Path,
+    nuclei: &mut HashMap<NucleusId, NucleusCage>,
+) -> anyhow::Result<()> {
+    let wasm = try_load_wasm(id.clone(), nucleus_path, version)?;
+    log::info!("🔨 Upgrading nucleus {} to version {}.", id, version,);
+    if let Some(mut cage) = nuclei.get_mut(&id) {
+        cage.forward(Gluon::CodeUpgrade { wasm });
+    }
+    Ok(())
+}
+
+fn try_load_wasm(
+    id: NucleusId,
+    nucleus_path: &std::path::Path,
+    version: u32,
+) -> anyhow::Result<WasmInfo> {
+    let wasm_path = nucleus_path.join(format!("wasm/{}.wasm", version));
+    let code = std::fs::read(&wasm_path)?;
+    log::info!("📦 Loaded wasm for nucleus {} version {}.", id, version);
+    Ok(WasmInfo { id, version, code })
+}
+
+// TODO lookup wasm before starting nucleus
+// the `CodeUpgrade` might happen before `InstanceRegistered` event
+fn start_nucleus(
+    id: NucleusId,
+    nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
+    nucleus_path: &std::path::Path,
+    http_register: Arc<HttpCallRegister>,
+    timer_scheduler: Arc<SchedulerAsync>,
+    nuclei: &mut HashMap<NucleusId, NucleusCage>,
+) -> anyhow::Result<()> {
+    let NucleusInfo {
+        name,
+        manager,
+        wasm_location,
+        wasm_hash,
+        wasm_version,
+        current_event,
+        root_state,
+        peers,
+    } = nucleus_info;
+    let config = RuntimeParams {
+        nucleus_id: id.clone(),
+        db_path: nucleus_path.join("db").into_boxed_path(),
+        http_register,
+        timer_scheduler,
+    };
+    let runtime = Runtime::init(config)?;
+    let state = runtime.state();
+    let tunnel = Nucleus::start(runtime);
+    log::info!("🚀 Nucleus {} started.", id);
+    nuclei.insert(
+        id.clone(),
+        NucleusCage {
+            nucleus_id: id.clone(),
+            tunnel,
+            pending_requests: vec![],
+            event_id: current_event,
+            state,
+        },
+    );
+    // TODO if start before wasm uploaded, we should skip this, but we must ensure the wasm is downloaded to local
+    if let Ok(wasm) = try_load_wasm(id.clone(), nucleus_path, wasm_version) {
+        let mut cage = nuclei
+            .get_mut(&id)
+            .expect("just inserted nucleus, should be found;qed");
+        cage.forward(Gluon::CodeUpgrade { wasm });
+    }
+    Ok(())
+}
 
 #[cfg(test)]
-pub mod test_suite;
+mod tests {
+    use super::*;
+    use crate::nucleus::Nucleus;
+    use crate::test_suite::new_mock_nucleus;
+    use std::sync::Arc;
+    use std::thread;
+    use stream::FuturesUnordered;
+    use tokio::task;
 
-pub(crate) use host_func::timer_entry::*;
+    struct ResultProcessor {
+        receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
+    }
+    impl ResultProcessor {
+        fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
+            let (sender, receiver) = tokio::sync::oneshot::channel();
+            thread::spawn(move || async move {
+                let reply_to = receiver.await;
+                println!("reply: {:?}", reply_to);
+            });
+            sender
+        }
+    }
+    fn decode<T: Decode>(data: Vec<u8>) -> T {
+        let mut reply = data.as_slice();
+        println!("reply: {:?}", reply);
+        let reply = <Result<T, String> as codec::Decode>::decode(&mut reply)
+            .unwrap()
+            .unwrap();
+        reply
+    }
+    #[tokio::test]
+    async fn test_scheduler_async() {
+        let wasm_path = "../../nucleus-examples/timer.wasm";
+        let (out_of_runtime, sender_cage) = new_mock_nucleus(wasm_path.to_string());
+        let sender1 = sender_cage.clone();
+        let (tree_tx, mut tree_rx) = tokio::sync::mpsc::channel(100);
+        tokio::spawn(async move {
+            while let Some(entry) = out_of_runtime.scheduler.pop().await {
+                println!("entry: {:?}", entry);
+                if entry.func_name == "test_set_perfect_tree_mod_timer" {
+                    let d =
+                        <(i32, i32) as Decode>::decode(&mut entry.func_params.as_slice()).unwrap();
+                    println!("d: {:?}", d);
+                    tree_tx.send(d).await.unwrap();
+                }
+                sender1
+                    .send((
+                        0,
+                        Gluon::TimerRequest {
+                            endpoint: entry.func_name,
+                            payload: entry.func_params,
+                        },
+                    ))
+                    .unwrap();
+            }
+        });
+        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        sender_cage
+            .send((
+                0,
+                Gluon::PostRequest {
+                    endpoint: "test_set_timer".to_owned(),
+                    payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
+                    // reply_to: Some(sender_reply),
+                    reply_to: Some(sender_reply),
+                },
+            ))
+            .unwrap();
+        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        sender_cage
+            .send((
+                0,
+                Gluon::GetRequest {
+                    endpoint: "test_get_timer".to_owned(),
+                    payload: vec![],
+                    reply_to: Some(sender_reply),
+                },
+            ))
+            .unwrap();
+        let reply = receiver_reply.await.unwrap().unwrap();
+        let mut reply = reply.as_slice();
+        let reply = <Result<String, String> as codec::Decode>::decode(&mut reply)
+            .unwrap()
+            .unwrap();
+        assert_eq!(reply, "init");
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+        sender_cage
+            .send((
+                0,
+                Gluon::GetRequest {
+                    endpoint: "test_get_timer".to_owned(),
+                    payload: vec![],
+                    reply_to: Some(sender_reply),
+                },
+            ))
+            .unwrap();
+        let reply = receiver_reply.await.unwrap().unwrap();
+        assert_eq!(decode::<String>(reply), "delay_complete abc 123");
+        let mut last_d = (0, 0);
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        while let Some(d) = tree_rx.recv().await {
+            assert!(d.1 >= last_d.1);
+            last_d = d;
+            if d.0 == 15 {
+                break;
+            }
+        }
+        // println!("{:?}", reply.1);
+        // assert_eq!(decode(reply.0), 555);
+        // let mut last = 0;
+        // let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
+        // // println!("aaa");
+        // let mut len = 2;
+        // while let Some(entry) = sc.pop().await {
+        //     let sender = sender_cage_clone.clone();
+        //     let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+        //     receivers.push(receiver_timer_reply);
+        //     let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
 
-pub use bytecode::WasmInfo;
-pub use cage::{start_nucleus_cage, CageParams};
-pub use nucleus::{Event, Gluon};
-pub use runtime::{Runtime, RuntimeParams};
-
-pub type NucleusResponse = Result<Vec<u8>, (i32, String)>;
-pub type ReplyTo = tokio::sync::oneshot::Sender<NucleusResponse>;
+        //     if let Err(err) = sender.send((
+        //         0,
+        //         Gluon::TimerRequest {
+        //             endpoint: entry.func_name,
+        //             payload: entry.func_params,
+        //             // reply_to: Some(sender_reply),
+        //             // pending_timer_queue: sender_timer_reply,
+        //         },
+        //     )) {
+        //         println!("fail to send timer entry: {:?}", err);
+        //     }
+        //     let reply = receiver_reply.await.unwrap().unwrap();
+        //     println!("reply: {:?}", reply);
+        //     assert!(result[decode(reply.clone()) as usize] >= last);
+        //     last = result[decode(reply) as usize];
+        //     let es = receivers.next().await.unwrap().unwrap();
+        //     for e in es.into_iter() {
+        //         sc.push(e);
+        //     }
+        //     len += 1;
+        //     if len == result.len() {
+        //         break;
+        //     }
+        //     // task::spawn_blocking(move || async move {
+        //     //     let reply = receiver_reply.await.unwrap();
+        //     //     println!("reply: {:?}", reply);
+        //     // });
+        // }
+    }
+}

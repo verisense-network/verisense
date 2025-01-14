@@ -2,7 +2,7 @@ use crate::{
     runtime::{ContextAware, FuncRegister},
     WasmInfo,
 };
-use codec::Decode;
+use codec::{Decode, Encode};
 use thiserror::Error;
 use wasmtime::{Engine, ExternType, Instance, Module, Store, Val};
 
@@ -28,13 +28,14 @@ pub enum WasmCallError {
     MemoryError(String),
     #[error("Function call error: {0}")]
     FunctionCallError(String),
-    #[error("Decode error: {0}")]
-    DecodeError(#[from] codec::Error),
+    #[error("Argument decoding error")]
+    DecodeError,
     #[error("Wasm internal error: {0}")]
     WasmInternalError(String),
     #[error("Wasm not initialized")]
     WasmNotInitialized,
 }
+
 const PAGE_SIZE: usize = 65536;
 const MAX_PAGE_COUNT: usize = 1024;
 impl Into<(i32, String)> for WasmCallError {
@@ -53,7 +54,7 @@ impl WasmCallError {
             WasmCallError::ResultPointerError => -5004,
             WasmCallError::MemoryError(_) => -5005,
             WasmCallError::FunctionCallError(_) => -5006,
-            WasmCallError::DecodeError(_) => -5007,
+            WasmCallError::DecodeError => -5007,
             WasmCallError::WasmInternalError(_) => -5008,
             WasmCallError::WasmNotInitialized => -5009,
         }
@@ -69,7 +70,7 @@ where
         let module = Module::from_binary(&engine, &wasm.code)?;
         module.exports().for_each(|ty| {
             if let ExternType::Func(func) = ty.ty() {
-                log::info!("user wasm export: {} {}", func.to_string(), ty.name());
+                log::debug!("user wasm export: {} {}", func.to_string(), ty.name());
             }
         });
         let mut store = Store::new(&engine, runtime.clone());
@@ -77,7 +78,7 @@ where
         let instance = linker.instantiate(&mut store, &module).unwrap();
         let memory = instance
             .get_memory(&mut store, "memory")
-            .ok_or(anyhow::anyhow!("no memory exported"))?;
+            .ok_or(anyhow::anyhow!("Invalid wasm code: no memory exported"))?;
         let ptr = memory.data_size(&store) as i32;
         memory.grow(&mut store, MAX_PAGE_COUNT as u64).unwrap();
         Ok(Self {
@@ -87,82 +88,37 @@ where
         })
     }
 
-    pub fn call_inner<T: codec::Encode>(
-        &mut self,
-        func: &str,
-        args: T,
-    ) -> Result<(), WasmCallError> {
+    pub fn call_http_callback<T: Encode>(&mut self, args: T) -> Result<(), WasmCallError> {
         self.space.data_mut().set_read_only(false);
-        self.call_no_returns(&func, args.encode())
+        self.call("__nucleus_http_callback", args.encode())
             .inspect_err(|e| {
                 log::warn!("fail to invoke inner method, {:?}", e);
                 self.space.data().rollback_all_pending_timer();
             })
             .inspect(|_| {
                 self.space.data().enqueue_all_pending_timer();
-            })
-    }
-
-    fn call_no_input_no_output(&mut self, func_name: &str) -> Result<(), WasmCallError> {
-        let func = self
-            .instance
-            .get_func(&mut self.space, &func_name)
-            .ok_or(WasmCallError::EndpointNotFound)?;
-        func.call(&mut self.space, &[], &mut [])
-            .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
+            })?;
         Ok(())
     }
 
-    fn call_no_returns(&mut self, func_name: &str, args: Vec<u8>) -> Result<(), WasmCallError> {
-        let func = self
-            .instance
-            .get_func(&mut self.space, &func_name)
-            .ok_or(WasmCallError::EndpointNotFound)?;
-        let memory = self
-            .instance
-            .get_memory(&mut self.space, "memory")
-            .ok_or(WasmCallError::NoMemoryExported)?;
-
-        if args.len() > PAGE_SIZE * MAX_PAGE_COUNT {
-            return Err(WasmCallError::ArgumentsSizeExceeded);
-        }
-
-        // Write args to memory
-        memory
-            .write(&mut self.space, self.__call_param_ptr as usize, &args)
-            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
-
-        // Call the function
-        func.call(
-            &mut self.space,
-            &[
-                Val::I32(self.__call_param_ptr as i32),
-                Val::I32(args.len() as i32),
-            ],
-            &mut [],
-        )
-        .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
-        Ok(())
-    }
-
-    pub fn call_timer(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+    pub fn call_timer_trigger(&mut self, func: &str, args: Vec<u8>) -> Result<(), WasmCallError> {
         self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_timer_{}", func);
-        self.call_method(&func, args)
+        self.call(&func, args)
             .inspect(|_| {
                 self.space.data().enqueue_all_pending_timer();
             })
             .inspect_err(|e| {
                 log::warn!("fail to invoke timer method, {:?}", e);
                 self.space.data().rollback_all_pending_timer();
-            })
+            })?;
+        Ok(())
     }
-    pub fn call_init(&mut self) -> Result<(), WasmCallError> {
+
+    pub fn call_init(&mut self) {
         self.space.data_mut().set_read_only(false);
-        let func = "__nucleus_init";
-        println!("call init");
         let _ = self
-            .call_no_input_no_output(&func)
+            .call("__nucleus_init", ().encode())
             .inspect(|_| {
                 self.space.data().enqueue_all_pending_timer();
             })
@@ -171,19 +127,19 @@ where
                 eprint!("fail to invoke init method, {:?}", e);
                 self.space.data().rollback_all_pending_timer();
             });
-        Ok(())
     }
+
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(true);
         let func = format!("__nucleus_get_{}", func);
-        let result = self.call_method(&func, args);
+        let result = self.call(&func, args);
         result
     }
 
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_post_{}", func);
-        self.call_method(&func, args)
+        self.call(&func, args)
             .inspect(|_| {
                 self.space.data().enqueue_all_pending_timer();
             })
@@ -193,7 +149,7 @@ where
             })
     }
 
-    fn call_method(&mut self, func_name: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+    fn call(&mut self, func_name: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         let func = self
             .instance
             .get_func(&mut self.space, &func_name)
@@ -203,6 +159,7 @@ where
             .get_memory(&mut self.space, "memory")
             .ok_or(WasmCallError::NoMemoryExported)?;
 
+        // TODO move this check on RPC
         if args.len() > PAGE_SIZE * MAX_PAGE_COUNT {
             return Err(WasmCallError::ArgumentsSizeExceeded);
         }
@@ -239,9 +196,10 @@ where
             .read(&mut self.space, result_ptr + 4, &mut result_data)
             .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
 
-        // Decode the result
-        let result = <Result<Vec<u8>, String> as Decode>::decode(&mut result_data.as_slice())?
-            .map_err(|e| WasmCallError::WasmInternalError(e))?;
+        // Decode the result, `None` represents that the raw_params couldn't be decoded
+        let result = <Option<Vec<u8>> as Decode>::decode(&mut result_data.as_slice())
+            .map_err(|_| WasmCallError::DecodeError)?
+            .ok_or(WasmCallError::DecodeError)?;
 
         Ok(result)
     }

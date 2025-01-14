@@ -1,4 +1,3 @@
-use std::alloc::System;
 use crate::{
     mem,
     runtime::{ComponentProvider, ContextAware},
@@ -93,7 +92,8 @@ impl HttpCallExecutor {
             response_receiver: rrx,
         }
     }
-    pub(crate) async fn recv_response(&mut self) -> Option<HttpResponseWithCallback> {
+
+    pub async fn recv_response(&mut self) -> Option<HttpResponseWithCallback> {
         self.response_receiver.recv().await
     }
     // pub(crate) async fn poll<'a>(

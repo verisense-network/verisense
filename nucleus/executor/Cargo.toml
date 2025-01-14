@@ -1,5 +1,5 @@
 [package]
-name = "vrs-nucleus-cage"
+name = "vrs-nucleus-executor"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -32,8 +32,7 @@ sc-transaction-pool = { version = "35.0.0" }
 sc-transaction-pool-api = { version = "35.0.0" }
 vrs-runtime = { path = "../../runtime" }
 vrs-metadata = { path = "../../metadata" }
-vrs-nucleus-p2p = { path = "../p2p" }
-vrs-nucleus-executor = { path = "../executor" }
+vrs-nucleus-p2p= { path = "../../nucleus/p2p" }
 chrono = { version = "0.4" }
 hyper = { version = "1.3", features = ["full"] }
 unicase = "2.6"

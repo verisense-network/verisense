@@ -1,11 +1,6 @@
 use crate::{
-    host_func::{
-        http::{self, HttpCallRegister},
-        io, kvdb,
-        timer::{self, PendingTimerQueue},
-    },
-    state::NucleusState,
-    TimerEntry,
+    host_func::{http, io, kvdb, timer, HttpCallRegister, PendingTimerQueue, TimerEntry},
+    NucleusState,
 };
 use std::sync::Arc;
 use vrs_primitives::NucleusId;
@@ -23,6 +18,7 @@ pub trait ContextAware {
     fn set_read_only(&mut self, read_only: bool);
 
     fn rollback_all_pending_timer(&self) -> Vec<TimerEntry>;
+
     fn enqueue_all_pending_timer(&self);
 
     fn get_nucleus_id(&self) -> NucleusId;
@@ -61,6 +57,10 @@ impl Runtime {
             timer_scheduler: config.timer_scheduler,
             timer_register: Arc::new(PendingTimerQueue::new()),
         })
+    }
+
+    pub fn state(&self) -> Arc<NucleusState> {
+        self.state.clone()
     }
 }
 

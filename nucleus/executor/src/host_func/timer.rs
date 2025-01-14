@@ -1,7 +1,7 @@
 use crate::{
+    host_func::{TimerEntry, TimerQueue},
     mem,
-    runtime::{ComponentProvider, ContextAware},
-    Runtime, TimerEntry, TimerQueue,
+    runtime::{ComponentProvider, ContextAware, Runtime},
 };
 use chrono::Utc;
 use std::{pin::Pin, sync::Arc, task::Poll};

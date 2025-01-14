@@ -13,7 +13,7 @@ use tokio::sync::{
     mpsc::Sender,
     oneshot::{self, Receiver},
 };
-use vrs_nucleus_cage::{Gluon, NucleusResponse};
+use vrs_nucleus_executor::{Gluon, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::{Address, NucleusId};
 
