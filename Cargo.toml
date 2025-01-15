@@ -10,6 +10,7 @@ members = [
     "metadata",
     "support",
 ]
+exclude = ["nucleus/p2p"]
 resolver = "2"
 
 [workspace.package]
@@ -26,7 +27,11 @@ scale-info = { features = [
     "derive",
     "serde",
 ], version = "2.11.1", default-features = false }
-vrs-core-sdk = { version = "0.0.2" }
+serde = { version = "1", default-features = false }
+hex-literal = { version = "0.3.4", default-features = false }
+log = { version = "0.4", default-features = false }
+
+vrs-core-sdk = { version = "0.0.4" }
 # frame
 frame-executive = { version = "36.0.0", default-features = false }
 frame-support = { version = "36.0.0", default-features = false }
@@ -80,5 +85,23 @@ sp-keyring = { version = "38.0.0", default-features = false }
 sp-blockchain = { version = "35.0.0", default-features = false }
 sp-application-crypto = { version = "37.0.0", default-features = false }
 sp-staking = { version = "33.0.0", default-features = false }
+# sc
+sc-network-types = "0.12.1"
+sc-cli = "0.44.0"
+sc-executor = "0.39.0"
+sc-network = "0.42.0"
+sc-service = "0.43.0"
+sc-telemetry = "22.0.0"
+sc-transaction-pool = "35.0.0"
+sc-transaction-pool-api = "35.0.0"
+sc-offchain = "37.0.0"
+sc-consensus-aura = "0.42.0"
+sc-consensus = "0.41.0"
+sc-consensus-grandpa = "0.27.0"
+sc-client-api = "35.0.0"
+sc-rpc-api = "0.41.0"
+sc-basic-authorship = "0.42.0"
+sc-authority-discovery = "0.42.0"
+
 # wasmtime
 wasmtime = { version = "22.0.0" }

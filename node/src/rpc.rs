@@ -13,12 +13,17 @@ use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
-use tokio::sync::mpsc::Sender;
-use vrs_nucleus_executor::Gluon;
-use vrs_primitives::{Address, NucleusId};
+use vrs_nucleus_cage::NucleusRpcChannel;
 use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce};
 
 pub use sc_rpc_api::DenyUnsafe;
+
+#[derive(Clone)]
+pub struct NucleusDeps {
+    pub rpc_channel: NucleusRpcChannel,
+    pub node_id: PeerId,
+    pub home_dir: PathBuf,
+}
 
 /// Full client dependencies.
 pub struct FullDeps<C, P, B> {
@@ -28,12 +33,8 @@ pub struct FullDeps<C, P, B> {
     pub pool: Arc<P>,
     /// blocks backend
     pub backend: Arc<B>,
-    /// Nucleus requests relayer
-    pub nucleus_req_relayer: Sender<(NucleusId, Gluon)>,
-    /// PeerId of the node
-    pub node_id: PeerId,
-    /// nucleus dir
-    pub nucleus_home_dir: PathBuf,
+    /// Nucleus cage connector
+    pub nucleus: Option<NucleusDeps>,
 }
 
 /// Instantiate all full RPC extensions.
@@ -50,7 +51,7 @@ where
     C: Send + Sync + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce> + 'static,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> + 'static,
-    C::Api: vrs_nucleus_runtime_api::NucleusApi<Block, Address> + 'static,
+    C::Api: vrs_nucleus_runtime_api::NucleusApi<Block> + 'static,
     C::Api: vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId>,
     C::Api: BlockBuilder<Block> + 'static,
 {
@@ -71,16 +72,19 @@ where
         client,
         pool,
         backend: _backend,
-        nucleus_req_relayer,
-        node_id,
-        nucleus_home_dir,
+        nucleus,
     } = deps;
-
     module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-    module.merge(
-        NucleusEntry::new(nucleus_req_relayer, client, pool, node_id, nucleus_home_dir).into_rpc(),
-    )?;
+
+    if let Some(nucleus) = nucleus {
+        let NucleusDeps {
+            rpc_channel,
+            node_id,
+            home_dir,
+        } = nucleus;
+        module.merge(NucleusEntry::new(rpc_channel, client, pool, node_id, home_dir).into_rpc())?;
+    }
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed
