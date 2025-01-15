@@ -1,8 +1,11 @@
+mod cage;
 mod keystore;
 
+use crate::cage::NucleusCage;
 use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
+use sc_authority_discovery::Service as AuthorityDiscovery;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::{service::traits::NetworkService, PeerId};
 use sc_transaction_pool_api::{TransactionPool, TransactionSource};
@@ -13,81 +16,31 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use vrs_metadata::{
-    codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata, METADATA_BYTES,
+    codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata,
+    METADATA_BYTES as METADATA,
 };
 use vrs_nucleus_executor::{
     host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync},
-    Event, Gluon, Nucleus, NucleusResponse, NucleusState, NucleusTunnel, Runtime, RuntimeParams,
-    WasmInfo,
+    Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
 };
-use vrs_nucleus_p2p::NucleusP2pMsg;
+// use vrs_nucleus_p2p::NucleusP2pMsg;
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
 
+pub type NucleusRpcChannel = Sender<(NucleusId, Gluon)>;
+pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
+
 pub struct CageParams<P, B, C, BN> {
+    pub client: Arc<C>,
     pub keystore: KeystorePtr,
     pub transaction_pool: Arc<P>,
-    pub nucleus_rpc_rx: Receiver<(NucleusId, Gluon)>,
-    pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
-    pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
+    pub authority_discovery: Arc<AuthorityDiscovery>,
+    pub nucleus_signal: NucleusSignal,
     pub net_service: Arc<dyn NetworkService>,
-    // pub noti_service: Box<dyn NotificationService>,
-    pub client: Arc<C>,
     pub nucleus_home_dir: std::path::PathBuf,
+    // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
+    // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
-}
-
-struct NucleusCage {
-    nucleus_id: NucleusId,
-    tunnel: NucleusTunnel,
-    pending_requests: Vec<Gluon>,
-    event_id: u64,
-    state: Arc<NucleusState>,
-    // TODO monadring-related
-}
-
-impl NucleusCage {
-    fn validate_token(&self) -> bool {
-        true
-    }
-
-    fn pre_commit(&self, id: u64, msg: &[u8]) -> anyhow::Result<()> {
-        // let handle = self.db.cf_handle("seq").unwrap();
-        // self.db.put_cf(handle, &id.to_be_bytes(), msg)?;
-        Ok(())
-    }
-
-    fn drain(&mut self, imports: Vec<Event>) {
-        // TODO handle imports first
-        // for `TimerRegister` and `HttpRequest`, we need to check its id
-        let pipe = self.pending_requests.drain(..).collect::<Vec<_>>();
-        for gluon in pipe.into_iter() {
-            self.event_id += 1;
-            let event = Event::from(&gluon);
-            if let Err(e) = self.pre_commit(self.event_id, &event.encode()) {
-                log::error!(
-                    "couldn't save event {} of nucleus {}: {:?}",
-                    self.event_id,
-                    self.nucleus_id,
-                    e
-                );
-                // TODO only reply request from rpc
-                // if let Some(reply_to) = gluon.2 {
-                //     let _ = reply_to.send(Err((-42000, "Event persistence failed.".to_string())));
-                // }
-            } else {
-                let _ = self.tunnel.send((self.event_id, gluon));
-            }
-        }
-    }
-
-    fn forward(&mut self, gluon: Gluon) {
-        if matches!(gluon, Gluon::GetRequest { .. }) {
-            let _ = self.tunnel.send((0, gluon));
-        } else {
-            self.pending_requests.push(gluon);
-        }
-    }
 }
 
 pub fn start_nucleus_cage<P, B, C, BN>(params: CageParams<P, B, C, BN>) -> impl Future<Output = ()>
@@ -104,38 +57,28 @@ where
     C::Api: Core<B> + 'static,
     C::Api: Metadata<B> + 'static,
     C::Api: ValidatorApi<B> + 'static,
-    C::Api: NucleusApi<B, Address> + 'static,
+    C::Api: NucleusApi<B> + 'static,
     C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
 {
     let CageParams {
+        client,
         keystore,
         transaction_pool,
-        mut nucleus_rpc_rx,
-        mut p2p_cage_rx,
-        mut noti_sender,
-        mut net_service,
-        client,
+        authority_discovery,
+        nucleus_signal,
+        net_service,
         nucleus_home_dir,
         _phantom,
     } = params;
     async move {
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
+        let mut nucleus_signal = nucleus_signal;
         let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
-        if !std::fs::exists(&nucleus_home_dir)
-            .expect("fail to check nucleus directory, make sure the you have access right on the directory.")
-        {
-            std::fs::create_dir_all(&nucleus_home_dir).inspect_err(|e| {
-                log::error!(
-                    "fail to create nucleus directory at {:?}, due to {:?}",
-                    nucleus_home_dir,
-                    e
-                )
-            }).expect("fail to create nucleus directory");
-        }
+        init_nucleus_home(&nucleus_home_dir);
         log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
         // TODO what if our node is far behind the best block?
-        let metadata =
-            metadata::decode_from(&METADATA_BYTES[..]).expect("failed to decode metadata.");
+        // TODO use the best block hash to get the metadata
+        let metadata = metadata::decode_from(&METADATA[..]).expect("failed to decode metadata.");
 
         let mut block_monitor = client.every_import_notification_stream();
         let timer_scheduler = Arc::new(host_func::SchedulerAsync::new());
@@ -188,16 +131,16 @@ where
         loop {
             tokio::select! {
                 // handle monadring protocol
-                Some(msg) = p2p_cage_rx.recv() => {
-                    match msg {
-                        NucleusP2pMsg::ReqRes(req) => {
-                            log::info!("in cage: incoming request: {:?}", req);
-                        }
-                        NucleusP2pMsg::Noti(noti) => {
-                            log::info!("in cage: incoming notification: {:?}", noti);
-                        }
-                    }
-                },
+                // Some(msg) = p2p_cage_rx.recv() => {
+                //     match msg {
+                //         NucleusP2pMsg::ReqRes(req) => {
+                //             log::info!("in cage: incoming request: {:?}", req);
+                //         }
+                //         NucleusP2pMsg::Noti(noti) => {
+                //             log::info!("in cage: incoming notification: {:?}", noti);
+                //         }
+                //     }
+                // },
                 // handle hostnet events
                 block = block_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
@@ -276,7 +219,7 @@ where
                         });
                     }
                 },
-                Some((module, gluon)) = nucleus_rpc_rx.recv() => {
+                Some((module, gluon)) = nucleus_signal.recv() => {
                     if let Some(nucleus) = nuclei.get_mut(&module) {
                         nucleus.forward(gluon);
                     } else {
@@ -317,7 +260,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B, Address> + 'static,
+    C::Api: NucleusApi<B> + 'static,
     T: vrs_metadata::Config,
 {
     let key = vrs_metadata::codegen::storage().system().events();
@@ -343,7 +286,7 @@ where
     C: BlockBackend<B> + StorageProvider<B, D> + ProvideRuntimeApi<B> + 'static,
     C::Api: Core<B> + 'static,
     C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
-    C::Api: NucleusApi<B, Address> + 'static,
+    C::Api: NucleusApi<B> + 'static,
 {
     let (submitter, vrf) = crate::keystore::sign_to_participate(
         keystore.clone(),
@@ -414,7 +357,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B, Address> + 'static,
+    C::Api: NucleusApi<B> + 'static,
 {
     let api = client.runtime_api();
     let key = codegen::storage().nucleus().instances_iter();
@@ -467,6 +410,16 @@ fn try_load_wasm(
     let code = std::fs::read(&wasm_path)?;
     log::info!("📦 Loaded wasm for nucleus {} version {}.", id, version);
     Ok(WasmInfo { id, version, code })
+}
+
+fn init_nucleus_home<P: AsRef<std::path::Path>>(dir: P) {
+    if !std::fs::exists(dir.as_ref()).expect(
+        "fail to check nucleus directory, make sure the you have access right on the directory.",
+    ) {
+        std::fs::create_dir_all(dir.as_ref())
+            .inspect_err(|e| log::error!("fail to create nucleus home, due to {:?}", e))
+            .expect("fail to create nucleus directory");
+    }
 }
 
 // TODO lookup wasm before starting nucleus

@@ -1,10 +1,10 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use futures::FutureExt;
+use futures::{prelude::*, FutureExt};
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-use sc_network::PeerId;
+use sc_network::{event::Event, NetworkEventStream};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
@@ -157,7 +157,7 @@ pub fn new_full<
         .unwrap()
         .public()
         .to_peer_id();
-    // let node_id_4tests = node_id.clone();
+    let auth_disc_public_addresses = config.network.public_addresses.clone();
     let metrics = N::register_notification_metrics(config.prometheus_registry());
     let peer_store_handle = net_config.peer_store_handle();
     let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
@@ -255,23 +255,25 @@ pub fn new_full<
     let name = config.network.node_name.clone();
     let enable_grandpa = !config.disable_grandpa;
     let prometheus_registry = config.prometheus_registry().cloned();
-    // TODO config?
-    let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
     let nucleus_home_dir = config.data_path.as_path().join("nucleus");
+    // TODO config the capacity of pending requests
+    let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
 
     let rpc_extensions_builder = {
         let client = client.clone();
         let transaction_pool = transaction_pool.clone();
         let backend = backend.clone();
-        let nucleus_home_dir = nucleus_home_dir.clone();
+        let nucleus_deps = role.is_authority().then(|| crate::rpc::NucleusDeps {
+            rpc_channel: nucleus_rpc_tx,
+            node_id: node_id.clone(),
+            home_dir: nucleus_home_dir.clone(),
+        });
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 backend: backend.clone(),
-                nucleus_req_relayer: nucleus_rpc_tx.clone(),
-                node_id,
-                nucleus_home_dir: nucleus_home_dir.clone(),
+                nucleus: nucleus_deps.clone(),
             };
             crate::rpc::create_full(deny_unsafe, deps).map_err(Into::into)
         })
@@ -299,40 +301,72 @@ pub fn new_full<
         // let mut noti_service2 = noti_service
         //     .clone()
         //     .expect("notification service clone failed.");
+        // let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
+        // let (noti_sender, noti_receiver) = tokio::sync::mpsc::channel(10000);
+        // let (test_sender, test_receiver): (
+        //     tokio::sync::mpsc::UnboundedSender<Vec<PeerId>>,
+        //     tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
+        // ) = tokio::sync::mpsc::unbounded_channel();
+        // let params = vrs_nucleus_p2p::P2pParams {
+        //     keystore: keystore_container.keystore(),
+        //     reqres_receiver,
+        //     client: client.clone(),
+        //     net_service: network.clone(),
+        //     test_receiver,
+        //     p2p_cage_tx,
+        //     noti_receiver,
+        //     noti_service,
+        //     controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
+        //     _phantom: std::marker::PhantomData,
+        // };
+        // task_manager.spawn_essential_handle().spawn_blocking(
+        //     "nucleus-p2p",
+        //     None,
+        //     vrs_nucleus_p2p::start_nucleus_p2p(params),
+        // );
 
-        let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
-        let (noti_sender, noti_receiver) = tokio::sync::mpsc::channel(10000);
-        let (test_sender, test_receiver): (
-            tokio::sync::mpsc::UnboundedSender<Vec<PeerId>>,
-            tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
-        ) = tokio::sync::mpsc::unbounded_channel();
-        let params = vrs_nucleus_p2p::P2pParams {
-            keystore: keystore_container.keystore(),
-            reqres_receiver,
-            client: client.clone(),
-            net_service: network.clone(),
-            test_receiver,
-            p2p_cage_tx,
-            noti_receiver,
-            noti_service,
-            controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
-            _phantom: std::marker::PhantomData,
-        };
-        task_manager.spawn_essential_handle().spawn_blocking(
-            "nucleus-p2p",
-            None,
-            vrs_nucleus_p2p::start_nucleus_p2p(params),
+        // launch authority discovery worker
+        let discovery_mode =
+            sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
+        let dht_event_stream =
+            network
+                .event_stream("authority-discovery")
+                .filter_map(|e| async move {
+                    match e {
+                        Event::Dht(e) => Some(e),
+                        _ => None,
+                    }
+                });
+        let (authority_discovery_worker, authority_discovery_service) =
+            sc_authority_discovery::new_worker_and_service_with_config(
+                sc_authority_discovery::WorkerConfig {
+                    publish_non_global_ips: true,
+                    public_addresses: auth_disc_public_addresses,
+                    ..Default::default()
+                },
+                client.clone(),
+                Arc::new(network.clone()),
+                Box::pin(dht_event_stream),
+                discovery_mode,
+                prometheus_registry.clone(),
+            );
+        task_manager.spawn_handle().spawn(
+            "authority-discovery-worker",
+            Some("networking"),
+            authority_discovery_worker.run(),
         );
-
+        let authority_discovery = Arc::new(authority_discovery_service);
+        // launch nucleus cage
         let params = vrs_nucleus_cage::CageParams {
+            client: client.clone(),
             keystore: keystore_container.keystore(),
             transaction_pool: transaction_pool.clone(),
-            nucleus_rpc_rx,
-            p2p_cage_rx,
-            noti_sender,
+            authority_discovery: authority_discovery.clone(),
+            nucleus_signal: nucleus_rpc_rx,
             net_service: network.clone(),
-            client: client.clone(),
-            nucleus_home_dir,
+            nucleus_home_dir: nucleus_home_dir.clone(),
+            // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
+            // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
             _phantom: std::marker::PhantomData,
         };
         task_manager.spawn_essential_handle().spawn_blocking(

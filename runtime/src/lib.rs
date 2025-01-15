@@ -3,11 +3,13 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::Encode;
 use pallet_grandpa::AuthorityId as GrandpaId;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+
+use codec::Encode;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -16,6 +18,7 @@ use sp_runtime::{
     ApplyExtrinsicResult, Vec,
 };
 use sp_std::prelude::*;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -665,6 +668,12 @@ impl_runtime_apis! {
         }
     }
 
+    impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
+        fn authorities() -> Vec<AuthorityDiscoveryId> {
+            AuthorityDiscovery::authorities()
+        }
+    }
+
     impl vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId> for Runtime {
         fn get_rewards_proof(account_id: AccountId) -> RewardsProof {
             Restaking::get_reward_proof(account_id)
@@ -677,7 +686,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl vrs_nucleus_runtime_api::NucleusApi<Block, Address> for Runtime {
+    impl vrs_nucleus_runtime_api::NucleusApi<Block> for Runtime {
         fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
                 nucleus_id,

@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 mod chain_spec;
 mod cli;
 mod command;

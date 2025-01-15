@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use codec::{Codec, Decode};
+use codec::Decode;
 use constants::*;
 use futures::prelude::*;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
@@ -15,7 +15,7 @@ use tokio::sync::{
 };
 use vrs_nucleus_executor::{Gluon, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusApi;
-use vrs_primitives::{Address, NucleusId};
+use vrs_primitives::NucleusId;
 
 #[rpc(server)]
 pub trait NucleusRpc<Hash> {
@@ -90,7 +90,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block, Address> + 'static,
+    C::Api: NucleusApi<P::Block> + 'static,
 {
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
         let (tx, rx) = oneshot::channel();

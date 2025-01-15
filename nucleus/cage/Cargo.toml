@@ -5,46 +5,49 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-sp-runtime = { workspace = true }
-sc-network = { version = "0.42.0" }
-tokio = { version = "1", features = ["full"] }
-vrs-primitives = { path = "../../primitives" }
-vrs-nucleus-runtime-api = { path = "../runtime-api" }
-vrs-core-sdk = { version = "0.0.1" }
-codec = { workspace = true }
-wasmtime = { workspace = true }
 rocksdb = "0.21.0"
 anyhow = "1"
 log = "0.4"
 env_logger = "0.10"
 futures = { features = ["thread-pool"], version = "0.3.30" }
-sp-io = "37.0.0"
+tokio = { version = "1", features = ["full"] }
+hex = { version = "0.4" }
+thiserror = "1"
+
+vrs-runtime = { path = "../../runtime" }
+vrs-metadata = { path = "../../metadata" }
+vrs-primitives = { path = "../../primitives" }
+vrs-nucleus-runtime-api = { path = "../runtime-api" }
+vrs-nucleus-executor = { path = "../executor" }
+# vrs-nucleus-p2p = { path = "../p2p" }
+
+codec = { workspace = true }
+wasmtime = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+sp-runtime = { workspace = true }
+sc-network = { workspace = true }
+sp-io = { workspace = true }
 sp-core = { workspace = true }
 sp-api = { workspace = true }
 sp-blockchain = { workspace = true }
-sp-keystore = { version = "0.40.0" }
-sc-client-api = { version = "35.0.0" }
-hex = { version = "0.4" }
-thiserror = "1"
+sp-keystore = { workspace = true }
+sc-client-api = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true, default-features = false }
-sc-transaction-pool = { version = "35.0.0" }
-sc-transaction-pool-api = { version = "35.0.0" }
-vrs-runtime = { path = "../../runtime" }
-vrs-metadata = { path = "../../metadata" }
-vrs-nucleus-p2p = { path = "../p2p" }
-vrs-nucleus-executor = { path = "../executor" }
-chrono = { version = "0.4" }
-hyper = { version = "1.3", features = ["full"] }
-unicase = "2.6"
-hyper-tls = "0.6.0"
-hyper-util = { version ="0.1", features = ["full"] }
-bytes = "1"
-http-body-util = "0.1.0"
-tokio-native-tls = "0.3"
-pin-project-lite = "0.2.4"
-xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
-blake2 = "0.10.6"
+sc-transaction-pool = { workspace = true }
+sc-authority-discovery = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+
+# chrono = { version = "0.4" }
+# hyper = { version = "1.3", features = ["full"] }
+# unicase = "2.6"
+# hyper-tls = "0.6.0"
+# hyper-util = { version ="0.1", features = ["full"] }
+# bytes = "1"
+# http-body-util = "0.1.0"
+# tokio-native-tls = "0.3"
+# pin-project-lite = "0.2.4"
+# xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
+# blake2 = "0.10.6"
 
 [dev-dependencies]
 temp-dir = "0.1.13"

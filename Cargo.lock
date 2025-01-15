@@ -77,7 +77,7 @@ dependencies = [
  "cipher 0.4.4",
  "ctr",
  "ghash",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -1494,7 +1494,7 @@ checksum = "0dc92fb57ca44df6db8059111ab3af99a63d5d0f8375d9972e319a379c6bab76"
 dependencies = [
  "generic-array 0.14.7",
  "rand_core",
- "subtle 2.6.1",
+ "subtle 2.4.1",
  "zeroize",
 ]
 
@@ -1526,7 +1526,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b584a330336237c1eecd3e94266efb216c56ed91225d634cb2991c5f3fd1aeab"
 dependencies = [
  "generic-array 0.14.7",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -1556,7 +1556,7 @@ dependencies = [
  "digest 0.10.7",
  "fiat-crypto",
  "rustc_version",
- "subtle 2.6.1",
+ "subtle 2.4.1",
  "zeroize",
 ]
 
@@ -1879,7 +1879,7 @@ dependencies = [
  "block-buffer 0.10.4",
  "const-oid",
  "crypto-common",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -2037,7 +2037,7 @@ dependencies = [
  "rand_core",
  "serde",
  "sha2 0.10.8",
- "subtle 2.6.1",
+ "subtle 2.4.1",
  "zeroize",
 ]
 
@@ -2078,7 +2078,7 @@ dependencies = [
  "rand_core",
  "sec1",
  "serdect",
- "subtle 2.6.1",
+ "subtle 2.4.1",
  "zeroize",
 ]
 
@@ -2291,7 +2291,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
  "rand_core",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -2921,7 +2921,7 @@ checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
  "ff",
  "rand_core",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -4447,7 +4447,7 @@ checksum = "5be9b9bb642d8522a44d533eab56c16c738301965504753b03ad1de3425d5451"
 dependencies = [
  "crunchy",
  "digest 0.9.0",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -4875,7 +4875,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_distr",
- "subtle 2.6.1",
+ "subtle 2.4.1",
  "thiserror",
  "zeroize",
 ]
@@ -5891,7 +5891,7 @@ checksum = "346f04948ba92c43e8469c1ee6736c7563d71012b17d40745260fe106aac2166"
 dependencies = [
  "base64ct",
  "rand_core",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -6829,7 +6829,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dd2a808d456c4a54e300a23e9f5a67e122c3024119acbfd73e3bf664491cb2"
 dependencies = [
  "hmac 0.12.1",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -7081,6 +7081,37 @@ dependencies = [
  "log",
  "sp-core",
  "sp-wasm-interface",
+ "thiserror",
+]
+
+[[package]]
+name = "sc-authority-discovery"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ae99d03b5cf657754241180c4aedd14c4851a08f3fa56814106b3cc02083d2c"
+dependencies = [
+ "async-trait",
+ "futures",
+ "futures-timer",
+ "ip_network",
+ "libp2p",
+ "linked_hash_set",
+ "log",
+ "multihash 0.19.2",
+ "parity-scale-codec",
+ "prost 0.12.6",
+ "prost-build 0.12.6",
+ "rand",
+ "sc-client-api",
+ "sc-network",
+ "sc-network-types",
+ "sp-api",
+ "sp-authority-discovery",
+ "sp-blockchain",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "substrate-prometheus-endpoint",
  "thiserror",
 ]
 
@@ -8252,7 +8283,7 @@ dependencies = [
  "rand_core",
  "serde_bytes",
  "sha2 0.10.8",
- "subtle 2.6.1",
+ "subtle 2.4.1",
  "zeroize",
 ]
 
@@ -8304,7 +8335,7 @@ dependencies = [
  "generic-array 0.14.7",
  "pkcs8",
  "serdect",
- "subtle 2.6.1",
+ "subtle 2.4.1",
  "zeroize",
 ]
 
@@ -8626,7 +8657,7 @@ dependencies = [
  "ring 0.17.8",
  "rustc_version",
  "sha2 0.10.8",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -9066,12 +9097,11 @@ dependencies = [
 
 [[package]]
 name = "sp-panic-handler"
-version = "13.0.0"
+version = "13.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8f5a17a0a11de029a8b811cb6e8b32ce7e02183cc04a3e965c383246798c416"
+checksum = "81478b3740b357fa0ea10fcdc1ee02ebae7734e50f80342c4743476d9f78eeea"
 dependencies = [
  "backtrace",
- "lazy_static",
  "regex",
 ]
 
@@ -9591,11 +9621,13 @@ dependencies = [
 
 [[package]]
 name = "substrate-prometheus-endpoint"
-version = "0.17.0"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d8fe06b03b8a291c09507c42f92a2c2c10dd3d62975d02c7f64a92d87bfe09b"
+checksum = "7b6772e9c3621b8d067a706dfda6a20db6faa7cde39822c58ffc8588d16409c5"
 dependencies = [
- "hyper 0.14.31",
+ "http-body-util",
+ "hyper 1.5.0",
+ "hyper-util",
  "log",
  "prometheus",
  "thiserror",
@@ -9631,9 +9663,9 @@ checksum = "2d67a5a62ba6e01cb2192ff309324cb4875d0c451d55fe2319433abe7a05a8ee"
 
 [[package]]
 name = "subtle"
-version = "2.6.1"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "subxt-codegen"
@@ -10386,7 +10418,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc1de2c688dc15305988b563c3854064043356019f97a4b46276fe734c4f07ea"
 dependencies = [
  "crypto-common",
- "subtle 2.6.1",
+ "subtle 2.4.1",
 ]
 
 [[package]]
@@ -10489,6 +10521,7 @@ dependencies = [
  "pallet-restaking",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
+ "sc-authority-discovery",
  "sc-basic-authorship",
  "sc-cli",
  "sc-client-api",
@@ -10521,8 +10554,6 @@ dependencies = [
  "substrate-frame-rpc-system",
  "tokio",
  "vrs-nucleus-cage",
- "vrs-nucleus-executor",
- "vrs-nucleus-p2p",
  "vrs-nucleus-rpc-proxy",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
@@ -10544,9 +10575,9 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
 name = "vrs-core-macros"
-version = "0.0.1"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ada7d99413255c6d1e0f0d501851263c9f439224bc6c863ea2b7a11b284af11b"
+checksum = "399514249bb0616a3672f441c615d1fe07e6aa780e10f965af1d189e794a8e1d"
 dependencies = [
  "quote",
  "syn 2.0.87",
@@ -10554,14 +10585,11 @@ dependencies = [
 
 [[package]]
 name = "vrs-core-sdk"
-version = "0.0.1"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d85bbc68b828b0f170cedc4a308776260a55e34ed7218cbd450a9b7ffaf29595"
+checksum = "02512ae11162c905b104c5a082a163581630e9b27fccd315ff727fa675e3c07e"
 dependencies = [
- "anyhow",
- "hex",
  "parity-scale-codec",
- "paste",
  "sp-core",
  "vrs-core-macros",
 ]
@@ -10582,21 +10610,14 @@ name = "vrs-nucleus-cage"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "blake2 0.10.6",
- "bytes",
- "chrono",
  "env_logger",
  "frame-system-rpc-runtime-api",
  "futures",
  "hex",
- "http-body-util",
- "hyper 1.5.0",
- "hyper-tls",
- "hyper-util",
  "log",
  "parity-scale-codec",
- "pin-project-lite",
  "rocksdb",
+ "sc-authority-discovery",
  "sc-client-api",
  "sc-network",
  "sc-transaction-pool",
@@ -10608,16 +10629,11 @@ dependencies = [
  "sp-io",
  "sp-keystore",
  "sp-runtime",
- "sparse-merkle-tree",
  "temp-dir",
  "thiserror",
  "tokio",
- "tokio-native-tls",
- "unicase",
- "vrs-core-sdk",
  "vrs-metadata",
  "vrs-nucleus-executor",
- "vrs-nucleus-p2p",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "vrs-runtime",
@@ -10633,7 +10649,6 @@ dependencies = [
  "bytes",
  "chrono",
  "env_logger",
- "frame-system-rpc-runtime-api",
  "futures",
  "hex",
  "http-body-util",
@@ -10644,17 +10659,7 @@ dependencies = [
  "parity-scale-codec",
  "pin-project-lite",
  "rocksdb",
- "sc-client-api",
- "sc-network",
- "sc-transaction-pool",
- "sc-transaction-pool-api",
  "serde",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
  "sparse-merkle-tree",
  "temp-dir",
  "thiserror",
@@ -10662,34 +10667,8 @@ dependencies = [
  "tokio-native-tls",
  "unicase",
  "vrs-core-sdk",
- "vrs-metadata",
- "vrs-nucleus-p2p",
- "vrs-nucleus-runtime-api",
  "vrs-primitives",
- "vrs-runtime",
  "wasmtime 22.0.1",
-]
-
-[[package]]
-name = "vrs-nucleus-p2p"
-version = "0.0.1"
-dependencies = [
- "async-channel",
- "futures",
- "log",
- "parity-scale-codec",
- "sc-client-api",
- "sc-network",
- "scale-info",
- "sp-api",
- "sp-application-crypto",
- "sp-authority-discovery",
- "sp-blockchain",
- "sp-core",
- "sp-keystore",
- "sp-runtime",
- "tokio",
- "vrs-primitives",
 ]
 
 [[package]]
