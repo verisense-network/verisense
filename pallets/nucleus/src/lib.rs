@@ -10,6 +10,8 @@ pub use pallet::*;
 pub mod weights;
 pub use weights::*;
 
+//type AssetId<T> = <T as pallet_assets::Config>::AssetId;
+type AssetId<T> = <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<<T as frame_system::Config>::AccountId>>::AssetId;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -28,6 +30,7 @@ pub mod pallet {
     use sp_std::prelude::*;
     use vrs_primitives::{keys::NUCLEUS_VRF_KEY_TYPE, NucleusInfo};
     use vrs_support::ValidatorsInterface;
+    use frame_support::traits::fungibles;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NucleusEquation<AccountId, Hash, NodeId> {
@@ -53,10 +56,10 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + pallet_assets::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type WeightInfo: WeightInfo;
+        type Weight: WeightInfo;
 
         type AuthorityId: Member + Parameter + RuntimeAppPublic + MaybeSerializeDeserialize;
 
@@ -74,6 +77,13 @@ pub mod pallet {
         type RegistryDuration: Get<BlockNumberFor<Self>>;
 
         type ControllerLookup: StaticLookup<Source = Self::AccountId, Target = Self::NodeId>;
+
+        type Assets: fungibles::approvals::Mutate<<Self as frame_system::Config>::AccountId>;
+
+        type FeeCollector: Get<Self::AccountId>;
+
+        #[pallet::constant]
+        type FeeAssetId: Get<AssetId<Self>>;
     }
 
     #[pallet::storage]
@@ -159,10 +169,12 @@ pub mod pallet {
     impl<T: Config> Pallet<T>
     where
         T::AccountId: Into<[u8; 32]>,
+        <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance: From<u128>,
+          <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>
     {
         // TODO check the capacity
         #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::create_nucleus())]
+        #[pallet::weight(T::Weight::create_nucleus())]
         pub fn create_nucleus(
             origin: OriginFor<T>,
             name: Vec<u8>,
@@ -216,7 +228,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::create_nucleus())]
+        #[pallet::weight(T::Weight::create_nucleus())]
         pub fn upload_nucleus_wasm(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
@@ -245,7 +257,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight((T::WeightInfo::register(), Pays::No))]
+        #[pallet::weight((T::Weight::register(), Pays::No))]
         pub fn register(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
@@ -275,6 +287,28 @@ pub mod pallet {
                 let challenge = challenge.as_mut().expect("already checked");
                 challenge.submissions.push((controller, out));
             });
+            Ok(())
+        }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight((T::Weight::register(), Pays::No))]
+        pub fn submit_work(
+            origin: OriginFor<T>,
+            nucleus_id: T::NucleusId,
+        ) -> DispatchResult
+            where <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance: From<u128>,
+            <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>
+        {
+            use frame_support::traits::fungibles::approvals::Mutate;
+            let submitter = ensure_signed(origin)?;
+            let raw = submitter.into();
+            let _controller = T::Validators::is_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
+                .ok_or(Error::<T>::NotAuthorized)?;
+
+            //TODO do some check
+
+            T::Assets::approve(T::FeeAssetId::get(), &nucleus_id.clone().into(), &T::FeeCollector::get(), 1u128.into())?;
+            T::Assets::transfer_from(T::FeeAssetId::get(), &nucleus_id.into(), &T::FeeCollector::get(), &T::FeeCollector::get(), 1u128.into())?;
             Ok(())
         }
     }

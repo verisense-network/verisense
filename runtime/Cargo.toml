@@ -30,6 +30,7 @@ pallet-im-online = { workspace = true, default-features = false }
 pallet-offences = { workspace = true, default-features = false }
 pallet-authorship = { workspace = true, default-features = false }
 pallet-authority-discovery = { workspace = true, default-features = false }
+pallet-assets = { workspace = true, default-features = false }
 pallet-restaking = { path = "../pallets/restaking", default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validators = { path = "../pallets/validators", default-features = false }
@@ -86,6 +87,7 @@ std = [
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-authority-discovery/std",
+	"pallet-assets/std",
 	"pallet-im-online/std",
 	"pallet-offences/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",

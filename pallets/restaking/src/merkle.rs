@@ -1,7 +1,6 @@
 use alloc::format;
 use core::str::FromStr;
 
-use codec::Encode;
 use ethabi::{Address, Token};
 use frame_support::IterableStorageMap;
 use serde::{Deserialize, Serialize};
@@ -21,8 +20,7 @@ impl<T: Config> Pallet<T> {
     pub fn calculate_rewards_root() {
         let mut leaves: Vec<Vec<String>> = vec![];
         for (k, v) in  <TotalRewards<T> as IterableStorageMap<T::AccountId, u128>>::iter() {
-            let account = hex::encode(k.encode());
-            let mut source = Self::validator_source(&k);
+            let source = Self::validator_source(&k);
             leaves.push(vec![source.0, source.1, format!("{v}")])
         }
         let m = StandardMerkleTree::of(leaves, &vec!["address".parse().unwrap(), "string".parse().unwrap(), "uint256".parse().unwrap()]);
@@ -42,7 +40,7 @@ impl<T: Config> Pallet<T> {
             if k == acct {
                 reward_index = index;
             }
-            let mut source = Self::validator_source(&k);
+            let source = Self::validator_source(&k);
             leaves.push(vec![source.0, source.1, format!("{v}")]);
             index += 1;
         }
@@ -79,7 +77,6 @@ struct HashedValues {
 
 pub enum LeafType {
     Number(usize),
-    LeafBytes(Vec<String>),
 }
 
 impl StandardMerkleTree {
@@ -114,7 +111,6 @@ impl StandardMerkleTree {
     pub fn get_proof(&self, leaf: LeafType) -> Vec<String> {
         let value_index = match leaf {
             LeafType::Number(i) => i,
-            LeafType::LeafBytes(v) => self.leaf_lookup(&v),
         };
         self.validate_value(value_index);
 
@@ -140,22 +136,6 @@ impl StandardMerkleTree {
         format!("0x{}", hex::encode(&self.tree[0].to_vec()))
     }
 
-    pub fn leaf_lookup(&self, leaf: &[String]) -> usize {
-        let binding = self.leaf_hash(leaf);
-        let leaf_hash = binding.split_at(2).1;
-
-        *self
-            .hash_lookup
-            .get(leaf_hash)
-            .expect("Leaf is not in tree")
-    }
-
-    pub fn leaf_hash(&self, leaf: &[String]) -> String {
-        format!(
-            "0x{}",
-            hex::encode(standard_leaf_hash(leaf.to_vec(), &self.leaf_encoding).to_vec())
-        )
-    }
 
     pub fn of(values: Vec<Vec<String>>, leaf_encode: &[String]) -> Self {
         let mut hashed_values: Vec<HashedValues> = values

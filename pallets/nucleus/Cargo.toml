@@ -22,6 +22,7 @@ sp-core = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
 vrs-support = { path = "../../support", default-features = false }
+pallet-assets = {workspace = true, default-features = false}
 
 [dev-dependencies]
 sp-io = { workspace = true, default-features = true }
@@ -38,4 +39,5 @@ std = [
 	"sp-runtime/std",
 	"vrs-primitives/std",
 	"vrs-support/std",
+	"pallet-assets/std",
 ]

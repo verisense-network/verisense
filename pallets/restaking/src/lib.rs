@@ -3,29 +3,25 @@
 use codec::{Decode, Encode};
 use frame_support::{
     dispatch::{GetDispatchInfo, PostDispatchInfo},
-    traits::{ConstU32, OneSessionHandler},
-    BoundedVec,
+    traits::{OneSessionHandler},
 };
 use frame_system::offchain::{
     AppCrypto, CreateSignedTransaction, SendUnsignedTransaction, SignedPayload, Signer,
     SigningTypes,
 };
-pub use pallet::*;
 use scale_info::{
     prelude::string::{String, ToString},
     TypeInfo,
 };
 use serde::{de, Deserialize, Deserializer};
-use sp_core::crypto::KeyTypeId;
 use sp_runtime::{
-    traits::{Dispatchable, IdentifyAccount},
-    RuntimeAppPublic, RuntimeDebug,
+    RuntimeAppPublic,
+    RuntimeDebug, traits::{Dispatchable, IdentifyAccount},
 };
 use sp_std::prelude::*;
-use types::{
-    AppchainNotification, NotificationResult, Observation, ObservationType, ObservationsPayload,
-    Validator, ValidatorSet,
-};
+use crate::types::NotificationResult;
+pub use pallet::*;
+use types::{Observation, ObservationsPayload, ObservationType};
 use vrs_primitives::keys::RESTAKING_KEY_TYPE as KEY_TYPE;
 use vrs_support::{log, ValidatorsInterface};
 
@@ -38,10 +34,12 @@ pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
+
     use vrs_support::{EraRewardPoints, RestakingInterface};
+
+    use super::*;
 
     #[pallet::config]
     pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
@@ -274,21 +272,21 @@ pub mod pallet {
     }
 
     // TODO ignore on devnet
-    // #[pallet::hooks]
-    // impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-    //     fn offchain_worker(block_number: BlockNumberFor<T>) {
-    //         if !NeedFetchRestakingValidators::<T>::get() {
-    //             return;
-    //         }
-    //         if !sp_io::offchain::is_validator() {
-    //             return;
-    //         }
-    //         if let Some((public, key_data, validator_id)) = Self::get_validator_id() {
-    //             Self::submit_unsigned_transaction(block_number, public, key_data, validator_id)
-    //                 .unwrap();
-    //         }
-    //     }
-    // }
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(block_number: BlockNumberFor<T>) {
+            if !NeedFetchRestakingValidators::<T>::get() {
+                return;
+            }
+            if !sp_io::offchain::is_validator() {
+                return;
+            }
+            if let Some((public, key_data, validator_id)) = Self::get_validator_id() {
+                Self::submit_unsigned_transaction(block_number, public, key_data, validator_id)
+                    .unwrap();
+            }
+        }
+    }
 
     #[pallet::validate_unsigned]
     impl<T: Config> ValidateUnsigned for Pallet<T> {
@@ -317,6 +315,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(1)]
+        #[pallet::call_index(0)]
         pub fn update_validators(
             origin: OriginFor<T>,
             payload: ObservationsPayload<T::AccountId, T::Public, BlockNumberFor<T>>,
@@ -345,6 +344,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(1)]
+        #[pallet::call_index(1)]
         pub fn add_restaking_platform(
             origin: OriginFor<T>,
             platform_source_name: String,

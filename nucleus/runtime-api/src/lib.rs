@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::Vec;
