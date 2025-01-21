@@ -369,7 +369,7 @@ where
         let extra = (
             frame_system::CheckSpecVersion::<Runtime>::new(),
             frame_system::CheckTxVersion::<Runtime>::new(),
-            frame_system::CheckNonce::<Runtime>::from(nonce),
+            pallet_nucleus::check_nonce::CheckNonce::<Runtime>::from(nonce),
             frame_system::CheckGenesis::<Runtime>::new(),
             frame_system::CheckMortality::<Runtime>::from(era),
             frame_system::CheckWeight::<Runtime>::new(),
@@ -519,7 +519,7 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 pub type SignedExtra = (
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckNonce<Runtime>,
+    pallet_nucleus::check_nonce::CheckNonce<Runtime>,
     frame_system::CheckGenesis<Runtime>,
     frame_system::CheckMortality<Runtime>,
     frame_system::CheckWeight<Runtime>,

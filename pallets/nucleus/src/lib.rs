@@ -8,6 +8,8 @@ pub use pallet::*;
 // mod tests;
 
 pub mod weights;
+pub mod check_nonce;
+
 pub use weights::*;
 
 //type AssetId<T> = <T as pallet_assets::Config>::AssetId;
@@ -291,7 +293,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(3)]
-        #[pallet::weight((T::Weight::register(), Pays::No))]
+        #[pallet::weight((T::Weight::submit_work(), Pays::No))]
         pub fn submit_work(
             origin: OriginFor<T>,
             nucleus_id: T::NucleusId,
@@ -299,7 +301,9 @@ pub mod pallet {
             where <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance: From<u128>,
             <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>
         {
-            use frame_support::traits::fungibles::approvals::Mutate;
+            ensure_signed(origin)?;
+
+            /*   use frame_support::traits::fungibles::approvals::Mutate;
             let submitter = ensure_signed(origin)?;
             let raw = submitter.into();
             let _controller = T::Validators::is_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
@@ -308,7 +312,7 @@ pub mod pallet {
             //TODO do some check
 
             T::Assets::approve(T::FeeAssetId::get(), &nucleus_id.clone().into(), &T::FeeCollector::get(), 1u128.into())?;
-            T::Assets::transfer_from(T::FeeAssetId::get(), &nucleus_id.into(), &T::FeeCollector::get(), &T::FeeCollector::get(), 1u128.into())?;
+            T::Assets::transfer_from(T::FeeAssetId::get(), &nucleus_id.into(), &T::FeeCollector::get(), &T::FeeCollector::get(), 1u128.into())?;*/
             Ok(())
         }
     }
@@ -408,4 +412,5 @@ pub mod pallet {
             })
         }
     }
+
 }

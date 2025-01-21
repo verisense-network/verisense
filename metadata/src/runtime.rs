@@ -9171,20 +9171,6 @@ pub mod codegen {
                     #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                     pub struct CheckMortality(pub runtime_types::sp_runtime::generic::era::Era);
                 }
-                pub mod check_nonce {
-                    use super::runtime_types;
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct CheckNonce(#[codec(compact)] pub ::core::primitive::u32);
-                }
                 pub mod check_spec_version {
                     use super::runtime_types;
                     #[derive(
@@ -10501,6 +10487,20 @@ pub mod codegen {
         }
         pub mod pallet_nucleus {
             use super::runtime_types;
+            pub mod check_nonce {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct CheckNonce(#[codec(compact)] pub ::core::primitive::u32);
+            }
             pub mod pallet {
                 use super::runtime_types;
                 #[derive(
