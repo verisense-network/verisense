@@ -5,11 +5,11 @@ pub mod weights;
 
 use crate::types::{ActiveEraInfo, Forcing, SessionInterface};
 use frame_support::pallet_prelude::*;
-use frame_support::traits::{DefensiveSaturating, UnixTime};
+use frame_support::traits::{DefensiveSaturating};
 use frame_system::pallet_prelude::*;
 use pallet_session::historical;
 use sp_core::crypto::KeyTypeId;
-use sp_runtime::{Percent, SaturatedConversion};
+use sp_runtime::{SaturatedConversion};
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
 use vrs_support::{log, RestakingInterface, ValidatorsInterface, EraRewardPoints};
@@ -118,15 +118,6 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {}
 
-    #[pallet::call]
-    impl<T: Config> Pallet<T> {
-        #[pallet::call_index(0)]
-        #[pallet::weight(1)]
-        pub fn submit_el_validators(origin: OriginFor<T>) -> DispatchResult {
-            Ok(())
-        }
-    }
-
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_now: BlockNumberFor<T>) -> Weight {
@@ -154,7 +145,7 @@ impl<T: Config> ValidatorsInterface<T::AccountId> for Pallet<T> {
         T::SessionInterface::validators()
     }
 
-    fn active_stake_of(who: &T::AccountId) -> u128 {
+    fn active_stake_of(_who: &T::AccountId) -> u128 {
         1u128
     }
 
@@ -244,13 +235,7 @@ impl<T: Config> Pallet<T> {
         let bonding_duration = T::BondingDuration::get();
         BondedEras::<T>::mutate(|bonded| {
             bonded.push((active_era, start_session));
-
             if active_era > bonding_duration {
-                let first_kept = active_era.defensive_saturating_sub(bonding_duration);
-                let n_to_prune = bonded
-                    .iter()
-                    .take_while(|&&(era_idx, _)| era_idx < first_kept)
-                    .count();
                 if let Some(&(_, first_session)) = bonded.first() {
                     T::SessionInterface::prune_historical_up_to(first_session);
                 }
@@ -287,6 +272,7 @@ impl<T: Config> Pallet<T> {
         Some(Self::trigger_new_era(start_session_index, validators))
     }
 
+    #[allow(deprecated)]
     pub fn clear_era_information(era_index: EraIndex) {
         <ErasStakers<T>>::remove_prefix(era_index, None);
         <ErasValidatorReward<T>>::remove(era_index);

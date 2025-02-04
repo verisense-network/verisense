@@ -42,7 +42,9 @@ use frame_support::{
     genesis_builder_helper::{build_state, get_preset},
     traits::VariantCountOf,
 };
+use frame_support::traits::EnsureOriginWithArg;
 pub use frame_system::Call as SystemCall;
+use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
@@ -242,19 +244,28 @@ impl pallet_sudo::Config for Runtime {
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
+
+pub const NUCLEUS_FEE_COLLECTOR: AccountId = AccountId::new(hex_literal::hex!(
+    "36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"
+));
+
 parameter_types! {
     pub RegistryDuration: BlockNumber = 10;
+    pub const NucleusFeeCollector: AccountId = NUCLEUS_FEE_COLLECTOR;
 }
 
 impl pallet_nucleus::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_nucleus::weights::SubstrateWeight<Runtime>;
+    type Weight = pallet_nucleus::weights::SubstrateWeight<Runtime>;
     type AuthorityId = vrs_primitives::keys::vrf::AuthorityId;
     type NucleusId = NucleusId;
     type NodeId = NodeId;
     type ControllerLookup = Nucleus;
     type RegistryDuration = RegistryDuration;
     type Validators = Validators;
+    type Assets = Assets;
+    type FeeCollector = NucleusFeeCollector;
+    type FeeAssetId = ConstU32<1>;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -358,7 +369,7 @@ where
         let extra = (
             frame_system::CheckSpecVersion::<Runtime>::new(),
             frame_system::CheckTxVersion::<Runtime>::new(),
-            frame_system::CheckNonce::<Runtime>::from(nonce),
+            pallet_nucleus::check_nonce::CheckNonce::<Runtime>::from(nonce),
             frame_system::CheckGenesis::<Runtime>::new(),
             frame_system::CheckMortality::<Runtime>::from(era),
             frame_system::CheckWeight::<Runtime>::new(),
@@ -399,6 +410,39 @@ impl pallet_restaking::Config for Runtime {
     type RequestEventLimit = RequestEventLimit;
     type MaxValidators = MaxAuthorities;
     type ValidatorsInterface = Validators;
+}
+
+pub struct NoAssetCreators;
+impl EnsureOriginWithArg<RuntimeOrigin, u32> for NoAssetCreators {
+    type Success = AccountId;
+
+    fn try_origin(
+        o: RuntimeOrigin,
+        _a: &u32,
+    ) -> Result<Self::Success, RuntimeOrigin> {
+        Err(o)
+    }
+}
+
+impl pallet_assets::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = Balance;
+    type RemoveItemsLimit = ConstU32<5>;
+    type AssetId = u32;
+    type AssetIdParameter = u32;
+    type Currency = Balances;
+    type CreateOrigin = NoAssetCreators;
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type AssetDeposit = ConstU128<0>;
+    type AssetAccountDeposit = ConstU128<0>;
+    type MetadataDepositBase = ConstU128<0>;
+    type MetadataDepositPerByte = ConstU128<0>;
+    type ApprovalDeposit = ConstU128<0>;
+    type StringLimit = ConstU32<50>;
+    type Freezer = ();
+    type Extra = ();
+    type CallbackHandle = ();
+    type WeightInfo = ();
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -459,6 +503,10 @@ mod runtime {
 
     #[runtime::pallet_index(13)]
     pub type Nucleus = pallet_nucleus;
+
+    #[runtime::pallet_index(14)]
+    pub type Assets = pallet_assets;
+
 }
 
 /// Block header type as expected by this runtime.
@@ -471,7 +519,7 @@ pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 pub type SignedExtra = (
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckNonce<Runtime>,
+    pallet_nucleus::check_nonce::CheckNonce<Runtime>,
     frame_system::CheckGenesis<Runtime>,
     frame_system::CheckMortality<Runtime>,
     frame_system::CheckWeight<Runtime>,

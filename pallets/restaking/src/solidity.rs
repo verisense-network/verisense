@@ -1,7 +1,5 @@
 use crate::String;
 use crate::Vec;
-use codec::Encode;
-use ethabi::Address;
 use scale_info::prelude::format;
 use serde::{Deserialize, Serialize};
 use sp_core::{keccak_256, U256};
@@ -30,7 +28,7 @@ pub fn decode_query_validators_resp(resp: String) -> Vec<ValidatorData> {
     reader.read(32);
     let data_size = U256::from_big_endian(reader.read(32).as_slice()).as_u32();
     let mut v = vec![];
-    for i in 0..data_size {
+    for _i in 0..data_size {
         reader.read(12);
         let addr = reader.read(20);
         let evm_address = format!("0x{}",  hex::encode(addr));
@@ -55,10 +53,6 @@ impl Reader {
         let v = self.0[0..l].to_vec();
         self.0 = self.0[l..].to_vec();
         v
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
     }
 }
 

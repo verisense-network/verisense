@@ -5,7 +5,6 @@ use sp_runtime::traits::Convert;
 use sp_runtime::RuntimeDebug;
 use sp_runtime::KeyTypeId;
 use sp_staking::{EraIndex, SessionIndex};
-use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
 
 #[derive(

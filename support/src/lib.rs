@@ -2,7 +2,7 @@
 
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
-use sp_runtime::{traits::BlockNumber, DispatchError, KeyTypeId};
+use sp_runtime::KeyTypeId;
 use sp_std::vec::Vec;
 
 use sp_std::collections::btree_map::BTreeMap;

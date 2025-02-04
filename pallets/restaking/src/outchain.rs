@@ -4,15 +4,10 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use serde::Serialize;
 use serde_json::Value;
 use sp_core::offchain::Duration;
-use sp_core::U256;
 use sp_runtime::offchain::http;
-use sp_runtime::offchain::http::Response;
 use sp_runtime::traits::TrailingZeroInput;
 
-const SYMBIOTIC_EVM_URL: &str = "https://ethereum-holesky-rpc.publicnode.com";
-const SYMBIOTIC_MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
-const KARAK_EVM_URL: &str = "https://ethereum-holesky-rpc.publicnode.com";
-const KARAK_MIDDLEWARE: &str = "0x6aee7796C5574b5806245E8EFdDB7b7d6F8D0181";
+
 
 impl<T: Config> Pallet<T> {
 

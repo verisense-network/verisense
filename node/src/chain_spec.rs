@@ -71,6 +71,9 @@ pub fn development_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
         ],
+        vec![(1,get_account_id_from_seed::<sr25519::Public>("Alice"),false, 1)],
+        vec![(1, "USDT".as_bytes().to_vec(), "USDT".as_bytes().to_vec(), 18)],
+        vec![],
         true,
     ))
     .build())
@@ -107,6 +110,9 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
         ],
+        vec![(1,get_account_id_from_seed::<sr25519::Public>("Alice"),false, 1)],
+        vec![(1, "USDT".as_bytes().to_vec(), "USDT".as_bytes().to_vec(), 18)],
+        vec![],
         true,
     ))
     .build())
@@ -124,6 +130,9 @@ fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
+    assets: Vec<(u32, AccountId, bool, u128)>,
+    metadata: Vec<(u32, Vec<u8>, Vec<u8>, u8)>,
+    asset_accounts: Vec<(u32, AccountId, u128)>,
     _enable_println: bool,
 ) -> serde_json::Value {
     serde_json::json!({
@@ -154,6 +163,12 @@ fn testnet_genesis(
                 })
                 .collect::<Vec<_>>(),
         },
+        "assets": {
+            "assets": assets,
+            "metadata": metadata,
+            "accounts": asset_accounts,
+            "next_asset_id": None::<u32>,
+        }
     })
 }
 
