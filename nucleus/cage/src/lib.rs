@@ -6,7 +6,7 @@ use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
 use sc_authority_discovery::Service as AuthorityDiscovery;
-use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_client_api::{Backend, BlockBackend, BlockchainEvents, PairsIter, StorageProvider};
 use sc_network::{service::traits::NetworkService, PeerId};
 use sc_transaction_pool_api::{TransactionPool, TransactionSource};
 use sp_api::{Core, Metadata, ProvideRuntimeApi};
@@ -115,6 +115,7 @@ where
         }
         let controller = controller.unwrap();
         let chosen = get_nuclei_for_node(client.clone(), controller.clone(), hash);
+
         for (id, info) in chosen {
             let nucleus_path = nucleus_home_dir.join(id.to_string());
             start_nucleus(
@@ -362,21 +363,28 @@ where
     let api = client.runtime_api();
     let key = codegen::storage().nucleus().instances_iter();
     let instance_key = sp_core::storage::StorageKey(key.to_root_bytes());
-    let list = client
-        .storage(hash, &instance_key)
-        .ok()
-        .flatten()
-        .map(|data| <Vec<(NucleusId, Vec<AccountId>)> as Decode>::decode(&mut &data.0[..]).ok())
-        .flatten()
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|(_, instances)| instances.iter().find(|&ist| *ist == id).is_some())
-        .filter_map(|(nucleus_id, _)| {
-            api.get_nucleus_info(hash, nucleus_id.clone())
-                .ok()?
-                .map(|info| (nucleus_id, info))
-        })
-        .collect::<Vec<_>>();
+    let kv = match client.storage_pairs(hash, Option::from(&instance_key), None).ok() {
+        None => {vec![]}
+        Some(pairs) => {
+            pairs.map(|(k, v)|{
+                let mut nucleus_id_vec = [0u8;32];
+                let len = k.0.len();
+                nucleus_id_vec.copy_from_slice(&k.0[len - 32..]);
+                let nucleus_id = NucleusId::from(nucleus_id_vec);
+                let controllers = <Vec<AccountId> as Decode>::decode(&mut &v.0[..]).ok().unwrap();
+                (nucleus_id,controllers)
+            }).collect::<Vec<(NucleusId, Vec<AccountId>)>>()
+        }
+    };
+    let list = kv
+    .into_iter()
+    .filter(|(_, instances)| instances.iter().find(|&ist| *ist == id).is_some())
+    .filter_map(|(nucleus_id, _)| {
+        api.get_nucleus_info(hash, nucleus_id.clone())
+            .ok()?
+            .map(|info| (nucleus_id, info))
+    })
+    .collect::<Vec<_>>();
     list
 }
 
