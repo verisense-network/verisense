@@ -394,6 +394,7 @@ parameter_types! {
     pub const MaxPeerDataEncodingSize: u32 = 1_000;
     pub const RequestEventLimit: u32 = 10;
     pub const UnsignedPriority: u64 = 1 << 21;
+    pub const RestakingEnable: bool = false;
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
@@ -409,6 +410,7 @@ impl pallet_restaking::Config for Runtime {
     type UnsignedPriority = UnsignedPriority;
     type RequestEventLimit = RequestEventLimit;
     type MaxValidators = MaxAuthorities;
+    type RestakingEnable = RestakingEnable;
     type ValidatorsInterface = Validators;
 }
 
