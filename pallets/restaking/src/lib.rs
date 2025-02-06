@@ -275,7 +275,7 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn offchain_worker(block_number: BlockNumberFor<T>) {
-            if !NeedFetchRestakingValidators::<T>::get() {
+         /*   if !NeedFetchRestakingValidators::<T>::get() {
                 return;
             }
             if !sp_io::offchain::is_validator() {
@@ -284,7 +284,7 @@ pub mod pallet {
             if let Some((public, key_data, validator_id)) = Self::get_validator_id() {
                 Self::submit_unsigned_transaction(block_number, public, key_data, validator_id)
                     .unwrap();
-            }
+            }*/
         }
     }
 
