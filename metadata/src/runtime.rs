@@ -176,9 +176,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                108u8, 72u8, 192u8, 123u8, 74u8, 185u8, 215u8, 1u8, 145u8, 254u8, 41u8, 248u8,
-                66u8, 146u8, 142u8, 119u8, 134u8, 149u8, 99u8, 229u8, 118u8, 118u8, 160u8, 44u8,
-                202u8, 175u8, 165u8, 114u8, 115u8, 220u8, 109u8, 33u8,
+                148u8, 125u8, 39u8, 76u8, 149u8, 112u8, 102u8, 114u8, 153u8, 230u8, 245u8, 244u8,
+                169u8, 107u8, 228u8, 25u8, 6u8, 27u8, 21u8, 144u8, 126u8, 191u8, 134u8, 23u8, 87u8,
+                168u8, 149u8, 173u8, 177u8, 158u8, 124u8, 35u8,
             ]
     }
     pub mod system {
@@ -2549,6 +2549,20 @@ pub mod codegen {
                             125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
                             178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
                             145u8,
+                        ],
+                    )
+                }
+                pub fn restaking_enable(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::bool>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Restaking",
+                        "RestakingEnable",
+                        [
+                            165u8, 28u8, 112u8, 190u8, 18u8, 129u8, 182u8, 206u8, 237u8, 1u8, 68u8,
+                            252u8, 125u8, 234u8, 185u8, 50u8, 149u8, 164u8, 47u8, 126u8, 134u8,
+                            100u8, 14u8, 86u8, 209u8, 39u8, 20u8, 4u8, 233u8, 115u8, 102u8, 131u8,
                         ],
                     )
                 }

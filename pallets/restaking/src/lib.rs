@@ -63,7 +63,11 @@ pub mod pallet {
         #[pallet::constant]
         type MaxValidators: Get<u32>;
 
+        #[pallet::constant]
+        type RestakingEnable: Get<bool>;
+
         type ValidatorsInterface: ValidatorsInterface<Self::AccountId>;
+
     }
 
     type MaxObservations = ConstU32<100>;
@@ -275,6 +279,9 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn offchain_worker(block_number: BlockNumberFor<T>) {
+            if !T::RestakingEnable::get() {
+                return;
+            }
             if !NeedFetchRestakingValidators::<T>::get() {
                 return;
             }
