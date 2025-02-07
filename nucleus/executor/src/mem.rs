@@ -1,3 +1,4 @@
+use codec::{Codec, Encode};
 use vrs_core_sdk::{BUFFER_LEN, NO_MORE_DATA};
 use wasmtime::{Caller, Extern, Memory, Trap, Val};
 
@@ -57,5 +58,39 @@ pub(crate) fn write_to_memory<T: codec::Encode, R>(
     } else {
         self::write_bytes_to_memory(caller, ptr, &bytes)?;
         Ok(Val::I32(NO_MORE_DATA))
+    }
+}
+pub(crate) trait ErrorWriter<T, E> {
+    fn write_error_to_memory<
+        R,
+        CallResultType: Codec,
+        F: FnOnce(E) -> vrs_core_sdk::error::RuntimeError,
+    >(
+        self,
+        caller: &mut Caller<'_, R>,
+        ptr: i32,
+        f: F,
+    ) -> Option<T>;
+}
+impl<T, E> ErrorWriter<T, E> for Result<T, E> {
+    fn write_error_to_memory<
+        R,
+        CallResultType: Codec,
+        F: FnOnce(E) -> vrs_core_sdk::error::RuntimeError,
+    >(
+        self,
+        caller: &mut Caller<'_, R>,
+        ptr: i32,
+        f: F,
+    ) -> Option<T> {
+        match self {
+            Ok(v) => Some(v),
+            Err(e) => {
+                let bytes = vrs_core_sdk::CallResult::<CallResultType>::Err(f(e)).encode();
+                assert!(bytes.len() <= BUFFER_LEN);
+                write_bytes_to_memory(caller, ptr, &bytes).expect("write to wasm failed");
+                None
+            }
+        }
     }
 }

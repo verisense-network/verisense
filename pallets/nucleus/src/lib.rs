@@ -7,17 +7,20 @@ pub use pallet::*;
 // #[cfg(test)]
 // mod tests;
 
-pub mod weights;
 pub mod check_nonce;
+pub mod weights;
 
 pub use weights::*;
 
 //type AssetId<T> = <T as pallet_assets::Config>::AssetId;
-type AssetId<T> = <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<<T as frame_system::Config>::AccountId>>::AssetId;
+type AssetId<T> = <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<
+    <T as frame_system::Config>::AccountId,
+>>::AssetId;
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use codec::{Decode, Encode};
+    use frame_support::traits::fungibles;
     use frame_support::{pallet_prelude::*, traits::OneSessionHandler};
     use frame_system::pallet_prelude::*;
     use sp_core::crypto::VrfPublic;
@@ -32,7 +35,6 @@ pub mod pallet {
     use sp_std::prelude::*;
     use vrs_primitives::{keys::NUCLEUS_VRF_KEY_TYPE, NucleusInfo};
     use vrs_support::ValidatorsInterface;
-    use frame_support::traits::fungibles;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NucleusEquation<AccountId, Hash, NodeId> {
@@ -171,8 +173,10 @@ pub mod pallet {
     impl<T: Config> Pallet<T>
     where
         T::AccountId: Into<[u8; 32]>,
-        <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance: From<u128>,
-          <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>
+        <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<
+            <T as frame_system::Config>::AccountId,
+        >>::Balance: From<u128>,
+        <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>,
     {
         // TODO check the capacity
         #[pallet::call_index(0)]
@@ -294,12 +298,12 @@ pub mod pallet {
 
         #[pallet::call_index(3)]
         #[pallet::weight((T::Weight::submit_work(), Pays::No))]
-        pub fn submit_work(
-            origin: OriginFor<T>,
-            nucleus_id: T::NucleusId,
-        ) -> DispatchResult
-            where <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance: From<u128>,
-            <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>
+        pub fn submit_work(origin: OriginFor<T>, nucleus_id: T::NucleusId) -> DispatchResult
+        where
+            <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance: From<u128>,
+            <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>,
         {
             ensure_signed(origin)?;
 
@@ -412,5 +416,4 @@ pub mod pallet {
             })
         }
     }
-
 }

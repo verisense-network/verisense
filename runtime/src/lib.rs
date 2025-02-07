@@ -24,6 +24,7 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 use frame_support::__private::log;
+use frame_support::traits::EnsureOriginWithArg;
 pub use frame_support::{
     construct_runtime, derive_impl, parameter_types,
     traits::{
@@ -42,7 +43,6 @@ use frame_support::{
     genesis_builder_helper::{build_state, get_preset},
     traits::VariantCountOf,
 };
-use frame_support::traits::EnsureOriginWithArg;
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
@@ -244,7 +244,6 @@ impl pallet_sudo::Config for Runtime {
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
-
 pub const NUCLEUS_FEE_COLLECTOR: AccountId = AccountId::new(hex_literal::hex!(
     "36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"
 ));
@@ -418,10 +417,7 @@ pub struct NoAssetCreators;
 impl EnsureOriginWithArg<RuntimeOrigin, u32> for NoAssetCreators {
     type Success = AccountId;
 
-    fn try_origin(
-        o: RuntimeOrigin,
-        _a: &u32,
-    ) -> Result<Self::Success, RuntimeOrigin> {
+    fn try_origin(o: RuntimeOrigin, _a: &u32) -> Result<Self::Success, RuntimeOrigin> {
         Err(o)
     }
 }
@@ -508,7 +504,6 @@ mod runtime {
 
     #[runtime::pallet_index(14)]
     pub type Assets = pallet_assets;
-
 }
 
 /// Block header type as expected by this runtime.
@@ -549,7 +544,6 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
     Migrations,
 >;
-
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
@@ -771,4 +765,10 @@ impl_runtime_apis! {
             vec![]
         }
     }
+    impl vrs_tss_runtime_api::VrsTssRuntimeApi<Block> for Runtime {
+        fn get_all_validators() -> Vec<sp_runtime::AccountId32> {
+            Session::validators().to_vec()
+        }
+    }
+
 }

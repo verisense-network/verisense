@@ -9,6 +9,7 @@ members = [
     "primitives",
     "metadata",
     "support",
+    "tss",
 ]
 exclude = ["nucleus/p2p"]
 resolver = "2"
@@ -31,7 +32,8 @@ serde = { version = "1", default-features = false }
 hex-literal = { version = "0.3.4", default-features = false }
 log = { version = "0.4", default-features = false }
 
-vrs-core-sdk = { version = "0.0.4" }
+vrs-core-sdk = { git = "https://github.com/verisense-network/vrs-core-sdk.git", branch = "master" }
+# vrs-core-sdk = { version = "0.0.4" }
 # frame
 frame-executive = { version = "36.0.0", default-features = false }
 frame-support = { version = "36.0.0", default-features = false }

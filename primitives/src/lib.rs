@@ -2,13 +2,13 @@
 
 extern crate alloc;
 
+use alloc::string::String;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
 };
-use alloc::string::String;
 
 /// An index to a block.
 pub type BlockNumber = u32;

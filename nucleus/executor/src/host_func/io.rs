@@ -16,7 +16,7 @@ pub fn stdout_print<R>(
     let bytes = crate::mem::read_bytes_from_memory(&mut caller, ptr, len)
         .expect("can't read bytes from wasm");
     let s = <String as Decode>::decode(&mut bytes.as_slice()).expect("can't decode string");
-    print!("{}", s);
+    log::info!("ℹ️nucleus stdout: {}", s);
     Ok(())
 }
 
@@ -34,7 +34,7 @@ pub fn stderr_print<R>(
     let bytes = crate::mem::read_bytes_from_memory(&mut caller, ptr, len)
         .expect("can't read bytes from wasm");
     let s = <String as Decode>::decode(&mut bytes.as_slice()).expect("can't decode string");
-    eprint!("{}", s);
+    log::error!("⚠️nucleus stderr: {}", s);
     Ok(())
 }
 

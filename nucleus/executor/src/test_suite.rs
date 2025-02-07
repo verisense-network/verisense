@@ -32,8 +32,9 @@ pub fn new_mock_runtime() -> (Runtime, OutOfRuntime) {
             http: Arc::new(http_register),
             timer_register: Arc::new(PendingTimerQueue::new()),
             timer_scheduler: scheduler.clone(),
+            tss_node: Arc::new(NodeRuntime::Empty),
             read_only: false,
-            caller_infos: vec![],
+            // caller_infos: vec![],
         },
         OutOfRuntime {
             http_executor,

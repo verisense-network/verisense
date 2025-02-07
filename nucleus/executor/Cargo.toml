@@ -9,7 +9,7 @@ codec = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 wasmtime = { workspace = true }
 vrs-primitives = { path = "../../primitives" }
-vrs-core-sdk = { version = "0.0.4" }
+vrs-core-sdk = { workspace = true }
 rocksdb = "0.21.0"
 anyhow = "1"
 log = "0.4"
@@ -22,13 +22,14 @@ chrono = { version = "0.4" }
 hyper = { version = "1.3", features = ["full"] }
 unicase = "2.6"
 hyper-tls = "0.6.0"
-hyper-util = { version ="0.1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
 bytes = "1"
 http-body-util = "0.1.0"
 tokio-native-tls = "0.3"
 pin-project-lite = "0.2.4"
 xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
 blake2 = "0.10.6"
+vrs-tss = { path = "../../tss" }
 
 [dev-dependencies]
 temp-dir = "0.1.13"
