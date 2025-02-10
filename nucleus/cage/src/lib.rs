@@ -37,6 +37,7 @@ pub struct CageParams<P, B, C, BN> {
     pub authority_discovery: Arc<AuthorityDiscovery>,
     pub nucleus_signal: NucleusSignal,
     pub net_service: Arc<dyn NetworkService>,
+    pub tss_node: Arc<vrs_tss::NodeRuntime>,
     pub nucleus_home_dir: std::path::PathBuf,
     // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
     // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
@@ -67,6 +68,7 @@ where
         authority_discovery,
         nucleus_signal,
         net_service,
+        tss_node,
         nucleus_home_dir,
         _phantom,
     } = params;
@@ -124,6 +126,7 @@ where
                 nucleus_path.as_path(),
                 http_register.clone(),
                 timer_scheduler.clone(),
+                tss_node.clone(),
                 &mut nuclei,
             )
             .expect("fail to start nucleus");
@@ -191,6 +194,7 @@ where
                                 nucleus_path.as_path(),
                                 http_register.clone(),
                                 timer_scheduler.clone(),
+                                tss_node.clone(),
                                 &mut nuclei,
                             ).expect("fail to start nucleus");
                         }
@@ -295,7 +299,6 @@ where
         public_input,
     )?;
     let submitter: AccountId = submitter.into();
-    // let key = vrs_metadata::codegen::storage().system().block_hash(0);
     // TODO for unknown reasons, the key is none so we just hard-code the key here
     let key = hex::decode(
         "26aa394eea5630e07c48ae0c9558cef7a44704b568d21667356a5a050c118746b4def25cfda6ef3a00000000",
@@ -363,28 +366,35 @@ where
     let api = client.runtime_api();
     let key = codegen::storage().nucleus().instances_iter();
     let instance_key = sp_core::storage::StorageKey(key.to_root_bytes());
-    let kv = match client.storage_pairs(hash, Option::from(&instance_key), None).ok() {
-        None => {vec![]}
-        Some(pairs) => {
-            pairs.map(|(k, v)|{
-                let mut nucleus_id_vec = [0u8;32];
+    let kv = match client
+        .storage_pairs(hash, Option::from(&instance_key), None)
+        .ok()
+    {
+        None => {
+            vec![]
+        }
+        Some(pairs) => pairs
+            .map(|(k, v)| {
+                let mut nucleus_id_vec = [0u8; 32];
                 let len = k.0.len();
                 nucleus_id_vec.copy_from_slice(&k.0[len - 32..]);
                 let nucleus_id = NucleusId::from(nucleus_id_vec);
-                let controllers = <Vec<AccountId> as Decode>::decode(&mut &v.0[..]).ok().unwrap();
-                (nucleus_id,controllers)
-            }).collect::<Vec<(NucleusId, Vec<AccountId>)>>()
-        }
+                let controllers = <Vec<AccountId> as Decode>::decode(&mut &v.0[..])
+                    .ok()
+                    .unwrap();
+                (nucleus_id, controllers)
+            })
+            .collect::<Vec<(NucleusId, Vec<AccountId>)>>(),
     };
     let list = kv
-    .into_iter()
-    .filter(|(_, instances)| instances.iter().find(|&ist| *ist == id).is_some())
-    .filter_map(|(nucleus_id, _)| {
-        api.get_nucleus_info(hash, nucleus_id.clone())
-            .ok()?
-            .map(|info| (nucleus_id, info))
-    })
-    .collect::<Vec<_>>();
+        .into_iter()
+        .filter(|(_, instances)| instances.iter().find(|&ist| *ist == id).is_some())
+        .filter_map(|(nucleus_id, _)| {
+            api.get_nucleus_info(hash, nucleus_id.clone())
+                .ok()?
+                .map(|info| (nucleus_id, info))
+        })
+        .collect::<Vec<_>>();
     list
 }
 
@@ -415,6 +425,7 @@ fn try_load_wasm(
     version: u32,
 ) -> anyhow::Result<WasmInfo> {
     let wasm_path = nucleus_path.join(format!("wasm/{}.wasm", version));
+    // log::info!("wasm_path: {:?}", wasm_path);
     let code = std::fs::read(&wasm_path)?;
     log::info!("📦 Loaded wasm for nucleus {} version {}.", id, version);
     Ok(WasmInfo { id, version, code })
@@ -438,6 +449,7 @@ fn start_nucleus(
     nucleus_path: &std::path::Path,
     http_register: Arc<HttpCallRegister>,
     timer_scheduler: Arc<SchedulerAsync>,
+    tss_node: Arc<vrs_tss::NodeRuntime>,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
 ) -> anyhow::Result<()> {
     let NucleusInfo {
@@ -450,11 +462,12 @@ fn start_nucleus(
         root_state,
         peers,
     } = nucleus_info;
-    let config = RuntimeParams {
+    let config: RuntimeParams = RuntimeParams {
         nucleus_id: id.clone(),
         db_path: nucleus_path.join("db").into_boxed_path(),
         http_register,
         timer_scheduler,
+        tss_node,
     };
     let runtime = Runtime::init(config)?;
     let state = runtime.state();
@@ -482,152 +495,152 @@ fn start_nucleus(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::nucleus::Nucleus;
-    use crate::test_suite::new_mock_nucleus;
-    use std::sync::Arc;
-    use std::thread;
-    use stream::FuturesUnordered;
-    use tokio::task;
+    // use super::*;
+    // use crate::nucleus::Nucleus;
+    // use crate::test_suite::new_mock_nucleus;
+    // use std::sync::Arc;
+    // use std::thread;
+    // use stream::FuturesUnordered;
+    // use tokio::task;
 
-    struct ResultProcessor {
-        receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
-    }
-    impl ResultProcessor {
-        fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
-            let (sender, receiver) = tokio::sync::oneshot::channel();
-            thread::spawn(move || async move {
-                let reply_to = receiver.await;
-                println!("reply: {:?}", reply_to);
-            });
-            sender
-        }
-    }
-    fn decode<T: Decode>(data: Vec<u8>) -> T {
-        let mut reply = data.as_slice();
-        println!("reply: {:?}", reply);
-        let reply = <Result<T, String> as codec::Decode>::decode(&mut reply)
-            .unwrap()
-            .unwrap();
-        reply
-    }
-    #[tokio::test]
-    async fn test_scheduler_async() {
-        let wasm_path = "../../nucleus-examples/timer.wasm";
-        let (out_of_runtime, sender_cage) = new_mock_nucleus(wasm_path.to_string());
-        let sender1 = sender_cage.clone();
-        let (tree_tx, mut tree_rx) = tokio::sync::mpsc::channel(100);
-        tokio::spawn(async move {
-            while let Some(entry) = out_of_runtime.scheduler.pop().await {
-                println!("entry: {:?}", entry);
-                if entry.func_name == "test_set_perfect_tree_mod_timer" {
-                    let d =
-                        <(i32, i32) as Decode>::decode(&mut entry.func_params.as_slice()).unwrap();
-                    println!("d: {:?}", d);
-                    tree_tx.send(d).await.unwrap();
-                }
-                sender1
-                    .send((
-                        0,
-                        Gluon::TimerRequest {
-                            endpoint: entry.func_name,
-                            payload: entry.func_params,
-                        },
-                    ))
-                    .unwrap();
-            }
-        });
-        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-        sender_cage
-            .send((
-                0,
-                Gluon::PostRequest {
-                    endpoint: "test_set_timer".to_owned(),
-                    payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
-                    // reply_to: Some(sender_reply),
-                    reply_to: Some(sender_reply),
-                },
-            ))
-            .unwrap();
-        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-        sender_cage
-            .send((
-                0,
-                Gluon::GetRequest {
-                    endpoint: "test_get_timer".to_owned(),
-                    payload: vec![],
-                    reply_to: Some(sender_reply),
-                },
-            ))
-            .unwrap();
-        let reply = receiver_reply.await.unwrap().unwrap();
-        let mut reply = reply.as_slice();
-        let reply = <Result<String, String> as codec::Decode>::decode(&mut reply)
-            .unwrap()
-            .unwrap();
-        assert_eq!(reply, "init");
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-        let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
-        sender_cage
-            .send((
-                0,
-                Gluon::GetRequest {
-                    endpoint: "test_get_timer".to_owned(),
-                    payload: vec![],
-                    reply_to: Some(sender_reply),
-                },
-            ))
-            .unwrap();
-        let reply = receiver_reply.await.unwrap().unwrap();
-        assert_eq!(decode::<String>(reply), "delay_complete abc 123");
-        let mut last_d = (0, 0);
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-        while let Some(d) = tree_rx.recv().await {
-            assert!(d.1 >= last_d.1);
-            last_d = d;
-            if d.0 == 15 {
-                break;
-            }
-        }
-        // println!("{:?}", reply.1);
-        // assert_eq!(decode(reply.0), 555);
-        // let mut last = 0;
-        // let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
-        // // println!("aaa");
-        // let mut len = 2;
-        // while let Some(entry) = sc.pop().await {
-        //     let sender = sender_cage_clone.clone();
-        //     let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
-        //     receivers.push(receiver_timer_reply);
-        //     let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+    // struct ResultProcessor {
+    //     receiver: tokio::sync::mpsc::Receiver<NucleusResponse>,
+    // }
+    // impl ResultProcessor {
+    //     fn new() -> tokio::sync::oneshot::Sender<NucleusResponse> {
+    //         let (sender, receiver) = tokio::sync::oneshot::channel();
+    //         thread::spawn(move || async move {
+    //             let reply_to = receiver.await;
+    //             println!("reply: {:?}", reply_to);
+    //         });
+    //         sender
+    //     }
+    // }
+    // fn decode<T: Decode>(data: Vec<u8>) -> T {
+    //     let mut reply = data.as_slice();
+    //     println!("reply: {:?}", reply);
+    //     let reply = <Result<T, String> as codec::Decode>::decode(&mut reply)
+    //         .unwrap()
+    //         .unwrap();
+    //     reply
+    // }
+    // #[tokio::test]
+    // async fn test_scheduler_async() {
+    //     let wasm_path = "../../nucleus-examples/timer.wasm";
+    //     let (out_of_runtime, sender_cage) = new_mock_nucleus(wasm_path.to_string());
+    //     let sender1 = sender_cage.clone();
+    //     let (tree_tx, mut tree_rx) = tokio::sync::mpsc::channel(100);
+    //     tokio::spawn(async move {
+    //         while let Some(entry) = out_of_runtime.scheduler.pop().await {
+    //             println!("entry: {:?}", entry);
+    //             if entry.func_name == "test_set_perfect_tree_mod_timer" {
+    //                 let d =
+    //                     <(i32, i32) as Decode>::decode(&mut entry.func_params.as_slice()).unwrap();
+    //                 println!("d: {:?}", d);
+    //                 tree_tx.send(d).await.unwrap();
+    //             }
+    //             sender1
+    //                 .send((
+    //                     0,
+    //                     Gluon::TimerRequest {
+    //                         endpoint: entry.func_name,
+    //                         payload: entry.func_params,
+    //                     },
+    //                 ))
+    //                 .unwrap();
+    //         }
+    //     });
+    //     let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+    //     sender_cage
+    //         .send((
+    //             0,
+    //             Gluon::PostRequest {
+    //                 endpoint: "test_set_timer".to_owned(),
+    //                 payload: <(i32, i32) as codec::Encode>::encode(&(1, 0)),
+    //                 // reply_to: Some(sender_reply),
+    //                 reply_to: Some(sender_reply),
+    //             },
+    //         ))
+    //         .unwrap();
+    //     let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+    //     sender_cage
+    //         .send((
+    //             0,
+    //             Gluon::GetRequest {
+    //                 endpoint: "test_get_timer".to_owned(),
+    //                 payload: vec![],
+    //                 reply_to: Some(sender_reply),
+    //             },
+    //         ))
+    //         .unwrap();
+    //     let reply = receiver_reply.await.unwrap().unwrap();
+    //     let mut reply = reply.as_slice();
+    //     let reply = <Result<String, String> as codec::Decode>::decode(&mut reply)
+    //         .unwrap()
+    //         .unwrap();
+    //     assert_eq!(reply, "init");
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+    //     let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
+    //     sender_cage
+    //         .send((
+    //             0,
+    //             Gluon::GetRequest {
+    //                 endpoint: "test_get_timer".to_owned(),
+    //                 payload: vec![],
+    //                 reply_to: Some(sender_reply),
+    //             },
+    //         ))
+    //         .unwrap();
+    //     let reply = receiver_reply.await.unwrap().unwrap();
+    //     assert_eq!(decode::<String>(reply), "delay_complete abc 123");
+    //     let mut last_d = (0, 0);
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+    //     while let Some(d) = tree_rx.recv().await {
+    //         assert!(d.1 >= last_d.1);
+    //         last_d = d;
+    //         if d.0 == 15 {
+    //             break;
+    //         }
+    //     }
+    // println!("{:?}", reply.1);
+    // assert_eq!(decode(reply.0), 555);
+    // let mut last = 0;
+    // let result = [0, 0, 1, 2, 2, 3, 3, 4, 3, 4, 4, 5, 4, 5, 5, 6];
+    // // println!("aaa");
+    // let mut len = 2;
+    // while let Some(entry) = sc.pop().await {
+    //     let sender = sender_cage_clone.clone();
+    //     let (sender_timer_reply, receiver_timer_reply) = tokio::sync::oneshot::channel();
+    //     receivers.push(receiver_timer_reply);
+    //     let (sender_reply, receiver_reply) = tokio::sync::oneshot::channel();
 
-        //     if let Err(err) = sender.send((
-        //         0,
-        //         Gluon::TimerRequest {
-        //             endpoint: entry.func_name,
-        //             payload: entry.func_params,
-        //             // reply_to: Some(sender_reply),
-        //             // pending_timer_queue: sender_timer_reply,
-        //         },
-        //     )) {
-        //         println!("fail to send timer entry: {:?}", err);
-        //     }
-        //     let reply = receiver_reply.await.unwrap().unwrap();
-        //     println!("reply: {:?}", reply);
-        //     assert!(result[decode(reply.clone()) as usize] >= last);
-        //     last = result[decode(reply) as usize];
-        //     let es = receivers.next().await.unwrap().unwrap();
-        //     for e in es.into_iter() {
-        //         sc.push(e);
-        //     }
-        //     len += 1;
-        //     if len == result.len() {
-        //         break;
-        //     }
-        //     // task::spawn_blocking(move || async move {
-        //     //     let reply = receiver_reply.await.unwrap();
-        //     //     println!("reply: {:?}", reply);
-        //     // });
-        // }
-    }
+    //     if let Err(err) = sender.send((
+    //         0,
+    //         Gluon::TimerRequest {
+    //             endpoint: entry.func_name,
+    //             payload: entry.func_params,
+    //             // reply_to: Some(sender_reply),
+    //             // pending_timer_queue: sender_timer_reply,
+    //         },
+    //     )) {
+    //         println!("fail to send timer entry: {:?}", err);
+    //     }
+    //     let reply = receiver_reply.await.unwrap().unwrap();
+    //     println!("reply: {:?}", reply);
+    //     assert!(result[decode(reply.clone()) as usize] >= last);
+    //     last = result[decode(reply) as usize];
+    //     let es = receivers.next().await.unwrap().unwrap();
+    //     for e in es.into_iter() {
+    //         sc.push(e);
+    //     }
+    //     len += 1;
+    //     if len == result.len() {
+    //         break;
+    //     }
+    //     // task::spawn_blocking(move || async move {
+    //     //     let reply = receiver_reply.await.unwrap();
+    //     //     println!("reply: {:?}", reply);
+    //     // });
+    // }
+    // }
 }

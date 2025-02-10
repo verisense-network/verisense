@@ -71,8 +71,18 @@ pub fn development_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
         ],
-        vec![(1,get_account_id_from_seed::<sr25519::Public>("Alice"),false, 1)],
-        vec![(1, "USDT".as_bytes().to_vec(), "USDT".as_bytes().to_vec(), 18)],
+        vec![(
+            1,
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            false,
+            1,
+        )],
+        vec![(
+            1,
+            "USDT".as_bytes().to_vec(),
+            "USDT".as_bytes().to_vec(),
+            18,
+        )],
         vec![],
         true,
     ))
@@ -92,6 +102,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         vec![
             authority_keys_from_seed("Alice"),
             authority_keys_from_seed("Bob"),
+            authority_keys_from_seed("Charlie"),
         ],
         // Sudo account
         get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -110,8 +121,18 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
         ],
-        vec![(1,get_account_id_from_seed::<sr25519::Public>("Alice"),false, 1)],
-        vec![(1, "USDT".as_bytes().to_vec(), "USDT".as_bytes().to_vec(), 18)],
+        vec![(
+            1,
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            false,
+            1,
+        )],
+        vec![(
+            1,
+            "USDT".as_bytes().to_vec(),
+            "USDT".as_bytes().to_vec(),
+            18,
+        )],
         vec![],
         true,
     ))
@@ -143,7 +164,7 @@ fn testnet_genesis(
             "key": Some(root_key),
         },
         "restaking": {
-            "validators": endowed_accounts.iter().cloned().map(|k| (k, 10000, "0x0000000000000000000000000000000000000000", "Original")).collect::<Vec<_>>(),
+            "validators": initial_authorities.iter().cloned().map(|k| (k.0, 10000, "0x0000000000000000000000000000000000000000", "Original")).collect::<Vec<_>>(),
         },
          "session":  {
             "keys": initial_authorities

@@ -35,7 +35,7 @@ pallet-restaking = { path = "../pallets/restaking", default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validators = { path = "../pallets/validators", default-features = false }
 # primitives
-vrs-support = { path = "../support", default-features =  false }
+vrs-support = { path = "../support", default-features = false }
 vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
 sp-block-builder = { workspace = true, default-features = false }
@@ -67,7 +67,7 @@ frame-system-rpc-runtime-api = { workspace = true, default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true, default-features = false }
 vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api", default-features = false }
 vrs-restaking-runtime-api = { path = "../pallets/restaking/runtime-api", default-features = false }
-
+vrs-tss-runtime-api = { path = "../tss/runtime-api", default-features = false }
 [build-dependencies]
 substrate-wasm-builder = { optional = true, version = "24.0.0" }
 
@@ -97,6 +97,7 @@ std = [
 	"vrs-primitives/std",
 	"vrs-nucleus-runtime-api/std",
 	"vrs-restaking-runtime-api/std",
+	"vrs-tss-runtime-api/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",

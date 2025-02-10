@@ -10,6 +10,7 @@ pub struct Vm<R> {
     space: Store<R>,
     instance: Instance,
     __call_param_ptr: i32,
+    wasm_info: WasmInfo,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -67,7 +68,7 @@ where
 {
     pub fn new_instance(wasm: &WasmInfo, runtime: &R) -> anyhow::Result<Self> {
         let engine = Engine::default();
-        let module = Module::from_binary(&engine, &wasm.code)?;
+        let module = Module::from_binary(&engine, &wasm.code.clone())?;
         module.exports().for_each(|ty| {
             if let ExternType::Func(func) = ty.ty() {
                 log::debug!("user wasm export: {} {}", func.to_string(), ty.name());
@@ -75,16 +76,17 @@ where
         });
         let mut store = Store::new(&engine, runtime.clone());
         let linker = R::register_host_funcs(&engine);
-        let instance = linker.instantiate(&mut store, &module).unwrap();
+        let instance = linker.instantiate(&mut store, &module)?;
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or(anyhow::anyhow!("Invalid wasm code: no memory exported"))?;
         let ptr = memory.data_size(&store) as i32;
-        memory.grow(&mut store, MAX_PAGE_COUNT as u64).unwrap();
+        memory.grow(&mut store, MAX_PAGE_COUNT as u64)?;
         Ok(Self {
             space: store,
             instance,
             __call_param_ptr: ptr,
+            wasm_info: wasm.clone(),
         })
     }
 
@@ -116,6 +118,11 @@ where
     }
 
     pub fn call_init(&mut self) {
+        log::info!(
+            "call init for nucleus id: {:?}, version: {:?}",
+            self.wasm_info.id,
+            self.wasm_info.version
+        );
         self.space.data_mut().set_read_only(false);
         let _ = self
             .call("__nucleus_init", ().encode())

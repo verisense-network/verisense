@@ -1,16 +1,24 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use crate::cli::TssCmd;
 use futures::{prelude::*, FutureExt};
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-use sc_network::{event::Event, NetworkEventStream};
+use sc_network::{
+    event::Event,
+    NetworkEventStream,
+    {multiaddr::Protocol, Multiaddr},
+};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use std::{sync::Arc, time::Duration};
+use sp_runtime::key_types::AUTHORITY_DISCOVERY;
+use std::{collections::HashSet, net::IpAddr, sync::Arc, time::Duration};
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
+use vrs_tss::TssIdentity;
+use vrs_tss::VrsTssValidatorIdentity;
 
 pub(crate) type FullClient = sc_service::TFullClient<
     Block,
@@ -132,7 +140,10 @@ pub fn new_full<
     N: sc_network::NetworkBackend<Block, <Block as sp_runtime::traits::Block>::Hash>,
 >(
     config: Configuration,
+    tss_config: TssCmd,
 ) -> Result<TaskManager, ServiceError> {
+    let network_config = config.network.clone();
+
     let sc_service::PartialComponents {
         client,
         backend,
@@ -256,6 +267,7 @@ pub fn new_full<
     let enable_grandpa = !config.disable_grandpa;
     let prometheus_registry = config.prometheus_registry().cloned();
     let nucleus_home_dir = config.data_path.as_path().join("nucleus");
+    let tss_path = config.base_path.path().join("veritss");
     // TODO config the capacity of pending requests
     let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
 
@@ -293,7 +305,151 @@ pub fn new_full<
         config,
         telemetry: telemetry.as_mut(),
     })?;
+    // tss by shiotoli
+    let genesis_block_hash = client
+        .block_hash(0)
+        .ok()
+        .flatten()
+        .expect("Genesis block exists; qed");
 
+    // let chain_spec_data = client
+    //     .runtime_api()
+    //     .get_chain_spec_data(&genesis_block_hash);
+
+    let tss_keystore =
+        vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY)
+            .map_err(|e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)))?;
+    use sp_api::ProvideRuntimeApi;
+    use vrs_tss_runtime_api::VrsTssRuntimeApi;
+    let validators = client
+        .runtime_api()
+        .get_all_validators(genesis_block_hash)
+        .map_err(|e| sc_service::Error::Other(format!("Failed to get all validators: {}", e)))?;
+    let whitelisted_ids = validators
+        .iter()
+        .map(|id| TssIdentity(id.clone()))
+        .collect::<HashSet<_>>();
+
+    let start_tss = whitelisted_ids.len() >= 2;
+    if role.is_authority() && start_tss {
+        // use aura key to initialize signer
+        // if the node is an authority, it will run a signer service
+        // since we cannot get the sudo account from the chain spec, we start the coordinator for all authorities
+        let min_signers = whitelisted_ids.len() as u16 / 2 + 1;
+        // if the coordinator is set, start the coordinator
+        if let Some(coordinator_port) = tss_config.coordinator {
+            log::info!(
+                "start coordinator with {} whitelisted ids, min signers: {}, listen port: {}",
+                whitelisted_ids.len(),
+                min_signers,
+                coordinator_port
+            );
+            let node_key_pair = libp2p::identity::Keypair::ed25519_from_bytes(
+                network_config
+                    .node_key
+                    .clone()
+                    .into_keypair()?
+                    .secret()
+                    .to_bytes(),
+            )
+            .unwrap();
+            assert_eq!(
+                node_key_pair.public().to_peer_id().to_string(),
+                node_id.to_string()
+            );
+            tracing::info!(
+                "whitelisted ids: {:?}, node peer id: {:?}",
+                whitelisted_ids,
+                node_key_pair.public().to_peer_id()
+            );
+
+            let coordinator =
+                vrs_tss::coordinator::Coordinator::<vrs_tss::VrsTssValidatorIdentity>::new(
+                    node_key_pair,
+                    tss_path.clone(),
+                    Some(whitelisted_ids.clone()),
+                    coordinator_port,
+                    Some(min_signers),
+                )
+                .map_err(|e| {
+                    sc_service::Error::Other(format!("Failed to initialize coordinator: {}", e))
+                })?;
+            task_manager
+                .spawn_essential_handle()
+                .spawn_blocking("coordinator", None, async move {
+                    let r = coordinator.start_listening().await;
+                    if let Err(e) = r {
+                        tracing::error!("coordinator start listening failed: {:?}", e);
+                    }
+                });
+            let signer = vrs_tss::signer::Signer::<vrs_tss::VrsTssValidatorIdentity>::new(
+                tss_keystore,
+                tss_path.clone(),
+                tss_config.coordinator_multiaddr().unwrap(),
+                node_id.into(),
+                |_, _| true,
+            )
+            .map_err(|e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)))?;
+            task_manager
+                .spawn_essential_handle()
+                .spawn_blocking("signer", None, async move {
+                    let r = signer.start_listening().await;
+                    if let Err(e) = r {
+                        tracing::error!("signer start listening failed: {:?}", e);
+                    }
+                });
+        } else if let Some(bootnode) = tss_config.signer.as_ref() {
+            log::info!("start signer with coordinator multiaddr: {}", bootnode);
+            let coordinator_ip_addr = bootnode.multiaddr.clone();
+            let coordinator_peer_id = bootnode.peer_id;
+            let signer = vrs_tss::signer::Signer::<vrs_tss::VrsTssValidatorIdentity>::new(
+                tss_keystore,
+                tss_path.clone(),
+                coordinator_ip_addr.into(),
+                coordinator_peer_id.into(),
+                |_, _| true,
+            )
+            .map_err(|e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)))?;
+            task_manager
+                .spawn_essential_handle()
+                .spawn_blocking("signer", None, async move {
+                    let r = signer.start_listening().await;
+                    if let Err(e) = r {
+                        tracing::error!("signer start listening failed: {:?}", e);
+                    }
+                });
+        }
+    }
+    // new tss node
+    let tss_node = if start_tss && tss_config.coordinator_multiaddr().is_some() {
+        let tss_keystore =
+            vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY).map_err(
+                |e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)),
+            )?;
+        let coordinator_multiaddr = tss_config.coordinator_multiaddr().unwrap();
+        let coordinator_peer_id = if let Some(peer_id) = tss_config.peer_id() {
+            peer_id
+        } else {
+            node_id.into()
+        };
+        let tss_node = vrs_tss::node::Node::<VrsTssValidatorIdentity>::new(
+            tss_keystore,
+            tss_path.clone(),
+            coordinator_multiaddr,
+            coordinator_peer_id,
+        )
+        .map_err(|e| sc_service::Error::Other(format!("Failed to initialize tss node: {}", e)))?;
+        let tss_node = Arc::new(vrs_tss::NodeRuntime::new(
+            tss_node,
+            Some(tokio::time::Duration::from_secs(5)),
+        ));
+        tss_node
+    } else {
+        Arc::new(vrs_tss::NodeRuntime::Empty)
+    };
+    // tss finished
+
+    //
     if role.is_authority() {
         // let noti_service1 = noti_service
         //     .clone()
@@ -364,6 +520,7 @@ pub fn new_full<
             authority_discovery: authority_discovery.clone(),
             nucleus_signal: nucleus_rpc_rx,
             net_service: network.clone(),
+            tss_node,
             nucleus_home_dir: nucleus_home_dir.clone(),
             // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
             // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,

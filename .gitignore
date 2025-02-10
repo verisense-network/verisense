@@ -26,3 +26,5 @@ dist/
 # docs
 *.pdf
 *.tex
+
+*.wasm

@@ -1,9 +1,10 @@
 use crate::{
-    host_func::{http, io, kvdb, timer, HttpCallRegister, PendingTimerQueue, TimerEntry},
+    host_func::{http, io, kvdb, timer, tss, HttpCallRegister, PendingTimerQueue, TimerEntry},
     NucleusState,
 };
 use std::sync::Arc;
 use vrs_primitives::NucleusId;
+use vrs_tss::NodeRuntime;
 use wasmtime::{Engine, Linker};
 
 pub trait FuncRegister {
@@ -28,12 +29,13 @@ pub trait ComponentProvider<T> {
     fn get_component(&self) -> Arc<T>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RuntimeParams {
     pub db_path: Box<std::path::Path>,
     pub nucleus_id: NucleusId,
     pub http_register: Arc<http::HttpCallRegister>,
     pub timer_scheduler: Arc<timer::SchedulerAsync>,
+    pub tss_node: Arc<NodeRuntime>,
 }
 
 #[derive(Clone)]
@@ -44,6 +46,7 @@ pub struct Runtime {
     pub(crate) read_only: bool,
     pub(crate) timer_scheduler: Arc<timer::SchedulerAsync>,
     pub(crate) timer_register: Arc<PendingTimerQueue>,
+    pub(crate) tss_node: Arc<NodeRuntime>,
     // TODO we need runtime storage to read
 }
 
@@ -56,6 +59,7 @@ impl Runtime {
             read_only: false,
             timer_scheduler: config.timer_scheduler,
             timer_register: Arc::new(PendingTimerQueue::new()),
+            tss_node: config.tss_node,
         })
     }
 
@@ -190,6 +194,22 @@ impl FuncRegister for Runtime {
                 "now_timestamp",
                 timer::now_timestamp_signature(engine),
                 timer::now_timestamp,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "tss_sign_host_fn",
+                tss::tss_sign_signature(engine),
+                tss::tss_sign,
+            )
+            .unwrap();
+        linker
+            .func_new(
+                "env",
+                "tss_get_public_key_host_fn",
+                tss::tss_get_public_key_signature(engine),
+                tss::tss_get_public_key,
             )
             .unwrap();
         linker

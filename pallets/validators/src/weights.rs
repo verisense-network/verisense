@@ -11,7 +11,7 @@ pub trait WeightInfo {
     fn do_something() -> Weight;
     fn cause_error() -> Weight;
 }
-
+use frame_support::genesis_builder_helper;
 /// Weights for pallet_template using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
