@@ -76,7 +76,6 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                     // forward the request to cage
                     let msg = NucleusP2pMsg::ReqRes(request);
                     _ = p2p_cage_tx.send(msg).await;
-
                 }
             }
         }
