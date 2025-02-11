@@ -454,21 +454,6 @@ pub fn new_full<
 
     //
     if role.is_authority() {
-        let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
-        let params = vrs_nucleus_p2p::P2pParams {
-            keystore: keystore_container.keystore(),
-            reqres_receiver,
-            client: client.clone(),
-            net_service: network.clone(),
-            p2p_cage_tx,
-            controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
-            _phantom: std::marker::PhantomData,
-        };
-        task_manager.spawn_essential_handle().spawn_blocking(
-            "nucleus-p2p",
-            None,
-            vrs_nucleus_p2p::start_nucleus_p2p(params),
-        );
 
         // launch authority discovery worker
         let discovery_mode =
@@ -501,6 +486,24 @@ pub fn new_full<
             authority_discovery_worker.run(),
         );
         let authority_discovery = Arc::new(authority_discovery_service);
+
+        let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
+        let params = vrs_nucleus_p2p::P2pParams {
+            keystore: keystore_container.keystore(),
+            reqres_receiver,
+            client: client.clone(),
+            net_service: network.clone(),
+            p2p_cage_tx,
+            controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
+            authority_discovery: authority_discovery.clone(),
+            _phantom: std::marker::PhantomData,
+        };
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "nucleus-p2p",
+            None,
+            vrs_nucleus_p2p::start_nucleus_p2p(params),
+        );
+
         // launch nucleus cage
         let params = vrs_nucleus_cage::CageParams {
             client: client.clone(),

@@ -6,12 +6,19 @@ use sc_network::{
     service::traits::{NotificationEvent, NotificationService},
     PeerId,
 };
+use sc_authority_discovery::Service as AuthorityDiscovery;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_application_crypto::key_types::AUTHORITY_DISCOVERY;
 use sp_blockchain::HeaderBackend;
 use sp_core::{sr25519, ByteArray, Pair};
 use sp_keystore::KeystorePtr;
 use std::{str::FromStr, sync::Arc};
+use std::time::Duration;
+use async_channel::{Recv, RecvError};
+use log::log;
+use tokio::time;
+use tokio::time::{timeout, Timeout};
+use tokio::time::error::Elapsed;
 use vrs_primitives::AccountId;
 
 pub struct P2pParams<B, C, BN> {
@@ -21,6 +28,7 @@ pub struct P2pParams<B, C, BN> {
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
     pub p2p_cage_tx: tokio::sync::mpsc::Sender<NucleusP2pMsg>,
     pub controller: AccountId,
+    pub authority_discovery: Arc<AuthorityDiscovery>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
@@ -63,19 +71,21 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         mut net_service,
         p2p_cage_tx,
         controller,
+        mut authority_discovery,
         _phantom,
     } = params;
     async move {
         log::info!("🔌 Nucleus p2p controller: {}", controller);
 
         loop {
-            tokio::select! {
-                Ok(request) = reqres_receiver.recv() => {
-                    log::debug!("Incoming p2p request msg: {:?}", request);
-                    // do stuff
-                    // forward the request to cage
-                    let msg = NucleusP2pMsg::ReqRes(request);
-                    _ = p2p_cage_tx.send(msg).await;
+            match timeout(Duration::from_secs(5), reqres_receiver.recv()).await {
+                Ok(r) => {
+                    if let Ok(req) = r {
+                        log::info!("incoming p2p message: {:?}", req);
+                    }
+                }
+                Err(_) => {
+                    log::info!("nucleus p2p timeout, send a message");
                 }
             }
         }

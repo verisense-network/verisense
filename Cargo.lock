@@ -12207,6 +12207,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
+ "sc-authority-discovery",
  "sc-client-api",
  "sc-network",
  "scale-info",
