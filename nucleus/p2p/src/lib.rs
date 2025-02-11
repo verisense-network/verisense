@@ -19,10 +19,7 @@ pub struct P2pParams<B, C, BN> {
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
     pub client: Arc<C>,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
-    pub test_receiver: tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
     pub p2p_cage_tx: tokio::sync::mpsc::Sender<NucleusP2pMsg>,
-    pub noti_receiver: tokio::sync::mpsc::Receiver<(Vec<u8>, Vec<PeerId>)>,
-    pub noti_service: Box<dyn NotificationService>,
     pub controller: AccountId,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
@@ -48,26 +45,23 @@ pub struct PayloadWithSignature {
 }
 
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
-where
-    B: sp_runtime::traits::Block,
-    BN: Backend<B>,
-    C: BlockBackend<B>
+    where
+        B: sp_runtime::traits::Block,
+        BN: Backend<B>,
+        C: BlockBackend<B>
         + StorageProvider<B, BN>
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + HeaderBackend<B>
         + 'static,
-    C::Api: Metadata<B>,
+        C::Api: Metadata<B>,
 {
     let P2pParams {
         keystore,
         reqres_receiver,
         client,
         mut net_service,
-        mut test_receiver,
         p2p_cage_tx,
-        mut noti_receiver,
-        mut noti_service,
         controller,
         _phantom,
     } = params;
@@ -76,57 +70,6 @@ where
 
         loop {
             tokio::select! {
-                Some(nodes) = test_receiver.recv() => {
-                    for node_id in nodes {
-                        let test_data: Vec<u8> = format!("hello, notification").as_bytes().to_vec();
-                        log::info!(" ==> going to send noti: {:?} {:?}", node_id, test_data);
-                        // let msg_sink = noti_service
-                        //     .message_sink(&node_id)
-                        //     .expect("error when get msg_sink");
-                        // msg_sink.send_sync_notification(test_data);
-                        noti_service.send_sync_notification(&node_id, test_data);
-                        // _ = noti_service2
-                        //     .send_async_notification(&node_id, test_data.clone())
-                        //     .await;
-                    }
-                },
-                Some(noti) = noti_receiver.recv() => {
-
-                    let (noti, mut nodes) = noti;
-                    // process nodes.is_empty(), if it is, query the whole set of peers
-                    if nodes.is_empty() {
-                        let mut peer_ids = Vec::new();
-
-                        // Get the network state
-                        if let Ok(state) = net_service.network_state().await {
-                            // Extract connected peers
-                            for (name, _) in state.connected_peers {
-                                let peer_id = PeerId::from_str(&name).expect("failed to convert string to PeerId");
-                                peer_ids.push(peer_id);
-                            }
-                        }
-                        nodes = peer_ids;
-                    }
-
-                    for node_id in nodes {
-                        // sign the node_id, get a signature
-                        let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ()).expect("get public from keystore error.");
-                        let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ()).expect("sign msg error");
-                        let payload = PayloadWithSignature {
-                            payload: noti.clone(),
-                            public_key: public_key.to_raw_vec(),
-                            peer_id: node_id.to_bytes(),
-                            signature: signature.to_raw_vec(),
-                        };
-                        // encode the payload to vec<u8>
-                        let data = payload.encode();
-                        // log::info!(" ==> going to send noti: {:?} {:?}", node_id, noti.clone());
-                        // _ = noti_service
-                        //     .send_async_notification(&node_id, noti)
-                        //     .await;
-                        noti_service.send_sync_notification(&node_id, data);
-                    }
-                },
                 Ok(request) = reqres_receiver.recv() => {
                     log::debug!("Incoming p2p request msg: {:?}", request);
                     // do stuff
@@ -134,44 +77,6 @@ where
                     let msg = NucleusP2pMsg::ReqRes(request);
                     _ = p2p_cage_tx.send(msg).await;
 
-                },
-                Some(event) = noti_service.next_event() => {
-                    match event {
-                        NotificationEvent::NotificationReceived {
-                            peer,
-                            notification
-                        } => {
-                            log::info!("p2p notification received: peer: {:?}  noti: {:?}", peer, notification);
-                            let noti = P2pNotification {peer, notification};
-                            let msg = NucleusP2pMsg::Noti(noti);
-                            _ = p2p_cage_tx.send(msg).await;
-
-                        }
-                        NotificationEvent::ValidateInboundSubstream {
-                            peer,
-                            handshake,
-                            result_tx,
-                        } => {
-                            log::info!("notification ValidateInboundSubstream received: {:?}", peer);
-                            log::info!("notification ValidateInboundSubstream received: {:?}", handshake);
-                            // to build the notification substream
-                            // _ = result_tx.send(ValidationResult::Accept);
-                        }
-                        NotificationEvent::NotificationStreamOpened {
-                            peer,
-                            direction,
-                            handshake,
-                            negotiated_fallback,
-                        } => {
-                            log::info!("notification NotificationStreamOpened received: {:?}", peer);
-                            log::info!("notification NotificationStreamOpened received: {:?}", direction);
-                            log::info!("notification NotificationStreamOpened received: {:?}", handshake);
-                            log::info!("notification NotificationStreamOpened received: {:?}", negotiated_fallback);
-                        }
-                        NotificationEvent::NotificationStreamClosed { peer } => {
-                            log::info!("notification NotificationStreamClosed received: {:?}", peer);
-                        }
-                    }
                 }
             }
         }
