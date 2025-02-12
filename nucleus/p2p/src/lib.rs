@@ -1,11 +1,7 @@
 use codec::{Decode, Encode};
 use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
-use sc_network::{
-    request_responses::IncomingRequest,
-    service::traits::{NotificationEvent, NotificationService},
-    PeerId,
-};
+use sc_network::{request_responses::IncomingRequest, service::traits::{NotificationEvent, NotificationService}, PeerId, Multiaddr};
 use sc_authority_discovery::Service as AuthorityDiscovery;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_application_crypto::key_types::AUTHORITY_DISCOVERY;
@@ -13,9 +9,13 @@ use sp_blockchain::HeaderBackend;
 use sp_core::{sr25519, ByteArray, Pair};
 use sp_keystore::KeystorePtr;
 use std::{str::FromStr, sync::Arc};
+use std::collections::HashSet;
+use tokio::sync::Mutex;
 use std::time::Duration;
 use async_channel::{Recv, RecvError};
 use log::log;
+use sc_network::request_responses::OutgoingResponse;
+use sp_authority_discovery::AuthorityId;
 use tokio::time;
 use tokio::time::{timeout, Timeout};
 use tokio::time::error::Elapsed;
@@ -25,10 +25,12 @@ pub struct P2pParams<B, C, BN> {
     pub keystore: KeystorePtr,
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
     pub client: Arc<C>,
+    pub node_key_pair: libp2p::identity::Keypair,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
     pub p2p_cage_tx: tokio::sync::mpsc::Sender<NucleusP2pMsg>,
     pub controller: AccountId,
-    pub authority_discovery: Arc<AuthorityDiscovery>,
+    pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
+    pub authorities: Vec<AuthorityId>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
@@ -47,9 +49,9 @@ pub enum NucleusP2pMsg {
 #[derive(Debug, Encode, Decode)]
 pub struct PayloadWithSignature {
     payload: Vec<u8>,
-    public_key: Vec<u8>,
+   // public_key: Vec<u8>,
     peer_id: Vec<u8>,
-    signature: Vec<u8>,
+    //signature: Vec<u8>,
 }
 
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
@@ -68,24 +70,58 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         keystore,
         reqres_receiver,
         client,
+        node_key_pair,
         mut net_service,
         p2p_cage_tx,
         controller,
         mut authority_discovery,
+        authorities,
         _phantom,
     } = params;
+
+    log::info!("node_id ==== {}", node_key_pair.public().to_peer_id().to_string());
     async move {
         log::info!("🔌 Nucleus p2p controller: {}", controller);
 
         loop {
+
             match timeout(Duration::from_secs(5), reqres_receiver.recv()).await {
                 Ok(r) => {
+                    let x = "vvvv".as_bytes().to_vec();
                     if let Ok(req) = r {
-                        log::info!("incoming p2p message: {:?}", req);
+                        let out = OutgoingResponse {
+                            result: Ok(x),
+                            reputation_changes: vec![],
+                            sent_feedback: None,
+                        };
+                        let _ = req.pending_response.send(out);
+                        let payload: PayloadWithSignature = Decode::decode(&mut &req.payload[..]).unwrap();
+                        log::info!("incoming p2p message: {:?}", payload);
                     }
                 }
                 Err(_) => {
                     log::info!("nucleus p2p timeout, send a message");
+                    //send a message
+                    for a in authorities.clone() {
+                        let r = authority_discovery.clone().lock().await.get_addresses_by_authority_id(a).await;
+                        match r {
+                            None => {}
+                            Some(mut ma) => {
+                                  /*  for m in ma  {
+                                        let n = m.to_string().split("/").last().unwrap().to_string();
+                                        let p = PeerId::from_str(n.as_str()).unwrap();
+                                        let data = node_key_pair.public().to_peer_id().to_bytes().to_vec();
+                                        let _ = send_request(
+                                            net_service.clone(),
+                                            &p,
+                                            data
+                                        ).await;
+                                       break;
+                                    }*/
+                                log::info!("addresses: {:?}", ma);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -94,17 +130,17 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
 
 pub async fn send_request(
     net_service: Arc<dyn sc_network::service::traits::NetworkService>,
-    keystore: KeystorePtr,
+   // keystore: KeystorePtr,
     node_id: &PeerId,
     data: Vec<u8>,
 ) -> Result<Vec<u8>, ()> {
-    let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
-    let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
+   // let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
+   // let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
         payload: data,
-        public_key: public_key.to_raw_vec(),
+      //  public_key: public_key.to_raw_vec(),
         peer_id: node_id.to_bytes(),
-        signature: signature.to_raw_vec(),
+     //   signature: signature.to_raw_vec(),
     };
     // encode the payload to vec<u8>
     let data = payload.encode();

@@ -15,6 +15,7 @@ use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::Mutex;
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata,
     METADATA_BYTES as METADATA,
@@ -34,7 +35,7 @@ pub struct CageParams<P, B, C, BN> {
     pub client: Arc<C>,
     pub keystore: KeystorePtr,
     pub transaction_pool: Arc<P>,
-    pub authority_discovery: Arc<AuthorityDiscovery>,
+    pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
     pub nucleus_signal: NucleusSignal,
     pub net_service: Arc<dyn NetworkService>,
     pub tss_node: Arc<vrs_tss::NodeRuntime>,

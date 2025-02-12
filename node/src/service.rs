@@ -16,7 +16,11 @@ use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
 use std::{collections::HashSet, net::IpAddr, sync::Arc, time::Duration};
+use tokio::sync::Mutex;
 use sc_network::types::PeerId;
+use sp_authority_discovery::AuthorityId;
+use sp_core::crypto::Ss58Codec;
+use sp_core::sr25519::Public;
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
@@ -471,6 +475,8 @@ pub fn new_full<
             sc_authority_discovery::new_worker_and_service_with_config(
                 sc_authority_discovery::WorkerConfig {
                     publish_non_global_ips: true,
+                    max_publish_interval: Duration::from_secs(60),
+                    max_query_interval: Duration::from_secs(60),
                     public_addresses: auth_disc_public_addresses,
                     ..Default::default()
                 },
@@ -485,19 +491,42 @@ pub fn new_full<
             Some("networking"),
             authority_discovery_worker.run(),
         );
-        let authority_discovery = Arc::new(authority_discovery_service);
+        let authority_discovery = Arc::new(Mutex::new(authority_discovery_service));
+
+        let node_key_pair = libp2p::identity::Keypair::ed25519_from_bytes(
+            network_config
+                .node_key
+                .clone()
+                .into_keypair()?
+                .secret()
+                .to_bytes(),
+        )
+            .unwrap();
+
+        let genesis_block_hash = client
+            .block_hash(0)
+            .ok()
+            .flatten()
+            .expect("Genesis block exists; qed");
+        let validators = client
+            .runtime_api()
+            .get_all_validators(genesis_block_hash).unwrap();
+        let validators:Vec<AuthorityId> = validators.into_iter().map(|a|AuthorityId::from_ss58check(a.to_ss58check().as_str()).unwrap()).collect::<Vec<AuthorityId>>();
 
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
         let params = vrs_nucleus_p2p::P2pParams {
             keystore: keystore_container.keystore(),
             reqres_receiver,
             client: client.clone(),
+            node_key_pair,
             net_service: network.clone(),
             p2p_cage_tx,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
+            authorities: validators,
             authority_discovery: authority_discovery.clone(),
             _phantom: std::marker::PhantomData,
         };
+
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-p2p",
             None,
