@@ -42,12 +42,13 @@ pub struct P2pNotification {
 
 #[derive(Debug)]
 pub enum NucleusP2pMsg {
-    ReqRes(IncomingRequest),
-    Noti(P2pNotification),
+    Token(PayloadWithSignature),
+    QueryEvents(P2pNotification),
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct PayloadWithSignature {
+    request_id: String,
     payload: Vec<u8>,
    // public_key: Vec<u8>,
     peer_id: Vec<u8>,
@@ -79,15 +80,12 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         _phantom,
     } = params;
 
-    log::info!("node_id ==== {}", node_key_pair.public().to_peer_id().to_string());
     async move {
         log::info!("🔌 Nucleus p2p controller: {}", controller);
-
         loop {
-
             match timeout(Duration::from_secs(5), reqres_receiver.recv()).await {
                 Ok(r) => {
-                    let x = "vvvv".as_bytes().to_vec();
+                    let x = "ok".as_bytes().to_vec();
                     if let Ok(req) = r {
                         let out = OutgoingResponse {
                             result: Ok(x),
@@ -97,6 +95,7 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                         let _ = req.pending_response.send(out);
                         let payload: PayloadWithSignature = Decode::decode(&mut &req.payload[..]).unwrap();
                         log::info!("incoming p2p message: {:?}", payload);
+
                     }
                 }
                 Err(_) => {
@@ -107,18 +106,20 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                         match r {
                             None => {}
                             Some(mut ma) => {
-                                  /*  for m in ma  {
+                                if node_key_pair.public().to_peer_id().to_string() == "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp".to_string() {
+                                    for m in ma  {
                                         let n = m.to_string().split("/").last().unwrap().to_string();
                                         let p = PeerId::from_str(n.as_str()).unwrap();
                                         let data = node_key_pair.public().to_peer_id().to_bytes().to_vec();
                                         let _ = send_request(
                                             net_service.clone(),
                                             &p,
-                                            data
+                                            data,
+                                            "x".to_string()
                                         ).await;
-                                       break;
-                                    }*/
-                                log::info!("addresses: {:?}", ma);
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -133,10 +134,12 @@ pub async fn send_request(
    // keystore: KeystorePtr,
     node_id: &PeerId,
     data: Vec<u8>,
+    id: String,
 ) -> Result<Vec<u8>, ()> {
    // let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
    // let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
+        request_id: id,
         payload: data,
       //  public_key: public_key.to_raw_vec(),
         peer_id: node_id.to_bytes(),
