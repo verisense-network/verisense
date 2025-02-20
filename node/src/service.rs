@@ -516,6 +516,8 @@ pub fn new_full<
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
 
         let (cage_p2p_tx, cage_p2p_rx) = tokio::sync::mpsc::channel(10000);
+
+        let (cage_send_resp_tx, cage_send_resp_rx) = tokio::sync::mpsc::channel(10000);
         let params = vrs_nucleus_p2p::P2pParams {
             keystore: keystore_container.keystore(),
             reqres_receiver,
@@ -524,6 +526,7 @@ pub fn new_full<
             net_service: network.clone(),
             p2p_cage_tx,
             cage_p2p_rx,
+            cage_send_resp_tx,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             authorities: validators,
             authority_discovery: authority_discovery.clone(),
@@ -546,6 +549,7 @@ pub fn new_full<
             net_service: network.clone(),
             tss_node,
             nucleus_home_dir: nucleus_home_dir.clone(),
+            p2p_cage_rx,
             // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
             // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
             _phantom: std::marker::PhantomData,

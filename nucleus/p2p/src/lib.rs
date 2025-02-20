@@ -21,6 +21,7 @@ use tokio::time::{timeout, Timeout};
 use tokio::time::error::Elapsed;
 use vrs_primitives::AccountId;
 
+
 pub struct P2pParams<B, C, BN> {
     pub keystore: KeystorePtr,
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
@@ -29,13 +30,14 @@ pub struct P2pParams<B, C, BN> {
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
     pub p2p_cage_tx: tokio::sync::mpsc::Sender<PayloadWithSignature>,
     pub cage_p2p_rx: tokio::sync::mpsc::Receiver<SendMessage>,
+    pub cage_send_resp_tx: tokio::sync::mpsc::Sender<String>,
     pub controller: AccountId,
     pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
     pub authorities: Vec<AuthorityId>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, Clone)]
 pub enum RequestType {
     SendToken,
     QueryEvents
@@ -78,6 +80,7 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         mut net_service,
         p2p_cage_tx,
         mut cage_p2p_rx,
+        cage_send_resp_tx,
         controller,
         mut authority_discovery,
         authorities,
@@ -89,7 +92,6 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         loop {
 
             tokio::select! {
-
                 Ok(req) = reqres_receiver.recv() => {
                     let x = "ok".as_bytes().to_vec();
                     let out = OutgoingResponse {
@@ -107,19 +109,24 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                     match r {
                         None => {}
                         Some(mut ma) => {
+                            let mut success = false;
                             for m in ma  {
                                 let n = m.to_string().split("/").last().unwrap().to_string();
                                 let p = PeerId::from_str(n.as_str()).unwrap();
                                 let data = send_payload.data.clone();
-                                let _ = send_request(
+                                if let Ok(r) = send_request(
                                     net_service.clone(),
                                     &p,
                                     data,
-                                    send_payload.request_type,
+                                    send_payload.request_type.clone(),
                                     "x".to_string()
-                                ).await;
-                                break;
+                                ).await {
+                                    success = true;
+                                    break;
+                                }
                             }
+                            let  r = if success { "OK"} else {"ERR"};
+                            let _ = cage_send_resp_tx.send(r.to_string()).await;
                         }
                     }
                 }

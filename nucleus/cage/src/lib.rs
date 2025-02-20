@@ -6,7 +6,7 @@ use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
 use sc_authority_discovery::Service as AuthorityDiscovery;
-use sc_client_api::{Backend, BlockBackend, BlockchainEvents, PairsIter, StorageProvider};
+use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::{service::traits::NetworkService, PeerId};
 use sc_transaction_pool_api::{TransactionPool, TransactionSource};
 use sp_api::{Core, Metadata, ProvideRuntimeApi};
@@ -24,7 +24,7 @@ use vrs_nucleus_executor::{
     host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync},
     Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
 };
-// use vrs_nucleus_p2p::NucleusP2pMsg;
+use vrs_nucleus_p2p::PayloadWithSignature;
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
 
@@ -40,9 +40,7 @@ pub struct CageParams<P, B, C, BN> {
     pub net_service: Arc<dyn NetworkService>,
     pub tss_node: Arc<vrs_tss::NodeRuntime>,
     pub nucleus_home_dir: std::path::PathBuf,
-    // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
-    // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
-
+    pub p2p_cage_rx: Receiver<PayloadWithSignature>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
@@ -72,6 +70,7 @@ where
         net_service,
         tss_node,
         nucleus_home_dir,
+        p2p_cage_rx,
         _phantom,
     } = params;
     async move {
