@@ -42,6 +42,7 @@ pub struct CageParams<P, B, C, BN> {
     pub nucleus_home_dir: std::path::PathBuf,
     // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
     // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
+
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 

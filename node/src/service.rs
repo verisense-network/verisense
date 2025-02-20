@@ -514,6 +514,8 @@ pub fn new_full<
         let validators:Vec<AuthorityId> = validators.into_iter().map(|a|AuthorityId::from_ss58check(a.to_ss58check().as_str()).unwrap()).collect::<Vec<AuthorityId>>();
 
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
+
+        let (cage_p2p_tx, cage_p2p_rx) = tokio::sync::mpsc::channel(10000);
         let params = vrs_nucleus_p2p::P2pParams {
             keystore: keystore_container.keystore(),
             reqres_receiver,
@@ -521,6 +523,7 @@ pub fn new_full<
             node_key_pair,
             net_service: network.clone(),
             p2p_cage_tx,
+            cage_p2p_rx,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             authorities: validators,
             authority_discovery: authority_discovery.clone(),

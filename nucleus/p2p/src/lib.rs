@@ -27,32 +27,35 @@ pub struct P2pParams<B, C, BN> {
     pub client: Arc<C>,
     pub node_key_pair: libp2p::identity::Keypair,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
-    pub p2p_cage_tx: tokio::sync::mpsc::Sender<NucleusP2pMsg>,
+    pub p2p_cage_tx: tokio::sync::mpsc::Sender<PayloadWithSignature>,
+    pub cage_p2p_rx: tokio::sync::mpsc::Receiver<SendMessage>,
     pub controller: AccountId,
     pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
     pub authorities: Vec<AuthorityId>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
-#[derive(Debug)]
-pub struct P2pNotification {
-    peer: PeerId,
-    notification: Vec<u8>,
-}
-
-#[derive(Debug)]
-pub enum NucleusP2pMsg {
-    Token(PayloadWithSignature),
-    QueryEvents(P2pNotification),
+#[derive(Debug, Encode, Decode)]
+pub enum RequestType {
+    SendToken,
+    QueryEvents
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct PayloadWithSignature {
     request_id: String,
+    request_type: RequestType,
     payload: Vec<u8>,
    // public_key: Vec<u8>,
     peer_id: Vec<u8>,
     //signature: Vec<u8>,
+}
+
+#[derive(Debug, Encode, Decode)]
+pub struct SendMessage {
+    pub dest: AuthorityId,
+    pub data: Vec<u8>,
+    pub request_type: RequestType,
 }
 
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
@@ -74,6 +77,7 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         node_key_pair,
         mut net_service,
         p2p_cage_tx,
+        mut cage_p2p_rx,
         controller,
         mut authority_discovery,
         authorities,
@@ -83,43 +87,38 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
     async move {
         log::info!("🔌 Nucleus p2p controller: {}", controller);
         loop {
-            match timeout(Duration::from_secs(5), reqres_receiver.recv()).await {
-                Ok(r) => {
-                    let x = "ok".as_bytes().to_vec();
-                    if let Ok(req) = r {
-                        let out = OutgoingResponse {
-                            result: Ok(x),
-                            reputation_changes: vec![],
-                            sent_feedback: None,
-                        };
-                        let _ = req.pending_response.send(out);
-                        let payload: PayloadWithSignature = Decode::decode(&mut &req.payload[..]).unwrap();
-                        log::info!("incoming p2p message: {:?}", payload);
 
-                    }
+            tokio::select! {
+
+                Ok(req) = reqres_receiver.recv() => {
+                    let x = "ok".as_bytes().to_vec();
+                    let out = OutgoingResponse {
+                        result: Ok(x),
+                        reputation_changes: vec![],
+                        sent_feedback: None,
+                    };
+                    let _ = req.pending_response.send(out);
+                    let payload: PayloadWithSignature = Decode::decode(&mut &req.payload[..]).unwrap();
+                    log::info!("incoming p2p message: {:?}", payload);
+                    let _ = p2p_cage_tx.send(payload).await;
                 }
-                Err(_) => {
-                    log::info!("nucleus p2p timeout, send a message");
-                    //send a message
-                    for a in authorities.clone() {
-                        let r = authority_discovery.clone().lock().await.get_addresses_by_authority_id(a).await;
-                        match r {
-                            None => {}
-                            Some(mut ma) => {
-                                if node_key_pair.public().to_peer_id().to_string() == "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp".to_string() {
-                                    for m in ma  {
-                                        let n = m.to_string().split("/").last().unwrap().to_string();
-                                        let p = PeerId::from_str(n.as_str()).unwrap();
-                                        let data = node_key_pair.public().to_peer_id().to_bytes().to_vec();
-                                        let _ = send_request(
-                                            net_service.clone(),
-                                            &p,
-                                            data,
-                                            "x".to_string()
-                                        ).await;
-                                        break;
-                                    }
-                                }
+                Some(send_payload) = cage_p2p_rx.recv() => {
+                    let r = authority_discovery.clone().lock().await.get_addresses_by_authority_id(send_payload.dest).await;
+                    match r {
+                        None => {}
+                        Some(mut ma) => {
+                            for m in ma  {
+                                let n = m.to_string().split("/").last().unwrap().to_string();
+                                let p = PeerId::from_str(n.as_str()).unwrap();
+                                let data = send_payload.data.clone();
+                                let _ = send_request(
+                                    net_service.clone(),
+                                    &p,
+                                    data,
+                                    send_payload.request_type,
+                                    "x".to_string()
+                                ).await;
+                                break;
                             }
                         }
                     }
@@ -134,12 +133,14 @@ pub async fn send_request(
    // keystore: KeystorePtr,
     node_id: &PeerId,
     data: Vec<u8>,
+    request_type: RequestType,
     id: String,
 ) -> Result<Vec<u8>, ()> {
    // let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
    // let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
         request_id: id,
+        request_type,
         payload: data,
       //  public_key: public_key.to_raw_vec(),
         peer_id: node_id.to_bytes(),
