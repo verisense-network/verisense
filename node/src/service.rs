@@ -550,8 +550,8 @@ pub fn new_full<
             tss_node,
             nucleus_home_dir: nucleus_home_dir.clone(),
             p2p_cage_rx,
-            // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
-            // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
+            cage_p2p_tx,
+            cage_send_resp_rx,
             _phantom: std::marker::PhantomData,
         };
         task_manager.spawn_essential_handle().spawn_blocking(

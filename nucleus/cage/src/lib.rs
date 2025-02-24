@@ -14,8 +14,11 @@ use sp_blockchain::HeaderBackend;
 use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 use std::sync::Arc;
+use futures::channel::oneshot;
+use sc_network::request_responses::OutgoingResponse;
+use sp_core::ByteArray;
 use tokio::sync::mpsc::{self, Receiver, Sender};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex};
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata,
     METADATA_BYTES as METADATA,
@@ -24,9 +27,10 @@ use vrs_nucleus_executor::{
     host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync},
     Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
 };
-use vrs_nucleus_p2p::PayloadWithSignature;
+use vrs_nucleus_p2p::{Destination, PayloadWithSignature, QueryEventsResult, RequestType, SendMessage};
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
+use vrs_primitives::keys::restaking::AuthorityId;
 
 pub type NucleusRpcChannel = Sender<(NucleusId, Gluon)>;
 pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
@@ -40,7 +44,9 @@ pub struct CageParams<P, B, C, BN> {
     pub net_service: Arc<dyn NetworkService>,
     pub tss_node: Arc<vrs_tss::NodeRuntime>,
     pub nucleus_home_dir: std::path::PathBuf,
-    pub p2p_cage_rx: Receiver<PayloadWithSignature>,
+    pub p2p_cage_rx: Receiver<(PayloadWithSignature, PeerId, oneshot::Sender<OutgoingResponse>)>,
+    pub cage_p2p_tx: Sender<SendMessage>,
+    pub cage_send_resp_rx: Receiver<String>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
@@ -70,7 +76,9 @@ where
         net_service,
         tss_node,
         nucleus_home_dir,
-        p2p_cage_rx,
+        mut p2p_cage_rx,
+        cage_p2p_tx,
+        mut cage_send_resp_rx,
         _phantom,
     } = params;
     async move {
@@ -136,16 +144,29 @@ where
         loop {
             tokio::select! {
                 // handle monadring protocol
-                // Some(msg) = p2p_cage_rx.recv() => {
-                //     match msg {
-                //         NucleusP2pMsg::ReqRes(req) => {
-                //             log::info!("in cage: incoming request: {:?}", req);
-                //         }
-                //         NucleusP2pMsg::Noti(noti) => {
-                //             log::info!("in cage: incoming notification: {:?}", noti);
-                //         }
-                //     }
-                // },
+                Some((msg,source, resp_sender)) = p2p_cage_rx.recv() => {
+                    log::info!("in cage: incoming request: {:?}", msg);
+                      //todo
+                    match msg.request_type {
+                        RequestType::SendToken => {
+                            //TOKEN received
+
+                        }
+                        RequestType::QueryEvents => {
+
+                            let resp = QueryEventsResult {
+                                s: "events".to_string()
+                            };
+                            let bytes = resp.encode();
+                            let outgoing = OutgoingResponse {
+                                result: Ok(bytes),
+                                reputation_changes: vec![],
+                                sent_feedback: None,
+                            };
+                            resp_sender.send(outgoing);
+                        }
+                    }
+                },
                 // handle hostnet events
                 block = block_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
