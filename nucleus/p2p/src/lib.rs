@@ -30,8 +30,7 @@ pub struct P2pParams<B, C, BN> {
     pub node_key_pair: libp2p::identity::Keypair,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
     pub p2p_cage_tx: tokio::sync::mpsc::Sender<(PayloadWithSignature,PeerId, oneshot::Sender<OutgoingResponse>)>,
-    pub cage_p2p_rx: tokio::sync::mpsc::Receiver<SendMessage>,
-    pub cage_send_resp_tx: tokio::sync::mpsc::Sender<String>,
+    pub cage_p2p_rx: tokio::sync::mpsc::Receiver<(SendMessage, oneshot::Sender<String>)>,
     pub controller: AccountId,
     pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
     pub authorities: Vec<AuthorityId>,
@@ -49,9 +48,9 @@ pub struct PayloadWithSignature {
     pub request_id: String,
     pub request_type: RequestType,
     pub payload: Vec<u8>,
-   // public_key: Vec<u8>,
+    pub public_key: Vec<u8>,
     pub peer_id: Vec<u8>,
-    //signature: Vec<u8>,
+    pub signature: Vec<u8>,
 }
 
 #[derive(Debug)]
@@ -92,7 +91,6 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         mut net_service,
         p2p_cage_tx,
         mut cage_p2p_rx,
-        cage_send_resp_tx,
         controller,
         mut authority_discovery,
         authorities,
@@ -111,15 +109,8 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                     log::info!("incoming p2p message: {:?}", payload);
 
                     let _ = p2p_cage_tx.send((payload, source, req.pending_response)).await;
-                /*
-                    let out = OutgoingResponse {
-                        result: Ok(x),
-                        reputation_changes: vec![],
-                        sent_feedback: None,
-                    };
-                    let _ = req.pending_response.send(out);*/
                 }
-                Some(send_payload) = cage_p2p_rx.recv() => {
+                Some((send_payload, resp_sender)) = cage_p2p_rx.recv() => {
                     let peers = match send_payload.dest {
                         Destination::AuthorityId(a) => {
                             let r = authority_discovery.clone().lock().await.get_addresses_by_authority_id(a).await;
@@ -145,6 +136,7 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                         let data = send_payload.data.clone();
                         if let Ok(r) = send_request(
                             net_service.clone(),
+                            keystore.clone(),
                             &p,
                             data,
                             send_payload.request_type.clone(),
@@ -155,7 +147,7 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                         }
                     }
                     let  r = if success { "OK"} else {"ERR"};
-                    let _ = cage_send_resp_tx.send(r.to_string()).await;
+                    let _ = resp_sender.send(r.to_string());
                 }
             }
         }
@@ -164,21 +156,21 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
 
 pub async fn send_request(
     net_service: Arc<dyn sc_network::service::traits::NetworkService>,
-   // keystore: KeystorePtr,
+    keystore: KeystorePtr,
     node_id: &PeerId,
     data: Vec<u8>,
     request_type: RequestType,
     id: String,
 ) -> Result<Vec<u8>, ()> {
-   // let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
-   // let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
+    let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
+    let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
         request_id: id,
         request_type,
         payload: data,
-      //  public_key: public_key.to_raw_vec(),
+        public_key: public_key.to_raw_vec(),
         peer_id: node_id.to_bytes(),
-      //   signature: signature.to_raw_vec(),
+        signature: signature.to_raw_vec(),
     };
     // encode the payload to vec<u8>
     let data = payload.encode();

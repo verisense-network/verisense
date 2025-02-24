@@ -8,19 +8,16 @@ use sc_consensus_grandpa::SharedVoterState;
 use sc_network::{
     event::Event,
     NetworkEventStream,
-    {multiaddr::Protocol, Multiaddr},
 };
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
-use std::{collections::HashSet, net::IpAddr, sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
-use sc_network::types::PeerId;
 use sp_authority_discovery::AuthorityId;
 use sp_core::crypto::Ss58Codec;
-use sp_core::sr25519::Public;
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
@@ -517,7 +514,6 @@ pub fn new_full<
 
         let (cage_p2p_tx, cage_p2p_rx) = tokio::sync::mpsc::channel(10000);
 
-        let (cage_send_resp_tx, cage_send_resp_rx) = tokio::sync::mpsc::channel(10000);
         let params = vrs_nucleus_p2p::P2pParams {
             keystore: keystore_container.keystore(),
             reqres_receiver,
@@ -526,7 +522,6 @@ pub fn new_full<
             net_service: network.clone(),
             p2p_cage_tx,
             cage_p2p_rx,
-            cage_send_resp_tx,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             authorities: validators,
             authority_discovery: authority_discovery.clone(),
@@ -551,7 +546,6 @@ pub fn new_full<
             nucleus_home_dir: nucleus_home_dir.clone(),
             p2p_cage_rx,
             cage_p2p_tx,
-            cage_send_resp_rx,
             _phantom: std::marker::PhantomData,
         };
         task_manager.spawn_essential_handle().spawn_blocking(

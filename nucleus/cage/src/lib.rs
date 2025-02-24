@@ -45,8 +45,7 @@ pub struct CageParams<P, B, C, BN> {
     pub tss_node: Arc<vrs_tss::NodeRuntime>,
     pub nucleus_home_dir: std::path::PathBuf,
     pub p2p_cage_rx: Receiver<(PayloadWithSignature, PeerId, oneshot::Sender<OutgoingResponse>)>,
-    pub cage_p2p_tx: Sender<SendMessage>,
-    pub cage_send_resp_rx: Receiver<String>,
+    pub cage_p2p_tx: Sender<(SendMessage, oneshot::Sender<String>)>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
@@ -78,7 +77,6 @@ where
         nucleus_home_dir,
         mut p2p_cage_rx,
         cage_p2p_tx,
-        mut cage_send_resp_rx,
         _phantom,
     } = params;
     async move {
@@ -90,7 +88,6 @@ where
         // TODO what if our node is far behind the best block?
         // TODO use the best block hash to get the metadata
         let metadata = metadata::decode_from(&METADATA[..]).expect("failed to decode metadata.");
-
         let mut block_monitor = client.every_import_notification_stream();
         let timer_scheduler = Arc::new(host_func::SchedulerAsync::new());
         let (http_register, mut http_executor) = host_func::new_http_manager();
@@ -153,7 +150,7 @@ where
 
                         }
                         RequestType::QueryEvents => {
-
+                            //TODO
                             let resp = QueryEventsResult {
                                 s: "events".to_string()
                             };
@@ -163,7 +160,7 @@ where
                                 reputation_changes: vec![],
                                 sent_feedback: None,
                             };
-                            resp_sender.send(outgoing);
+                            let _ = resp_sender.send(outgoing);
                         }
                     }
                 },
