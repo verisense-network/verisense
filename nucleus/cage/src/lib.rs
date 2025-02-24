@@ -36,12 +36,19 @@ pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
 
 #[derive(Debug, Decode, Encode)]
 pub struct  MonadringToken {
+    pub nucleus_id: NucleusId,
+    pub ring: Vec<MonadringTokenItem>
+}
+
+#[derive(Debug, Decode, Encode)]
+pub struct  MonadringTokenItem {
     pub events: Vec<Event>,
     pub nucleus_state_root: [u8;32],
-    pub nucleus_id: NucleusId,
+    pub last_event_id: u128,
     pub source: AuthorityId,
     pub signature: Signature,
 }
+
 
 pub struct CageParams<P, B, C, BN> {
     pub client: Arc<C>,
