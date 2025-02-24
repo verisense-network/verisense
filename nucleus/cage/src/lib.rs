@@ -16,17 +16,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use futures::channel::oneshot;
 use sc_network::request_responses::OutgoingResponse;
+use serde::{Deserialize, Serialize};
 use sp_core::ByteArray;
+use sp_core::sr25519::Signature;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::{Mutex};
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata,
     METADATA_BYTES as METADATA,
 };
-use vrs_nucleus_executor::{
-    host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync},
-    Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
-};
+use vrs_nucleus_executor::{host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync}, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo, Event};
 use vrs_nucleus_p2p::{Destination, PayloadWithSignature, QueryEventsResult, RequestType, SendMessage};
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
@@ -34,6 +33,15 @@ use vrs_primitives::keys::restaking::AuthorityId;
 
 pub type NucleusRpcChannel = Sender<(NucleusId, Gluon)>;
 pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
+
+#[derive(Debug, Decode, Encode)]
+pub struct  MonadringToken {
+    pub events: Vec<Event>,
+    pub nucleus_state_root: [u8;32],
+    pub nucleus_id: NucleusId,
+    pub source: AuthorityId,
+    pub signature: Signature,
+}
 
 pub struct CageParams<P, B, C, BN> {
     pub client: Arc<C>,
