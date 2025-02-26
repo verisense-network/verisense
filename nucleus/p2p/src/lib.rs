@@ -45,7 +45,6 @@ pub enum RequestType {
 
 #[derive(Debug, Encode, Decode)]
 pub struct PayloadWithSignature {
-    pub request_id: String,
     pub request_type: RequestType,
     pub payload: Vec<u8>,
     pub public_key: Vec<u8>,
@@ -135,7 +134,6 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                             &p,
                             data,
                             send_payload.request_type.clone(),
-                            "x".to_string()
                         ).await {
                             success = true;
                             break;
@@ -155,12 +153,10 @@ pub async fn send_request(
     node_id: &PeerId,
     data: Vec<u8>,
     request_type: RequestType,
-    id: String,
 ) -> Result<Vec<u8>, ()> {
     let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
     let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
-        request_id: id,
         request_type,
         payload: data,
         public_key: public_key.to_raw_vec(),
