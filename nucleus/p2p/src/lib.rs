@@ -96,12 +96,9 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
         loop {
             tokio::select! {
                 Ok(req) = reqres_receiver.recv() => {
-                    let x = "ok".as_bytes().to_vec();
-
                     let source = req.peer;
                     let payload: PayloadWithSignature = Decode::decode(&mut &req.payload[..]).unwrap();
                     log::info!("incoming p2p message: {:?}", payload);
-
                     let _ = p2p_cage_tx.send((payload, source, req.pending_response)).await;
                 }
                 Some((send_payload, resp_sender)) = cage_p2p_rx.recv() => {
