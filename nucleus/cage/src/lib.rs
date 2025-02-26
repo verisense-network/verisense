@@ -5,8 +5,8 @@ use crate::cage::{MonadringToken, MonadringTokenItem, NucleusCage, QueryEventsRe
 use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
-use sc_authority_discovery::Service as AuthorityDiscovery;
-use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_authority_discovery::{ Service as AuthorityDiscovery};
+use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageData, StorageProvider};
 use sc_network::{service::traits::NetworkService, PeerId};
 use sc_transaction_pool_api::{TransactionPool, TransactionSource};
 use sp_api::{Core, Metadata, ProvideRuntimeApi};
@@ -18,6 +18,7 @@ use futures::channel::oneshot;
 use sc_network::request_responses::OutgoingResponse;
 use serde::{Deserialize, Serialize};
 use sp_core::ByteArray;
+use sp_core::crypto::Ss58Codec;
 use sp_core::sr25519::Signature;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::{Mutex};
@@ -25,11 +26,11 @@ use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata,
     METADATA_BYTES as METADATA,
 };
+use vrs_metadata::utils::AccountId32;
 use vrs_nucleus_executor::{host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync}, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo, Event};
 use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestType, SendMessage};
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
-use vrs_primitives::keys::restaking::AuthorityId;
 
 pub type NucleusRpcChannel = Sender<(NucleusId, Gluon)>;
 pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
@@ -166,7 +167,41 @@ where
                                             signature: Default::default(),
                                         };
                                         token.ring.push(item);
-
+                                        let payload = token.encode();
+                                        let mut controllers = get_nuclei(client.clone(), token.nucleus_id, client.info().best_hash);
+                                        if !controllers.is_empty() {
+                                            loop {
+                                                let first = controllers.remove(0);
+                                                controllers.push(first.clone());
+                                                if first == controller {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        for c in controllers {
+                                             if c == controller {
+                                                break;
+                                             }
+                                             let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
+                                             let msg = SendMessage {
+                                                dest: Destination::AuthorityId(authority),
+                                                data: payload.clone(),
+                                                request_type: RequestType::SendToken,
+                                            };
+                                            let (resp_tx, resp_rx) = oneshot::channel::<String>();
+                                            match cage_p2p_tx.send((msg, resp_tx)).await {
+                                                Ok(r) => {
+                                                    if let Ok(s) = resp_rx.await {
+                                                        if s == "OK".to_string() {
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                Err(_) => {
+                                                    break;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -440,6 +475,46 @@ where
         .collect::<Vec<_>>();
     list
 }
+
+
+fn get_nuclei<B, D, C>(
+    client: Arc<C>,
+    nucleus_id: NucleusId,
+    hash: B::Hash,
+) -> Vec<AccountId>
+    where
+        B: sp_runtime::traits::Block,
+        D: Backend<B>,
+        C: BlockBackend<B>
+        + StorageProvider<B, D>
+        + BlockchainEvents<B>
+        + ProvideRuntimeApi<B>
+        + 'static,
+        C::Api: NucleusApi<B> + 'static,
+{
+    let x: &[u8;32] = nucleus_id.as_ref();
+    let n = vrs_metadata::utils::AccountId32::from(*x);
+    let key = codegen::storage().nucleus().instances(n);
+    let instance_key = sp_core::storage::StorageKey(key.to_root_bytes());
+    match client
+        .storage(hash, &instance_key)
+        .ok()
+    {
+        None => {
+            vec![]
+        }
+        Some(controllers_opt) =>{
+            match controllers_opt {
+                None => {vec![]}
+                Some(sto) => {
+                    <Vec<AccountId> as Decode>::decode(&mut &sto.0[..]).unwrap_or_default()
+                }
+            }
+        }
+    }
+}
+
+
 
 fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
     let mut bytes = sp_core::twox_128(module).to_vec();
