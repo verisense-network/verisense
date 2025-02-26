@@ -66,11 +66,6 @@ pub struct SendMessage {
     pub request_type: RequestType,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct QueryEventsResult{
-    pub s: String,
-}
-
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
     where
         B: sp_runtime::traits::Block,

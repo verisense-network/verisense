@@ -1,7 +1,7 @@
 mod cage;
 mod keystore;
 
-use crate::cage::NucleusCage;
+use crate::cage::{MonadringToken, MonadringTokenItem, NucleusCage, QueryEventsResult};
 use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
@@ -26,29 +26,13 @@ use vrs_metadata::{
     METADATA_BYTES as METADATA,
 };
 use vrs_nucleus_executor::{host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync}, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo, Event};
-use vrs_nucleus_p2p::{Destination, PayloadWithSignature, QueryEventsResult, RequestType, SendMessage};
+use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestType, SendMessage};
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
 use vrs_primitives::keys::restaking::AuthorityId;
 
 pub type NucleusRpcChannel = Sender<(NucleusId, Gluon)>;
 pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
-
-#[derive(Debug, Decode, Encode)]
-pub struct  MonadringToken {
-    pub nucleus_id: NucleusId,
-    pub ring: Vec<MonadringTokenItem>
-}
-
-#[derive(Debug, Decode, Encode)]
-pub struct  MonadringTokenItem {
-    pub events: Vec<Event>,
-    pub nucleus_state_root: [u8;32],
-    pub last_event_id: u128,
-    pub source: AuthorityId,
-    pub signature: Signature,
-}
-
 
 pub struct CageParams<P, B, C, BN> {
     pub client: Arc<C>,
@@ -161,13 +145,36 @@ where
                       //todo
                     match msg.request_type {
                         RequestType::SendToken => {
-                            //TOKEN received
+                            if let Ok(token) = MonadringToken::decode(&mut &msg.payload[..]) {
+                                if let Some(nucleus) = nuclei.get_mut(&token.nucleus_id){
+                                    if nucleus.validate_token(&token) {
+                                        let events = token.combine_events(&controller);
+                                        let mut token = token;
+                                        if let  Some(r) = token.ring.first() {
+                                            if r.source == controller {
+                                                token.ring.remove(0);
+                                            }
+                                        }
+                                        let new_events = nucleus.drain(events);
+                                        let last_event_id = nucleus.event_id;
+                                        let state_root = nucleus.state.get_state_root();
+                                        let item = MonadringTokenItem {
+                                            events:new_events,
+                                            nucleus_state_root: state_root,
+                                            last_event_id,
+                                            source: controller.clone(),
+                                            signature: Default::default(),
+                                        };
+                                        token.ring.push(item);
 
+                                    }
+                                }
+                            }
                         }
                         RequestType::QueryEvents => {
                             //TODO
                             let resp = QueryEventsResult {
-                                s: "events".to_string()
+                                events: vec![]
                             };
                             let bytes = resp.encode();
                             let outgoing = OutgoingResponse {
@@ -269,7 +276,9 @@ where
                 token = token_rx.recv() => {
                     log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
                     // TODO only drain the associated nucleus
-                    nuclei.values_mut().for_each(|nucleus| nucleus.drain(vec![]));
+                    nuclei.values_mut().for_each(|nucleus| {
+                        nucleus.drain(vec![]);
+                    });
                 }
             }
         }
