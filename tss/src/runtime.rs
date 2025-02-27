@@ -1,3 +1,7 @@
+use std::path::PathBuf;
+
+use std::sync::Arc;
+use std::sync::Mutex;
 use tokio::time::Duration;
 use tss_sdk::crypto::CryptoType;
 use tss_sdk::node::Node;
@@ -8,14 +12,18 @@ pub enum NodeRuntime {
         runtime: tokio::runtime::Runtime,
         timeout: Option<Duration>,
     },
-    Empty,
+    Empty {
+        mock_keystore: Mutex<crate::mock::MockKeystore>,
+    },
 }
 pub static EMPTY_NODE_ERROR: &str =
     "NodeRuntime is empty. it is probably the number of nodes is not enough";
 
 impl NodeRuntime {
-    pub fn new_empty() -> Self {
-        NodeRuntime::Empty
+    pub fn new_empty(base_path: &PathBuf) -> Self {
+        NodeRuntime::Empty {
+            mock_keystore: Mutex::new(crate::mock::MockKeystore::new(base_path)),
+        }
     }
     pub fn new(node: Node<crate::VrsTssValidatorIdentity>, timeout: Option<Duration>) -> Self {
         Self::Node {
@@ -46,8 +54,17 @@ impl NodeRuntime {
                     .map_err(|e| e.to_string())?;
                 Ok(public_key.group_public_key_tweak)
             }
-            NodeRuntime::Empty => {
-                return Err(EMPTY_NODE_ERROR.to_string());
+            NodeRuntime::Empty { mock_keystore } => {
+                if crypto_type == CryptoType::Ed25519 {
+                    log::warn!(
+                        "Using mock tss protocol which is only for demo or test. Pls set tss env in prod env!!"
+                    );
+                    let mut mock_keystore = mock_keystore.lock().unwrap();
+                    let public_key = mock_keystore.get_public_key(&Some(tweak_data));
+                    return Ok(public_key);
+                } else {
+                    return Err(EMPTY_NODE_ERROR.to_string());
+                }
             }
         }
     }
@@ -74,9 +91,42 @@ impl NodeRuntime {
                     .map_err(|e| e.to_string())?;
                 Ok(signature.signature())
             }
-            NodeRuntime::Empty => {
-                return Err(EMPTY_NODE_ERROR.to_string());
+            NodeRuntime::Empty { mock_keystore } => {
+                if crypto_type == CryptoType::Ed25519 {
+                    let mut mock_keystore = mock_keystore.lock().unwrap();
+                    let signature = mock_keystore.sign(&Some(tweak_data), message);
+                    return Ok(signature);
+                } else {
+                    return Err(EMPTY_NODE_ERROR.to_string());
+                }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::*;
+    #[test]
+    fn test_mock_keystore() {
+        if Path::new(".test_mock_keystore").exists() {
+            std::fs::remove_dir_all(".test_mock_keystore").unwrap();
+        }
+        // create .test directory
+        std::fs::create_dir(".test_mock_keystore").unwrap();
+        let runtime = NodeRuntime::new_empty(&PathBuf::from(".test_mock_keystore"));
+        let public_key1 = runtime.get_public_key(CryptoType::Ed25519, b"test".to_vec());
+        println!("public_key: {:?}", public_key1);
+        let signature1 = runtime.sign(CryptoType::Ed25519, b"test".to_vec(), b"test".to_vec());
+        println!("signature: {:?}", signature1);
+        let public_key2 = runtime.get_public_key(CryptoType::Ed25519, b"test".to_vec());
+        println!("public_key2: {:?}", public_key2);
+        let signature2 = runtime.sign(CryptoType::Ed25519, b"test".to_vec(), b"test".to_vec());
+        println!("signature2: {:?}", signature2);
+        assert_eq!(public_key1, public_key2);
+        assert_eq!(signature1, signature2);
+        std::fs::remove_dir_all(".test_mock_keystore").unwrap();
     }
 }

@@ -445,7 +445,11 @@ pub fn new_full<
         ));
         tss_node
     } else {
-        Arc::new(vrs_tss::NodeRuntime::Empty)
+        println!("tss_path: {:?}", tss_path);
+        if !tss_path.exists() {
+            std::fs::create_dir_all(tss_path.clone()).unwrap();
+        }
+        Arc::new(vrs_tss::NodeRuntime::new_empty(&tss_path))
     };
     // tss finished
 

@@ -13,6 +13,7 @@ mod runtime;
 mod testing;
 pub use runtime::*;
 pub use tss_sdk::*;
+mod mock;
 
 use sp_core::crypto::AccountId32;
 use sp_core::crypto::Pair as CryptoPair;
