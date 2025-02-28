@@ -20,7 +20,7 @@ vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../runtime-api" }
 vrs-nucleus-executor = { path = "../executor" }
 vrs-tss = { path = "../../tss" }
-# vrs-nucleus-p2p = { path = "../p2p" }
+vrs-nucleus-p2p = { path = "../p2p" }
 
 codec = { workspace = true }
 wasmtime = { workspace = true }
@@ -37,7 +37,7 @@ frame-system-rpc-runtime-api = { workspace = true, default-features = false }
 sc-transaction-pool = { workspace = true }
 sc-authority-discovery = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
-
+sp-authority-discovery = { workspace = true }
 # chrono = { version = "0.4" }
 # hyper = { version = "1.3", features = ["full"] }
 # unicase = "2.6"

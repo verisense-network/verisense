@@ -1,177 +1,143 @@
 use codec::{Decode, Encode};
 use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
-use sc_network::{
-    request_responses::IncomingRequest,
-    service::traits::{NotificationEvent, NotificationService},
-    PeerId,
-};
+use sc_network::{request_responses::IncomingRequest, service::traits::{NotificationEvent, NotificationService}, PeerId, Multiaddr};
+use sc_authority_discovery::Service as AuthorityDiscovery;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_application_crypto::key_types::AUTHORITY_DISCOVERY;
 use sp_blockchain::HeaderBackend;
 use sp_core::{sr25519, ByteArray, Pair};
 use sp_keystore::KeystorePtr;
 use std::{str::FromStr, sync::Arc};
+use std::collections::HashSet;
+use tokio::sync::{Mutex};
+use std::time::Duration;
+use async_channel::{Recv, RecvError};
+use futures::channel::oneshot;
+use log::log;
+use sc_network::request_responses::OutgoingResponse;
+use sp_authority_discovery::AuthorityId;
+use tokio::time;
+use tokio::time::{timeout, Timeout};
+use tokio::time::error::Elapsed;
 use vrs_primitives::AccountId;
+
 
 pub struct P2pParams<B, C, BN> {
     pub keystore: KeystorePtr,
     pub reqres_receiver: async_channel::Receiver<IncomingRequest>,
     pub client: Arc<C>,
+    pub node_key_pair: libp2p::identity::Keypair,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
-    pub test_receiver: tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
-    pub p2p_cage_tx: tokio::sync::mpsc::Sender<NucleusP2pMsg>,
-    pub noti_receiver: tokio::sync::mpsc::Receiver<(Vec<u8>, Vec<PeerId>)>,
-    pub noti_service: Box<dyn NotificationService>,
+    pub p2p_cage_tx: tokio::sync::mpsc::Sender<(PayloadWithSignature,PeerId, oneshot::Sender<OutgoingResponse>)>,
+    pub cage_p2p_rx: tokio::sync::mpsc::Receiver<(SendMessage, oneshot::Sender<String>)>,
     pub controller: AccountId,
+    pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
+    pub authorities: Vec<AuthorityId>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
-#[derive(Debug)]
-pub struct P2pNotification {
-    peer: PeerId,
-    notification: Vec<u8>,
-}
-
-#[derive(Debug)]
-pub enum NucleusP2pMsg {
-    ReqRes(IncomingRequest),
-    Noti(P2pNotification),
+#[derive(Debug, Encode, Decode, Clone)]
+pub enum RequestType {
+    SendToken,
+    QueryEvents
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct PayloadWithSignature {
-    payload: Vec<u8>,
-    public_key: Vec<u8>,
-    peer_id: Vec<u8>,
-    signature: Vec<u8>,
+    pub request_type: RequestType,
+    pub payload: Vec<u8>,
+    pub public_key: Vec<u8>,
+    pub peer_id: Vec<u8>,
+    pub signature: Vec<u8>,
+}
+
+#[derive(Debug)]
+pub enum Destination {
+    AuthorityId(AuthorityId),
+    PeerId(PeerId)
+}
+
+#[derive(Debug)]
+pub struct SendMessage {
+    pub dest: Destination,
+    pub data: Vec<u8>,
+    pub request_type: RequestType,
 }
 
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
-where
-    B: sp_runtime::traits::Block,
-    BN: Backend<B>,
-    C: BlockBackend<B>
+    where
+        B: sp_runtime::traits::Block,
+        BN: Backend<B>,
+        C: BlockBackend<B>
         + StorageProvider<B, BN>
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + HeaderBackend<B>
         + 'static,
-    C::Api: Metadata<B>,
+        C::Api: Metadata<B>,
 {
     let P2pParams {
         keystore,
         reqres_receiver,
         client,
+        node_key_pair,
         mut net_service,
-        mut test_receiver,
         p2p_cage_tx,
-        mut noti_receiver,
-        mut noti_service,
+        mut cage_p2p_rx,
         controller,
+        mut authority_discovery,
+        authorities,
         _phantom,
     } = params;
+
     async move {
         log::info!("🔌 Nucleus p2p controller: {}", controller);
-
         loop {
             tokio::select! {
-                Some(nodes) = test_receiver.recv() => {
-                    for node_id in nodes {
-                        let test_data: Vec<u8> = format!("hello, notification").as_bytes().to_vec();
-                        log::info!(" ==> going to send noti: {:?} {:?}", node_id, test_data);
-                        // let msg_sink = noti_service
-                        //     .message_sink(&node_id)
-                        //     .expect("error when get msg_sink");
-                        // msg_sink.send_sync_notification(test_data);
-                        noti_service.send_sync_notification(&node_id, test_data);
-                        // _ = noti_service2
-                        //     .send_async_notification(&node_id, test_data.clone())
-                        //     .await;
-                    }
-                },
-                Some(noti) = noti_receiver.recv() => {
-
-                    let (noti, mut nodes) = noti;
-                    // process nodes.is_empty(), if it is, query the whole set of peers
-                    if nodes.is_empty() {
-                        let mut peer_ids = Vec::new();
-
-                        // Get the network state
-                        if let Ok(state) = net_service.network_state().await {
-                            // Extract connected peers
-                            for (name, _) in state.connected_peers {
-                                let peer_id = PeerId::from_str(&name).expect("failed to convert string to PeerId");
-                                peer_ids.push(peer_id);
+                Ok(req) = reqres_receiver.recv() => {
+                    let source = req.peer;
+                    let payload: PayloadWithSignature = Decode::decode(&mut &req.payload[..]).unwrap();
+                    log::info!("incoming p2p message: {:?}", payload);
+                    let _ = p2p_cage_tx.send((payload, source, req.pending_response)).await;
+                }
+                Some((send_payload, resp_sender)) = cage_p2p_rx.recv() => {
+                    let peers = match send_payload.dest {
+                        Destination::AuthorityId(a) => {
+                            let r = authority_discovery.clone().lock().await.get_addresses_by_authority_id(a).await;
+                            match r {
+                                None => {vec![]}
+                                Some(mut ma) => {
+                                    let mut v = vec![];
+                                    for m in ma  {
+                                        let n = m.to_string().split("/").last().unwrap().to_string();
+                                        let p = PeerId::from_str(n.as_str()).unwrap();
+                                        v.push(p);
+                                    }
+                                    v
+                                }
                             }
+                        },
+                        Destination::PeerId(p) => {
+                            vec![p.clone()]
                         }
-                        nodes = peer_ids;
-                    }
-
-                    for node_id in nodes {
-                        // sign the node_id, get a signature
-                        let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ()).expect("get public from keystore error.");
-                        let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ()).expect("sign msg error");
-                        let payload = PayloadWithSignature {
-                            payload: noti.clone(),
-                            public_key: public_key.to_raw_vec(),
-                            peer_id: node_id.to_bytes(),
-                            signature: signature.to_raw_vec(),
-                        };
-                        // encode the payload to vec<u8>
-                        let data = payload.encode();
-                        // log::info!(" ==> going to send noti: {:?} {:?}", node_id, noti.clone());
-                        // _ = noti_service
-                        //     .send_async_notification(&node_id, noti)
-                        //     .await;
-                        noti_service.send_sync_notification(&node_id, data);
-                    }
-                },
-                Ok(request) = reqres_receiver.recv() => {
-                    log::debug!("Incoming p2p request msg: {:?}", request);
-                    // do stuff
-                    // forward the request to cage
-                    let msg = NucleusP2pMsg::ReqRes(request);
-                    _ = p2p_cage_tx.send(msg).await;
-
-                },
-                Some(event) = noti_service.next_event() => {
-                    match event {
-                        NotificationEvent::NotificationReceived {
-                            peer,
-                            notification
-                        } => {
-                            log::info!("p2p notification received: peer: {:?}  noti: {:?}", peer, notification);
-                            let noti = P2pNotification {peer, notification};
-                            let msg = NucleusP2pMsg::Noti(noti);
-                            _ = p2p_cage_tx.send(msg).await;
-
-                        }
-                        NotificationEvent::ValidateInboundSubstream {
-                            peer,
-                            handshake,
-                            result_tx,
-                        } => {
-                            log::info!("notification ValidateInboundSubstream received: {:?}", peer);
-                            log::info!("notification ValidateInboundSubstream received: {:?}", handshake);
-                            // to build the notification substream
-                            // _ = result_tx.send(ValidationResult::Accept);
-                        }
-                        NotificationEvent::NotificationStreamOpened {
-                            peer,
-                            direction,
-                            handshake,
-                            negotiated_fallback,
-                        } => {
-                            log::info!("notification NotificationStreamOpened received: {:?}", peer);
-                            log::info!("notification NotificationStreamOpened received: {:?}", direction);
-                            log::info!("notification NotificationStreamOpened received: {:?}", handshake);
-                            log::info!("notification NotificationStreamOpened received: {:?}", negotiated_fallback);
-                        }
-                        NotificationEvent::NotificationStreamClosed { peer } => {
-                            log::info!("notification NotificationStreamClosed received: {:?}", peer);
+                    };
+                    let mut success = false;
+                    for p in peers {
+                        let data = send_payload.data.clone();
+                        if let Ok(r) = send_request(
+                            net_service.clone(),
+                            keystore.clone(),
+                            &p,
+                            data,
+                            send_payload.request_type.clone(),
+                        ).await {
+                            success = true;
+                            break;
                         }
                     }
+                    let  r = if success { "OK"} else {"ERR"};
+                    let _ = resp_sender.send(r.to_string());
                 }
             }
         }
@@ -183,10 +149,12 @@ pub async fn send_request(
     keystore: KeystorePtr,
     node_id: &PeerId,
     data: Vec<u8>,
+    request_type: RequestType,
 ) -> Result<Vec<u8>, ()> {
     let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
     let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
+        request_type,
         payload: data,
         public_key: public_key.to_raw_vec(),
         peer_id: node_id.to_bytes(),
