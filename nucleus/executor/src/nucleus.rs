@@ -48,11 +48,15 @@ where
 
     // this wasm's validity is guaranteed by the cage
     fn upgrade_code(&mut self, wasm: WasmInfo) {
-        let mut vm = Vm::new_instance(&wasm, &self.runtime)
-            .inspect_err(|e| log::error!("Init VM for nucleus {} failed, {:?}.", &wasm.id, e))
-            .unwrap();
-        vm.call_init();
-        self.vm.replace(vm);
+        match Vm::new_instance(&wasm, &self.runtime) {
+            Ok(mut vm) => {
+                vm.call_init();
+                self.vm.replace(vm);
+            }
+            Err(e) => {
+                log::error!("Init VM for nucleus {} failed, {:?}.", &wasm.id, e);
+            }
+        }
     }
 
     fn call<F, T>(&mut self, f: F) -> Result<T, WasmCallError>
