@@ -172,7 +172,7 @@ impl From<&Gluon> for Event {
 }
 
 /// Serialized `Gluon`, i.e. received from peers or call `gluon.into()` then save it
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub enum Event {
     #[codec(index = 0)]
     CodeUpgrade { version: u32, digest: [u8; 32] },

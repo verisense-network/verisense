@@ -8,14 +8,16 @@ use sc_consensus_grandpa::SharedVoterState;
 use sc_network::{
     event::Event,
     NetworkEventStream,
-    {multiaddr::Protocol, Multiaddr},
 };
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
-use std::{collections::HashSet, net::IpAddr, sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
+use tokio::sync::Mutex;
+use sp_authority_discovery::AuthorityId;
+use sp_core::crypto::Ss58Codec;
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
@@ -205,7 +207,7 @@ pub fn new_full<
     );
     net_config.add_request_response_protocol(nucleus_p2p_reqres_config);
 
-    let metrics1 = N::register_notification_metrics(config.prometheus_registry());
+/*    let metrics1 = N::register_notification_metrics(config.prometheus_registry());
     let peer_store_handle1 = net_config.peer_store_handle();
     let (nucleus_p2p_noti_config, mut noti_service) = N::notification_config(
         sc_network::types::ProtocolName::Static("/nucleus/p2p/noti"),
@@ -223,6 +225,8 @@ pub fn new_full<
         peer_store_handle1,
     );
     net_config.add_notification_protocol(nucleus_p2p_noti_config);
+
+ */
     // ^^--- add nucleus-p2p subprotocol
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
@@ -455,35 +459,6 @@ pub fn new_full<
 
     //
     if role.is_authority() {
-        // let noti_service1 = noti_service
-        //     .clone()
-        //     .expect("notification service clone failed.");
-        // let mut noti_service2 = noti_service
-        //     .clone()
-        //     .expect("notification service clone failed.");
-        // let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
-        // let (noti_sender, noti_receiver) = tokio::sync::mpsc::channel(10000);
-        // let (test_sender, test_receiver): (
-        //     tokio::sync::mpsc::UnboundedSender<Vec<PeerId>>,
-        //     tokio::sync::mpsc::UnboundedReceiver<Vec<PeerId>>,
-        // ) = tokio::sync::mpsc::unbounded_channel();
-        // let params = vrs_nucleus_p2p::P2pParams {
-        //     keystore: keystore_container.keystore(),
-        //     reqres_receiver,
-        //     client: client.clone(),
-        //     net_service: network.clone(),
-        //     test_receiver,
-        //     p2p_cage_tx,
-        //     noti_receiver,
-        //     noti_service,
-        //     controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
-        //     _phantom: std::marker::PhantomData,
-        // };
-        // task_manager.spawn_essential_handle().spawn_blocking(
-        //     "nucleus-p2p",
-        //     None,
-        //     vrs_nucleus_p2p::start_nucleus_p2p(params),
-        // );
 
         // launch authority discovery worker
         let discovery_mode =
@@ -501,6 +476,8 @@ pub fn new_full<
             sc_authority_discovery::new_worker_and_service_with_config(
                 sc_authority_discovery::WorkerConfig {
                     publish_non_global_ips: true,
+                    max_publish_interval: Duration::from_secs(60),
+                    max_query_interval: Duration::from_secs(60),
                     public_addresses: auth_disc_public_addresses,
                     ..Default::default()
                 },
@@ -515,7 +492,52 @@ pub fn new_full<
             Some("networking"),
             authority_discovery_worker.run(),
         );
-        let authority_discovery = Arc::new(authority_discovery_service);
+        let authority_discovery = Arc::new(Mutex::new(authority_discovery_service));
+
+        let node_key_pair = libp2p::identity::Keypair::ed25519_from_bytes(
+            network_config
+                .node_key
+                .clone()
+                .into_keypair()?
+                .secret()
+                .to_bytes(),
+        )
+            .unwrap();
+
+        let genesis_block_hash = client
+            .block_hash(0)
+            .ok()
+            .flatten()
+            .expect("Genesis block exists; qed");
+        let validators = client
+            .runtime_api()
+            .get_all_validators(genesis_block_hash).unwrap();
+        let validators:Vec<AuthorityId> = validators.into_iter().map(|a|AuthorityId::from_ss58check(a.to_ss58check().as_str()).unwrap()).collect::<Vec<AuthorityId>>();
+
+        let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
+
+        let (cage_p2p_tx, cage_p2p_rx) = tokio::sync::mpsc::channel(10000);
+
+        let params = vrs_nucleus_p2p::P2pParams {
+            keystore: keystore_container.keystore(),
+            reqres_receiver,
+            client: client.clone(),
+            node_key_pair,
+            net_service: network.clone(),
+            p2p_cage_tx,
+            cage_p2p_rx,
+            controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
+            authorities: validators,
+            authority_discovery: authority_discovery.clone(),
+            _phantom: std::marker::PhantomData,
+        };
+
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "nucleus-p2p",
+            None,
+            vrs_nucleus_p2p::start_nucleus_p2p(params),
+        );
+
         // launch nucleus cage
         let params = vrs_nucleus_cage::CageParams {
             client: client.clone(),
@@ -526,8 +548,8 @@ pub fn new_full<
             net_service: network.clone(),
             tss_node,
             nucleus_home_dir: nucleus_home_dir.clone(),
-            // pub p2p_cage_rx: Receiver<NucleusP2pMsg>,
-            // pub noti_sender: Sender<(Vec<u8>, Vec<PeerId>)>,
+            p2p_cage_rx,
+            cage_p2p_tx,
             _phantom: std::marker::PhantomData,
         };
         task_manager.spawn_essential_handle().spawn_blocking(
