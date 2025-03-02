@@ -3,6 +3,7 @@ use std::sync::Arc;
 use sp_core::sr25519::Signature;
 use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel};
 use vrs_primitives::{AccountId, NucleusId};
+use crate::cage::MonadringVerifyResult::{AllGood, Failed, FirstNotMe};
 
 pub(crate) struct NucleusCage {
     pub(crate) nucleus_id: NucleusId,
@@ -12,9 +13,29 @@ pub(crate) struct NucleusCage {
     pub(crate) state: Arc<NucleusState>,
 }
 
+pub enum MonadringVerifyResult {
+    AllGood,
+    FirstNotMe,
+    Failed,
+}
 impl NucleusCage {
-    pub(crate) fn validate_token(&self, token: &MonadringToken) -> bool {
-        true
+    pub(crate) fn validate_token(&self, self_account: &AccountId, token: &MonadringToken) -> MonadringVerifyResult {
+        let mut event_id = self.event_id;
+        if token.ring.is_empty() {
+            return  FirstNotMe;
+        }
+        let item = token.ring.first().cloned().unwrap();
+        if item.source != *self_account {
+            return FirstNotMe;
+        }
+        let mut items = token.ring.clone();
+        items.remove(0);
+        for item in items {
+            if event_id + item.events.len() as u64 != item.last_event_id {
+                return Failed;
+            }
+        }
+        AllGood
     }
 
     pub(crate) fn pre_commit(&self, id: u64, msg: &[u8]) -> anyhow::Result<()> {
@@ -24,9 +45,18 @@ impl NucleusCage {
     }
 
     pub(crate) fn drain(&mut self, imports: Vec<Event>) -> Vec<Event> {
-        // TODO handle imports first
-        //
         // for `TimerRegister` and `HttpRequest`, we need to check its id
+        for event in imports {
+            self.event_id += 1;
+            if let Err(e) = self.pre_commit(self.event_id, &event.encode()) {
+                log::error!(
+                    "couldn't save event {} of nucleus {}: {:?}",
+                    self.event_id,
+                    self.nucleus_id,
+                    e
+                );
+            }
+        }
 
         let mut new_events = vec![];
         let pipe = self.pending_requests.drain(..).collect::<Vec<_>>();
@@ -87,7 +117,7 @@ impl MonadringToken {
     }
 }
 
-#[derive(Debug, Decode, Encode)]
+#[derive(Debug, Clone, Decode, Encode)]
 pub struct  MonadringTokenItem {
     pub events: Vec<Event>,
     pub nucleus_state_root: B256,

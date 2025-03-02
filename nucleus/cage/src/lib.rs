@@ -1,7 +1,7 @@
 mod cage;
 mod keystore;
 
-use crate::cage::{MonadringToken, MonadringTokenItem, NucleusCage, QueryEventsResult};
+use crate::cage::{MonadringToken, MonadringTokenItem, MonadringVerifyResult, NucleusCage, QueryEventsResult};
 use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
@@ -148,59 +148,68 @@ where
                         RequestType::SendToken => {
                             if let Ok(token) = MonadringToken::decode(&mut &msg.payload[..]) {
                                 if let Some(nucleus) = nuclei.get_mut(&token.nucleus_id){
-                                    if nucleus.validate_token(&token) {
-                                        let events = token.combine_events(&controller);
-                                        let mut token = token;
-                                        if let  Some(r) = token.ring.first() {
-                                            if r.source == controller {
-                                                token.ring.remove(0);
-                                            }
-                                        }
-                                        let new_events = nucleus.drain(events);
-                                        let last_event_id = nucleus.event_id;
-                                        let state_root = nucleus.state.get_state_root();
-                                        let item = MonadringTokenItem {
-                                            events:new_events,
-                                            nucleus_state_root: state_root,
-                                            last_event_id,
-                                            source: controller.clone(),
-                                            signature: Default::default(),
-                                        };
-                                        token.ring.push(item);
-                                        let payload = token.encode();
-                                        let mut controllers = get_nuclei(client.clone(), token.nucleus_id, client.info().best_hash);
-                                        if !controllers.is_empty() {
-                                            loop {
-                                                let first = controllers.remove(0);
-                                                controllers.push(first.clone());
-                                                if first == controller {
-                                                    break;
+
+                                    match nucleus.validate_token(&controller,&token) {
+                                        MonadringVerifyResult::AllGood => {
+                                            let events = token.combine_events(&controller);
+                                            let mut token = token;
+                                            if let  Some(r) = token.ring.first() {
+                                                if r.source == controller {
+                                                    token.ring.remove(0);
                                                 }
                                             }
-                                        }
-                                        for c in controllers {
-                                             if c == controller {
-                                                break;
-                                             }
-                                             let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
-                                             let msg = SendMessage {
-                                                dest: Destination::AuthorityId(authority),
-                                                data: payload.clone(),
-                                                request_type: RequestType::SendToken,
+                                            let new_events = nucleus.drain(events);
+                                            let last_event_id = nucleus.event_id;
+                                            let state_root = nucleus.state.get_state_root();
+                                            let item = MonadringTokenItem {
+                                                events:new_events,
+                                                nucleus_state_root: state_root,
+                                                last_event_id,
+                                                source: controller.clone(),
+                                                signature: Default::default(),
                                             };
-                                            let (resp_tx, resp_rx) = oneshot::channel::<String>();
-                                            match cage_p2p_tx.send((msg, resp_tx)).await {
-                                                Ok(r) => {
-                                                    if let Ok(s) = resp_rx.await {
-                                                        if s == "OK".to_string() {
-                                                            break;
-                                                        }
+                                            token.ring.push(item);
+                                            let payload = token.encode();
+                                            let mut controllers = get_nuclei(client.clone(), token.nucleus_id, client.info().best_hash);
+                                            if !controllers.is_empty() {
+                                                loop {
+                                                    let first = controllers.remove(0);
+                                                    controllers.push(first.clone());
+                                                    if first == controller {
+                                                        break;
                                                     }
                                                 }
-                                                Err(_) => {
+                                            }
+                                            for c in controllers {
+                                                 if c == controller {
                                                     break;
+                                                 }
+                                                 let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
+                                                 let msg = SendMessage {
+                                                    dest: Destination::AuthorityId(authority),
+                                                    data: payload.clone(),
+                                                    request_type: RequestType::SendToken,
+                                                };
+                                                let (resp_tx, resp_rx) = oneshot::channel::<String>();
+                                                match cage_p2p_tx.send((msg, resp_tx)).await {
+                                                    Ok(r) => {
+                                                        if let Ok(s) = resp_rx.await {
+                                                            if s == "OK".to_string() {
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    Err(_) => {
+                                                        break;
+                                                    }
                                                 }
                                             }
+                                        }
+                                        MonadringVerifyResult::FirstNotMe => {
+
+                                        }
+                                        MonadringVerifyResult::Failed => {
+
                                         }
                                     }
                                 }

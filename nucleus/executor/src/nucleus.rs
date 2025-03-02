@@ -5,6 +5,7 @@ use crate::{
 };
 use codec::{Decode, Encode};
 use std::sync::mpsc::{self, Receiver};
+use std::time::Duration;
 use vrs_core_sdk::{
     http::{HttpRequest, HttpResponse},
     CallResult,
@@ -33,15 +34,18 @@ where
     }
 
     fn run(&mut self) {
-        while let Ok((id, msg)) = self.receiver.recv() {
-            // TODO save msg with id to state
-            if let Err(e) = self.accept(msg) {
-                log::error!(
+        loop {
+            if let Ok((id, msg)) = self.receiver.recv_timeout(Duration::from_secs(20)) {
+                // TODO save msg with id to state
+                if let Err(e) = self.accept(msg) {
+                    log::error!(
                     "Nucleus {} interrupted: {:?}",
                     self.runtime.get_nucleus_id(),
-                    e
-                );
-                break;
+                    e);
+                    break;
+                }
+            } else {
+                //query_events
             }
         }
     }
