@@ -7,7 +7,7 @@ mod code;
 mod mem;
 mod nucleus;
 mod runtime;
-mod state;
+pub mod state;
 mod vm;
 
 pub use code::WasmInfo;
