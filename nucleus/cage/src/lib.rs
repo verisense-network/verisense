@@ -123,7 +123,7 @@ where
         }
         let controller = controller.unwrap();
         let chosen = get_nuclei_for_node(client.clone(), controller.clone(), hash);
-
+        let (token_timeout_tx, mut token_timeout_rx) = tokio::sync::mpsc::channel(1000);
         for (id, info) in chosen {
             let nucleus_path = nucleus_home_dir.join(id.to_string());
             start_nucleus(
@@ -134,6 +134,7 @@ where
                 timer_scheduler.clone(),
                 tss_node.clone(),
                 &mut nuclei,
+                token_timeout_tx.clone(),
             )
             .expect("fail to start nucleus");
         }
@@ -207,6 +208,7 @@ where
                                         }
                                         MonadringVerifyResult::FirstNotMe => {
 
+
                                         }
                                         MonadringVerifyResult::Failed => {
 
@@ -216,7 +218,7 @@ where
                             }
                         }
                         RequestType::QueryEvents => {
-                            //TODO
+
                             let resp = QueryEventsResult {
                                 events: vec![]
                             };
@@ -230,6 +232,10 @@ where
                         }
                     }
                 },
+                t = token_timeout_rx.recv() => {
+
+                    //Send query event
+                }
                 // handle hostnet events
                 block = block_monitor.next() => {
                     let hash = block.expect("block importing error").hash;
@@ -281,6 +287,7 @@ where
                                 timer_scheduler.clone(),
                                 tss_node.clone(),
                                 &mut nuclei,
+                                token_timeout_tx.clone(),
                             ).expect("fail to start nucleus");
                         }
                     }
@@ -578,6 +585,7 @@ fn start_nucleus(
     timer_scheduler: Arc<SchedulerAsync>,
     tss_node: Arc<vrs_tss::NodeRuntime>,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
+    token_timeout_tx: tokio::sync::mpsc::Sender<String>
 ) -> anyhow::Result<()> {
     let NucleusInfo {
         name,
@@ -598,7 +606,7 @@ fn start_nucleus(
     };
     let runtime = Runtime::init(config)?;
     let state = runtime.state();
-    let tunnel = Nucleus::start(runtime);
+    let tunnel = Nucleus::start(runtime, token_timeout_tx);
     log::info!("🚀 Nucleus {} started.", id);
     nuclei.insert(
         id.clone(),

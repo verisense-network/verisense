@@ -15,6 +15,7 @@ pub struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
     vm: Option<Vm<R>>,
     runtime: R,
+    token_timeout_tx: tokio::sync::mpsc::Sender<String>
 }
 
 impl<R> Nucleus<R>
@@ -22,12 +23,13 @@ where
     R: ContextAware + FuncRegister<Runtime = R> + Clone + Send + Sync + 'static,
 {
     /// spawn a native thread to run nucleus
-    pub fn start(runtime: R) -> NucleusTunnel {
+    pub fn start(runtime: R,   token_timeout_tx: tokio::sync::mpsc::Sender<String>) -> NucleusTunnel {
         let (tx, rx) = mpsc::channel();
         let mut nucleus = Nucleus {
             receiver: rx,
             vm: None,
             runtime,
+            token_timeout_tx,
         };
         std::thread::spawn(move || nucleus.run());
         tx
@@ -45,7 +47,7 @@ where
                     break;
                 }
             } else {
-                //query_events
+                let _ = self.token_timeout_tx.send("timeout".to_string());
             }
         }
     }
