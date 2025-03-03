@@ -10,12 +10,13 @@ use vrs_core_sdk::{
     http::{HttpRequest, HttpResponse},
     CallResult,
 };
+use vrs_primitives::NucleusId;
 
 pub struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
     vm: Option<Vm<R>>,
     runtime: R,
-    token_timeout_tx: tokio::sync::mpsc::Sender<String>
+    token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>
 }
 
 impl<R> Nucleus<R>
@@ -23,7 +24,7 @@ where
     R: ContextAware + FuncRegister<Runtime = R> + Clone + Send + Sync + 'static,
 {
     /// spawn a native thread to run nucleus
-    pub fn start(runtime: R,   token_timeout_tx: tokio::sync::mpsc::Sender<String>) -> NucleusTunnel {
+    pub fn start(runtime: R,   token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>) -> NucleusTunnel {
         let (tx, rx) = mpsc::channel();
         let mut nucleus = Nucleus {
             receiver: rx,
@@ -47,7 +48,7 @@ where
                     break;
                 }
             } else {
-                let _ = self.token_timeout_tx.send("timeout".to_string());
+                let _ = self.token_timeout_tx.send(self.runtime.get_nucleus_id());
             }
         }
     }

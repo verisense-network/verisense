@@ -28,7 +28,7 @@ use vrs_metadata::{
 };
 use vrs_metadata::utils::AccountId32;
 use vrs_nucleus_executor::{host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync}, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo, Event};
-use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestType, SendMessage};
+use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestContent, SendMessage};
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
 
@@ -144,20 +144,17 @@ where
                 // handle monadring protocol
                 Some((msg,source, resp_sender)) = p2p_cage_rx.recv() => {
                     log::info!("in cage: incoming request: {:?}", msg);
-                      //todo
-                    match msg.request_type {
-                        RequestType::SendToken => {
-                            if let Ok(token) = MonadringToken::decode(&mut &msg.payload[..]) {
+                    let Ok(req) = RequestContent::decode(&mut &msg.payload[..]) else {continue;};
+                    match req {
+                        RequestContent::SendToken(content) => {
+                            if let Ok(token) = MonadringToken::decode(&mut &content[..]) {
                                 if let Some(nucleus) = nuclei.get_mut(&token.nucleus_id){
-
                                     match nucleus.validate_token(&controller,&token) {
                                         MonadringVerifyResult::AllGood => {
                                             let events = token.combine_events(&controller);
                                             let mut token = token;
-                                            if let  Some(r) = token.ring.first() {
-                                                if r.source == controller {
-                                                    token.ring.remove(0);
-                                                }
+                                            if token.ring.first().is_some_and(|r|r.source == controller){
+                                                token.ring.remove(0);
                                             }
                                             let new_events = nucleus.drain(events);
                                             let last_event_id = nucleus.event_id;
@@ -188,8 +185,7 @@ where
                                                  let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
                                                  let msg = SendMessage {
                                                     dest: Destination::AuthorityId(authority),
-                                                    data: payload.clone(),
-                                                    request_type: RequestType::SendToken,
+                                                    request: RequestContent::SendToken(payload.clone()),
                                                 };
                                                 let (resp_tx, resp_rx) = oneshot::channel::<String>();
                                                 match cage_p2p_tx.send((msg, resp_tx)).await {
@@ -201,13 +197,12 @@ where
                                                         }
                                                     }
                                                     Err(_) => {
-                                                        break;
+
                                                     }
                                                 }
                                             }
                                         }
                                         MonadringVerifyResult::FirstNotMe => {
-
 
                                         }
                                         MonadringVerifyResult::Failed => {
@@ -217,8 +212,14 @@ where
                                 }
                             }
                         }
-                        RequestType::QueryEvents => {
-
+                        RequestContent::QueryEvents(content) => {
+                            let Ok(n) = NucleusId::decode(&mut &content[..]) else {
+                                continue;
+                            };
+                            match nuclei.get(&n) {
+                                None => {}
+                                Some(c) => {}
+                            }
                             let resp = QueryEventsResult {
                                 events: vec![]
                             };
@@ -234,7 +235,6 @@ where
                 },
                 t = token_timeout_rx.recv() => {
 
-                    //Send query event
                 }
                 // handle hostnet events
                 block = block_monitor.next() => {
@@ -585,7 +585,7 @@ fn start_nucleus(
     timer_scheduler: Arc<SchedulerAsync>,
     tss_node: Arc<vrs_tss::NodeRuntime>,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
-    token_timeout_tx: tokio::sync::mpsc::Sender<String>
+    token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>
 ) -> anyhow::Result<()> {
     let NucleusInfo {
         name,

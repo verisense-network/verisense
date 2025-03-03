@@ -38,14 +38,13 @@ pub struct P2pParams<B, C, BN> {
 }
 
 #[derive(Debug, Encode, Decode, Clone)]
-pub enum RequestType {
-    SendToken,
-    QueryEvents
+pub enum RequestContent {
+    SendToken(Vec<u8>),
+    QueryEvents(Vec<u8>)
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct PayloadWithSignature {
-    pub request_type: RequestType,
     pub payload: Vec<u8>,
     pub public_key: Vec<u8>,
     pub peer_id: Vec<u8>,
@@ -61,8 +60,7 @@ pub enum Destination {
 #[derive(Debug)]
 pub struct SendMessage {
     pub dest: Destination,
-    pub data: Vec<u8>,
-    pub request_type: RequestType,
+    pub request: RequestContent,
 }
 
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
@@ -124,13 +122,11 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                     };
                     let mut success = false;
                     for p in peers {
-                        let data = send_payload.data.clone();
                         if let Ok(r) = send_request(
                             net_service.clone(),
                             keystore.clone(),
                             &p,
-                            data,
-                            send_payload.request_type.clone(),
+                            send_payload.request.clone(),
                         ).await {
                             success = true;
                             break;
@@ -148,14 +144,12 @@ pub async fn send_request(
     net_service: Arc<dyn sc_network::service::traits::NetworkService>,
     keystore: KeystorePtr,
     node_id: &PeerId,
-    data: Vec<u8>,
-    request_type: RequestType,
+    request: RequestContent,
 ) -> Result<Vec<u8>, ()> {
     let public_key = get_public_from_keystore(keystore.clone()).map_err(|_| ())?;
     let signature = sign_message(keystore.clone(), &node_id.to_bytes()).map_err(|_| ())?;
     let payload = PayloadWithSignature {
-        request_type,
-        payload: data,
+        payload: request.encode(),
         public_key: public_key.to_raw_vec(),
         peer_id: node_id.to_bytes(),
         signature: signature.to_raw_vec(),
