@@ -1,5 +1,6 @@
 use codec::{Decode, Encode};
 use std::sync::Arc;
+use rocksdb::DB;
 use sp_core::sr25519::Signature;
 use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel};
 use vrs_primitives::{AccountId, NucleusId};
@@ -11,6 +12,7 @@ pub(crate) struct NucleusCage {
     pub(crate) pending_requests: Vec<Gluon>,
     pub(crate) event_id: u64,
     pub(crate) state: Arc<NucleusState>,
+    pub(crate) db: Arc<DB>
 }
 
 pub enum MonadringVerifyResult {
