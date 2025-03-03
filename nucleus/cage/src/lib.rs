@@ -6,7 +6,7 @@ use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
 use sc_authority_discovery::{ Service as AuthorityDiscovery};
-use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageData, StorageProvider};
+use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
 use sc_network::{service::traits::NetworkService, PeerId};
 use sc_transaction_pool_api::{TransactionPool, TransactionSource};
 use sp_api::{Core, Metadata, ProvideRuntimeApi};
@@ -16,21 +16,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use futures::channel::oneshot;
 use sc_network::request_responses::OutgoingResponse;
-use serde::{Deserialize, Serialize};
 use sp_core::ByteArray;
-use sp_core::crypto::Ss58Codec;
-use sp_core::sr25519::Signature;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::{Mutex};
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata,
     METADATA_BYTES as METADATA,
 };
-use vrs_metadata::utils::AccountId32;
 use vrs_nucleus_executor::{host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync}, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo, Event};
 use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestContent, SendMessage};
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
-use vrs_primitives::{keys, AccountId, Address, Hash, NodeId, NucleusId, NucleusInfo};
+use vrs_primitives::{keys, AccountId, Hash, NodeId, NucleusId, NucleusInfo};
 
 pub type NucleusRpcChannel = Sender<(NucleusId, Gluon)>;
 pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
@@ -168,7 +164,7 @@ where
                                             };
                                             token.ring.push(item);
                                             let payload = token.encode();
-                                            let mut controllers = get_nuclei(client.clone(), token.nucleus_id, client.info().best_hash);
+                                            let mut controllers = get_nucleus_controllers(client.clone(), token.nucleus_id, client.info().best_hash);
                                             if !controllers.is_empty() {
                                                 loop {
                                                     let first = controllers.remove(0);
@@ -180,7 +176,7 @@ where
                                             }
                                             for c in controllers {
                                                  if c == controller {
-                                                    break;
+                                                    continue;
                                                  }
                                                  let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
                                                  let msg = SendMessage {
@@ -233,8 +229,35 @@ where
                         }
                     }
                 },
-                t = token_timeout_rx.recv() => {
+                nid = token_timeout_rx.recv() => {
+                    let Some(timeout_nucleus) = nid else { continue; };
+                    let Some(cage) = nuclei.get(&timeout_nucleus) else {continue;};
+                    let event_id = cage.event_id;
+                    let req_content = RequestContent::QueryEvents((timeout_nucleus.clone(), event_id).encode());
+                    let controllers = get_nucleus_controllers(client.clone(), timeout_nucleus, client.info().best_hash);
+                    for c in controllers {
+                         if c == controller {
+                            continue;
+                         }
+                         let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
+                         let msg = SendMessage {
+                            dest: Destination::AuthorityId(authority),
+                            request: req_content.clone(),
+                        };
+                        let (resp_tx, resp_rx) = oneshot::channel::<String>();
+                        match cage_p2p_tx.send((msg, resp_tx)).await {
+                            Ok(r) => {
+                                if let Ok(s) = resp_rx.await {
+                                    if s == "OK".to_string() {
+                                        break;
+                                    }
+                                }
+                            }
+                            Err(_) => {
 
+                            }
+                        }
+                    }
                 }
                 // handle hostnet events
                 block = block_monitor.next() => {
@@ -493,7 +516,7 @@ where
 }
 
 
-fn get_nuclei<B, D, C>(
+fn get_nucleus_controllers<B, D, C>(
     client: Arc<C>,
     nucleus_id: NucleusId,
     hash: B::Hash,

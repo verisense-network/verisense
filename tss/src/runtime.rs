@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::time::Duration;
 use tss_sdk::crypto::CryptoType;
