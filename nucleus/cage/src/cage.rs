@@ -16,21 +16,19 @@ pub(crate) struct NucleusCage {
 
 pub enum MonadringVerifyResult {
     AllGood,
-    FirstNotMe,
     Failed,
 }
 impl NucleusCage {
     pub(crate) fn validate_token(&self, self_account: &AccountId, token: &MonadringToken) -> MonadringVerifyResult {
         let mut event_id = self.event_id;
         if token.ring.is_empty() {
-            return  FirstNotMe;
+            return  AllGood;
         }
         let item = token.ring.first().cloned().unwrap();
-        if item.source != *self_account {
-            return FirstNotMe;
-        }
         let mut items = token.ring.clone();
-        items.remove(0);
+        if item.source != *self_account {
+            items.remove(0);
+        }
         for item in items {
             if event_id + item.events.len() as u64 != item.last_event_id {
                 return Failed;

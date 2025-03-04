@@ -206,7 +206,7 @@ where
 
                                         }
                                         MonadringVerifyResult::Failed => {
-                                            resp_sender.send(create_outgoing("ERR".encode()));
+                                            let _ = resp_sender.send(create_outgoing("ERR".encode()));
                                         }
                                     }
                                 }
