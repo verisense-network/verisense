@@ -1,5 +1,6 @@
 use codec::{Decode, Encode};
 use std::sync::Arc;
+use anyhow::anyhow;
 use rocksdb::DB;
 use sp_core::sr25519::Signature;
 use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel};
@@ -12,7 +13,6 @@ pub(crate) struct NucleusCage {
     pub(crate) pending_requests: Vec<Gluon>,
     pub(crate) event_id: u64,
     pub(crate) state: Arc<NucleusState>,
-    pub(crate) db: Arc<DB>
 }
 
 pub enum MonadringVerifyResult {
@@ -41,9 +41,7 @@ impl NucleusCage {
     }
 
     pub(crate) fn pre_commit(&self, id: u64, msg: &[u8]) -> anyhow::Result<()> {
-        // let handle = self.db.cf_handle("seq").unwrap();
-        // self.db.put_cf(handle, &id.to_be_bytes(), msg)?;
-        Ok(())
+        self.state.put_user_data(&id.to_be_bytes(), msg).map_err(|e| anyhow!(e))
     }
 
     pub(crate) fn drain(&mut self, imports: Vec<Event>) -> Vec<Event> {
