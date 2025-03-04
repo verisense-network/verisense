@@ -2,7 +2,7 @@ use codec::{Decode, Encode};
 use std::sync::Arc;
 use anyhow::anyhow;
 use sp_core::sr25519::Signature;
-use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel};
+use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel, WasmInfo};
 use vrs_primitives::{AccountId, NucleusId};
 use crate::cage::MonadringVerifyResult::{AllGood, Failed};
 
@@ -43,7 +43,7 @@ impl NucleusCage {
 
     pub fn execute_outer_events(&mut self, imports: Vec<Event>) -> Vec<Event> {
         // for `TimerRegister` and `HttpRequest`, we need to check its id
-        for event in imports {
+        for event in imports.clone() {
             self.event_id += 1;
             if let Err(e) = self.pre_commit(self.event_id, &event.encode()) {
                 log::error!(
@@ -60,7 +60,7 @@ impl NucleusCage {
     }
     pub(crate) fn drain(&mut self, imports: Vec<Event>) -> Vec<Event> {
         let imports = self.execute_outer_events(imports);
-        let mut new_events = vec![];
+        let mut new_events = imports;
         let pipe = self.pending_requests.drain(..).collect::<Vec<_>>();
         for gluon in pipe.into_iter() {
             self.event_id += 1;

@@ -33,7 +33,8 @@ pub struct P2pParams<B, C, BN> {
 #[derive(Debug, Encode, Decode, Clone)]
 pub enum RequestContent {
     SendToken(Vec<u8>),
-    QueryEvents(Vec<u8>)
+    QueryEvents(Vec<u8>),
+    QueryCodeWasm(Vec<u8>)
 }
 
 #[derive(Debug, Encode, Decode)]

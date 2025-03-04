@@ -92,7 +92,7 @@ where
         // TODO mock monadring
         //////////////////////////////////////////////////////
         let (token_tx, mut token_rx) = mpsc::unbounded_channel::<NucleusId>();
-        tokio::spawn(async move {
+/*        tokio::spawn(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                 match token_tx.send(NucleusId::from([0u8; 32])) {
@@ -100,7 +100,7 @@ where
                     Err(_) => break,
                 }
             }
-        });
+        });*/
         //////////////////////////////////////////////////////
         let author = keystore
             .sr25519_public_keys(sp_core::crypto::key_types::AURA)
@@ -141,7 +141,7 @@ where
                 Some((msg,source, resp_sender)) = p2p_cage_rx.recv() => {
                     log::info!("in cage: incoming request: {:?}", msg);
                     let Ok(req) = RequestContent::decode(&mut &msg.payload[..]) else {
-                        resp_sender.send(create_outgoing("ERR".encode()));
+                        let _ = resp_sender.send(create_outgoing("ERR".encode()));
                         continue;
                     };
                     match req {
@@ -239,6 +239,14 @@ where
                                 sent_feedback: None,
                             };
                             let _ = resp_sender.send(outgoing);
+                        }
+                        RequestContent::QueryCodeWasm(content) => {
+                            let r: Result<(NucleusId, u64), _> = Decode::decode(&mut &content[..]);
+                            let Ok((nid, wasm_version)) = r else {
+                                continue;
+                            };
+
+
                         }
                     }
                 },
@@ -350,14 +358,14 @@ where
                         reply_directly(gluon, Err((-40004, "Nucleus not found.".to_string())));
                     }
                 },
-                // TODO replace this with token received
+                /*// TODO replace this with token received
                 token = token_rx.recv() => {
                     log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
                     // TODO only drain the associated nucleus
                     nuclei.values_mut().for_each(|nucleus| {
                         nucleus.drain(vec![]);
                     });
-                }
+                }*/
             }
         }
     }
@@ -647,7 +655,7 @@ fn start_nucleus(
     );
     // TODO if start before wasm uploaded, we should skip this, but we must ensure the wasm is downloaded to local
     if let Ok(wasm) = try_load_wasm(id.clone(), nucleus_path, wasm_version) {
-        let mut cage = nuclei
+        let cage = nuclei
             .get_mut(&id)
             .expect("just inserted nucleus, should be found;qed");
         cage.forward(Gluon::CodeUpgrade { wasm });
