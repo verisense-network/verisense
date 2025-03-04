@@ -209,15 +209,27 @@ where
                             }
                         }
                         RequestContent::QueryEvents(content) => {
-                            let Ok(n) = NucleusId::decode(&mut &content[..]) else {
+                            let r: Result<(NucleusId, u64), _> = Decode::decode(&mut &content[..]);
+                            let Ok((nid, start_event_id)) = r else {
                                 continue;
                             };
-                            match nuclei.get(&n) {
-                                None => {}
-                                Some(c) => {}
+                            let events = match nuclei.get(&nid) {
+                                None => {
+                                    vec![]
+                                }
+                                Some(c) => {
+                                    let mut events = vec![];
+                                    for id in start_event_id+1 .. start_event_id+50 {
+                                        let Ok(evt_opt) =  c.state.get_user_data(&id.to_le_bytes()) else {break;};
+                                        let Some(event_encoded) = evt_opt else {break;};
+                                        let  Ok(ent) = Event::decode(&mut &v[..]) else {break;};
+                                        events.push(ent);
+                                    }
+                                    events
+                                }
                             }
                             let resp = QueryEventsResult {
-                                events: vec![]
+                                events
                             };
                             let bytes = resp.encode();
                             let outgoing = OutgoingResponse {
