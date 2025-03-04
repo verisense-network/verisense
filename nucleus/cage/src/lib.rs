@@ -202,9 +202,6 @@ where
                                                 }
                                             }
                                         }
-                                        MonadringVerifyResult::FirstNotMe => {
-
-                                        }
                                         MonadringVerifyResult::Failed => {
                                             let _ = resp_sender.send(create_outgoing("ERR".encode()));
                                         }

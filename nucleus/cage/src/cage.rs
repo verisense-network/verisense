@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use sp_core::sr25519::Signature;
 use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel};
 use vrs_primitives::{AccountId, NucleusId};
-use crate::cage::MonadringVerifyResult::{AllGood, Failed, FirstNotMe};
+use crate::cage::MonadringVerifyResult::{AllGood, Failed};
 
 pub(crate) struct NucleusCage {
     pub(crate) nucleus_id: NucleusId,
@@ -41,7 +41,7 @@ impl NucleusCage {
         self.state.put_user_data(&id.to_be_bytes(), msg).map_err(|e| anyhow!(e))
     }
 
-    pub(crate) fn drain(&mut self, imports: Vec<Event>) -> Vec<Event> {
+    pub fn execute_outer_events(&mut self, imports: Vec<Event>) -> Vec<Event> {
         // for `TimerRegister` and `HttpRequest`, we need to check its id
         for event in imports {
             self.event_id += 1;
@@ -56,7 +56,10 @@ impl NucleusCage {
 
             }
         }
-
+        imports
+    }
+    pub(crate) fn drain(&mut self, imports: Vec<Event>) -> Vec<Event> {
+        let imports = self.execute_outer_events(imports);
         let mut new_events = vec![];
         let pipe = self.pending_requests.drain(..).collect::<Vec<_>>();
         for gluon in pipe.into_iter() {
