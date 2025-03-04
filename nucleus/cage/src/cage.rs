@@ -1,7 +1,6 @@
 use codec::{Decode, Encode};
 use std::sync::Arc;
 use anyhow::anyhow;
-use rocksdb::DB;
 use sp_core::sr25519::Signature;
 use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel};
 use vrs_primitives::{AccountId, NucleusId};

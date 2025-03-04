@@ -1,7 +1,7 @@
 use codec::{Decode, Encode};
 use futures::prelude::*;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
-use sc_network::{request_responses::IncomingRequest, service::traits::{NotificationEvent}, PeerId, Multiaddr};
+use sc_network::{request_responses::IncomingRequest, PeerId};
 use sc_authority_discovery::Service as AuthorityDiscovery;
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_application_crypto::key_types::AUTHORITY_DISCOVERY;
@@ -9,16 +9,10 @@ use sp_blockchain::HeaderBackend;
 use sp_core::{sr25519, ByteArray};
 use sp_keystore::KeystorePtr;
 use std::{str::FromStr, sync::Arc};
-use std::collections::HashSet;
 use tokio::sync::{Mutex};
-use async_channel::{Recv, RecvError};
 use futures::channel::oneshot;
-use log::log;
 use sc_network::request_responses::OutgoingResponse;
 use sp_authority_discovery::AuthorityId;
-use tokio::time;
-use tokio::time::{timeout, Timeout};
-use tokio::time::error::Elapsed;
 use vrs_primitives::AccountId;
 
 
@@ -29,7 +23,7 @@ pub struct P2pParams<B, C, BN> {
     pub node_key_pair: libp2p::identity::Keypair,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
     pub p2p_cage_tx: tokio::sync::mpsc::Sender<(PayloadWithSignature,PeerId, oneshot::Sender<OutgoingResponse>)>,
-    pub cage_p2p_rx: tokio::sync::mpsc::Receiver<(SendMessage, oneshot::Sender<String>)>,
+    pub cage_p2p_rx: tokio::sync::mpsc::Receiver<(SendMessage, oneshot::Sender<Vec<u8>>)>,
     pub controller: AccountId,
     pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
     pub authorities: Vec<AuthorityId>,
@@ -119,7 +113,6 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                             vec![p.clone()]
                         }
                     };
-                    let mut success = false;
                     for p in peers {
                         if let Ok(r) = send_request(
                             net_service.clone(),
@@ -127,12 +120,10 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                             &p,
                             send_payload.request.clone(),
                         ).await {
-                            success = true;
+                            let _ = resp_sender.send(r);
                             break;
                         }
                     }
-                    let  r = if success { "OK"} else {"ERR"};
-                    let _ = resp_sender.send(r.to_string());
                 }
             }
         }

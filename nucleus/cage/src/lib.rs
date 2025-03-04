@@ -41,7 +41,7 @@ pub struct CageParams<P, B, C, BN> {
     pub tss_node: Arc<vrs_tss::NodeRuntime>,
     pub nucleus_home_dir: std::path::PathBuf,
     pub p2p_cage_rx: Receiver<(PayloadWithSignature, PeerId, oneshot::Sender<OutgoingResponse>)>,
-    pub cage_p2p_tx: Sender<(SendMessage, oneshot::Sender<String>)>,
+    pub cage_p2p_tx: Sender<(SendMessage, oneshot::Sender<Vec<u8>>)>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
 
@@ -117,8 +117,8 @@ where
             log::warn!("Our node is not a validator!");
             return;
         }
-        let controller = controller.unwrap();
-        let chosen = get_nuclei_for_node(client.clone(), controller.clone(), hash);
+        let self_controller = controller.unwrap();
+        let chosen = get_nuclei_for_node(client.clone(), self_controller.clone(), hash);
         let (token_timeout_tx, mut token_timeout_rx) = tokio::sync::mpsc::channel(1000);
         for (id, info) in chosen {
             let nucleus_path = nucleus_home_dir.join(id.to_string());
@@ -134,22 +134,26 @@ where
             )
             .expect("fail to start nucleus");
         }
-        log::info!("🔌 Nucleus cage controller: {}", controller);
+        log::info!("🔌 Nucleus cage controller: {}", self_controller);
         loop {
             tokio::select! {
                 // handle monadring protocol
                 Some((msg,source, resp_sender)) = p2p_cage_rx.recv() => {
                     log::info!("in cage: incoming request: {:?}", msg);
-                    let Ok(req) = RequestContent::decode(&mut &msg.payload[..]) else {continue;};
+                    let Ok(req) = RequestContent::decode(&mut &msg.payload[..]) else {
+                        resp_sender.send(create_outgoing("ERR".encode()));
+                        continue;
+                    };
                     match req {
                         RequestContent::SendToken(content) => {
                             if let Ok(token) = MonadringToken::decode(&mut &content[..]) {
                                 if let Some(nucleus) = nuclei.get_mut(&token.nucleus_id){
-                                    match nucleus.validate_token(&controller,&token) {
+                                    match nucleus.validate_token(&self_controller,&token) {
                                         MonadringVerifyResult::AllGood => {
-                                            let events = token.combine_events(&controller);
+                                            resp_sender.send(create_outgoing("OK".encode()));
+                                            let events = token.combine_events(&self_controller);
                                             let mut token = token;
-                                            if token.ring.first().is_some_and(|r|r.source == controller){
+                                            if token.ring.first().is_some_and(|r|r.source == self_controller){
                                                 token.ring.remove(0);
                                             }
                                             let new_events = nucleus.drain(events);
@@ -159,7 +163,7 @@ where
                                                 events:new_events,
                                                 nucleus_state_root: state_root,
                                                 last_event_id,
-                                                source: controller.clone(),
+                                                source: self_controller.clone(),
                                                 signature: Default::default(),
                                             };
                                             token.ring.push(item);
@@ -169,13 +173,13 @@ where
                                                 loop {
                                                     let first = controllers.remove(0);
                                                     controllers.push(first.clone());
-                                                    if first == controller {
+                                                    if first == self_controller {
                                                         break;
                                                     }
                                                 }
                                             }
                                             for c in controllers {
-                                                 if c == controller {
+                                                 if c == self_controller {
                                                     continue;
                                                  }
                                                  let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
@@ -183,11 +187,11 @@ where
                                                     dest: Destination::AuthorityId(authority),
                                                     request: RequestContent::SendToken(payload.clone()),
                                                 };
-                                                let (resp_tx, resp_rx) = oneshot::channel::<String>();
+                                                let (resp_tx, resp_rx) = oneshot::channel::<Vec<u8>>();
                                                 match cage_p2p_tx.send((msg, resp_tx)).await {
                                                     Ok(r) => {
                                                         if let Ok(s) = resp_rx.await {
-                                                            if s == "OK".to_string() {
+                                                            if s == "OK".encode() {
                                                                 break;
                                                             }
                                                         }
@@ -202,7 +206,7 @@ where
 
                                         }
                                         MonadringVerifyResult::Failed => {
-
+                                            resp_sender.send(create_outgoing("ERR".encode()));
                                         }
                                     }
                                 }
@@ -222,12 +226,12 @@ where
                                     for id in start_event_id+1 .. start_event_id+50 {
                                         let Ok(evt_opt) =  c.state.get_user_data(&id.to_le_bytes()) else {break;};
                                         let Some(event_encoded) = evt_opt else {break;};
-                                        let  Ok(ent) = Event::decode(&mut &v[..]) else {break;};
+                                        let Ok(ent) = Event::decode(&mut &event_encoded[..]) else {break;};
                                         events.push(ent);
                                     }
                                     events
                                 }
-                            }
+                            };
                             let resp = QueryEventsResult {
                                 events
                             };
@@ -248,7 +252,7 @@ where
                     let req_content = RequestContent::QueryEvents((timeout_nucleus.clone(), event_id).encode());
                     let controllers = get_nucleus_controllers(client.clone(), timeout_nucleus, client.info().best_hash);
                     for c in controllers {
-                         if c == controller {
+                         if c == self_controller {
                             continue;
                          }
                          let authority = sp_authority_discovery::AuthorityId::from_slice(c.as_slice()).unwrap();
@@ -256,19 +260,10 @@ where
                             dest: Destination::AuthorityId(authority),
                             request: req_content.clone(),
                         };
-                        let (resp_tx, resp_rx) = oneshot::channel::<String>();
-                        match cage_p2p_tx.send((msg, resp_tx)).await {
-                            Ok(r) => {
-                                if let Ok(s) = resp_rx.await {
-                                    if s == "OK".to_string() {
-                                        break;
-                                    }
-                                }
-                            }
-                            Err(_) => {
+                        let (resp_tx, resp_rx) = oneshot::channel::<Vec<u8>>();
+                        let Ok(_) =  cage_p2p_tx.send((msg, resp_tx)).await else { continue;};
+                        let Ok(resp_events) = resp_rx.await else {continue;};
 
-                            }
-                        }
                     }
                 }
                 // handle hostnet events
@@ -661,6 +656,14 @@ fn start_nucleus(
         cage.forward(Gluon::CodeUpgrade { wasm });
     }
     Ok(())
+}
+
+pub fn create_outgoing( bs: Vec<u8>) -> OutgoingResponse{
+    OutgoingResponse {
+        result: Ok(bs),
+        reputation_changes: vec![],
+        sent_feedback: None,
+    }
 }
 
 #[cfg(test)]
