@@ -241,18 +241,23 @@ where
                             let _ = resp_sender.send(outgoing);
                         }
                         RequestContent::QueryCodeWasm(content) => {
-                            let r: Result<(NucleusId, u64), _> = Decode::decode(&mut &content[..]);
+                            let r: Result<(NucleusId, u32), _> = Decode::decode(&mut &content[..]);
                             let Ok((nid, wasm_version)) = r else {
                                 continue;
                             };
-
-
+                            let nucleus_path = nucleus_home_dir.join(nid.to_string());
+                            let wasm  = match try_load_wasm(nid, nucleus_path.as_path(), wasm_version) {
+                                                Ok(w) => { Ok(w.encode())},
+                                                Err(_) => { Err(())}
+                                            };
+                            let outgoing = OutgoingResponse {result: wasm, reputation_changes: vec![],sent_feedback: None,};
+                            let _ = resp_sender.send(outgoing);
                         }
                     }
                 },
                 nid = token_timeout_rx.recv() => {
                     let Some(timeout_nucleus) = nid else { continue; };
-                    let Some(cage) = nuclei.get(&timeout_nucleus) else {continue;};
+                    let Some(cage) = nuclei.get_mut(&timeout_nucleus) else {continue;};
                     let event_id = cage.event_id;
                     let req_content = RequestContent::QueryEvents((timeout_nucleus.clone(), event_id).encode());
                     let controllers = get_nucleus_controllers(client.clone(), timeout_nucleus, client.info().best_hash);
@@ -268,7 +273,8 @@ where
                         let (resp_tx, resp_rx) = oneshot::channel::<Vec<u8>>();
                         let Ok(_) =  cage_p2p_tx.send((msg, resp_tx)).await else { continue;};
                         let Ok(resp_events) = resp_rx.await else {continue;};
-
+                        let events = Decode::decode(&mut &resp_events[..]).unwrap_or_default();
+                        cage.execute_outer_events(events);
                     }
                 }
                 // handle hostnet events
