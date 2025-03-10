@@ -5,15 +5,18 @@ use crate::{
 };
 use codec::{Decode, Encode};
 use std::sync::mpsc::{self, Receiver};
+use std::time::Duration;
 use vrs_core_sdk::{
     http::{HttpRequest, HttpResponse},
     CallResult,
 };
+use vrs_primitives::NucleusId;
 
 pub struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
     vm: Option<Vm<R>>,
     runtime: R,
+    token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>
 }
 
 impl<R> Nucleus<R>
@@ -21,27 +24,31 @@ where
     R: ContextAware + FuncRegister<Runtime = R> + Clone + Send + Sync + 'static,
 {
     /// spawn a native thread to run nucleus
-    pub fn start(runtime: R) -> NucleusTunnel {
+    pub fn start(runtime: R,   token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>) -> NucleusTunnel {
         let (tx, rx) = mpsc::channel();
         let mut nucleus = Nucleus {
             receiver: rx,
             vm: None,
             runtime,
+            token_timeout_tx,
         };
         std::thread::spawn(move || nucleus.run());
         tx
     }
 
     fn run(&mut self) {
-        while let Ok((id, msg)) = self.receiver.recv() {
-            // TODO save msg with id to state
-            if let Err(e) = self.accept(msg) {
-                log::error!(
+        loop {
+            if let Ok((id, msg)) = self.receiver.recv_timeout(Duration::from_secs(20)) {
+                // TODO save msg with id to state
+                if let Err(e) = self.accept(msg) {
+                    log::error!(
                     "Nucleus {} interrupted: {:?}",
                     self.runtime.get_nucleus_id(),
-                    e
-                );
-                break;
+                    e);
+                    break;
+                }
+            } else {
+                let _ = self.token_timeout_tx.send(self.runtime.get_nucleus_id());
             }
         }
     }
@@ -176,7 +183,7 @@ impl From<&Gluon> for Event {
 }
 
 /// Serialized `Gluon`, i.e. received from peers or call `gluon.into()` then save it
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub enum Event {
     #[codec(index = 0)]
     CodeUpgrade { version: u32, digest: [u8; 32] },
