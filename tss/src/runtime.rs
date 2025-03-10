@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::time::Duration;
 use tss_sdk::crypto::CryptoType;
@@ -54,18 +53,21 @@ impl NodeRuntime {
                     .map_err(|e| e.to_string())?;
                 Ok(public_key.group_public_key_tweak)
             }
-            NodeRuntime::Empty { mock_keystore } => {
-                if crypto_type == CryptoType::Ed25519 {
-                    log::warn!(
-                        "Using mock tss protocol which is only for demo or test. Pls set tss env in prod env!!"
-                    );
+            NodeRuntime::Empty { mock_keystore } => match crypto_type {
+                CryptoType::Ed25519 => {
                     let mut mock_keystore = mock_keystore.lock().unwrap();
-                    let public_key = mock_keystore.get_public_key(&Some(tweak_data));
+                    let public_key = mock_keystore.get_ed25519_public_key(&Some(tweak_data));
                     return Ok(public_key);
-                } else {
+                }
+                CryptoType::Secp256k1 => {
+                    let mut mock_keystore = mock_keystore.lock().unwrap();
+                    let public_key = mock_keystore.get_secp_public_key(&Some(tweak_data));
+                    return Ok(public_key);
+                }
+                _ => {
                     return Err(EMPTY_NODE_ERROR.to_string());
                 }
-            }
+            },
         }
     }
     pub fn sign(
@@ -91,24 +93,29 @@ impl NodeRuntime {
                     .map_err(|e| e.to_string())?;
                 Ok(signature.signature())
             }
-            NodeRuntime::Empty { mock_keystore } => {
-                if crypto_type == CryptoType::Ed25519 {
+            NodeRuntime::Empty { mock_keystore } => match crypto_type {
+                CryptoType::Ed25519 => {
                     let mut mock_keystore = mock_keystore.lock().unwrap();
-                    let signature = mock_keystore.sign(&Some(tweak_data), message);
+                    let signature = mock_keystore.ed25519_sign(&Some(tweak_data), message);
                     return Ok(signature);
-                } else {
-                    return Err(EMPTY_NODE_ERROR.to_string());
                 }
-            }
+                CryptoType::Secp256k1 => {
+                    let mut mock_keystore = mock_keystore.lock().unwrap();
+                    let signature =
+                        mock_keystore.secp_sign_prehash_recoverable(&Some(tweak_data), message)?;
+                    return Ok(signature);
+                }
+                _ => return Err(EMPTY_NODE_ERROR.to_string()),
+            },
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use super::*;
+    use sha3::{Digest, Keccak256};
+    use std::path::Path;
     #[test]
     fn test_mock_keystore() {
         if Path::new(".test_mock_keystore").exists() {
@@ -117,13 +124,19 @@ mod tests {
         // create .test directory
         std::fs::create_dir(".test_mock_keystore").unwrap();
         let runtime = NodeRuntime::new_empty(&PathBuf::from(".test_mock_keystore"));
-        let public_key1 = runtime.get_public_key(CryptoType::Ed25519, b"test".to_vec());
+        let public_key1 = runtime.get_public_key(CryptoType::Secp256k1, b"test".to_vec());
         println!("public_key: {:?}", public_key1);
-        let signature1 = runtime.sign(CryptoType::Ed25519, b"test".to_vec(), b"test".to_vec());
+        let message = b"test";
+
+        let mut hasher = Keccak256::new();
+        hasher.update(message);
+        let hash = hasher.finalize();
+        let signature1 = runtime.sign(CryptoType::Secp256k1, hash.to_vec(), b"test".to_vec());
         println!("signature: {:?}", signature1);
-        let public_key2 = runtime.get_public_key(CryptoType::Ed25519, b"test".to_vec());
+        let public_key2 = runtime.get_public_key(CryptoType::Secp256k1, b"test".to_vec());
         println!("public_key2: {:?}", public_key2);
-        let signature2 = runtime.sign(CryptoType::Ed25519, b"test".to_vec(), b"test".to_vec());
+        let signature2 = runtime.sign(CryptoType::Secp256k1, hash.to_vec(), b"test".to_vec());
+        assert!(signature2.clone().unwrap().len() == 65);
         println!("signature2: {:?}", signature2);
         assert_eq!(public_key1, public_key2);
         assert_eq!(signature1, signature2);
