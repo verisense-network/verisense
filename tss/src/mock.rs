@@ -252,7 +252,7 @@ mod tests {
         let signature = signature.unwrap().0.to_bytes();
         //28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa63627667cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83
         assert_eq!(
-            signatußre.encode_hex::<String>(),
+            signature.encode_hex::<String>(),
             "28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa63627667cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83"
         );
         std::fs::remove_dir_all(".test").unwrap();
