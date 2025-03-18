@@ -1,10 +1,10 @@
-use codec::{Decode, Encode};
-use std::sync::Arc;
-use anyhow::anyhow;
-use sp_core::sr25519::Signature;
-use vrs_nucleus_executor::{Event, Gluon, state::B256, NucleusState, NucleusTunnel, WasmInfo};
-use vrs_primitives::{AccountId, NucleusId};
 use crate::cage::MonadringVerifyResult::{AllGood, Failed};
+use anyhow::anyhow;
+use codec::{Decode, Encode};
+use sp_core::sr25519::Signature;
+use std::sync::Arc;
+use vrs_nucleus_executor::{state::B256, Event, Gluon, NucleusState, NucleusTunnel, WasmInfo};
+use vrs_primitives::{AccountId, NucleusId};
 
 pub(crate) struct NucleusCage {
     pub(crate) nucleus_id: NucleusId,
@@ -19,10 +19,14 @@ pub enum MonadringVerifyResult {
     Failed,
 }
 impl NucleusCage {
-    pub(crate) fn validate_token(&self, self_account: &AccountId, token: &MonadringToken) -> MonadringVerifyResult {
+    pub(crate) fn validate_token(
+        &self,
+        self_account: &AccountId,
+        token: &MonadringToken,
+    ) -> MonadringVerifyResult {
         let mut event_id = self.event_id;
         if token.ring.is_empty() {
-            return  AllGood;
+            return AllGood;
         }
         let item = token.ring.first().cloned().unwrap();
         let mut items = token.ring.clone();
@@ -38,7 +42,9 @@ impl NucleusCage {
     }
 
     pub(crate) fn pre_commit(&self, id: u64, msg: &[u8]) -> anyhow::Result<()> {
-        self.state.put_user_data(&id.to_be_bytes(), msg).map_err(|e| anyhow!(e))
+        self.state
+            .put_user_data(&id.to_be_bytes(), msg)
+            .map_err(|e| anyhow!(e))
     }
 
     pub fn execute_outer_events(&mut self, imports: Vec<Event>) -> Vec<Event> {
@@ -52,12 +58,12 @@ impl NucleusCage {
                     self.nucleus_id,
                     e
                 );
-            }else {
-
+            } else {
             }
         }
         imports
     }
+
     pub(crate) fn drain(&mut self, imports: Vec<Event>) -> Vec<Event> {
         let imports = self.execute_outer_events(imports);
         let mut new_events = imports;
@@ -93,17 +99,15 @@ impl NucleusCage {
     }
 }
 
-
 #[derive(Debug, Encode, Decode)]
-pub struct QueryEventsResult{
-    pub events: Vec<Event>
+pub struct QueryEventsResult {
+    pub events: Vec<Event>,
 }
 
-
 #[derive(Debug, Decode, Encode)]
-pub struct  MonadringToken {
+pub struct MonadringToken {
     pub nucleus_id: NucleusId,
-    pub ring: Vec<MonadringTokenItem>
+    pub ring: Vec<MonadringTokenItem>,
 }
 
 impl MonadringToken {
@@ -120,7 +124,7 @@ impl MonadringToken {
 }
 
 #[derive(Debug, Clone, Decode, Encode)]
-pub struct  MonadringTokenItem {
+pub struct MonadringTokenItem {
     pub events: Vec<Event>,
     pub nucleus_state_root: B256,
     pub last_event_id: u64,

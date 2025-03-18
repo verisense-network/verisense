@@ -1,20 +1,19 @@
 use codec::{Decode, Encode};
+use futures::channel::oneshot;
 use futures::prelude::*;
-use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
-use sc_network::{request_responses::IncomingRequest, PeerId};
 use sc_authority_discovery::Service as AuthorityDiscovery;
+use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_network::request_responses::OutgoingResponse;
+use sc_network::{request_responses::IncomingRequest, PeerId};
 use sp_api::{Metadata, ProvideRuntimeApi};
 use sp_application_crypto::key_types::AUTHORITY_DISCOVERY;
+use sp_authority_discovery::AuthorityId;
 use sp_blockchain::HeaderBackend;
 use sp_core::{sr25519, ByteArray};
 use sp_keystore::KeystorePtr;
 use std::{str::FromStr, sync::Arc};
-use tokio::sync::{Mutex};
-use futures::channel::oneshot;
-use sc_network::request_responses::OutgoingResponse;
-use sp_authority_discovery::AuthorityId;
+use tokio::sync::Mutex;
 use vrs_primitives::AccountId;
-
 
 pub struct P2pParams<B, C, BN> {
     pub keystore: KeystorePtr,
@@ -22,7 +21,11 @@ pub struct P2pParams<B, C, BN> {
     pub client: Arc<C>,
     pub node_key_pair: libp2p::identity::Keypair,
     pub net_service: Arc<dyn sc_network::service::traits::NetworkService>,
-    pub p2p_cage_tx: tokio::sync::mpsc::Sender<(PayloadWithSignature,PeerId, oneshot::Sender<OutgoingResponse>)>,
+    pub p2p_cage_tx: tokio::sync::mpsc::Sender<(
+        PayloadWithSignature,
+        PeerId,
+        oneshot::Sender<OutgoingResponse>,
+    )>,
     pub cage_p2p_rx: tokio::sync::mpsc::Receiver<(SendMessage, oneshot::Sender<Vec<u8>>)>,
     pub controller: AccountId,
     pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
@@ -34,7 +37,7 @@ pub struct P2pParams<B, C, BN> {
 pub enum RequestContent {
     SendToken(Vec<u8>),
     QueryEvents(Vec<u8>),
-    QueryCodeWasm(Vec<u8>)
+    QueryCodeWasm(Vec<u8>),
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -48,7 +51,7 @@ pub struct PayloadWithSignature {
 #[derive(Debug)]
 pub enum Destination {
     AuthorityId(AuthorityId),
-    PeerId(PeerId)
+    PeerId(PeerId),
 }
 
 #[derive(Debug)]
@@ -58,16 +61,16 @@ pub struct SendMessage {
 }
 
 pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<Output = ()>
-    where
-        B: sp_runtime::traits::Block,
-        BN: Backend<B>,
-        C: BlockBackend<B>
+where
+    B: sp_runtime::traits::Block,
+    BN: Backend<B>,
+    C: BlockBackend<B>
         + StorageProvider<B, BN>
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + HeaderBackend<B>
         + 'static,
-        C::Api: Metadata<B>,
+    C::Api: Metadata<B>,
 {
     let P2pParams {
         keystore,
@@ -93,12 +96,13 @@ pub fn start_nucleus_p2p<B, C, BN>(params: P2pParams<B, C, BN>) -> impl Future<O
                     log::info!("incoming p2p message: {:?}", payload);
                     let _ = p2p_cage_tx.send((payload, source, req.pending_response)).await;
                 }
+                // initiating P2P request
                 Some((send_payload, resp_sender)) = cage_p2p_rx.recv() => {
                     let peers = match send_payload.dest {
                         Destination::AuthorityId(a) => {
                             let r = authority_discovery.clone().lock().await.get_addresses_by_authority_id(a).await;
                             match r {
-                                None => {vec![]}
+                                None => vec![],
                                 Some(mut ma) => {
                                     let mut v = vec![];
                                     for m in ma  {
