@@ -11,7 +11,7 @@ members = [
     "support",
     "tss",
 ]
-exclude = ["nucleus/p2p"]
+#exclude = ["nucleus/p2p"]
 resolver = "2"
 
 [workspace.package]

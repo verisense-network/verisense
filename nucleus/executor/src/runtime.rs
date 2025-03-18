@@ -38,18 +38,6 @@ pub struct RuntimeParams {
     pub tss_node: Arc<NodeRuntime>,
 }
 
-#[derive(Clone)]
-pub struct Runtime {
-    pub(crate) id: NucleusId,
-    pub(crate) state: Arc<NucleusState>,
-    pub(crate) http: Arc<HttpCallRegister>,
-    pub(crate) read_only: bool,
-    pub(crate) timer_scheduler: Arc<timer::SchedulerAsync>,
-    pub(crate) timer_register: Arc<PendingTimerQueue>,
-    pub(crate) tss_node: Arc<NodeRuntime>,
-    // TODO we need runtime storage to read
-}
-
 impl Runtime {
     pub fn init(config: RuntimeParams) -> anyhow::Result<Self> {
         Ok(Self {
@@ -214,4 +202,16 @@ impl FuncRegister for Runtime {
             .unwrap();
         linker
     }
+}
+
+#[derive(Clone)]
+pub struct Runtime {
+    pub(crate) id: NucleusId,
+    pub(crate) state: Arc<NucleusState>,
+    pub(crate) http: Arc<HttpCallRegister>,
+    pub(crate) read_only: bool,
+    pub(crate) timer_scheduler: Arc<timer::SchedulerAsync>,
+    pub(crate) timer_register: Arc<PendingTimerQueue>,
+    pub(crate) tss_node: Arc<NodeRuntime>,
+    // TODO we need runtime storage to read
 }

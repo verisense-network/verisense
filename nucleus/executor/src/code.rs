@@ -1,7 +1,8 @@
 use blake2::{Blake2s256, Digest};
+use codec::{Decode, Encode};
 use vrs_primitives::{NodeId, NucleusId};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Encode, Decode)]
 pub struct WasmInfo {
     pub id: NucleusId,
     pub version: u32,

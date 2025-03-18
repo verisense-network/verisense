@@ -66,6 +66,7 @@ vrs-tss-runtime-api = { path = "../tss/runtime-api" }
 vrs-nucleus-rpc-proxy = { path = "../nucleus/rpc-proxy" }
 vrs-nucleus-cage = { path = "../nucleus/cage" }
 vrs-tss = { path = "../tss" }
+vrs-nucleus-p2p = { path = "../nucleus/p2p" }
 
 vrs-metadata = { path = "../metadata" }
 [build-dependencies]

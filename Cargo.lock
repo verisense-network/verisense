@@ -12112,6 +12112,7 @@ dependencies = [
  "tracing",
  "vrs-metadata",
  "vrs-nucleus-cage",
+ "vrs-nucleus-p2p",
  "vrs-nucleus-rpc-proxy",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
@@ -12193,6 +12194,7 @@ dependencies = [
  "sc-transaction-pool-api",
  "serde",
  "sp-api",
+ "sp-authority-discovery",
  "sp-blockchain",
  "sp-core",
  "sp-io",
@@ -12203,6 +12205,7 @@ dependencies = [
  "tokio",
  "vrs-metadata",
  "vrs-nucleus-executor",
+ "vrs-nucleus-p2p",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "vrs-runtime",
@@ -12240,6 +12243,30 @@ dependencies = [
  "vrs-primitives",
  "vrs-tss",
  "wasmtime 22.0.1",
+]
+
+[[package]]
+name = "vrs-nucleus-p2p"
+version = "0.0.1"
+dependencies = [
+ "async-channel 1.9.0",
+ "futures",
+ "libp2p 0.55.0",
+ "log",
+ "parity-scale-codec",
+ "sc-authority-discovery",
+ "sc-client-api",
+ "sc-network",
+ "scale-info",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-authority-discovery",
+ "sp-blockchain",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "tokio",
+ "vrs-primitives",
 ]
 
 [[package]]
