@@ -5,19 +5,16 @@ use futures::{prelude::*, FutureExt};
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
-use sc_network::{
-    event::Event,
-    NetworkEventStream,
-};
+use sc_network::{event::Event, NetworkEventStream};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use sp_authority_discovery::AuthorityId;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use sp_core::crypto::Ss58Codec;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
-use sp_authority_discovery::AuthorityId;
-use sp_core::crypto::Ss58Codec;
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
@@ -206,28 +203,6 @@ pub fn new_full<
         Some(reqres_sender),
     );
     net_config.add_request_response_protocol(nucleus_p2p_reqres_config);
-
-/*    let metrics1 = N::register_notification_metrics(config.prometheus_registry());
-    let peer_store_handle1 = net_config.peer_store_handle();
-    let (nucleus_p2p_noti_config, mut noti_service) = N::notification_config(
-        sc_network::types::ProtocolName::Static("/nucleus/p2p/noti"),
-        vec![],
-        1024 * 1024,
-        None,
-        sc_network::config::SetConfig::default(),
-        // sc_network::config::SetConfig {
-        // in_peers: 25,
-        // out_peers: 75,
-        // reserved_nodes: Vec::new(),
-        // non_reserved_mode: NonReservedPeerMode::Accept,
-        // },
-        metrics1,
-        peer_store_handle1,
-    );
-    net_config.add_notification_protocol(nucleus_p2p_noti_config);
-
- */
-    // ^^--- add nucleus-p2p subprotocol
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
@@ -459,7 +434,6 @@ pub fn new_full<
 
     //
     if role.is_authority() {
-
         // launch authority discovery worker
         let discovery_mode =
             sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
@@ -502,7 +476,7 @@ pub fn new_full<
                 .secret()
                 .to_bytes(),
         )
-            .unwrap();
+        .unwrap();
 
         let genesis_block_hash = client
             .block_hash(0)
@@ -511,8 +485,12 @@ pub fn new_full<
             .expect("Genesis block exists; qed");
         let validators = client
             .runtime_api()
-            .get_all_validators(genesis_block_hash).unwrap();
-        let validators:Vec<AuthorityId> = validators.into_iter().map(|a|AuthorityId::from_ss58check(a.to_ss58check().as_str()).unwrap()).collect::<Vec<AuthorityId>>();
+            .get_all_validators(genesis_block_hash)
+            .unwrap();
+        let validators: Vec<AuthorityId> = validators
+            .into_iter()
+            .map(|a| AuthorityId::from_ss58check(a.to_ss58check().as_str()).unwrap())
+            .collect::<Vec<AuthorityId>>();
 
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
 
