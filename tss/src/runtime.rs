@@ -59,7 +59,7 @@ impl NodeRuntime {
                     let public_key = mock_keystore.get_ed25519_public_key(&Some(tweak_data));
                     return Ok(public_key);
                 }
-                CryptoType::Secp256k1 => {
+                CryptoType::EcdsaSecp256k1 => {
                     let mut mock_keystore = mock_keystore.lock().unwrap();
                     let public_key = mock_keystore.get_secp_public_key(&Some(tweak_data));
                     return Ok(public_key);
@@ -99,7 +99,7 @@ impl NodeRuntime {
                     let signature = mock_keystore.ed25519_sign(&Some(tweak_data), message);
                     return Ok(signature);
                 }
-                CryptoType::Secp256k1 => {
+                CryptoType::EcdsaSecp256k1 => {
                     let mut mock_keystore = mock_keystore.lock().unwrap();
                     let signature =
                         mock_keystore.secp_sign_prehash_recoverable(&Some(tweak_data), message)?;
@@ -124,18 +124,18 @@ mod tests {
         // create .test directory
         std::fs::create_dir(".test_mock_keystore").unwrap();
         let runtime = NodeRuntime::new_empty(&PathBuf::from(".test_mock_keystore"));
-        let public_key1 = runtime.get_public_key(CryptoType::Secp256k1, b"test".to_vec());
+        let public_key1 = runtime.get_public_key(CryptoType::EcdsaSecp256k1, b"test".to_vec());
         println!("public_key: {:?}", public_key1);
         let message = b"test";
 
         let mut hasher = Keccak256::new();
         hasher.update(message);
         let hash = hasher.finalize();
-        let signature1 = runtime.sign(CryptoType::Secp256k1, hash.to_vec(), b"test".to_vec());
+        let signature1 = runtime.sign(CryptoType::EcdsaSecp256k1, hash.to_vec(), b"test".to_vec());
         println!("signature: {:?}", signature1);
-        let public_key2 = runtime.get_public_key(CryptoType::Secp256k1, b"test".to_vec());
+        let public_key2 = runtime.get_public_key(CryptoType::EcdsaSecp256k1, b"test".to_vec());
         println!("public_key2: {:?}", public_key2);
-        let signature2 = runtime.sign(CryptoType::Secp256k1, hash.to_vec(), b"test".to_vec());
+        let signature2 = runtime.sign(CryptoType::EcdsaSecp256k1, hash.to_vec(), b"test".to_vec());
         assert!(signature2.clone().unwrap().len() == 65);
         println!("signature2: {:?}", signature2);
         assert_eq!(public_key1, public_key2);
