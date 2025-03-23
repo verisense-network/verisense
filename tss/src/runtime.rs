@@ -51,7 +51,11 @@ impl NodeRuntime {
                 let public_key = runtime
                     .block_on(tss_node.pk_async(pkid, Some(tweak_data), timeout.clone()))
                     .map_err(|e| e.to_string())?;
-                Ok(public_key.group_public_key_tweak)
+                if crypto_type == CryptoType::EcdsaSecp256k1 {
+                    Ok(public_key.compressed_pk_k256().map_err(|e| e.to_string())?)
+                } else {
+                    Ok(public_key.group_public_key_tweak)
+                }
             }
             NodeRuntime::Empty { mock_keystore } => match crypto_type {
                 CryptoType::Ed25519 => {
@@ -91,7 +95,11 @@ impl NodeRuntime {
                 let signature = runtime
                     .block_on(tss_node.sign_async(pkid, message, Some(tweak_data), timeout.clone()))
                     .map_err(|e| e.to_string())?;
-                Ok(signature.signature())
+                if crypto_type == CryptoType::EcdsaSecp256k1 {
+                    Ok(signature.signature_with_rsv().map_err(|e| e.to_string())?)
+                } else {
+                    Ok(signature.signature())
+                }
             }
             NodeRuntime::Empty { mock_keystore } => match crypto_type {
                 CryptoType::Ed25519 => {
