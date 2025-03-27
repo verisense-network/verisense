@@ -32,7 +32,7 @@ pub(crate) fn register_timer_signature(engine: &Engine) -> FuncType {
 }
 
 pub(crate) fn now_timestamp_signature(engine: &Engine) -> FuncType {
-    FuncType::new(&engine, [], [ValType::I32])
+    FuncType::new(&engine, [], [ValType::I64])
 }
 
 pub(crate) fn now_timestamp(
@@ -40,7 +40,7 @@ pub(crate) fn now_timestamp(
     _params: &[Val],
     results: &mut [Val],
 ) -> anyhow::Result<()> {
-    results[0] = Val::I32(Utc::now().timestamp() as i32);
+    results[0] = Val::I64(Utc::now().timestamp() as i64);
     Ok(())
 }
 
