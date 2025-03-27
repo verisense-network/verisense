@@ -1,29 +1,34 @@
 mod cage;
 mod keystore;
 
-use crate::cage::{MonadringToken, MonadringTokenItem, MonadringVerifyResult, NucleusCage, QueryEventsResult};
+use crate::cage::{
+    MonadringToken, MonadringTokenItem, MonadringVerifyResult, NucleusCage, QueryEventsResult,
+};
 use codec::{Decode, Encode};
 use frame_system_rpc_runtime_api::AccountNonceApi;
+use futures::channel::oneshot;
 use futures::prelude::*;
-use sc_authority_discovery::{ Service as AuthorityDiscovery};
+use sc_authority_discovery::Service as AuthorityDiscovery;
 use sc_client_api::{Backend, BlockBackend, BlockchainEvents, StorageProvider};
+use sc_network::request_responses::OutgoingResponse;
 use sc_network::{service::traits::NetworkService, PeerId};
 use sc_transaction_pool_api::{TransactionPool, TransactionSource};
 use sp_api::{Core, Metadata, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
+use sp_core::ByteArray;
 use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 use std::sync::Arc;
-use futures::channel::oneshot;
-use sc_network::request_responses::OutgoingResponse;
-use sp_core::ByteArray;
 use tokio::sync::mpsc::{self, Receiver, Sender};
-use tokio::sync::{Mutex};
+use tokio::sync::Mutex;
 use vrs_metadata::{
     codegen, config::SubstrateConfig, events, metadata, Metadata as RuntimeMetadata,
     METADATA_BYTES as METADATA,
 };
-use vrs_nucleus_executor::{host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync}, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo, Event};
+use vrs_nucleus_executor::{
+    host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync},
+    Event, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
+};
 use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestContent, SendMessage};
 use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
 use vrs_primitives::{keys, AccountId, Hash, NodeId, NucleusId, NucleusInfo};
@@ -40,7 +45,11 @@ pub struct CageParams<P, B, C, BN> {
     pub net_service: Arc<dyn NetworkService>,
     pub tss_node: Arc<vrs_tss::NodeRuntime>,
     pub nucleus_home_dir: std::path::PathBuf,
-    pub p2p_cage_rx: Receiver<(PayloadWithSignature, PeerId, oneshot::Sender<OutgoingResponse>)>,
+    pub p2p_cage_rx: Receiver<(
+        PayloadWithSignature,
+        PeerId,
+        oneshot::Sender<OutgoingResponse>,
+    )>,
     pub cage_p2p_tx: Sender<(SendMessage, oneshot::Sender<Vec<u8>>)>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
@@ -92,7 +101,7 @@ where
         // TODO mock monadring
         //////////////////////////////////////////////////////
         let (token_tx, mut token_rx) = mpsc::unbounded_channel::<NucleusId>();
-/*        tokio::spawn(async move {
+        tokio::spawn(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                 match token_tx.send(NucleusId::from([0u8; 32])) {
@@ -100,7 +109,7 @@ where
                     Err(_) => break,
                 }
             }
-        });*/
+        });
         //////////////////////////////////////////////////////
         let author = keystore
             .sr25519_public_keys(sp_core::crypto::key_types::AURA)
@@ -364,14 +373,14 @@ where
                         reply_directly(gluon, Err((-40004, "Nucleus not found.".to_string())));
                     }
                 },
-                /*// TODO replace this with token received
+                // TODO replace this with token received
                 token = token_rx.recv() => {
                     log::info!("mocking monadring: token {} received.", token.expect("sender closed"));
                     // TODO only drain the associated nucleus
                     nuclei.values_mut().for_each(|nucleus| {
                         nucleus.drain(vec![]);
                     });
-                }*/
+                }
             }
         }
     }
@@ -533,45 +542,37 @@ where
     list
 }
 
-
 fn get_nucleus_controllers<B, D, C>(
     client: Arc<C>,
     nucleus_id: NucleusId,
     hash: B::Hash,
 ) -> Vec<AccountId>
-    where
-        B: sp_runtime::traits::Block,
-        D: Backend<B>,
-        C: BlockBackend<B>
+where
+    B: sp_runtime::traits::Block,
+    D: Backend<B>,
+    C: BlockBackend<B>
         + StorageProvider<B, D>
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-        C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusApi<B> + 'static,
 {
-    let x: &[u8;32] = nucleus_id.as_ref();
+    let x: &[u8; 32] = nucleus_id.as_ref();
     let n = vrs_metadata::utils::AccountId32::from(*x);
     let key = codegen::storage().nucleus().instances(n);
     let instance_key = sp_core::storage::StorageKey(key.to_root_bytes());
-    match client
-        .storage(hash, &instance_key)
-        .ok()
-    {
+    match client.storage(hash, &instance_key).ok() {
         None => {
             vec![]
         }
-        Some(controllers_opt) =>{
-            match controllers_opt {
-                None => {vec![]}
-                Some(sto) => {
-                    <Vec<AccountId> as Decode>::decode(&mut &sto.0[..]).unwrap_or_default()
-                }
+        Some(controllers_opt) => match controllers_opt {
+            None => {
+                vec![]
             }
-        }
+            Some(sto) => <Vec<AccountId> as Decode>::decode(&mut &sto.0[..]).unwrap_or_default(),
+        },
     }
 }
-
-
 
 fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
     let mut bytes = sp_core::twox_128(module).to_vec();
@@ -626,7 +627,7 @@ fn start_nucleus(
     timer_scheduler: Arc<SchedulerAsync>,
     tss_node: Arc<vrs_tss::NodeRuntime>,
     nuclei: &mut HashMap<NucleusId, NucleusCage>,
-    token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>
+    token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>,
 ) -> anyhow::Result<()> {
     let NucleusInfo {
         name,
@@ -669,7 +670,7 @@ fn start_nucleus(
     Ok(())
 }
 
-pub fn create_outgoing( bs: Vec<u8>) -> OutgoingResponse{
+pub fn create_outgoing(bs: Vec<u8>) -> OutgoingResponse {
     OutgoingResponse {
         result: Ok(bs),
         reputation_changes: vec![],
