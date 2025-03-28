@@ -163,10 +163,13 @@ fn testnet_genesis(
         "sudo": {
             "key": Some(root_key),
         },
+        "nucleus": {
+            "preset": initial_authorities.iter().take(1).cloned().map(|x| x.0).collect::<Vec<_>>(),
+        },
         "restaking": {
             "validators": initial_authorities.iter().cloned().map(|k| (k.0, 10000, "0x0000000000000000000000000000000000000000", "Original")).collect::<Vec<_>>(),
         },
-         "session":  {
+        "session":  {
             "keys": initial_authorities
                 .iter()
                 .map(|x| {

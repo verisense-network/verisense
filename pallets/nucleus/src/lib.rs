@@ -120,6 +120,11 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::unbounded]
+    pub type ForcedInstances<T: Config> =
+        StorageValue<Value = Vec<T::AccountId>, QueryKind = ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::unbounded]
     pub type OnCreationNuclei<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = BlockNumberFor<T>,
@@ -361,6 +366,19 @@ pub mod pallet {
         }
     }
 
+    #[pallet::genesis_config]
+    #[derive(frame_support::DefaultNoBound)]
+    pub struct GenesisConfig<T: Config> {
+        pub preset: Vec<T::AccountId>,
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+        fn build(&self) {
+            ForcedInstances::<T>::put(self.preset.clone());
+        }
+    }
+
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(now: BlockNumberFor<T>) -> Weight {
@@ -370,21 +388,38 @@ pub mod pallet {
                 weight = weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
                 let mut task = RegistrySubmissions::<T>::take(&id)
                     .expect("this is a bug: registry submission not found");
-                task.submissions.sort_by_key(|(_, v)| *v);
-                task.submissions
-                    .into_iter()
+                let forced_members = ForcedInstances::<T>::get();
+                forced_members
+                    .iter()
                     .take(task.requires as usize)
-                    .for_each(|(controller, _)| {
+                    .for_each(|controller| {
                         weight = weight.saturating_add(T::DbWeight::get().writes(1));
                         Instances::<T>::mutate(&id, |peers| {
                             peers.push(controller.clone());
                         });
                         Self::deposit_event(Event::InstanceRegistered {
                             id: id.clone(),
-                            controller,
+                            controller: controller.clone(),
                             node_id: None,
                         });
                     });
+                if task.requires as usize > forced_members.len() {
+                    task.submissions.sort_by_key(|(_, v)| *v);
+                    task.submissions
+                        .into_iter()
+                        .take(task.requires as usize)
+                        .for_each(|(controller, _)| {
+                            weight = weight.saturating_add(T::DbWeight::get().writes(1));
+                            Instances::<T>::mutate(&id, |peers| {
+                                peers.push(controller.clone());
+                            });
+                            Self::deposit_event(Event::InstanceRegistered {
+                                id: id.clone(),
+                                controller,
+                                node_id: None,
+                            });
+                        });
+                }
             }
             // TODO rotate the members
             weight
