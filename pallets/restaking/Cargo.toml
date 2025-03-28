@@ -38,6 +38,7 @@ vrs-primitives = { path = "../../primitives", default-features = false }
 merkle-lite = { version = "0.1.0" }
 sha3 = {version = "0.10.8", default-features = false}
 ethabi = {version = "18.0.0", default-features = false}
+
 [features]
 default = ["std"]
 std = [
