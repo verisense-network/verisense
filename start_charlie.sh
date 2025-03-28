@@ -1,6 +1,3 @@
-rm -r /tmp/charlie
-mkdir -p /tmp/charlie
-chmod 755 /tmp/charlie
 ./target/release/verisense key generate-node-key --file /tmp/charlie/node-key
 ./target/release/verisense \
 --base-path /tmp/charlie \
