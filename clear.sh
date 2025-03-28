@@ -1,0 +1,11 @@
+rm -r /tmp/alice
+rm -r /tmp/bob
+rm -r /tmp/charlie
+rm -r /tmp/dave
+mkdir -p /tmp/alice
+mkdir -p /tmp/bob
+mkdir -p /tmp/charlie
+mkdir -p /tmp/dave
+chmod 755 /tmp/alice
+chmod 755 /tmp/bob
+chmod 755 /tmp/charlie

@@ -1,4 +1,3 @@
-rm -r /tmp/alice
 ./target/release/verisense \
 --base-path /tmp/alice \
 --chain local \
