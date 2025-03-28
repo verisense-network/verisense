@@ -1,4 +1,3 @@
-
 use crate::mem::ErrorWriter;
 use crate::{
     mem,
@@ -6,6 +5,7 @@ use crate::{
     Runtime,
 };
 use codec::Encode;
+use sha2::Digest;
 use vrs_core_sdk::{error::RuntimeError, CallResult, BUFFER_LEN, NO_MORE_DATA};
 use vrs_tss::crypto::CryptoType;
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
@@ -47,7 +47,12 @@ where
     let tweak_ptr = params[1].unwrap_i32();
     let tweak_len = params[2].unwrap_i32();
     let r_ptr = params[3].unwrap_i32();
-    let tweak = mem::read_bytes_from_memory(&mut caller, tweak_ptr, tweak_len)?;
+    let t = mem::read_bytes_from_memory(&mut caller, tweak_ptr, tweak_len)?;
+    let nucleus_id = caller.data().get_nucleus_id();
+    let nucleus_id: &[u8; 32] = nucleus_id.as_ref();
+    let mut tweak = nucleus_id.as_ref().to_vec();
+    tweak.extend_from_slice(&t);
+    let tweak = sha2::Sha256::digest(&tweak).to_vec();
     let node = caller.data().get_component();
     // check crypto_type
     let crypto_type = match CryptoType::try_from(crypto_type as u8)
