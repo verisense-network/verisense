@@ -307,17 +307,19 @@ where
                             let nucleus_id = ev.id;
                             let digest = ev.wasm_hash;
                             let version = ev.wasm_version;
-                            // TODO download the wasm from ev.wasm_location
-                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
-                            if let Err(e) = upgrade_nucleus_wasm(
-                                NucleusId::from(nucleus_id.0),
-                                digest,
-                                version,
-                                nucleus_path.as_path(),
-                                &mut nuclei,
-                            ) {
-                                log::error!("Upgrading nucleus {} wasm failed: {:?}", nucleus_id, e);
-                                panic!("fail to upgrade nucleus wasm, there is nothing we can do.");
+                            if nuclei.contains_key(&NucleusId::from(nucleus_id.0)) {
+                                // TODO download the wasm from ev.wasm_location
+                                let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
+                                if let Err(e) = upgrade_nucleus_wasm(
+                                    NucleusId::from(nucleus_id.0),
+                                    digest,
+                                    version,
+                                    nucleus_path.as_path(),
+                                    &mut nuclei,
+                                ) {
+                                    log::error!("Upgrading nucleus {} wasm failed: {:?}", nucleus_id, e);
+                                    panic!("fail to upgrade nucleus wasm, there is nothing we can do.");
+                                }
                             }
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
                             let nucleus_id = ev.id;
