@@ -51,7 +51,6 @@ pub(crate) fn write_to_memory<T: codec::Encode, R>(
             self::write_bytes_to_memory(caller, ptr, &bytes[offset..])?;
             Ok(Val::I32(NO_MORE_DATA))
         } else {
-            let bytes = &bytes[offset..offset + BUFFER_LEN];
             self::write_bytes_to_memory(caller, ptr, &bytes[offset..=offset + BUFFER_LEN])?;
             Ok(Val::I32(1))
         }
