@@ -94,6 +94,7 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-validators/std",
 	"pallet-restaking/std",
+	"pallet-nucleus/std",
 	"vrs-primitives/std",
 	"vrs-nucleus-runtime-api/std",
 	"vrs-restaking-runtime-api/std",

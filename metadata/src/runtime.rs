@@ -176,9 +176,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                148u8, 125u8, 39u8, 76u8, 149u8, 112u8, 102u8, 114u8, 153u8, 230u8, 245u8, 244u8,
-                169u8, 107u8, 228u8, 25u8, 6u8, 27u8, 21u8, 144u8, 126u8, 191u8, 134u8, 23u8, 87u8,
-                168u8, 149u8, 173u8, 177u8, 158u8, 124u8, 35u8,
+                61u8, 164u8, 159u8, 246u8, 76u8, 200u8, 219u8, 110u8, 69u8, 39u8, 23u8, 139u8,
+                239u8, 253u8, 56u8, 105u8, 163u8, 34u8, 181u8, 130u8, 183u8, 178u8, 63u8, 203u8,
+                233u8, 250u8, 64u8, 148u8, 95u8, 144u8, 79u8, 233u8,
             ]
     }
     pub mod system {
@@ -6202,6 +6202,11 @@ pub mod codegen {
                         ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
+                pub mod forced_instances {
+                    use super::runtime_types;
+                    pub type ForcedInstances =
+                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
+                }
                 pub mod on_creation_nuclei {
                     use super::runtime_types;
                     pub type OnCreationNuclei =
@@ -6346,6 +6351,27 @@ pub mod codegen {
                             93u8, 226u8, 25u8, 95u8, 180u8, 191u8, 1u8, 35u8, 199u8, 241u8, 132u8,
                             88u8, 120u8, 65u8, 244u8, 199u8, 139u8, 249u8, 41u8, 1u8, 141u8, 14u8,
                             95u8, 175u8, 237u8, 222u8, 191u8, 34u8, 213u8, 210u8, 94u8, 88u8,
+                        ],
+                    )
+                }
+                pub fn forced_instances(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::forced_instances::ForcedInstances,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Nucleus",
+                        "ForcedInstances",
+                        (),
+                        [
+                            235u8, 79u8, 112u8, 79u8, 223u8, 157u8, 46u8, 18u8, 195u8, 249u8,
+                            182u8, 223u8, 215u8, 149u8, 148u8, 245u8, 235u8, 36u8, 178u8, 231u8,
+                            254u8, 99u8, 112u8, 41u8, 160u8, 172u8, 184u8, 213u8, 80u8, 36u8, 40u8,
+                            255u8,
                         ],
                     )
                 }
