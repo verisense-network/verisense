@@ -7,7 +7,7 @@ edition.workspace = true
 [dependencies]
 
 # tss
-tss-sdk = { git = "https://github.com/verisense-network/veritss.git", rev = "abd2429b0f06c17ee4314e3a54146a9571dd6a1e", package = "tss-sdk" }
+tss-sdk = { git = "https://github.com/verisense-network/veritss.git", rev = "5a87d2fd42e7e455827363810cbd84e2019d943b", package = "tss-sdk" }
 # tss-sdk = { path = "../../veritss/tss-sdk" }
 libp2p-identity = "0.2.10"
 crypto-bigint = "0.6.0"
