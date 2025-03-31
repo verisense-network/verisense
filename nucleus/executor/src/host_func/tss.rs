@@ -28,6 +28,12 @@ pub(crate) fn tss_get_public_key_signature(engine: &Engine) -> FuncType {
         [ValType::I32],
     )
 }
+fn tweak_from_nucleus_id(nucleus_id: &[u8; 32], tweak_original: &[u8]) -> Vec<u8> {
+    let mut tweak = nucleus_id.to_vec();
+    tweak.extend_from_slice(tweak_original);
+    let tweak = sha2::Sha256::digest(&tweak).to_vec();
+    tweak
+}
 
 /// the signature of this host function is:
 ///
@@ -50,9 +56,7 @@ where
     let t = mem::read_bytes_from_memory(&mut caller, tweak_ptr, tweak_len)?;
     let nucleus_id = caller.data().get_nucleus_id();
     let nucleus_id: &[u8; 32] = nucleus_id.as_ref();
-    let mut tweak = nucleus_id.as_ref().to_vec();
-    tweak.extend_from_slice(&t);
-    let tweak = sha2::Sha256::digest(&tweak).to_vec();
+    let tweak = tweak_from_nucleus_id(nucleus_id, &t);
     let node = caller.data().get_component();
     // check crypto_type
     let crypto_type = match CryptoType::try_from(crypto_type as u8)
@@ -115,7 +119,7 @@ pub fn tss_sign<R>(
     result: &mut [Val],
 ) -> anyhow::Result<()>
 where
-    R: ComponentProvider<vrs_tss::NodeRuntime>,
+    R: ContextAware + ComponentProvider<vrs_tss::NodeRuntime>,
 {
     result[0] = Val::I32(NO_MORE_DATA);
     let crypto_type = params[0].unwrap_i32();
@@ -124,8 +128,10 @@ where
     let message_ptr = params[3].unwrap_i32();
     let message_len = params[4].unwrap_i32();
     let r_ptr = params[5].unwrap_i32();
-    let tweak = mem::read_bytes_from_memory(&mut caller, tweak_ptr, tweak_len)
-        .expect("can't read bytes from wasm");
+    let t = mem::read_bytes_from_memory(&mut caller, tweak_ptr, tweak_len)?;
+    let nucleus_id = caller.data().get_nucleus_id();
+    let nucleus_id: &[u8; 32] = nucleus_id.as_ref();
+    let tweak = tweak_from_nucleus_id(nucleus_id, &t);
     let message = mem::read_bytes_from_memory(&mut caller, message_ptr, message_len)
         .expect("can't read bytes from wasm");
     let node = caller.data().get_component();
