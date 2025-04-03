@@ -1,13 +1,8 @@
-./target/release/verisense key generate-node-key --file /tmp/bob/node-key
 ./target/release/verisense \
---base-path /tmp/bob \
---chain local \
---bob \
---node-key-file /tmp/bob/node-key \
+--base-path /data/verisense \
+--chain ./betanet.json \
 --port 30333 \
---rpc-port 9945 \
---prometheus-port 9615 \
---telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+--rpc-port 9944 \
 --validator \
---bootnodes /ip4/10.128.0.2/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp \
---tss-signer /ip4/10.128.0.2/tcp/12944/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
+--tss-coordinator 12944 \
+--tss-signer /ip4/10.128.0.2/tcp/12944/p2p/12D3KooWFcGs16mdf3HuNd2KMx5WYNsDyyDVz9h6Udg6WWg3CCxh
