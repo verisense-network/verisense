@@ -73,7 +73,7 @@ pub struct MockKeystore {
 
 impl MockKeystore {
     pub fn new(base_path: &PathBuf) -> Self {
-        let path = base_path.join(".mock_keystore");
+        let path = base_path.join(".mock_keystore(1).");
         if path.exists() {
             let file = File::open(path.clone()).unwrap();
             let reader = BufReader::new(file);
@@ -204,6 +204,14 @@ mod tests {
     use hex::ToHex;
     use sha3::{Digest, Keccak256};
     use std::path::Path;
+    #[test]
+    fn test_mock_keystore() {
+        let mut keystore = MockKeystore::new(&PathBuf::from("../veritss"));
+        for (seed, pair) in keystore.secp256k1_keystore.iter() {
+            println!("seed: {:?}", seed);
+            println!("pair: {:?}", pair.secret.to_bytes().encode_hex::<String>());
+        }
+    }
     #[test]
     fn test_secp_mock_keystore() {
         if Path::new(".test").exists() {
