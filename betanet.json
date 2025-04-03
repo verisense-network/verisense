@@ -1,10 +1,14 @@
 {
-  "name": "Verisense Alpha Devnet",
-  "id": "verisense_alpha_devnet",
+  "name": "Beta Testnet",
+  "id": "beta_testnet",
   "chainType": "Live",
-  "bootNodes": [],
+  "bootNodes": [
+    "/ip4/34.71.144.40/tcp/30333/p2p/12D3KooWFcGs16mdf3HuNd2KMx5WYNsDyyDVz9h6Udg6WWg3CCxh",
+    "/ip4/34.70.100.95/tcp/30333/p2p/12D3KooWG4RUtVmaFvxK76uh3pUTzS8aPNGjVmFPeaH6G7Rgq4sN",
+    "/ip4/34.174.109.4/tcp/30333/p2p/12D3KooWK1ER9oWpP4XNuMwgzowQVASFDBbC8bFxU1UsDauVv8oE"
+  ],
   "telemetryEndpoints": null,
-  "protocolId": "vrs",
+  "protocolId": null,
   "properties": null,
   "codeSubstitutes": {},
   "genesis": {
@@ -44,28 +48,44 @@
         "balances": {
           "balances": [
             [
-              "5GxCNDyhqv2hx2zcQfse58vLWcueJKMjXPTgzcJbi9khtNrf",
-              1813241152921504606846976
-            ],
-            [
-              "5FWTZq6hZSjHJppfe1ESEJfuJa4KAoHUsxnKXXUsDGr39iTy",
-              1813241152921504606846976
-            ],
-            [
               "kGkLV4MekGabZLVN3DaFaPBnQ8XvRBQCra2FkCkeXKnWg8dfG",
-              1813241152921504606846976
+              1152921504606846976
+            ],
+            [
+              "kGgdJa1nhStTNijq8zLhfxcbaJPzZUBnrAFpVcPGZc5KG7aNB",
+              1152921504606846976
+            ],
+            [
+              "kGgizq8hj9GYvaUtVYjKEiXAx3QEW23hjpTYnTwVay7d7Xep1",
+              1152921504606846976
+            ],
+            [
+              "kGhJrpjqdwmJcgc3hcauLtQdrefoJPd2yy6uMXhG4FsqHUanp",
+              1152921504606846976
             ]
           ]
         },
         "nucleus": {
           "preset": [
-            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU"
           ]
-        }
+        },
         "restaking": {
           "validators": [
             [
-              "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+              "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
+              10000,
+              "0x0000000000000000000000000000000000000000",
+              "Original"
+            ],
+            [
+              "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
+              10000,
+              "0x0000000000000000000000000000000000000000",
+              "Original"
+            ],
+            [
+              "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
               10000,
               "0x0000000000000000000000000000000000000000",
               "Original"
@@ -75,20 +95,42 @@
         "session": {
           "keys": [
             [
-              "5GxCNDyhqv2hx2zcQfse58vLWcueJKMjXPTgzcJbi9khtNrf",
-              "5GxCNDyhqv2hx2zcQfse58vLWcueJKMjXPTgzcJbi9khtNrf",
+              "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
+              "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
               {
-                "aura": "5EAAV6yrbgQHyUXqVH1nAnBiGdFDxfR7A9Htysi7JWkFPtKY",
-                "authority": "5EAAV6yrbgQHyUXqVH1nAnBiGdFDxfR7A9Htysi7JWkFPtKY",
-                "grandpa": "5EGKTmaF6eUkpvLrHLqpuj515qy2YhNRsEYBL1ckgpZYPXRh",
-                "restaking": "5EAAV6yrbgQHyUXqVH1nAnBiGdFDxfR7A9Htysi7JWkFPtKY",
-                "vrf": "5EAAV6yrbgQHyUXqVH1nAnBiGdFDxfR7A9Htysi7JWkFPtKY"
+                "aura": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
+                "authority": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
+                "grandpa": "5D9Y5EzsswCe7VPUeNoFTTx8SjfWcQcSgB9HhHx6kzPffgxu",
+                "restaking": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
+                "vrf": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU"
+              }
+            ],
+            [
+              "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
+              "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
+              {
+                "aura": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
+                "authority": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
+                "grandpa": "5H5QcW6rNfnA5EsS4aeCSnUczeRnyzivRCdFVNhtvxp1Kicq",
+                "restaking": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
+                "vrf": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G"
+              }
+            ],
+            [
+              "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
+              "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
+              {
+                "aura": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
+                "authority": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
+                "grandpa": "5GDe4hdczHHiTAZwgmrNn1DGLdHcQ9HJsgL4v6xnuRrwJJa8",
+                "restaking": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
+                "vrf": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H"
               }
             ]
           ]
         },
         "sudo": {
-          "key": "5GxCNDyhqv2hx2zcQfse58vLWcueJKMjXPTgzcJbi9khtNrf"
+          "key": "kGkLV4MekGabZLVN3DaFaPBnQ8XvRBQCra2FkCkeXKnWg8dfG"
         }
       }
     }
