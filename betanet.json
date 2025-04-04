@@ -5,7 +5,8 @@
   "bootNodes": [
     "/ip4/34.71.144.40/tcp/30333/p2p/12D3KooWFcGs16mdf3HuNd2KMx5WYNsDyyDVz9h6Udg6WWg3CCxh",
     "/ip4/34.70.100.95/tcp/30333/p2p/12D3KooWG4RUtVmaFvxK76uh3pUTzS8aPNGjVmFPeaH6G7Rgq4sN",
-    "/ip4/34.174.109.4/tcp/30333/p2p/12D3KooWK1ER9oWpP4XNuMwgzowQVASFDBbC8bFxU1UsDauVv8oE"
+    "/ip4/34.174.109.4/tcp/30333/p2p/12D3KooWK1ER9oWpP4XNuMwgzowQVASFDBbC8bFxU1UsDauVv8oE",
+    "/ip4/34.53.61.158/tcp/30333/p2p/12D3KooWSmPkjV4eocjaLLmZ79yk61HJU2r2c8XVQRhhQnMfWSB2"
   ],
   "telemetryEndpoints": null,
   "protocolId": null,
@@ -89,6 +90,12 @@
               10000,
               "0x0000000000000000000000000000000000000000",
               "Original"
+            ],
+            [
+              "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
+              10000,
+              "0x0000000000000000000000000000000000000000",
+              "Original"
             ]
           ]
         },
@@ -125,6 +132,17 @@
                 "grandpa": "5GDe4hdczHHiTAZwgmrNn1DGLdHcQ9HJsgL4v6xnuRrwJJa8",
                 "restaking": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
                 "vrf": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H"
+              }
+            ],
+            [
+              "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
+              "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
+              {
+                "aura": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
+                "authority": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
+                "grandpa": "5HWefj2DEs51nJucSPHS2TFPEja2kCgiei7tUeKYmVYUQ6yQ",
+                "restaking": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
+                "vrf": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH"
               }
             ]
           ]
