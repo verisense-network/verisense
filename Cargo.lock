@@ -1281,7 +1281,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/verisense-network/veritss.git?rev=5a87d2fd42e7e455827363810cbd84e2019d943b#5a87d2fd42e7e455827363810cbd84e2019d943b"
+source = "git+https://github.com/verisense-network/veritss.git?rev=d8a753c5139d55b862e43b761a9803aa2b0a9150#d8a753c5139d55b862e43b761a9803aa2b0a9150"
 dependencies = [
  "chrono",
  "config",
@@ -1403,7 +1403,7 @@ dependencies = [
 [[package]]
 name = "coordinator-signer"
 version = "0.1.0"
-source = "git+https://github.com/verisense-network/veritss.git?rev=5a87d2fd42e7e455827363810cbd84e2019d943b#5a87d2fd42e7e455827363810cbd84e2019d943b"
+source = "git+https://github.com/verisense-network/veritss.git?rev=d8a753c5139d55b862e43b761a9803aa2b0a9150#d8a753c5139d55b862e43b761a9803aa2b0a9150"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -12106,7 +12106,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "tss-sdk"
 version = "0.1.0"
-source = "git+https://github.com/verisense-network/veritss.git?rev=5a87d2fd42e7e455827363810cbd84e2019d943b#5a87d2fd42e7e455827363810cbd84e2019d943b"
+source = "git+https://github.com/verisense-network/veritss.git?rev=d8a753c5139d55b862e43b761a9803aa2b0a9150#d8a753c5139d55b862e43b761a9803aa2b0a9150"
 dependencies = [
  "common",
  "coordinator-signer",
