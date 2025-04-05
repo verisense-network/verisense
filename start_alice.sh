@@ -1,6 +1,6 @@
-./target/release/verisense \
---base-path /data/verisense \
---chain ./betanet.json \
+/data/verisense \
+--base-path /data/config \
+--chain /data/betanet.json \
 --port 30333 \
 --rpc-port 9944 \
 --validator \
