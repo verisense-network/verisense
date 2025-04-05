@@ -1,10 +1,13 @@
-./target/release/verisense \
---base-path /tmp/alice \
---chain local \
---alice \
---port 30333 \
---rpc-port 9944 \
---node-key 0000000000000000000000000000000000000000000000000000000000000001 \
---telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
---validator \
---tss-coordinator 12944
+#!/usr/bin/env sh
+
+(
+sudo /data/verisense \
+  --base-path /data/config \
+  --chain /data/betanet.json \
+  --port 30333 \
+  --rpc-port 9944 \
+  --rpc-cors=all \
+  --validator \
+  --tss-coordinator 12944 \
+  2>&1 | tee -a /data/verisense.out
+) &
