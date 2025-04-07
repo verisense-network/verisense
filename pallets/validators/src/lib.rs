@@ -5,14 +5,13 @@ pub mod weights;
 
 use crate::types::{ActiveEraInfo, Forcing, SessionInterface};
 use frame_support::pallet_prelude::*;
-use frame_support::traits::{DefensiveSaturating};
 use frame_system::pallet_prelude::*;
 use pallet_session::historical;
 use sp_core::crypto::KeyTypeId;
-use sp_runtime::{SaturatedConversion};
+use sp_runtime::SaturatedConversion;
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
-use vrs_support::{log, RestakingInterface, ValidatorsInterface, EraRewardPoints};
+use vrs_support::{log, EraRewardPoints, RestakingInterface, ValidatorsInterface};
 pub use weights::*;
 
 pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-validators";
@@ -179,8 +178,7 @@ impl<T: Config> Pallet<T> {
             log!(info, "Era length: {:?}", era_length);
             if era_length < T::SessionsPerEra::get() {
                 // The 5th session of the era.
-                if era_length == T::SessionsPerEra::get() - 1
-                {
+                if era_length == T::SessionsPerEra::get() - 1 {
                     T::RestakingInterface::plan_new_era();
                 }
                 return None;

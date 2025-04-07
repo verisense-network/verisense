@@ -249,17 +249,18 @@ pub mod pallet {
             let manager = ensure_signed(origin)?;
             let id = nucleus_id.clone();
             Nuclei::<T>::try_mutate_exists(&nucleus_id, |nucleus| -> DispatchResult {
-                let nucleus = nucleus.as_mut().ok_or(Error::<T>::NucleusNotFound)?;
-                ensure!(nucleus.manager == manager, Error::<T>::NotAuthorized);
-                if nucleus.wasm_hash != hash {
-                    nucleus.wasm_version += 1;
-                    nucleus.wasm_hash = hash;
+                let mut mutate = nucleus.take().ok_or(Error::<T>::NucleusNotFound)?;
+                ensure!(mutate.manager == manager, Error::<T>::NotAuthorized);
+                if mutate.wasm_hash != hash {
+                    mutate.wasm_version += 1;
+                    mutate.wasm_hash = hash;
                 }
-                nucleus.wasm_location = Some(to.clone());
+                mutate.wasm_location = Some(to.clone());
+                nucleus.replace(mutate.clone());
                 Self::deposit_event(Event::NucleusUpgraded {
                     id,
                     wasm_hash: hash,
-                    wasm_version: nucleus.wasm_version,
+                    wasm_version: mutate.wasm_version,
                     wasm_location: to,
                 });
                 Ok(())
