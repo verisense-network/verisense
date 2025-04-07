@@ -318,7 +318,7 @@ where
                                     &mut nuclei,
                                 ) {
                                     log::error!("Upgrading nucleus {} wasm failed: {:?}", nucleus_id, e);
-                                    panic!("fail to upgrade nucleus wasm, there is nothing we can do.");
+                                    // panic!("fail to upgrade nucleus wasm, there is nothing we can do.");
                                 }
                             }
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
