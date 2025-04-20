@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::{keccak_256, U256};
 use sp_std::vec;
 
-pub const GET_VALIDATOR_SET_METHOD: &str = "getValidatorSet()";
+pub const GET_VALIDATOR_SET_METHOD: &str = "getOperators()";
 
 pub fn query_validators_params() -> String {
     let method_signature = keccak_256(GET_VALIDATOR_SET_METHOD.as_bytes());
@@ -15,7 +15,6 @@ pub fn query_validators_params() -> String {
 }
 
 pub fn decode_query_validators_resp(resp: String) -> Vec<ValidatorData> {
-
     if resp.is_empty() {
         return vec![];
     }
@@ -31,19 +30,21 @@ pub fn decode_query_validators_resp(resp: String) -> Vec<ValidatorData> {
     for _i in 0..data_size {
         reader.read(12);
         let addr = reader.read(20);
-        let evm_address = format!("0x{}",  hex::encode(addr));
+        let operator = format!("0x{}",  hex::encode(addr));
         let stake = U256::from_big_endian(reader.read(32).as_slice()).as_u128();
         let key = reader.read(32);
-        v.push(ValidatorData { stake, evm_address, key })
+        let strategies = vec![];
+        v.push(ValidatorData { operator, stake, key, strategies });
     }
     v
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ValidatorData {
+    pub operator: String,
     pub stake: u128,
-    pub evm_address: String,
     pub key: Vec<u8>,
+    pub strategies: Vec<String>
 }
 
 pub struct Reader(Vec<u8>);

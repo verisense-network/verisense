@@ -75,7 +75,7 @@ impl<T: Config> Pallet<T> {
                         T::AccountId::decode(&mut TrailingZeroInput::new(d.key.as_slice()))
                             .unwrap(),
                         d.stake,
-                        d.evm_address,
+                        d.operator,
                         source.to_string(),
                     ));
                 }
