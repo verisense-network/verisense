@@ -4,26 +4,33 @@ use core::str::FromStr;
 use ethabi::{Address, Token};
 use frame_support::IterableStorageMap;
 use serde::{Deserialize, Serialize};
-use sp_core::{Bytes, keccak_256, U256};
 use sp_core::bounded::alloc;
+use sp_core::{keccak_256, Bytes, U256};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec;
 use sp_std::vec::Vec;
 
 use vrs_primitives::RewardsProof;
 
-use crate::{Config, Pallet};
 use crate::pallet::{RewardsRoot, TotalRewards};
 use crate::String;
+use crate::{Config, Pallet};
 
 impl<T: Config> Pallet<T> {
     pub fn calculate_rewards_root() {
         let mut leaves: Vec<Vec<String>> = vec![];
-        for (k, v) in  <TotalRewards<T> as IterableStorageMap<T::AccountId, u128>>::iter() {
+        for (k, v) in <TotalRewards<T> as IterableStorageMap<T::AccountId, u128>>::iter() {
             let source = Self::validator_source(&k);
             leaves.push(vec![source.0, source.1, format!("{v}")])
         }
-        let m = StandardMerkleTree::of(leaves, &vec!["address".parse().unwrap(), "string".parse().unwrap(), "uint256".parse().unwrap()]);
+        let m = StandardMerkleTree::of(
+            leaves,
+            &vec![
+                "address".parse().unwrap(),
+                "string".parse().unwrap(),
+                "uint256".parse().unwrap(),
+            ],
+        );
         RewardsRoot::<T>::put(m.root());
     }
 
@@ -33,10 +40,10 @@ impl<T: Config> Pallet<T> {
             return RewardsProof::default();
         }
         let mut leaves: Vec<Vec<String>> = vec![];
-        let mut  reward_index = 0usize;
+        let mut reward_index = 0usize;
         let mut index = 0usize;
 
-        for (k, v) in  <TotalRewards<T> as IterableStorageMap<T::AccountId, u128>>::iter() {
+        for (k, v) in <TotalRewards<T> as IterableStorageMap<T::AccountId, u128>>::iter() {
             if k == acct {
                 reward_index = index;
             }
@@ -45,12 +52,19 @@ impl<T: Config> Pallet<T> {
             index += 1;
         }
 
-        let m = StandardMerkleTree::of(leaves, &vec!["address".parse().unwrap(), "string".parse().unwrap(), "uint256".parse().unwrap()]);
+        let m = StandardMerkleTree::of(
+            leaves,
+            &vec![
+                "address".parse().unwrap(),
+                "string".parse().unwrap(),
+                "uint256".parse().unwrap(),
+            ],
+        );
         let proof = m.get_proof(LeafType::Number(reward_index));
 
         RewardsProof {
             proof,
-            amount: format!("{reward_amt}")
+            amount: format!("{reward_amt}"),
         }
     }
 }
@@ -80,7 +94,6 @@ pub enum LeafType {
 }
 
 impl StandardMerkleTree {
-
     fn new(tree: Vec<Bytes>, values: &[Values], leaf_encode: &[String]) -> Self {
         let mut hash_lookup = BTreeMap::new();
         values.iter().enumerate().for_each(|(i, v)| {
@@ -135,7 +148,6 @@ impl StandardMerkleTree {
     pub fn root(&self) -> String {
         format!("0x{}", hex::encode(&self.tree[0].to_vec()))
     }
-
 
     pub fn of(values: Vec<Vec<String>>, leaf_encode: &[String]) -> Self {
         let mut hashed_values: Vec<HashedValues> = values
@@ -214,10 +226,9 @@ pub fn make_merkle_tree(leaves: Vec<Bytes>) -> Vec<Bytes> {
 pub fn hash_pair(a: Bytes, b: &Bytes) -> Bytes {
     let mut s = [a, b.clone()];
     s.sort();
-    let r = [s[0].to_vec(),s[1].to_vec()].concat();
+    let r = [s[0].to_vec(), s[1].to_vec()].concat();
     Bytes::from(keccak_256(r.as_slice()).to_vec())
 }
-
 
 pub fn left_child_index(i: usize) -> usize {
     2 * i + 1
@@ -248,7 +259,7 @@ pub fn parent_index(i: usize) -> Result<usize, String> {
     }
 }
 
-pub fn sibling_index(i: i32) -> Result<usize,String> {
+pub fn sibling_index(i: i32) -> Result<usize, String> {
     if i > 0 {
         let r = i - (-1i32).pow((i % 2).try_into().unwrap());
         Ok(r as usize)
@@ -285,7 +296,6 @@ pub fn is_leaf_node(tree: &[Bytes], i: usize) -> bool {
     is_tree_node(tree, i) && !is_internal_node(tree, i)
 }
 
-
 pub fn is_tree_node(tree: &[Bytes], i: usize) -> bool {
     i < tree.len()
 }
@@ -303,21 +313,60 @@ pub fn is_internal_node(tree: &[Bytes], i: usize) -> bool {
 #[test]
 pub fn test1() {
     let value = vec![
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
-        vec!["0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(), "10202".to_string(), "nbc".to_string()],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
+        vec![
+            "0x3390594CD564C24349e0A59e5e9b7b4645DB327f".to_string(),
+            "10202".to_string(),
+            "nbc".to_string(),
+        ],
     ];
-    let leaf_encode = vec!["address".to_string(), "uint256".to_string(), "string".to_string()];
+    let leaf_encode = vec![
+        "address".to_string(),
+        "uint256".to_string(),
+        "string".to_string(),
+    ];
     let r = StandardMerkleTree::of(value, &leaf_encode);
     println!("{}", r.root());
 }
-
 
 /*
 #[test]
@@ -349,4 +398,3 @@ pub fn yre() {
     let m = hex::encode(m.root().unwrap());
     println!("{m}")
 }*/
-

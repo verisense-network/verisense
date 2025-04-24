@@ -1,34 +1,35 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use crate::types::NotificationResult;
 use codec::{Decode, Encode};
 use frame_support::{
     dispatch::{GetDispatchInfo, PostDispatchInfo},
-    traits::{OneSessionHandler},
+    traits::OneSessionHandler,
 };
 use frame_system::offchain::{
     AppCrypto, CreateSignedTransaction, SendUnsignedTransaction, SignedPayload, Signer,
     SigningTypes,
 };
+pub use pallet::*;
 use scale_info::{
     prelude::string::{String, ToString},
     TypeInfo,
 };
 use serde::{de, Deserialize, Deserializer};
 use sp_runtime::{
-    RuntimeAppPublic,
-    RuntimeDebug, traits::{Dispatchable, IdentifyAccount},
+    traits::{Dispatchable, IdentifyAccount},
+    RuntimeAppPublic, RuntimeDebug,
 };
 use sp_std::prelude::*;
-use crate::types::NotificationResult;
-pub use pallet::*;
-use types::{Observation, ObservationsPayload, ObservationType};
+use types::{Observation, ObservationType, ObservationsPayload};
 use vrs_primitives::keys::RESTAKING_KEY_TYPE as KEY_TYPE;
 use vrs_support::{log, ValidatorsInterface};
 
+mod merkle;
 mod outchain;
 pub(crate) mod solidity;
 pub mod types;
-mod merkle;
+pub mod validator_data;
 
 pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
 
@@ -67,7 +68,6 @@ pub mod pallet {
         type RestakingEnable: Get<bool>;
 
         type ValidatorsInterface: ValidatorsInterface<Self::AccountId>;
-
     }
 
     type MaxObservations = ConstU32<100>;
@@ -87,7 +87,8 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn rewards_per_point)]
-    pub(crate) type RewardsAmountPerPoint<T: Config> = StorageValue<_, u128, ValueQuery,DefaultRewardsPerPoint<T>>;
+    pub(crate) type RewardsAmountPerPoint<T: Config> =
+        StorageValue<_, u128, ValueQuery, DefaultRewardsPerPoint<T>>;
 
     #[pallet::storage]
     pub(crate) type NextSetId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -101,7 +102,7 @@ pub mod pallet {
     #[pallet::unbounded]
     #[pallet::getter(fn validator_source)]
     pub(crate) type ValidatorsSource<T: Config> =
-    StorageMap<_,Twox64Concat, T::AccountId, (String,String), ValueQuery>; //EvmAddr, restaking platform
+        StorageMap<_, Twox64Concat, T::AccountId, (String, String), ValueQuery>; //EvmAddr, restaking platform
 
     #[pallet::storage]
     pub(crate) type NextNotificationId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -135,17 +136,20 @@ pub mod pallet {
     pub(crate) type LatestClosedEra<T: Config> = StorageValue<_, u32, ValueQuery>;
 
     #[pallet::storage]
-    pub(crate) type EraTotalRewards<T: Config> = StorageMap<_, Blake2_128Concat, u32, u128, ValueQuery>;
+    pub(crate) type EraTotalRewards<T: Config> =
+        StorageMap<_, Blake2_128Concat, u32, u128, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn total_rewards)]
-    pub(crate) type TotalRewards<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u128, ValueQuery>;
+    pub(crate) type TotalRewards<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, u128, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn restaking_platform)]
-    pub(crate) type RestakingPlatform<T: Config> = StorageMap<_, Blake2_128Concat, String, (String, String), OptionQuery>;
+    pub(crate) type RestakingPlatform<T: Config> =
+        StorageMap<_, Blake2_128Concat, String, (String, String), OptionQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
@@ -224,9 +228,9 @@ pub mod pallet {
                 let rewds = point * reward_per_point;
                 total_era_rewards += rewds;
                 TotalRewards::<T>::mutate(acc, |r| {
-                     *r += rewds;
+                    *r += rewds;
                 });
-            };
+            }
             EraTotalRewards::<T>::insert(era_idx, total_era_rewards);
             LatestClosedEra::<T>::put(era_idx);
             Self::calculate_rewards_root();
@@ -237,7 +241,6 @@ pub mod pallet {
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         pub validators: Vec<(T::AccountId, u128, String, String)>, //AccountId, total_staking, evm_addr, platform
-
     }
 
     #[pallet::genesis_build]
@@ -247,7 +250,7 @@ pub mod pallet {
             let mut validators = vec![];
             for v in self.validators.clone() {
                 validators.push((v.0.clone(), v.1));
-                <ValidatorsSource<T>>::insert(v.0,(v.2, v.3));
+                <ValidatorsSource<T>>::insert(v.0, (v.2, v.3));
             }
             <PlannedValidators<T>>::put(validators);
         }
@@ -341,7 +344,7 @@ pub mod pallet {
             let validators_with_source = payload.observations;
             let mut validators = vec![];
             for x in validators_with_source {
-                ValidatorsSource::<T>::insert(x.0.clone(),(x.2, x.3));
+                ValidatorsSource::<T>::insert(x.0.clone(), (x.2, x.3));
                 validators.push((x.0, x.1));
             }
             PlannedValidators::<T>::put(validators);

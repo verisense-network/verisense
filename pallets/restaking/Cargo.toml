@@ -34,11 +34,9 @@ sp-runtime = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 vrs-support = { path = "../../support", default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
-
-merkle-lite = { version = "0.1.0" }
 sha3 = {version = "0.10.8", default-features = false}
 ethabi = {version = "18.0.0", default-features = false}
-
+const-hex = {version = "1.14.0", default-features = false, features = ["alloc"]}
 [features]
 default = ["std"]
 std = [
@@ -47,6 +45,7 @@ std = [
     "hex/std",
     "log/std",
     "scale-info/std",
+    "const-hex/std",
     "serde/std",
     "serde_bytes/std",
     "serde_json/std",

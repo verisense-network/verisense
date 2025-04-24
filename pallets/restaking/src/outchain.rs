@@ -1,5 +1,7 @@
 use super::*;
-use crate::solidity::{decode_query_validators_resp, query_validators_params};
+use crate::solidity::query_validators_params;
+use crate::validator_data::{decode_validator_datas, parse_to_tokens};
+use const_hex::ToHexExt;
 use frame_system::pallet_prelude::BlockNumberFor;
 use serde::Serialize;
 use serde_json::Value;
@@ -7,11 +9,12 @@ use sp_core::offchain::Duration;
 use sp_runtime::offchain::http;
 use sp_runtime::traits::TrailingZeroInput;
 
-
-
 impl<T: Config> Pallet<T> {
-
-    fn request_validators_list(rpc_url: &str, middleware: &str, source: &str) -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
+    fn request_validators_list(
+        rpc_url: &str,
+        middleware: &str,
+        source: &str,
+    ) -> Result<Vec<(T::AccountId, u128, String, String)>, http::Error> {
         let data = query_validators_params();
         let mut body = br#"
         {
@@ -37,7 +40,11 @@ impl<T: Config> Pallet<T> {
           ]
         }"#,
         );
-        log!(info, "request body: {}", String::from_utf8(body.clone()).unwrap());
+        log!(
+            info,
+            "request body: {}",
+            String::from_utf8(body.clone()).unwrap()
+        );
 
         let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(2_000));
         let request = http::Request::default()
@@ -69,13 +76,14 @@ impl<T: Config> Pallet<T> {
                 log!(info, "{:?}", &r);
                 let mut v = vec![];
                 log!(info, "query validators result {}", r.result.clone());
-                let vd = decode_query_validators_resp(r.result);
+                let tokens = parse_to_tokens(r.result.as_str());
+                let vd = decode_validator_datas(tokens).unwrap_or(vec![]);
                 for d in vd {
                     v.push((
                         T::AccountId::decode(&mut TrailingZeroInput::new(d.key.as_slice()))
                             .unwrap(),
                         d.stake,
-                        d.operator,
+                        d.operator.encode_hex_with_prefix(),
                         source.to_string(),
                     ));
                 }
@@ -86,9 +94,8 @@ impl<T: Config> Pallet<T> {
                 return Ok(vec![]);
             }
         }
-
     }
-    pub fn get_validators_list() -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
+    pub fn get_validators_list() -> Result<Vec<(T::AccountId, u128, String, String)>, http::Error> {
         let mut vc = vec![];
 
         for (k, v) in RestakingPlatform::<T>::iter() {
@@ -124,7 +131,6 @@ impl<T: Config> Pallet<T> {
         }
         if result[0].1.is_err() {
             log!(warn, "Failed to update_validators: {:?}", result[0].1);
-
             return Err("Failed to update_validators");
         }
 
@@ -155,4 +161,16 @@ pub struct JsonResponse {
     pub jsonrpc: String,
     pub id: u32,
     pub result: String,
+}
+
+pub struct OperatorDirectedRewardSubmission {
+    pub operator_rewards: Vec<OperatorReward>,
+    pub start_timestamp: u32,
+    pub duration: u32,
+    pub description: String,
+}
+
+pub struct OperatorReward {
+    pub operator: String,
+    pub amount: u128,
 }
