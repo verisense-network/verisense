@@ -2,8 +2,8 @@ use crate::{Config, Pallet};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::traits::Convert;
-use sp_runtime::RuntimeDebug;
 use sp_runtime::KeyTypeId;
+use sp_runtime::RuntimeDebug;
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
 
@@ -32,8 +32,6 @@ impl Default for Forcing {
         Forcing::NotForcing
     }
 }
-
-
 
 /// Information regarding the active era (era in used in session).
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
@@ -69,15 +67,18 @@ where
         <pallet_session::historical::Pallet<T>>::prune_up_to(up_to);
     }
 
-    fn is_active_validator(id: KeyTypeId, key_data: &[u8]) -> Option<<T as frame_system::Config>::AccountId> {
+    fn is_active_validator(
+        id: KeyTypeId,
+        key_data: &[u8],
+    ) -> Option<<T as frame_system::Config>::AccountId> {
         let who = <pallet_session::Pallet<T>>::key_owner(id, key_data);
         if who.is_none() {
-            return None
+            return None;
         }
 
-        Self::validators().into_iter().find(|v| {
-            T::ValidatorIdOf::convert(v.clone()) == who
-        })
+        Self::validators()
+            .into_iter()
+            .find(|v| T::ValidatorIdOf::convert(v.clone()) == who)
     }
 }
 

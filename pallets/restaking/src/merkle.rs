@@ -2,6 +2,7 @@ use alloc::format;
 use core::str::FromStr;
 
 use ethabi::{Address, Token};
+use frame_support::IterableStorageMap;
 use serde::{Deserialize, Serialize};
 use sp_core::bounded::alloc;
 use sp_core::{keccak_256, Bytes, U256};
@@ -11,12 +12,13 @@ use sp_std::vec::Vec;
 
 use vrs_primitives::RewardsProof;
 
+use crate::pallet::TotalRewards;
 use crate::String;
 use crate::{Config, Pallet};
 
 impl<T: Config> Pallet<T> {
     pub fn calculate_rewards_root() {
-        /*       let mut leaves: Vec<Vec<String>> = vec![];
+        /* let mut leaves: Vec<Vec<String>> = vec![];
         for (k, v) in <TotalRewards<T> as IterableStorageMap<T::AccountId, u128>>::iter() {
             let source = Self::validator_source(&k);
             leaves.push(vec![source.0, source.1, format!("{v}")])

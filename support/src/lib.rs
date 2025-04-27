@@ -32,11 +32,13 @@ pub trait ValidatorsInterface<AccountId> {
 
 pub type RewardPoint = u128;
 
+
 #[derive(PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct EraRewardPoints<AccountId: Ord> {
     pub total: RewardPoint,
     pub individual: BTreeMap<AccountId, RewardPoint>,
 }
+
 
 impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
     fn default() -> Self {

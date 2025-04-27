@@ -176,9 +176,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                67u8, 94u8, 230u8, 238u8, 127u8, 144u8, 242u8, 208u8, 90u8, 91u8, 80u8, 47u8,
-                119u8, 159u8, 20u8, 233u8, 57u8, 189u8, 114u8, 26u8, 7u8, 227u8, 106u8, 80u8, 72u8,
-                68u8, 149u8, 189u8, 7u8, 144u8, 131u8, 40u8,
+                174u8, 212u8, 38u8, 14u8, 87u8, 120u8, 249u8, 168u8, 74u8, 159u8, 63u8, 174u8,
+                91u8, 13u8, 9u8, 228u8, 33u8, 168u8, 68u8, 179u8, 113u8, 245u8, 246u8, 136u8,
+                217u8, 58u8, 96u8, 155u8, 200u8, 208u8, 23u8, 7u8,
             ]
     }
     pub mod system {
@@ -1926,16 +1926,16 @@ pub mod codegen {
                 }
                 pub mod planned_validators {
                     use super::runtime_types;
-                    pub type PlannedValidators = ::subxt_core::alloc::vec::Vec<
-                        runtime_types::pallet_restaking::validator_data::ValidatorData,
-                    >;
+                    pub type PlannedValidators = ::subxt_core::alloc::vec::Vec<(
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u128,
+                        ::subxt_core::alloc::string::String,
+                    )>;
                 }
                 pub mod validators_source {
                     use super::runtime_types;
-                    pub type ValidatorsSource = (
-                        [::core::primitive::u8; 20usize],
-                        ::subxt_core::alloc::string::String,
-                    );
+                    pub type ValidatorsSource =
+                        runtime_types::pallet_restaking::validator_data::ValidatorData;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
                 pub mod next_notification_id {
@@ -1953,16 +1953,6 @@ pub mod codegen {
                     pub type Param0 = runtime_types::pallet_restaking::types::ObservationType;
                     pub type Param1 = ::core::primitive::u32;
                 }
-                pub mod observing {
-                    use super::runtime_types;
-                    pub type Observing =
-                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                            ::subxt_core::utils::AccountId32,
-                        >;
-                    pub type Param0 = runtime_types::pallet_restaking::types::Observation<
-                        ::subxt_core::utils::AccountId32,
-                    >;
-                }
                 pub mod need_fetch_restaking_validators {
                     use super::runtime_types;
                     pub type NeedFetchRestakingValidators = ::core::primitive::bool;
@@ -1971,9 +1961,10 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type LatestClosedEra = ::core::primitive::u32;
                 }
-                pub mod era_total_rewards {
+                pub mod era_rewards_detail {
                     use super::runtime_types;
-                    pub type EraTotalRewards = ::core::primitive::u128;
+                    pub type EraRewardsDetail =
+                        runtime_types::pallet_restaking::types::EraRewardDetailsValue;
                     pub type Param0 = ::core::primitive::u32;
                 }
                 pub mod total_rewards {
@@ -2078,9 +2069,10 @@ pub mod codegen {
                         "PlannedValidators",
                         (),
                         [
-                            48u8, 198u8, 1u8, 121u8, 3u8, 196u8, 139u8, 116u8, 243u8, 249u8, 113u8,
-                            204u8, 221u8, 91u8, 110u8, 155u8, 102u8, 229u8, 39u8, 191u8, 171u8,
-                            160u8, 108u8, 125u8, 26u8, 176u8, 62u8, 87u8, 253u8, 38u8, 54u8, 11u8,
+                            101u8, 220u8, 163u8, 47u8, 169u8, 40u8, 158u8, 236u8, 109u8, 39u8,
+                            69u8, 108u8, 143u8, 136u8, 46u8, 234u8, 166u8, 60u8, 217u8, 49u8,
+                            165u8, 97u8, 103u8, 200u8, 208u8, 93u8, 151u8, 48u8, 77u8, 74u8, 167u8,
+                            233u8,
                         ],
                     )
                 }
@@ -2098,9 +2090,9 @@ pub mod codegen {
                         "ValidatorsSource",
                         (),
                         [
-                            6u8, 91u8, 218u8, 90u8, 99u8, 182u8, 147u8, 31u8, 63u8, 68u8, 39u8,
-                            166u8, 186u8, 10u8, 64u8, 20u8, 44u8, 253u8, 24u8, 122u8, 226u8, 158u8,
-                            124u8, 86u8, 43u8, 200u8, 56u8, 108u8, 54u8, 165u8, 11u8, 183u8,
+                            20u8, 117u8, 174u8, 159u8, 101u8, 204u8, 206u8, 7u8, 8u8, 19u8, 193u8,
+                            24u8, 228u8, 154u8, 156u8, 136u8, 48u8, 167u8, 86u8, 35u8, 250u8, 38u8,
+                            20u8, 170u8, 50u8, 62u8, 187u8, 114u8, 183u8, 107u8, 232u8, 20u8,
                         ],
                     )
                 }
@@ -2121,9 +2113,9 @@ pub mod codegen {
                         "ValidatorsSource",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            6u8, 91u8, 218u8, 90u8, 99u8, 182u8, 147u8, 31u8, 63u8, 68u8, 39u8,
-                            166u8, 186u8, 10u8, 64u8, 20u8, 44u8, 253u8, 24u8, 122u8, 226u8, 158u8,
-                            124u8, 86u8, 43u8, 200u8, 56u8, 108u8, 54u8, 165u8, 11u8, 183u8,
+                            20u8, 117u8, 174u8, 159u8, 101u8, 204u8, 206u8, 7u8, 8u8, 19u8, 193u8,
+                            24u8, 228u8, 154u8, 156u8, 136u8, 48u8, 167u8, 86u8, 35u8, 250u8, 38u8,
+                            20u8, 170u8, 50u8, 62u8, 187u8, 114u8, 183u8, 107u8, 232u8, 20u8,
                         ],
                     )
                 }
@@ -2221,47 +2213,6 @@ pub mod codegen {
                         ],
                     )
                 }
-                pub fn observing_iter(
-                    &self,
-                ) -> ::subxt_core::storage::address::StaticAddress<
-                    (),
-                    types::observing::Observing,
-                    (),
-                    ::subxt_core::utils::Yes,
-                    ::subxt_core::utils::Yes,
-                > {
-                    ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Restaking",
-                        "Observing",
-                        (),
-                        [
-                            64u8, 231u8, 56u8, 156u8, 64u8, 121u8, 208u8, 6u8, 199u8, 224u8, 29u8,
-                            206u8, 226u8, 41u8, 21u8, 2u8, 141u8, 157u8, 102u8, 161u8, 24u8, 106u8,
-                            60u8, 137u8, 104u8, 197u8, 81u8, 9u8, 63u8, 253u8, 215u8, 137u8,
-                        ],
-                    )
-                }
-                pub fn observing(
-                    &self,
-                    _0: impl ::core::borrow::Borrow<types::observing::Param0>,
-                ) -> ::subxt_core::storage::address::StaticAddress<
-                    ::subxt_core::storage::address::StaticStorageKey<types::observing::Param0>,
-                    types::observing::Observing,
-                    ::subxt_core::utils::Yes,
-                    ::subxt_core::utils::Yes,
-                    (),
-                > {
-                    ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Restaking",
-                        "Observing",
-                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
-                        [
-                            64u8, 231u8, 56u8, 156u8, 64u8, 121u8, 208u8, 6u8, 199u8, 224u8, 29u8,
-                            206u8, 226u8, 41u8, 21u8, 2u8, 141u8, 157u8, 102u8, 161u8, 24u8, 106u8,
-                            60u8, 137u8, 104u8, 197u8, 81u8, 9u8, 63u8, 253u8, 215u8, 137u8,
-                        ],
-                    )
-                }
                 pub fn need_fetch_restaking_validators(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -2303,48 +2254,46 @@ pub mod codegen {
                         ],
                     )
                 }
-                pub fn era_total_rewards_iter(
+                pub fn era_rewards_detail_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
                     (),
-                    types::era_total_rewards::EraTotalRewards,
+                    types::era_rewards_detail::EraRewardsDetail,
                     (),
                     ::subxt_core::utils::Yes,
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
                         "Restaking",
-                        "EraTotalRewards",
+                        "EraRewardsDetail",
                         (),
                         [
-                            68u8, 13u8, 136u8, 143u8, 251u8, 67u8, 177u8, 214u8, 11u8, 245u8, 81u8,
-                            17u8, 102u8, 65u8, 34u8, 128u8, 252u8, 175u8, 181u8, 35u8, 214u8,
-                            119u8, 238u8, 234u8, 47u8, 248u8, 243u8, 216u8, 125u8, 126u8, 204u8,
-                            142u8,
+                            33u8, 212u8, 13u8, 126u8, 104u8, 222u8, 20u8, 46u8, 1u8, 241u8, 72u8,
+                            79u8, 79u8, 41u8, 37u8, 228u8, 222u8, 122u8, 221u8, 47u8, 39u8, 205u8,
+                            175u8, 72u8, 124u8, 21u8, 216u8, 252u8, 8u8, 162u8, 131u8, 8u8,
                         ],
                     )
                 }
-                pub fn era_total_rewards(
+                pub fn era_rewards_detail(
                     &self,
-                    _0: impl ::core::borrow::Borrow<types::era_total_rewards::Param0>,
+                    _0: impl ::core::borrow::Borrow<types::era_rewards_detail::Param0>,
                 ) -> ::subxt_core::storage::address::StaticAddress<
                     ::subxt_core::storage::address::StaticStorageKey<
-                        types::era_total_rewards::Param0,
+                        types::era_rewards_detail::Param0,
                     >,
-                    types::era_total_rewards::EraTotalRewards,
+                    types::era_rewards_detail::EraRewardsDetail,
                     ::subxt_core::utils::Yes,
                     ::subxt_core::utils::Yes,
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
                         "Restaking",
-                        "EraTotalRewards",
+                        "EraRewardsDetail",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            68u8, 13u8, 136u8, 143u8, 251u8, 67u8, 177u8, 214u8, 11u8, 245u8, 81u8,
-                            17u8, 102u8, 65u8, 34u8, 128u8, 252u8, 175u8, 181u8, 35u8, 214u8,
-                            119u8, 238u8, 234u8, 47u8, 248u8, 243u8, 216u8, 125u8, 126u8, 204u8,
-                            142u8,
+                            33u8, 212u8, 13u8, 126u8, 104u8, 222u8, 20u8, 46u8, 1u8, 241u8, 72u8,
+                            79u8, 79u8, 41u8, 37u8, 228u8, 222u8, 122u8, 221u8, 47u8, 39u8, 205u8,
+                            175u8, 72u8, 124u8, 21u8, 216u8, 252u8, 8u8, 162u8, 131u8, 8u8,
                         ],
                     )
                 }
@@ -10817,6 +10766,23 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct EraRewardDetailsValue {
+                    pub total: ::core::primitive::u128,
+                    pub timestamp: ::core::primitive::u64,
+                    pub details: ::subxt_core::alloc::vec::Vec<
+                        runtime_types::pallet_restaking::types::OperatorReward,
+                    >,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub struct LockAssetEvent<_0> {
                     pub index: ::core::primitive::u32,
                     pub token_id: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
@@ -10903,6 +10869,20 @@ pub mod codegen {
                     pub observations: ::subxt_core::alloc::vec::Vec<
                         runtime_types::pallet_restaking::validator_data::ValidatorData,
                     >,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct OperatorReward {
+                    pub operator: [::core::primitive::u8; 20usize],
+                    pub amount: ::core::primitive::u128,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,

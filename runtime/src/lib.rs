@@ -406,6 +406,7 @@ impl pallet_restaking::Config for Runtime {
     type AppCrypto = VerisenseRestakingAppCrypto;
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
+    type UnixTime = Timestamp;
     type UnsignedPriority = UnsignedPriority;
     type RequestEventLimit = RequestEventLimit;
     type MaxValidators = MaxAuthorities;

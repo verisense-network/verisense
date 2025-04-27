@@ -3,6 +3,7 @@ use crate::validator_data::ValidatorData;
 use frame_support::Serialize;
 use frame_system::pallet_prelude::BlockNumberFor;
 use serde_json::Value;
+use sp_core::MaxEncodedLen;
 
 fn account_deserialize_from_hex_str<'de, S, D>(deserializer: D) -> Result<S, D::Error>
 where
@@ -212,7 +213,24 @@ pub struct OperatorDirectedRewardSubmission {
     pub description: String,
 }
 
+#[derive(Encode, Decode, Clone, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 pub struct OperatorReward {
-    pub operator: String,
+    pub operator: [u8; 20],
     pub amount: u128,
+}
+
+#[derive(PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
+pub struct EraRewardDetailsValue {
+    pub total: u128,
+    pub timestamp: u64,
+    pub details: Vec<OperatorReward>,
+}
+impl Default for EraRewardDetailsValue {
+    fn default() -> Self {
+        EraRewardDetailsValue {
+            total: 0,
+            timestamp: 0,
+            details: vec![],
+        }
+    }
 }
