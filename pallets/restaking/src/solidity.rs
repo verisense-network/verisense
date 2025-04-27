@@ -12,13 +12,3 @@ pub fn query_validators_params() -> String {
     v.append(&mut method_signature[0..4].to_vec());
     format!("0x{}", hex::encode(v))
 }
-
-pub struct Reader(Vec<u8>);
-
-impl Reader {
-    pub fn read(&mut self, l: usize) -> Vec<u8> {
-        let v = self.0[0..l].to_vec();
-        self.0 = self.0[l..].to_vec();
-        v
-    }
-}

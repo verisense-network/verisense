@@ -38,9 +38,9 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
 
-    use vrs_support::{EraRewardPoints, RestakingInterface};
-
     use super::*;
+    use crate::validator_data::ValidatorData;
+    use vrs_support::{EraRewardPoints, RestakingInterface};
 
     #[pallet::config]
     pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
@@ -95,14 +95,13 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::unbounded]
-    pub(crate) type PlannedValidators<T: Config> =
-        StorageValue<_, Vec<(T::AccountId, u128)>, ValueQuery>;
+    pub(crate) type PlannedValidators<T: Config> = StorageValue<_, Vec<ValidatorData>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn validator_source)]
     pub(crate) type ValidatorsSource<T: Config> =
-        StorageMap<_, Twox64Concat, T::AccountId, (String, String), ValueQuery>; //EvmAddr, restaking platform
+        StorageMap<_, Twox64Concat, T::AccountId, ([u8; 20], String), ValueQuery>; //EvmAddr, restaking platform
 
     #[pallet::storage]
     pub(crate) type NextNotificationId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -210,7 +209,17 @@ pub mod pallet {
 
     impl<T: Config> RestakingInterface<T::AccountId> for Pallet<T> {
         fn provide() -> Vec<(T::AccountId, u128)> {
+            use sp_runtime::traits::TrailingZeroInput;
             PlannedValidators::<T>::get()
+                .iter()
+                .map(|s| {
+                    (
+                        T::AccountId::decode(&mut TrailingZeroInput::new(s.key.clone().as_slice()))
+                            .unwrap(),
+                        s.stake,
+                    )
+                })
+                .collect()
         }
 
         fn next_validators_set_id() -> u32 {
@@ -246,11 +255,21 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
+            use crate::validator_data::ValidatorData;
             <NextSetId<T>>::put(1); // set 0 is already in the genesis
             let mut validators = vec![];
             for v in self.validators.clone() {
-                validators.push((v.0.clone(), v.1));
-                <ValidatorsSource<T>>::insert(v.0, (v.2, v.3));
+                let mut substrate_key = [0u8; 32];
+                substrate_key.copy_from_slice(v.0.encode().as_slice());
+                let validator = ValidatorData {
+                    operator: [0u8; 20],
+                    stake: 0,
+                    key: v.0.encode(),
+                    strategies: vec![],
+                    source: v.3.clone(),
+                };
+                validators.push(validator);
+                <ValidatorsSource<T>>::insert(v.0, ([0u8; 20], v.3));
             }
             <PlannedValidators<T>>::put(validators);
         }
@@ -328,7 +347,7 @@ pub mod pallet {
         #[pallet::call_index(0)]
         pub fn update_validators(
             origin: OriginFor<T>,
-            payload: ObservationsPayload<T::AccountId, T::Public, BlockNumberFor<T>>,
+            payload: ObservationsPayload<T::Public, BlockNumberFor<T>>,
             _signature: T::Signature,
         ) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
@@ -342,12 +361,16 @@ pub mod pallet {
                 return Err(Error::<T>::NotValidator.into());
             }
             let validators_with_source = payload.observations;
-            let mut validators = vec![];
-            for x in validators_with_source {
-                ValidatorsSource::<T>::insert(x.0.clone(), (x.2, x.3));
-                validators.push((x.0, x.1));
+            use sp_runtime::traits::TrailingZeroInput;
+            for x in validators_with_source.clone() {
+                let operator_account =
+                    T::AccountId::decode(&mut TrailingZeroInput::new(x.key.as_slice())).unwrap();
+                ValidatorsSource::<T>::insert(
+                    operator_account.clone(),
+                    (x.operator.clone(), x.source),
+                );
             }
-            PlannedValidators::<T>::put(validators);
+            PlannedValidators::<T>::put(validators_with_source);
             NeedFetchRestakingValidators::<T>::put(false);
             Self::deposit_event(Event::Simple);
             Ok(().into())

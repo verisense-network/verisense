@@ -1,5 +1,8 @@
 use super::*;
+use crate::validator_data::ValidatorData;
+use frame_support::Serialize;
 use frame_system::pallet_prelude::BlockNumberFor;
+use serde_json::Value;
 
 fn account_deserialize_from_hex_str<'de, S, D>(deserializer: D) -> Result<S, D::Error>
 where
@@ -164,17 +167,52 @@ impl<AccountId> Observation<AccountId> {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
-pub struct ObservationsPayload<AccountId, Public, BlockNumber> {
+pub struct ObservationsPayload<Public, BlockNumber> {
     pub public: Public,
     pub key_data: Vec<u8>,
     pub block_number: BlockNumber,
-    pub observations: Vec<(AccountId, u128, String, String)>,
+    pub observations: Vec<ValidatorData>,
 }
 
-impl<T: SigningTypes> SignedPayload<T>
-    for ObservationsPayload<T::AccountId, T::Public, BlockNumberFor<T>>
-{
+impl<T: SigningTypes> SignedPayload<T> for ObservationsPayload<T::Public, BlockNumberFor<T>> {
     fn public(&self) -> T::Public {
         self.public.clone()
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JsonRequest {
+    pub id: u32,
+    pub jsonrpc: String,
+    pub method: String,
+    pub params: Vec<Value>,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+pub struct TxParams {
+    #[serde(rename = "accessList")]
+    pub access_list: Vec<u32>,
+    pub data: String,
+    pub to: String,
+    #[serde(rename = "type")]
+    pub ntype: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+pub struct JsonResponse {
+    pub jsonrpc: String,
+    pub id: u32,
+    pub result: String,
+}
+
+pub struct OperatorDirectedRewardSubmission {
+    pub operator_rewards: Vec<OperatorReward>,
+    pub start_timestamp: u32,
+    pub duration: u32,
+    pub description: String,
+}
+
+pub struct OperatorReward {
+    pub operator: String,
+    pub amount: u128,
 }

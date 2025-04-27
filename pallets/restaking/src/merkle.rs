@@ -18,7 +18,7 @@ use crate::{Config, Pallet};
 
 impl<T: Config> Pallet<T> {
     pub fn calculate_rewards_root() {
-        let mut leaves: Vec<Vec<String>> = vec![];
+        /*       let mut leaves: Vec<Vec<String>> = vec![];
         for (k, v) in <TotalRewards<T> as IterableStorageMap<T::AccountId, u128>>::iter() {
             let source = Self::validator_source(&k);
             leaves.push(vec![source.0, source.1, format!("{v}")])
@@ -31,11 +31,11 @@ impl<T: Config> Pallet<T> {
                 "uint256".parse().unwrap(),
             ],
         );
-        RewardsRoot::<T>::put(m.root());
+        RewardsRoot::<T>::put(m.root());*/
     }
 
     pub fn get_reward_proof(acct: T::AccountId) -> RewardsProof {
-        let reward_amt = Self::total_rewards(acct.clone());
+        /* let reward_amt = Self::total_rewards(acct.clone());
         if reward_amt == 0 {
             return RewardsProof::default();
         }
@@ -65,6 +65,11 @@ impl<T: Config> Pallet<T> {
         RewardsProof {
             proof,
             amount: format!("{reward_amt}"),
+        }*/
+        use alloc::string::ToString;
+        RewardsProof {
+            proof: vec![],
+            amount: "".to_string(),
         }
     }
 }

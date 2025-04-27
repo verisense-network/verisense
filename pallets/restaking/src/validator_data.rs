@@ -1,18 +1,22 @@
 use alloc::string::String;
+use codec::{Decode, Encode};
 use ethabi::{ParamType, Token};
+use scale_info::TypeInfo;
 use serde::Deserialize;
 use serde::Serialize;
 use sp_core::bounded::alloc;
 use sp_std::boxed::Box;
 use sp_std::vec;
 use sp_std::vec::Vec;
-#[derive(Serialize, Default, Deserialize, Debug)]
+#[derive(
+    Serialize, Default, Decode, Encode, Deserialize, Clone, PartialEq, Eq, Debug, TypeInfo,
+)]
 pub struct ValidatorData {
     pub operator: [u8; 20],
     pub stake: u128,
     pub key: Vec<u8>,
-    pub is_registered: bool,
     pub strategies: Vec<[u8; 20]>,
+    pub source: String,
 }
 
 impl TryFrom<Vec<Token>> for ValidatorData {
@@ -33,11 +37,7 @@ impl TryFrom<Vec<Token>> for ValidatorData {
             .into_fixed_bytes()
             .ok_or("Invalid validator key")?
             .to_vec();
-        let is_registered = vr[3]
-            .clone()
-            .into_bool()
-            .ok_or("Invalid validator is_registered")?;
-        let strategies = vr[4]
+        let strategies = vr[3]
             .clone()
             .into_array()
             .ok_or("invalid arr")?
@@ -48,8 +48,8 @@ impl TryFrom<Vec<Token>> for ValidatorData {
             operator,
             stake,
             key,
-            is_registered,
             strategies,
+            source: String::new(),
         })
     }
 }

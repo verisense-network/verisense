@@ -176,9 +176,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                61u8, 164u8, 159u8, 246u8, 76u8, 200u8, 219u8, 110u8, 69u8, 39u8, 23u8, 139u8,
-                239u8, 253u8, 56u8, 105u8, 163u8, 34u8, 181u8, 130u8, 183u8, 178u8, 63u8, 203u8,
-                233u8, 250u8, 64u8, 148u8, 95u8, 144u8, 79u8, 233u8,
+                67u8, 94u8, 230u8, 238u8, 127u8, 144u8, 242u8, 208u8, 90u8, 91u8, 80u8, 47u8,
+                119u8, 159u8, 20u8, 233u8, 57u8, 189u8, 114u8, 26u8, 7u8, 227u8, 106u8, 80u8, 72u8,
+                68u8, 149u8, 189u8, 7u8, 144u8, 131u8, 40u8,
             ]
     }
     pub mod system {
@@ -1698,7 +1698,6 @@ pub mod codegen {
                 pub mod update_validators {
                     use super::runtime_types;
                     pub type Payload = runtime_types::pallet_restaking::types::ObservationsPayload<
-                        ::subxt_core::utils::AccountId32,
                         runtime_types::sp_runtime::MultiSigner,
                         ::core::primitive::u32,
                     >;
@@ -1747,9 +1746,10 @@ pub mod codegen {
                         "update_validators",
                         types::UpdateValidators { payload, signature },
                         [
-                            52u8, 254u8, 15u8, 7u8, 236u8, 27u8, 127u8, 57u8, 108u8, 119u8, 197u8,
-                            18u8, 220u8, 228u8, 237u8, 254u8, 74u8, 252u8, 182u8, 79u8, 82u8, 71u8,
-                            119u8, 122u8, 119u8, 208u8, 196u8, 235u8, 63u8, 190u8, 228u8, 131u8,
+                            208u8, 197u8, 145u8, 30u8, 63u8, 151u8, 201u8, 90u8, 10u8, 108u8,
+                            132u8, 180u8, 91u8, 184u8, 117u8, 241u8, 118u8, 194u8, 150u8, 95u8,
+                            62u8, 243u8, 127u8, 154u8, 110u8, 113u8, 99u8, 251u8, 255u8, 17u8,
+                            14u8, 90u8,
                         ],
                     )
                 }
@@ -1926,15 +1926,14 @@ pub mod codegen {
                 }
                 pub mod planned_validators {
                     use super::runtime_types;
-                    pub type PlannedValidators = ::subxt_core::alloc::vec::Vec<(
-                        ::subxt_core::utils::AccountId32,
-                        ::core::primitive::u128,
-                    )>;
+                    pub type PlannedValidators = ::subxt_core::alloc::vec::Vec<
+                        runtime_types::pallet_restaking::validator_data::ValidatorData,
+                    >;
                 }
                 pub mod validators_source {
                     use super::runtime_types;
                     pub type ValidatorsSource = (
-                        ::subxt_core::alloc::string::String,
+                        [::core::primitive::u8; 20usize],
                         ::subxt_core::alloc::string::String,
                     );
                     pub type Param0 = ::subxt_core::utils::AccountId32;
@@ -2079,10 +2078,9 @@ pub mod codegen {
                         "PlannedValidators",
                         (),
                         [
-                            198u8, 162u8, 108u8, 32u8, 153u8, 158u8, 247u8, 63u8, 18u8, 169u8,
-                            17u8, 182u8, 35u8, 88u8, 49u8, 251u8, 233u8, 70u8, 223u8, 141u8, 202u8,
-                            108u8, 132u8, 140u8, 232u8, 42u8, 17u8, 199u8, 240u8, 26u8, 202u8,
-                            117u8,
+                            48u8, 198u8, 1u8, 121u8, 3u8, 196u8, 139u8, 116u8, 243u8, 249u8, 113u8,
+                            204u8, 221u8, 91u8, 110u8, 155u8, 102u8, 229u8, 39u8, 191u8, 171u8,
+                            160u8, 108u8, 125u8, 26u8, 176u8, 62u8, 87u8, 253u8, 38u8, 54u8, 11u8,
                         ],
                     )
                 }
@@ -2100,10 +2098,9 @@ pub mod codegen {
                         "ValidatorsSource",
                         (),
                         [
-                            217u8, 127u8, 75u8, 175u8, 192u8, 93u8, 107u8, 84u8, 125u8, 245u8,
-                            140u8, 29u8, 76u8, 157u8, 20u8, 196u8, 245u8, 174u8, 60u8, 66u8, 200u8,
-                            146u8, 185u8, 254u8, 214u8, 228u8, 232u8, 40u8, 134u8, 238u8, 14u8,
-                            226u8,
+                            6u8, 91u8, 218u8, 90u8, 99u8, 182u8, 147u8, 31u8, 63u8, 68u8, 39u8,
+                            166u8, 186u8, 10u8, 64u8, 20u8, 44u8, 253u8, 24u8, 122u8, 226u8, 158u8,
+                            124u8, 86u8, 43u8, 200u8, 56u8, 108u8, 54u8, 165u8, 11u8, 183u8,
                         ],
                     )
                 }
@@ -2124,10 +2121,9 @@ pub mod codegen {
                         "ValidatorsSource",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            217u8, 127u8, 75u8, 175u8, 192u8, 93u8, 107u8, 84u8, 125u8, 245u8,
-                            140u8, 29u8, 76u8, 157u8, 20u8, 196u8, 245u8, 174u8, 60u8, 66u8, 200u8,
-                            146u8, 185u8, 254u8, 214u8, 228u8, 232u8, 40u8, 134u8, 238u8, 14u8,
-                            226u8,
+                            6u8, 91u8, 218u8, 90u8, 99u8, 182u8, 147u8, 31u8, 63u8, 68u8, 39u8,
+                            166u8, 186u8, 10u8, 64u8, 20u8, 44u8, 253u8, 24u8, 122u8, 226u8, 158u8,
+                            124u8, 86u8, 43u8, 200u8, 56u8, 108u8, 54u8, 165u8, 11u8, 183u8,
                         ],
                     )
                 }
@@ -5704,9 +5700,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            116u8, 115u8, 106u8, 35u8, 167u8, 55u8, 0u8, 210u8, 217u8, 40u8, 179u8,
-                            118u8, 238u8, 225u8, 191u8, 62u8, 63u8, 138u8, 7u8, 243u8, 55u8, 197u8,
-                            254u8, 141u8, 167u8, 224u8, 246u8, 89u8, 159u8, 196u8, 212u8, 182u8,
+                            187u8, 147u8, 81u8, 254u8, 226u8, 240u8, 209u8, 246u8, 32u8, 105u8,
+                            255u8, 198u8, 148u8, 180u8, 215u8, 69u8, 235u8, 97u8, 178u8, 160u8,
+                            162u8, 144u8, 114u8, 45u8, 24u8, 144u8, 114u8, 200u8, 31u8, 128u8,
+                            230u8, 242u8,
                         ],
                     )
                 }
@@ -5724,9 +5721,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            29u8, 60u8, 235u8, 210u8, 115u8, 204u8, 144u8, 90u8, 1u8, 28u8, 89u8,
-                            112u8, 88u8, 125u8, 121u8, 6u8, 144u8, 154u8, 69u8, 234u8, 150u8,
-                            113u8, 104u8, 213u8, 225u8, 244u8, 216u8, 4u8, 204u8, 220u8, 6u8, 64u8,
+                            207u8, 174u8, 33u8, 210u8, 172u8, 33u8, 114u8, 245u8, 40u8, 218u8,
+                            248u8, 53u8, 206u8, 107u8, 8u8, 14u8, 13u8, 116u8, 170u8, 106u8, 102u8,
+                            143u8, 216u8, 191u8, 31u8, 83u8, 242u8, 100u8, 168u8, 153u8, 222u8,
+                            109u8,
                         ],
                     )
                 }
@@ -5758,10 +5756,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            34u8, 199u8, 93u8, 54u8, 99u8, 79u8, 185u8, 217u8, 245u8, 70u8, 85u8,
-                            142u8, 4u8, 154u8, 158u8, 104u8, 159u8, 198u8, 89u8, 13u8, 129u8,
-                            146u8, 122u8, 86u8, 30u8, 151u8, 126u8, 26u8, 180u8, 208u8, 227u8,
-                            246u8,
+                            132u8, 155u8, 244u8, 157u8, 195u8, 56u8, 239u8, 43u8, 107u8, 56u8,
+                            116u8, 121u8, 90u8, 59u8, 24u8, 252u8, 125u8, 177u8, 163u8, 145u8,
+                            250u8, 7u8, 19u8, 176u8, 252u8, 97u8, 169u8, 196u8, 177u8, 51u8, 41u8,
+                            225u8,
                         ],
                     )
                 }
@@ -10686,7 +10684,6 @@ pub mod codegen {
                     #[codec(index = 0)]
                     update_validators {
                         payload: runtime_types::pallet_restaking::types::ObservationsPayload<
-                            ::subxt_core::utils::AccountId32,
                             runtime_types::sp_runtime::MultiSigner,
                             ::core::primitive::u32,
                         >,
@@ -10899,16 +10896,13 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct ObservationsPayload<_0, _1, _2> {
-                    pub public: _1,
+                pub struct ObservationsPayload<_0, _1> {
+                    pub public: _0,
                     pub key_data: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                    pub block_number: _2,
-                    pub observations: ::subxt_core::alloc::vec::Vec<(
-                        _0,
-                        ::core::primitive::u128,
-                        ::subxt_core::alloc::string::String,
-                        ::subxt_core::alloc::string::String,
-                    )>,
+                    pub block_number: _1,
+                    pub observations: ::subxt_core::alloc::vec::Vec<
+                        runtime_types::pallet_restaking::validator_data::ValidatorData,
+                    >,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -10939,6 +10933,26 @@ pub mod codegen {
                     pub validators: ::subxt_core::alloc::vec::Vec<
                         runtime_types::pallet_restaking::types::Validator<_0>,
                     >,
+                }
+            }
+            pub mod validator_data {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct ValidatorData {
+                    pub operator: [::core::primitive::u8; 20usize],
+                    pub stake: ::core::primitive::u128,
+                    pub key: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub strategies: ::subxt_core::alloc::vec::Vec<[::core::primitive::u8; 20usize]>,
+                    pub source: ::subxt_core::alloc::string::String,
                 }
             }
         }
