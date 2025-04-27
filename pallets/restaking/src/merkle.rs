@@ -2,7 +2,6 @@ use alloc::format;
 use core::str::FromStr;
 
 use ethabi::{Address, Token};
-use frame_support::IterableStorageMap;
 use serde::{Deserialize, Serialize};
 use sp_core::bounded::alloc;
 use sp_core::{keccak_256, Bytes, U256};
@@ -12,7 +11,6 @@ use sp_std::vec::Vec;
 
 use vrs_primitives::RewardsProof;
 
-use crate::pallet::{RewardsRoot, TotalRewards};
 use crate::String;
 use crate::{Config, Pallet};
 
