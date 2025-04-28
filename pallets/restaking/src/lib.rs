@@ -357,18 +357,23 @@ pub mod pallet {
                 );
                 return Err(Error::<T>::NotValidator.into());
             }
-            let validators_with_source = payload.observations;
+            let mut validators_with_source = payload.observations;
+            validators_with_source.sort_by(|a, b| {b.stake.cmp(&a.stake)});
             use sp_runtime::traits::TrailingZeroInput;
             let mut planned_validators = PlannedValidators::<T>::get()
                 .iter()
                 .filter(|s| s.2 == VERISENSE_VALIDATOR_SOURCE)
                 .cloned()
                 .collect::<Vec<(T::AccountId, u128, String)>>();
+            let max_validators_size = T::MaxValidators::get();
             for x in validators_with_source.clone() {
                 let operator_account =
                     T::AccountId::decode(&mut TrailingZeroInput::new(x.key.as_slice())).unwrap();
                 ValidatorsSource::<T>::insert(operator_account.clone(), x.clone());
                 planned_validators.push((operator_account, x.stake, x.source.clone()));
+                if planned_validators.len() >= max_validators_size as usize {
+                    break;
+                }
             }
             PlannedValidators::<T>::put(planned_validators);
             NeedFetchRestakingValidators::<T>::put(false);
