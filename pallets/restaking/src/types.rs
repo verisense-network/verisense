@@ -213,18 +213,19 @@ pub struct OperatorDirectedRewardSubmission {
     pub description: String,
 }
 
-#[derive(Encode, Decode, Clone, MaxEncodedLen, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo)]
 pub struct OperatorReward {
-    pub operator: [u8; 20],
+    pub validator: ValidatorData,
     pub amount: u128,
 }
 
-#[derive(PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Encode, Decode, TypeInfo)]
 pub struct EraRewardDetailsValue {
     pub total: u128,
     pub timestamp: u64,
     pub details: Vec<OperatorReward>,
 }
+
 impl Default for EraRewardDetailsValue {
     fn default() -> Self {
         EraRewardDetailsValue {

@@ -16,7 +16,7 @@ pub struct ValidatorData {
     pub stake: u128,
     pub key: Vec<u8>,
     pub strategies: Vec<[u8; 20]>,
-    pub source: String,
+     pub source: String,
 }
 
 impl TryFrom<Vec<Token>> for ValidatorData {

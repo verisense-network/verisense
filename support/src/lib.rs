@@ -31,7 +31,7 @@ pub trait ValidatorsInterface<AccountId> {
 }
 
 pub type RewardPoint = u128;
-
+pub type EvmAddress = [u8; 20];
 
 #[derive(PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct EraRewardPoints<AccountId: Ord> {

@@ -12366,6 +12366,7 @@ dependencies = [
  "jsonrpsee",
  "libp2p 0.55.0",
  "log",
+ "pallet-im-online",
  "pallet-restaking",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",

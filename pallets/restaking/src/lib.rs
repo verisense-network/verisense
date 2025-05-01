@@ -234,7 +234,7 @@ pub mod pallet {
                 let source = Self::validator_source(&acc);
                 rewards.total += rewds;
                 rewards.details.push(OperatorReward {
-                    operator: source.operator.clone(),
+                    validator: source,
                     amount: rewds,
                 });
             }

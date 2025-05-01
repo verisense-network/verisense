@@ -5,6 +5,7 @@ use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_primitives::keys::{restaking::AuthorityId as RestakingId, vrf::AuthorityId as VrfId};
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use vrs_runtime::opaque::SessionKeys;
 use vrs_runtime::{AccountId, Signature, WASM_BINARY};
 
@@ -39,6 +40,7 @@ pub fn authority_keys_from_seed(
     AuthorityId,
     RestakingId,
     VrfId,
+    ImOnlineId,
 ) {
     (
         get_account_id_from_seed::<sr25519::Public>(&s),
@@ -47,6 +49,7 @@ pub fn authority_keys_from_seed(
         get_from_seed::<AuthorityId>(s),
         get_from_seed::<RestakingId>(s),
         get_from_seed::<VrfId>(s),
+        get_from_seed::<ImOnlineId>(s),
     )
 }
 
@@ -149,6 +152,7 @@ fn testnet_genesis(
         AuthorityId,
         RestakingId,
         VrfId,
+        ImOnlineId,
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
@@ -183,6 +187,7 @@ fn testnet_genesis(
                             x.3.clone(),
                             x.4.clone(),
                             x.5.clone(),
+                            x.6.clone(),
                         ),
                     )
                 })
@@ -203,6 +208,7 @@ fn session_keys(
     authority: AuthorityId,
     restaking: RestakingId,
     vrf: VrfId,
+    im_online: ImOnlineId,
 ) -> SessionKeys {
     SessionKeys {
         aura,
@@ -210,5 +216,6 @@ fn session_keys(
         authority,
         restaking,
         vrf,
+        im_online,
     }
 }
