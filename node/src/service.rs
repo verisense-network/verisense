@@ -27,8 +27,6 @@ pub(crate) type FullClient = sc_service::TFullClient<
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
-/// The minimum period of blocks on which justifications will be
-/// imported and generated.
 const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
 pub type Service = sc_service::PartialComponents<
@@ -294,10 +292,6 @@ pub fn new_full<
     // let chain_spec_data = client
     //     .runtime_api()
     //     .get_chain_spec_data(&genesis_block_hash);
-
-    let tss_keystore =
-        vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY)
-            .map_err(|e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)))?;
     use sp_api::ProvideRuntimeApi;
     use vrs_tss_runtime_api::VrsTssRuntimeApi;
     let validators = client
@@ -311,6 +305,9 @@ pub fn new_full<
 
     let start_tss = whitelisted_ids.len() >= 2;
     if role.is_authority() && start_tss {
+        let tss_keystore =
+            vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY)
+                .map_err(|e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)))?;
         // use aura key to initialize signer
         // if the node is an authority, it will run a signer service
         // since we cannot get the sudo account from the chain spec, we start the coordinator for all authorities
@@ -495,7 +492,6 @@ pub fn new_full<
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
 
         let (cage_p2p_tx, cage_p2p_rx) = tokio::sync::mpsc::channel(10000);
-
         let params = vrs_nucleus_p2p::P2pParams {
             keystore: keystore_container.keystore(),
             reqres_receiver,

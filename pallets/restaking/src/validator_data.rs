@@ -16,7 +16,7 @@ pub struct ValidatorData {
     pub stake: u128,
     pub key: Vec<u8>,
     pub strategies: Vec<[u8; 20]>,
-     pub source: String,
+    pub source: String,
 }
 
 impl TryFrom<Vec<Token>> for ValidatorData {
@@ -83,7 +83,6 @@ pub fn parse_to_tokens(value: &str) -> Vec<Token> {
                     ParamType::Address,
                     ParamType::Uint(256),
                     ParamType::FixedBytes(32),
-                    ParamType::Bool,
                     ParamType::Array(Box::new(ParamType::Address)),
                 ]),
             ))],

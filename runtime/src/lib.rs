@@ -396,7 +396,7 @@ parameter_types! {
     pub const RestakingUnsignedPriority: u64 = 1 << 21;
 
     pub const ImOnlineUnsignedPriority: u64 = 1 << 22;
-    pub const RestakingEnable: bool = false;
+    pub const RestakingEnable: bool = true;
 
 }
 

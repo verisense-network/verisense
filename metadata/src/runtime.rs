@@ -186,9 +186,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                139u8, 243u8, 30u8, 6u8, 253u8, 80u8, 57u8, 127u8, 94u8, 103u8, 144u8, 175u8,
-                177u8, 136u8, 52u8, 171u8, 158u8, 44u8, 151u8, 102u8, 9u8, 242u8, 29u8, 139u8,
-                181u8, 224u8, 194u8, 129u8, 213u8, 7u8, 27u8, 222u8,
+                83u8, 57u8, 185u8, 150u8, 160u8, 29u8, 106u8, 100u8, 168u8, 250u8, 146u8, 84u8,
+                222u8, 221u8, 152u8, 23u8, 97u8, 118u8, 169u8, 131u8, 34u8, 234u8, 3u8, 48u8,
+                126u8, 69u8, 57u8, 152u8, 44u8, 169u8, 230u8, 15u8,
             ]
     }
     pub mod system {
@@ -1154,10 +1154,9 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            228u8, 102u8, 234u8, 24u8, 29u8, 180u8, 168u8, 145u8, 179u8, 154u8,
-                            73u8, 255u8, 82u8, 170u8, 62u8, 217u8, 29u8, 72u8, 71u8, 226u8, 181u8,
-                            161u8, 112u8, 249u8, 244u8, 10u8, 205u8, 185u8, 83u8, 1u8, 160u8,
-                            115u8,
+                            73u8, 172u8, 22u8, 255u8, 30u8, 46u8, 76u8, 246u8, 201u8, 72u8, 28u8,
+                            167u8, 125u8, 156u8, 65u8, 17u8, 101u8, 28u8, 181u8, 62u8, 199u8, 38u8,
+                            83u8, 111u8, 228u8, 253u8, 65u8, 85u8, 252u8, 35u8, 195u8, 108u8,
                         ],
                     )
                 }
@@ -1902,21 +1901,6 @@ pub mod codegen {
             impl ::subxt_core::events::StaticEvent for UnlockNonfungibleFailed {
                 const PALLET: &'static str = "Restaking";
                 const EVENT: &'static str = "UnlockNonfungibleFailed";
-            }
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct Simple;
-            impl ::subxt_core::events::StaticEvent for Simple {
-                const PALLET: &'static str = "Restaking";
-                const EVENT: &'static str = "Simple";
             }
         }
         pub mod storage {
@@ -11208,8 +11192,6 @@ pub mod codegen {
                         receiver: ::subxt_core::utils::AccountId32,
                         sequence: ::core::primitive::u32,
                     },
-                    #[codec(index = 4)]
-                    Simple,
                 }
             }
             pub mod types {

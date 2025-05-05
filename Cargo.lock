@@ -12412,6 +12412,7 @@ dependencies = [
  "vrs-primitives",
  "vrs-restaking-runtime-api",
  "vrs-runtime",
+ "vrs-support",
  "vrs-tss",
  "vrs-tss-runtime-api",
 ]

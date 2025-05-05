@@ -6,6 +6,7 @@ use const_hex::ToHexExt;
 use frame_system::pallet_prelude::BlockNumberFor;
 use serde::Serialize;
 use serde_json::Value;
+use sp_core::bounded::alloc;
 use sp_core::offchain::Duration;
 use sp_runtime::offchain::http;
 use sp_std::vec;
@@ -17,7 +18,9 @@ impl<T: Config> Pallet<T> {
         middleware: &str,
         source: &str,
     ) -> Result<Vec<ValidatorData>, http::Error> {
+        use alloc::format;
         let data = query_validators_params();
+        let middleware = format!("0x{}", middleware);
         let mut body = br#"
         {
           "id": 1,
@@ -78,23 +81,15 @@ impl<T: Config> Pallet<T> {
                 log!(info, "{:?}", &r);
                 log!(info, "query validators result {}", r.result.clone());
                 let tokens = parse_to_tokens(r.result.as_str());
-                let mut vd = decode_validator_datas(tokens).unwrap_or(Vec::new());
+                let mut vd = decode_validator_datas(tokens)
+                    .map_err(|e| log::error!("{:?}", e))
+                    .unwrap_or(Vec::new());
                 let mut final_validators: Vec<ValidatorData> = vec![];
                 for mut v in vd {
                     v.source = source.clone().to_string();
                     final_validators.push(v);
                 }
                 Ok(final_validators)
-                /* for d in vd {
-                    v.push((
-                        T::AccountId::decode(&mut TrailingZeroInput::new(d.key.as_slice()))
-                            .unwrap(),
-                        d.stake,
-                        d.operator.encode_hex_with_prefix(),
-                        source.to_string(),
-                    ));
-                }
-                Ok(v)*/
             }
             Err(_) => {
                 log::warn!("Failed to decode http body");
@@ -119,6 +114,12 @@ impl<T: Config> Pallet<T> {
         _validator_id: T::AccountId,
     ) -> Result<(), &'static str> {
         let ret = Self::get_validators_list().unwrap_or_default();
+        log!(
+            info,
+            "submit_unsigned_transaction length: {}, validators: {:?}",
+            ret.len(),
+            &ret
+        );
         if ret.len() == 0 {
             return Ok(());
         }
@@ -140,7 +141,6 @@ impl<T: Config> Pallet<T> {
             log!(warn, "Failed to update_validators: {:?}", result[0].1);
             return Err("Failed to update_validators");
         }
-
         Ok(())
     }
 }

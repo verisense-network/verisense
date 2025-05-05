@@ -8,7 +8,7 @@ use vrs_primitives::keys::{restaking::AuthorityId as RestakingId, vrf::Authority
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use vrs_runtime::opaque::SessionKeys;
 use vrs_runtime::{AccountId, Signature, WASM_BINARY};
-
+use vrs_support::consts::ORIGINAL_VALIDATOR_SOURCE;
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec;
 
@@ -65,6 +65,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
         vec![authority_keys_from_seed("Alice")],
+
+        vec![authority_keys_from_seed("Alice")],
         // Sudo account
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         // Pre-funded accounts
@@ -107,6 +109,12 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             authority_keys_from_seed("Bob"),
             authority_keys_from_seed("Charlie"),
             // authority_keys_from_seed("Dave"),
+        ],
+        vec![
+            authority_keys_from_seed("Alice"),
+            authority_keys_from_seed("Bob"),
+            authority_keys_from_seed("Charlie"),
+            authority_keys_from_seed("Dave"),
         ],
         // Sudo account
         get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -154,6 +162,15 @@ fn testnet_genesis(
         VrfId,
         ImOnlineId,
     )>,
+    initial_session_keys:Vec<(
+        AccountId,
+        AuraId,
+        GrandpaId,
+        AuthorityId,
+        RestakingId,
+        VrfId,
+        ImOnlineId,
+    )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     assets: Vec<(u32, AccountId, bool, u128)>,
@@ -172,10 +189,10 @@ fn testnet_genesis(
             "preset": initial_authorities.iter().take(1).cloned().map(|x| x.0).collect::<Vec<_>>(),
         },
         "restaking": {
-            "validators": initial_authorities.iter().cloned().map(|k| (k.0, 10000, "0x0000000000000000000000000000000000000000", "Original")).collect::<Vec<_>>(),
+            "validators": initial_authorities.iter().cloned().map(|k| (k.0, 10000, "0x0000000000000000000000000000000000000000", ORIGINAL_VALIDATOR_SOURCE)).collect::<Vec<_>>(),
         },
         "session":  {
-            "keys": initial_authorities
+            "keys": initial_session_keys
                 .iter()
                 .map(|x| {
                     (

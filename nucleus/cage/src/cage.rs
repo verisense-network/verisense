@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use codec::{Decode, Encode};
 use sp_core::sr25519::Signature;
 use std::sync::Arc;
-use vrs_nucleus_executor::{state::B256, Event, Gluon, NucleusState, NucleusTunnel, WasmInfo};
+use vrs_nucleus_executor::{state::B256, Event, Gluon, NucleusState, NucleusTunnel};
 use vrs_primitives::{AccountId, NucleusId};
 
 pub(crate) struct NucleusCage {

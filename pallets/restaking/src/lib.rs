@@ -34,7 +34,6 @@ pub mod types;
 pub mod validator_data;
 pub type ValidatorSource = String;
 pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
-pub const VERISENSE_VALIDATOR_SOURCE: &str = "Original";
 #[frame_support::pallet]
 pub mod pallet {
     use const_hex::ToHexExt;
@@ -44,6 +43,7 @@ pub mod pallet {
 
     use super::*;
     use crate::validator_data::ValidatorData;
+    use vrs_support::consts::ORIGINAL_VALIDATOR_SOURCE;
     use vrs_support::{EraRewardPoints, RestakingInterface, RewardPoint};
 
     #[pallet::config]
@@ -185,7 +185,6 @@ pub mod pallet {
             receiver: T::AccountId,
             sequence: u32,
         },
-        Simple,
     }
 
     #[pallet::error]
@@ -358,11 +357,11 @@ pub mod pallet {
                 return Err(Error::<T>::NotValidator.into());
             }
             let mut validators_with_source = payload.observations;
-            validators_with_source.sort_by(|a, b| {b.stake.cmp(&a.stake)});
+            validators_with_source.sort_by(|a, b| b.stake.cmp(&a.stake));
             use sp_runtime::traits::TrailingZeroInput;
             let mut planned_validators = PlannedValidators::<T>::get()
                 .iter()
-                .filter(|s| s.2 == VERISENSE_VALIDATOR_SOURCE)
+                .filter(|s| s.2 == ORIGINAL_VALIDATOR_SOURCE)
                 .cloned()
                 .collect::<Vec<(T::AccountId, u128, String)>>();
             let max_validators_size = T::MaxValidators::get();
@@ -377,7 +376,6 @@ pub mod pallet {
             }
             PlannedValidators::<T>::put(planned_validators);
             NeedFetchRestakingValidators::<T>::put(false);
-            Self::deposit_event(Event::Simple);
             Ok(().into())
         }
 
