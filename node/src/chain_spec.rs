@@ -17,6 +17,42 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
     TPublic::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
+
+}
+
+pub fn get_from_phrase<TPublic: Public>(p: &str) -> <TPublic::Pair as Pair>::Public {
+    TPublic::Pair::from_phrase(p, None)
+        .expect("static values are valid; qed").0
+        .public()
+}
+
+pub fn get_account_id_from_phrase<TPublic: Public>(seed: &str) -> AccountId
+where
+    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
+{
+    AccountPublic::from(get_from_phrase::<TPublic>(seed)).into_account()
+}
+
+pub fn authority_keys_from_phrase(
+    s: &str,
+) -> (
+    AccountId,
+    AuraId,
+    GrandpaId,
+    AuthorityId,
+    RestakingId,
+    VrfId,
+    ImOnlineId,
+) {
+    (
+        get_account_id_from_phrase::<sr25519::Public>(&s),
+        get_from_phrase::<AuraId>(s),
+        get_from_phrase::<GrandpaId>(s),
+        get_from_phrase::<AuthorityId>(s),
+        get_from_phrase::<RestakingId>(s),
+        get_from_phrase::<VrfId>(s),
+        get_from_phrase::<ImOnlineId>(s),
+    )
 }
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -92,6 +128,56 @@ pub fn development_config() -> Result<ChainSpec, String> {
         true,
     ))
     .build())
+}
+
+
+pub fn gamma_config() -> Result<ChainSpec, String> {
+    Ok(ChainSpec::builder(
+        WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
+        None,
+    )
+        .with_name("Gamma Testnet")
+        .with_id("gamma")
+        .with_protocol_id("vrs")
+        .with_chain_type(ChainType::Live)
+        .with_genesis_config_patch(testnet_genesis(
+            // Initial PoA authorities
+            vec![
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+            ],
+            vec![
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+            ],
+            // Sudo account
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            // Pre-funded accounts
+            vec![
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                get_account_id_from_phrase::<sr25519::Public>(""),
+            ],
+            vec![(
+                1,
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                false,
+                1,
+            )],
+            vec![(
+                1,
+                "VRS".as_bytes().to_vec(),
+                "VRS".as_bytes().to_vec(),
+                18,
+            )],
+            vec![],
+            true,
+        ))
+        .build())
 }
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {

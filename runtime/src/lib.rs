@@ -118,7 +118,7 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 4 * HOURS;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -298,9 +298,9 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: sp_staking::SessionIndex = 3;
+    pub const SessionsPerEra: sp_staking::SessionIndex = 6;
     pub const BondingDuration: u32 = 24 * 21;
-    pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 3;
+    pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 6;
     pub const HistoryDepth: u32 = 100;
     pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
