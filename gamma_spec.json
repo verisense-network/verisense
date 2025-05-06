@@ -3,7 +3,7 @@
   "id": "gamma",
   "chainType": "Live",
   "bootNodes": [
-    "/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWBZaWsmUcbmawfEkqV2L4jVCkyqPjqprZuBT5qcyQvywD"
+    "/ip4/34.123.43.7/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
   ],
   "telemetryEndpoints": null,
   "protocolId": "vrs",

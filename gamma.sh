@@ -1,0 +1,11 @@
+nohup /data/verisense \
+  --base-path /data/verisense_data \
+  --chain /data/gamma_spec.json \
+  --port 30333 \
+  --rpc-port 9944 \
+  --rpc-cors=all \
+  --validator \
+  --node-key 000000000000000000000000000000000000000000000000000000000000000 \
+  --blocks-pruning archive-canonical \
+  --state-pruning archive-canonical \
+  --keystore-path /data/keystore > /data/verisense.out & 2>&1

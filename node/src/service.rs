@@ -303,7 +303,7 @@ pub fn new_full<
         .map(|id| TssIdentity(id.clone()))
         .collect::<HashSet<_>>();
 
-    let start_tss = whitelisted_ids.len() >= 2;
+    let start_tss = false; // whitelisted_ids.len() >= 2;
     if role.is_authority() && start_tss {
         let tss_keystore =
             vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY)
