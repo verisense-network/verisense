@@ -6,7 +6,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use codec::Encode;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
@@ -118,7 +117,9 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 4 * HOURS;
+pub const SESSION_IN_BLOCKS: BlockNumber = 4 * HOURS;
+pub const SESSION_PER_ERA: u32 = 6;
+
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -206,7 +207,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 /// Existential deposit.
-pub const EXISTENTIAL_DEPOSIT: u128 = 500;
+pub const EXISTENTIAL_DEPOSIT: u128 = 600;
 
 impl pallet_balances::Config for Runtime {
     /// The ubiquitous event type.
@@ -281,7 +282,7 @@ impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf
 }
 
 parameter_types! {
-    pub const Period: u32 = MINUTES;
+    pub const Period: u32 = SESSION_IN_BLOCKS;
     pub const Offset: u32 = 0;
 }
 
@@ -298,9 +299,9 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: sp_staking::SessionIndex = 6;
+    pub const SessionsPerEra: sp_staking::SessionIndex = SESSION_PER_ERA;
     pub const BondingDuration: u32 = 24 * 21;
-    pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 6;
+    pub const BlocksPerEra: u32 = SESSION_IN_BLOCKS * SessionsPerEra::get();
     pub const HistoryDepth: u32 = 100;
     pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }

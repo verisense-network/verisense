@@ -8,7 +8,7 @@ use vrs_primitives::keys::{restaking::AuthorityId as RestakingId, vrf::Authority
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use vrs_runtime::opaque::SessionKeys;
 use vrs_runtime::{AccountId, Signature, WASM_BINARY};
-use vrs_support::consts::ORIGINAL_VALIDATOR_SOURCE;
+use vrs_support::consts::{ORIGINAL_VALIDATOR_SOURCE, SENSE};
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec;
 
@@ -97,6 +97,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
     .with_name("Development")
     .with_id("dev")
     .with_protocol_id("vrs")
+    .with_properties(chain_spec_properties())
     .with_chain_type(ChainType::Development)
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
@@ -139,6 +140,7 @@ pub fn gamma_config() -> Result<ChainSpec, String> {
         .with_name("Gamma Testnet")
         .with_id("gamma")
         .with_protocol_id("vrs")
+        .with_properties(chain_spec_properties())
         .with_chain_type(ChainType::Live)
         .with_genesis_config_patch(testnet_genesis(
             // Initial PoA authorities
@@ -188,6 +190,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
     .with_name("Local Testnet")
     .with_id("local_testnet")
     .with_chain_type(ChainType::Local)
+    .with_properties(chain_spec_properties())
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
         vec![
@@ -266,7 +269,7 @@ fn testnet_genesis(
 ) -> serde_json::Value {
     serde_json::json!({
         "balances": {
-            "balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
+            "balances": endowed_accounts.iter().cloned().map(|k| (k, 100000000u128 * SENSE)).collect::<Vec<_>>(),
         },
         "sudo": {
             "key": Some(root_key),
@@ -321,4 +324,14 @@ fn session_keys(
         vrf,
         im_online,
     }
+}
+
+fn chain_spec_properties() -> serde_json::map::Map<String, serde_json::Value> {
+    serde_json::json!({
+        "tokenSymbol": "SENSE",
+        "tokenDecimals": 18,
+    })
+    .as_object()
+    .expect("Map given; qed")
+    .clone()
 }

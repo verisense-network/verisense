@@ -7,4 +7,3 @@
 --node-key 0000000000000000000000000000000000000000000000000000000000000001 \
 --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
 --validator \
---
