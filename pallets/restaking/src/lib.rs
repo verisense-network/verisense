@@ -1,45 +1,50 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use crate::types::EraRewardDetailsValue;
+use crate::types::NotificationResult;
+use crate::types::OperatorReward;
 use codec::{Decode, Encode};
 use frame_support::{
     dispatch::{GetDispatchInfo, PostDispatchInfo},
-    traits::{OneSessionHandler},
+    traits::OneSessionHandler,
 };
 use frame_system::offchain::{
     AppCrypto, CreateSignedTransaction, SendUnsignedTransaction, SignedPayload, Signer,
     SigningTypes,
 };
+pub use pallet::*;
 use scale_info::{
     prelude::string::{String, ToString},
     TypeInfo,
 };
 use serde::{de, Deserialize, Deserializer};
 use sp_runtime::{
-    RuntimeAppPublic,
-    RuntimeDebug, traits::{Dispatchable, IdentifyAccount},
+    traits::{Dispatchable, IdentifyAccount},
+    RuntimeAppPublic, RuntimeDebug,
 };
 use sp_std::prelude::*;
-use crate::types::NotificationResult;
-pub use pallet::*;
-use types::{Observation, ObservationsPayload, ObservationType};
+use types::{Observation, ObservationType, ObservationsPayload};
 use vrs_primitives::keys::RESTAKING_KEY_TYPE as KEY_TYPE;
 use vrs_support::{log, ValidatorsInterface};
 
+mod merkle;
 mod outchain;
 pub(crate) mod solidity;
 pub mod types;
-mod merkle;
-
+pub mod validator_data;
+pub type ValidatorSource = String;
 pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
-
 #[frame_support::pallet]
 pub mod pallet {
+    use const_hex::ToHexExt;
     use frame_support::pallet_prelude::*;
+    use frame_support::traits::UnixTime;
     use frame_system::pallet_prelude::*;
 
-    use vrs_support::{EraRewardPoints, RestakingInterface};
-
     use super::*;
+    use crate::validator_data::ValidatorData;
+    use vrs_support::consts::ORIGINAL_VALIDATOR_SOURCE;
+    use vrs_support::{EraRewardPoints, RestakingInterface, RewardPoint};
 
     #[pallet::config]
     pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
@@ -57,6 +62,8 @@ pub mod pallet {
         #[pallet::constant]
         type UnsignedPriority: Get<TransactionPriority>;
 
+        type UnixTime: UnixTime;
+
         #[pallet::constant]
         type RequestEventLimit: Get<u32>;
 
@@ -67,7 +74,6 @@ pub mod pallet {
         type RestakingEnable: Get<bool>;
 
         type ValidatorsInterface: ValidatorsInterface<Self::AccountId>;
-
     }
 
     type MaxObservations = ConstU32<100>;
@@ -87,7 +93,8 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn rewards_per_point)]
-    pub(crate) type RewardsAmountPerPoint<T: Config> = StorageValue<_, u128, ValueQuery,DefaultRewardsPerPoint<T>>;
+    pub(crate) type RewardsAmountPerPoint<T: Config> =
+        StorageValue<_, u128, ValueQuery, DefaultRewardsPerPoint<T>>;
 
     #[pallet::storage]
     pub(crate) type NextSetId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -95,13 +102,13 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::unbounded]
     pub(crate) type PlannedValidators<T: Config> =
-        StorageValue<_, Vec<(T::AccountId, u128)>, ValueQuery>;
+        StorageValue<_, Vec<(T::AccountId, u128, ValidatorSource)>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn validator_source)]
     pub(crate) type ValidatorsSource<T: Config> =
-    StorageMap<_,Twox64Concat, T::AccountId, (String,String), ValueQuery>; //EvmAddr, restaking platform
+        StorageMap<_, Twox64Concat, T::AccountId, ValidatorData, ValueQuery>; //EvmAddr, restaking platform
 
     #[pallet::storage]
     pub(crate) type NextNotificationId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -119,33 +126,27 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    #[pallet::unbounded]
-    pub(crate) type Observing<T: Config> = StorageMap<
-        _,
-        Twox64Concat,
-        Observation<T::AccountId>,
-        BoundedVec<T::AccountId, T::MaxValidators>,
-        ValueQuery,
-    >;
-
-    #[pallet::storage]
     pub(crate) type NeedFetchRestakingValidators<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::storage]
     pub(crate) type LatestClosedEra<T: Config> = StorageValue<_, u32, ValueQuery>;
 
     #[pallet::storage]
-    pub(crate) type EraTotalRewards<T: Config> = StorageMap<_, Blake2_128Concat, u32, u128, ValueQuery>;
+    #[pallet::unbounded]
+    pub(crate) type EraRewardsDetail<T: Config> =
+        StorageMap<_, Blake2_128Concat, u32, EraRewardDetailsValue, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn total_rewards)]
-    pub(crate) type TotalRewards<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u128, ValueQuery>;
+    pub(crate) type TotalRewards<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, u128, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn restaking_platform)]
-    pub(crate) type RestakingPlatform<T: Config> = StorageMap<_, Blake2_128Concat, String, (String, String), OptionQuery>;
+    pub(crate) type RestakingPlatform<T: Config> =
+        StorageMap<_, Blake2_128Concat, String, (String, String), OptionQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
@@ -184,7 +185,6 @@ pub mod pallet {
             receiver: T::AccountId,
             sequence: u32,
         },
-        Simple,
     }
 
     #[pallet::error]
@@ -206,7 +206,11 @@ pub mod pallet {
 
     impl<T: Config> RestakingInterface<T::AccountId> for Pallet<T> {
         fn provide() -> Vec<(T::AccountId, u128)> {
+            use sp_runtime::traits::TrailingZeroInput;
             PlannedValidators::<T>::get()
+                .iter()
+                .map(|s| (s.0.clone(), s.1))
+                .collect()
         }
 
         fn next_validators_set_id() -> u32 {
@@ -219,17 +223,22 @@ pub mod pallet {
 
         fn on_end_era(era_idx: u32, era_reward_points: EraRewardPoints<T::AccountId>) {
             let reward_per_point = Self::rewards_per_point();
-            let mut total_era_rewards = 0u128;
+            let mut rewards = EraRewardDetailsValue::default();
+            rewards.timestamp = T::UnixTime::now().as_secs();
             for (acc, point) in era_reward_points.individual {
                 let rewds = point * reward_per_point;
-                total_era_rewards += rewds;
-                TotalRewards::<T>::mutate(acc, |r| {
-                     *r += rewds;
+                TotalRewards::<T>::mutate(acc.clone(), |r| {
+                    *r += rewds;
                 });
-            };
-            EraTotalRewards::<T>::insert(era_idx, total_era_rewards);
+                let source = Self::validator_source(&acc);
+                rewards.total += rewds;
+                rewards.details.push(OperatorReward {
+                    validator: source,
+                    amount: rewds,
+                });
+            }
+            EraRewardsDetail::<T>::insert(era_idx, rewards);
             LatestClosedEra::<T>::put(era_idx);
-            Self::calculate_rewards_root();
         }
     }
 
@@ -237,19 +246,28 @@ pub mod pallet {
     #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         pub validators: Vec<(T::AccountId, u128, String, String)>, //AccountId, total_staking, evm_addr, platform
-
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
+            use crate::validator_data::ValidatorData;
             <NextSetId<T>>::put(1); // set 0 is already in the genesis
-            let mut validators = vec![];
+            let mut planned_validators = vec![];
             for v in self.validators.clone() {
-                validators.push((v.0.clone(), v.1));
-                <ValidatorsSource<T>>::insert(v.0,(v.2, v.3));
+                let mut substrate_key = [0u8; 32];
+                substrate_key.copy_from_slice(v.0.clone().encode().as_slice());
+                let validator = ValidatorData {
+                    operator: [0u8; 20],
+                    stake: 0,
+                    key: v.0.clone().encode(),
+                    strategies: vec![],
+                    source: v.3.clone(),
+                };
+                <ValidatorsSource<T>>::insert(v.0.clone(), validator);
+                planned_validators.push((v.0, v.1, v.3.clone()));
             }
-            <PlannedValidators<T>>::put(validators);
+            <PlannedValidators<T>>::put(planned_validators);
         }
     }
 
@@ -325,7 +343,7 @@ pub mod pallet {
         #[pallet::call_index(0)]
         pub fn update_validators(
             origin: OriginFor<T>,
-            payload: ObservationsPayload<T::AccountId, T::Public, BlockNumberFor<T>>,
+            payload: ObservationsPayload<T::Public, BlockNumberFor<T>>,
             _signature: T::Signature,
         ) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
@@ -338,15 +356,26 @@ pub mod pallet {
                 );
                 return Err(Error::<T>::NotValidator.into());
             }
-            let validators_with_source = payload.observations;
-            let mut validators = vec![];
-            for x in validators_with_source {
-                ValidatorsSource::<T>::insert(x.0.clone(),(x.2, x.3));
-                validators.push((x.0, x.1));
+            let mut validators_with_source = payload.observations;
+            validators_with_source.sort_by(|a, b| b.stake.cmp(&a.stake));
+            use sp_runtime::traits::TrailingZeroInput;
+            let mut planned_validators = PlannedValidators::<T>::get()
+                .iter()
+                .filter(|s| s.2 == ORIGINAL_VALIDATOR_SOURCE)
+                .cloned()
+                .collect::<Vec<(T::AccountId, u128, String)>>();
+            let max_validators_size = T::MaxValidators::get();
+            for x in validators_with_source.clone() {
+                let operator_account =
+                    T::AccountId::decode(&mut TrailingZeroInput::new(x.key.as_slice())).unwrap();
+                ValidatorsSource::<T>::insert(operator_account.clone(), x.clone());
+                planned_validators.push((operator_account, x.stake, x.source.clone()));
+                if planned_validators.len() >= max_validators_size as usize {
+                    break;
+                }
             }
-            PlannedValidators::<T>::put(validators);
+            PlannedValidators::<T>::put(planned_validators);
             NeedFetchRestakingValidators::<T>::put(false);
-            Self::deposit_event(Event::Simple);
             Ok(().into())
         }
 

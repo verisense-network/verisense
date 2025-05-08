@@ -1,18 +1,26 @@
 use super::*;
-use crate::solidity::{decode_query_validators_resp, query_validators_params};
+use crate::solidity::query_validators_params;
+use crate::types::JsonResponse;
+use crate::validator_data::{decode_validator_datas, parse_to_tokens, ValidatorData};
+use const_hex::ToHexExt;
 use frame_system::pallet_prelude::BlockNumberFor;
 use serde::Serialize;
 use serde_json::Value;
+use sp_core::bounded::alloc;
 use sp_core::offchain::Duration;
 use sp_runtime::offchain::http;
-use sp_runtime::traits::TrailingZeroInput;
-
-
+use sp_std::vec;
+use sp_std::vec::Vec;
 
 impl<T: Config> Pallet<T> {
-
-    fn request_validators_list(rpc_url: &str, middleware: &str, source: &str) -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
+    fn request_validators_list(
+        rpc_url: &str,
+        middleware: &str,
+        source: &str,
+    ) -> Result<Vec<ValidatorData>, http::Error> {
+        use alloc::format;
         let data = query_validators_params();
+        let middleware = format!("0x{}", middleware);
         let mut body = br#"
         {
           "id": 1,
@@ -37,7 +45,11 @@ impl<T: Config> Pallet<T> {
           ]
         }"#,
         );
-        log!(info, "request body: {}", String::from_utf8(body.clone()).unwrap());
+        log!(
+            info,
+            "request body: {}",
+            String::from_utf8(body.clone()).unwrap()
+        );
 
         let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(2_000));
         let request = http::Request::default()
@@ -67,28 +79,25 @@ impl<T: Config> Pallet<T> {
         match json_response {
             Ok(r) => {
                 log!(info, "{:?}", &r);
-                let mut v = vec![];
                 log!(info, "query validators result {}", r.result.clone());
-                let vd = decode_query_validators_resp(r.result);
-                for d in vd {
-                    v.push((
-                        T::AccountId::decode(&mut TrailingZeroInput::new(d.key.as_slice()))
-                            .unwrap(),
-                        d.stake,
-                        d.evm_address,
-                        source.to_string(),
-                    ));
+                let tokens = parse_to_tokens(r.result.as_str());
+                let mut vd = decode_validator_datas(tokens)
+                    .map_err(|e| log::error!("{:?}", e))
+                    .unwrap_or(Vec::new());
+                let mut final_validators: Vec<ValidatorData> = vec![];
+                for mut v in vd {
+                    v.source = source.clone().to_string();
+                    final_validators.push(v);
                 }
-                Ok(v)
+                Ok(final_validators)
             }
             Err(_) => {
                 log::warn!("Failed to decode http body");
-                return Ok(vec![]);
+                Ok(vec![])
             }
         }
-
     }
-    pub fn get_validators_list() -> Result<Vec<(T::AccountId,u128, String, String)>, http::Error> {
+    pub fn get_validators_list() -> Result<Vec<ValidatorData>, http::Error> {
         let mut vc = vec![];
 
         for (k, v) in RestakingPlatform::<T>::iter() {
@@ -105,6 +114,12 @@ impl<T: Config> Pallet<T> {
         _validator_id: T::AccountId,
     ) -> Result<(), &'static str> {
         let ret = Self::get_validators_list().unwrap_or_default();
+        log!(
+            info,
+            "submit_unsigned_transaction length: {}, validators: {:?}",
+            ret.len(),
+            &ret
+        );
         if ret.len() == 0 {
             return Ok(());
         }
@@ -124,35 +139,8 @@ impl<T: Config> Pallet<T> {
         }
         if result[0].1.is_err() {
             log!(warn, "Failed to update_validators: {:?}", result[0].1);
-
             return Err("Failed to update_validators");
         }
-
         Ok(())
     }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct JsonRequest {
-    pub id: u32,
-    pub jsonrpc: String,
-    pub method: String,
-    pub params: Vec<Value>,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-pub struct TxParams {
-    #[serde(rename = "accessList")]
-    pub access_list: Vec<u32>,
-    pub data: String,
-    pub to: String,
-    #[serde(rename = "type")]
-    pub ntype: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
-pub struct JsonResponse {
-    pub jsonrpc: String,
-    pub id: u32,
-    pub result: String,
 }

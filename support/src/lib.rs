@@ -1,5 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod consts;
+
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
 use sp_runtime::KeyTypeId;
@@ -31,12 +33,14 @@ pub trait ValidatorsInterface<AccountId> {
 }
 
 pub type RewardPoint = u128;
+pub type EvmAddress = [u8; 20];
 
 #[derive(PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct EraRewardPoints<AccountId: Ord> {
     pub total: RewardPoint,
     pub individual: BTreeMap<AccountId, RewardPoint>,
 }
+
 
 impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
     fn default() -> Self {

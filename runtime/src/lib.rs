@@ -6,7 +6,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-
 use codec::Encode;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
@@ -78,6 +77,7 @@ pub mod opaque {
             pub authority: AuthorityDiscovery,
             pub restaking: Restaking,
             pub vrf: Nucleus,
+            pub im_online: ImOnline,
         }
     }
 }
@@ -117,7 +117,9 @@ pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES;
+pub const SESSION_IN_BLOCKS: BlockNumber = 4 * HOURS;
+pub const SESSION_PER_ERA: u32 = 6;
+
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -205,7 +207,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 /// Existential deposit.
-pub const EXISTENTIAL_DEPOSIT: u128 = 500;
+pub const EXISTENTIAL_DEPOSIT: u128 = 600;
 
 impl pallet_balances::Config for Runtime {
     /// The ubiquitous event type.
@@ -280,7 +282,7 @@ impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf
 }
 
 parameter_types! {
-    pub const Period: u32 = MINUTES;
+    pub const Period: u32 = SESSION_IN_BLOCKS;
     pub const Offset: u32 = 0;
 }
 
@@ -297,9 +299,9 @@ impl pallet_session::Config for Runtime {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: sp_staking::SessionIndex = 3;
+    pub const SessionsPerEra: sp_staking::SessionIndex = SESSION_PER_ERA;
     pub const BondingDuration: u32 = 24 * 21;
-    pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 3;
+    pub const BlocksPerEra: u32 = SESSION_IN_BLOCKS * SessionsPerEra::get();
     pub const HistoryDepth: u32 = 100;
     pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
@@ -317,7 +319,7 @@ impl pallet_validators::Config for Runtime {
 
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-    type EventHandler = (Validators,);
+    type EventHandler = (Validators, ImOnline);
 }
 
 pub struct VerisenseRestakingAppCrypto;
@@ -392,8 +394,11 @@ parameter_types! {
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxPeerDataEncodingSize: u32 = 1_000;
     pub const RequestEventLimit: u32 = 10;
-    pub const UnsignedPriority: u64 = 1 << 21;
-    pub const RestakingEnable: bool = false;
+    pub const RestakingUnsignedPriority: u64 = 1 << 21;
+
+    pub const ImOnlineUnsignedPriority: u64 = 1 << 22;
+    pub const RestakingEnable: bool = true;
+
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
@@ -406,7 +411,8 @@ impl pallet_restaking::Config for Runtime {
     type AppCrypto = VerisenseRestakingAppCrypto;
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
-    type UnsignedPriority = UnsignedPriority;
+    type UnixTime = Timestamp;
+    type UnsignedPriority = RestakingUnsignedPriority;
     type RequestEventLimit = RequestEventLimit;
     type MaxValidators = MaxAuthorities;
     type RestakingEnable = RestakingEnable;
@@ -420,6 +426,18 @@ impl EnsureOriginWithArg<RuntimeOrigin, u32> for NoAssetCreators {
     fn try_origin(o: RuntimeOrigin, _a: &u32) -> Result<Self::Success, RuntimeOrigin> {
         Err(o)
     }
+}
+
+impl pallet_im_online::Config for Runtime {
+    type AuthorityId = pallet_im_online::sr25519::AuthorityId;
+    type MaxKeys = MaxKeys;
+    type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorSet = Historical;
+    type NextSessionRotation = ();
+    type ReportUnresponsiveness = ();
+    type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_assets::Config for Runtime {
@@ -491,18 +509,21 @@ mod runtime {
     pub type Historical = session_historical;
 
     #[runtime::pallet_index(10)]
-    pub type Balances = pallet_balances;
+    pub type ImOnline = pallet_im_online;
 
     #[runtime::pallet_index(11)]
-    pub type TransactionPayment = pallet_transaction_payment;
+    pub type Balances = pallet_balances;
 
     #[runtime::pallet_index(12)]
-    pub type Sudo = pallet_sudo;
+    pub type TransactionPayment = pallet_transaction_payment;
 
     #[runtime::pallet_index(13)]
-    pub type Nucleus = pallet_nucleus;
+    pub type Sudo = pallet_sudo;
 
     #[runtime::pallet_index(14)]
+    pub type Nucleus = pallet_nucleus;
+
+    #[runtime::pallet_index(15)]
     pub type Assets = pallet_assets;
 }
 

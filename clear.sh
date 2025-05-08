@@ -9,6 +9,7 @@ mkdir -p /tmp/dave
 chmod 755 /tmp/alice
 chmod 755 /tmp/bob
 chmod 755 /tmp/charlie
+chmod 755 /tmp/dave
 rm -r /data/verisense
 mkdir -p /data/verisense
 chmod 755 /data/verisense
