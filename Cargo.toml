@@ -42,7 +42,7 @@ substrate-frame-rpc-system = { version = "36.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "33.0.0", default-features = false }
 frame-benchmarking = { version = "33.0.0", default-features = false }
 # frame pallets
-pallet-aura = { version = "35.0.0", default-features = false }
+pallet-babe = { version = "36.0.0", default-features = false }
 pallet-balances = { version = "37.0.0", default-features = false }
 pallet-grandpa = { version = "36.0.0", default-features = false }
 pallet-sudo = { version = "36.0.0", default-features = false }
@@ -60,7 +60,7 @@ parity-scale-codec = { version = "3.6.12", default-features = false }
 # primitives
 sp-api = { version = "33.0.0", default-features = false }
 sp-block-builder = { version = "33.0.0", default-features = false }
-sp-consensus-aura = { features = [
+sp-consensus-babe = { features = [
     "serde",
 ], version = "0.39.0", default-features = false }
 sp-authority-discovery = { version = "33.0.0", default-features = false }

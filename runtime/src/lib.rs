@@ -1,11 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod constrants;
+
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use codec::Encode;
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
@@ -53,6 +54,14 @@ use sp_runtime::traits::{ConvertInto, Extrinsic, OpaqueKeys};
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
 pub use vrs_primitives::*;
+use crate::constrants::PRIMARY_PROBABILITY;
+use crate::constrants::time::{EPOCH_DURATION_IN_SLOTS, MILLISECS_PER_BLOCK, SESSION_IN_BLOCKS, SESSION_PER_ERA, SLOT_DURATION};
+
+pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
+    sp_consensus_babe::BabeEpochConfiguration {
+        c: PRIMARY_PROBABILITY,
+        allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryVRFSlots,
+    };
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -72,7 +81,7 @@ pub mod opaque {
 
     impl_opaque_keys! {
         pub struct SessionKeys {
-            pub aura: Aura,
+            pub babe: Babe,
             pub grandpa: Grandpa,
             pub authority: AuthorityDiscovery,
             pub restaking: Restaking,
@@ -101,13 +110,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     state_version: 1,
 };
 
-/// This determines the average expected block time that we are targeting.
-/// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
-/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
-/// up by `pallet_aura` to implement `fn slot_duration()`.
-///
-/// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
+/*pub const MILLISECS_PER_BLOCK: u64 = 6000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -119,7 +122,7 @@ pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 pub const SESSION_IN_BLOCKS: BlockNumber = 4 * HOURS;
 pub const SESSION_PER_ERA: u32 = 6;
-
+*/
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -176,12 +179,19 @@ impl frame_system::Config for Runtime {
     type Version = Version;
 }
 
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
-    type MaxAuthorities = ConstU32<32>;
-    type DisabledValidators = ();
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
-    type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
+impl pallet_babe::Config for Runtime {
+    type DisabledValidators = Session;
+    // session module is the trigger
+    type EpochChangeTrigger = pallet_babe::ExternalTrigger;
+    type EpochDuration = EpochDuration;
+    type EquivocationReportSystem = ();
+    //TODO
+    // pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    type ExpectedBlockTime = ExpectedBlockTime;
+    type KeyOwnerProof = sp_session::MembershipProof;
+    type MaxAuthorities = MaxAuthorities;
+    type MaxNominators = ConstU32<0>;
+    type WeightInfo = ();
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -201,7 +211,7 @@ impl pallet_authority_discovery::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = Babe;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
@@ -318,7 +328,7 @@ impl pallet_validators::Config for Runtime {
 }
 
 impl pallet_authorship::Config for Runtime {
-    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
     type EventHandler = (Validators, ImOnline);
 }
 
@@ -398,7 +408,15 @@ parameter_types! {
 
     pub const ImOnlineUnsignedPriority: u64 = 1 << 22;
     pub const RestakingEnable: bool = true;
+}
 
+parameter_types! {
+    // NOTE: Currently it is not possible to change the epoch duration after the chain has started.
+    //       Attempting to do so will brick block production.
+    pub const EpochDuration: u64 = EPOCH_DURATION_IN_SLOTS;
+    pub const ExpectedBlockTime: u64 = MILLISECS_PER_BLOCK;
+    pub const ReportLongevity: u64 =
+        BondingDuration::get() as u64 * SessionsPerEra::get() as u64 * EpochDuration::get();
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
@@ -485,7 +503,7 @@ mod runtime {
     pub type Timestamp = pallet_timestamp;
 
     #[runtime::pallet_index(2)]
-    pub type Aura = pallet_aura;
+    pub type Babe = pallet_babe;
 
     #[runtime::pallet_index(3)]
     pub type Authorship = pallet_authorship;
@@ -631,13 +649,52 @@ impl_runtime_apis! {
         }
     }
 
-    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
-        fn slot_duration() -> sp_consensus_aura::SlotDuration {
-            sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
+    impl sp_consensus_babe::BabeApi<Block> for Runtime {
+        fn configuration() -> sp_consensus_babe::BabeConfiguration {
+            let epoch_config = Babe::epoch_config().unwrap_or(BABE_GENESIS_EPOCH_CONFIG);
+            sp_consensus_babe::BabeConfiguration {
+                slot_duration: Babe::slot_duration(),
+                epoch_length: EpochDuration::get().into(),
+                c: epoch_config.c,
+                authorities: Babe::authorities().to_vec(),
+                randomness: Babe::randomness(),
+                allowed_slots: epoch_config.allowed_slots,
+            }
         }
 
-        fn authorities() -> Vec<AuraId> {
-            pallet_aura::Authorities::<Runtime>::get().into_inner()
+        fn current_epoch_start() -> sp_consensus_babe::Slot {
+            Babe::current_epoch_start()
+        }
+
+        fn current_epoch() -> sp_consensus_babe::Epoch {
+            Babe::current_epoch()
+        }
+
+        fn next_epoch() -> sp_consensus_babe::Epoch {
+            Babe::next_epoch()
+        }
+
+        fn generate_key_ownership_proof(
+            _slot: sp_consensus_babe::Slot,
+            authority_id: sp_consensus_babe::AuthorityId,
+        ) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
+            use codec::Encode;
+
+            Historical::prove((sp_consensus_babe::KEY_TYPE, authority_id))
+                .map(|p| p.encode())
+                .map(sp_consensus_babe::OpaqueKeyOwnershipProof::new)
+        }
+
+        fn submit_report_equivocation_unsigned_extrinsic(
+            equivocation_proof: sp_consensus_babe::EquivocationProof<<Block as BlockT>::Header>,
+            key_owner_proof: sp_consensus_babe::OpaqueKeyOwnershipProof,
+        ) -> Option<()> {
+            let key_owner_proof = key_owner_proof.decode()?;
+
+            Babe::submit_unsigned_equivocation_report(
+                equivocation_proof,
+                key_owner_proof,
+            )
         }
     }
 

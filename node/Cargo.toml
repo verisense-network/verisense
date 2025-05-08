@@ -40,7 +40,6 @@ sc-authority-discovery = { workspace = true }
 sc-network-types = { workspace = true }
 
 sp-core = { workspace = true, default-features = true }
-sp-consensus-aura = { workspace = true, default-features = true }
 sp-consensus-grandpa = { workspace = true, default-features = true }
 sp-runtime = { workspace = true, default-features = true }
 sp-io = { workspace = true, default-features = true }
