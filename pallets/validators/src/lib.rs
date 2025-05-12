@@ -269,7 +269,7 @@ impl<T: Config> Pallet<T> {
                 if era_length == T::SessionsPerEra::get() - 1 {
                     T::RestakingInterface::plan_new_era();
                 }
-                return Self::determine_session_validators(session_index);
+                return None; //Self::determine_session_validators(session_index);
             }
             Self::try_trigger_new_era(session_index, is_genesis)
         } else {
