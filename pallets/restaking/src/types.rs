@@ -3,7 +3,6 @@ use crate::validator_data::ValidatorData;
 use frame_support::Serialize;
 use frame_system::pallet_prelude::BlockNumberFor;
 use serde_json::Value;
-use sp_core::MaxEncodedLen;
 
 fn account_deserialize_from_hex_str<'de, S, D>(deserializer: D) -> Result<S, D::Error>
 where

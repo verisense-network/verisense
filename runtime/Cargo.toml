@@ -19,7 +19,7 @@ frame-support = { workspace = true, default-features = false }
 frame-system = { workspace = true, default-features = false }
 frame-executive = { workspace = true, default-features = false }
 # frame pallets
-pallet-aura = { workspace = true, default-features = false }
+pallet-babe = { workspace = true, default-features = false }
 pallet-balances = { workspace = true, default-features = false }
 pallet-grandpa = { workspace = true, default-features = false }
 pallet-sudo = { workspace = true, default-features = false }
@@ -39,7 +39,7 @@ vrs-support = { path = "../support", default-features = false }
 vrs-primitives = { path = "../primitives", default-features = false }
 sp-api = { workspace = true, default-features = false }
 sp-block-builder = { workspace = true, default-features = false }
-sp-consensus-aura = { features = [
+sp-consensus-babe = { features = [
 	"serde",
 ], workspace = true, default-features = false }
 sp-staking = { workspace = true, default-features = false }
@@ -81,7 +81,7 @@ std = [
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
 	"pallet-authorship/std",
-	"pallet-aura/std",
+	"pallet-babe/std",
 	"pallet-balances/std",
 	"pallet-grandpa/std",
 	"pallet-sudo/std",
@@ -101,7 +101,7 @@ std = [
 	"vrs-tss-runtime-api/std",
 	"sp-api/std",
 	"sp-block-builder/std",
-	"sp-consensus-aura/std",
+	"sp-consensus-babe/std",
 	"sp-consensus-grandpa/std",
 	"sp-core/std",
 	"sp-genesis-builder/std",

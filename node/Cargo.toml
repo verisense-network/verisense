@@ -30,7 +30,8 @@ sc-telemetry = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
 sc-offchain = { workspace = true }
-sc-consensus-aura = { workspace = true }
+sc-consensus-babe = { workspace = true }
+sc-consensus-babe-rpc = { workspace = true }
 sc-consensus = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
 sc-client-api = { workspace = true }
@@ -40,24 +41,28 @@ sc-authority-discovery = { workspace = true }
 sc-network-types = { workspace = true }
 
 sp-core = { workspace = true, default-features = true }
-sp-consensus-aura = { workspace = true, default-features = true }
+sp-consensus-babe = {workspace = true, default-features = true}
 sp-consensus-grandpa = { workspace = true, default-features = true }
 sp-runtime = { workspace = true, default-features = true }
 sp-io = { workspace = true, default-features = true }
 sp-timestamp = { workspace = true, default-features = true }
 sp-inherents = { workspace = true, default-features = true }
+sp-keystore = {workspace = true, default-features = true}
 sp-keyring = { workspace = true, default-features = true }
 sp-api = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
 sp-block-builder = { workspace = true, default-features = true }
 sp-authority-discovery = { workspace = true, default-features = true }
-
+sc-consensus-beefy = {workspace = true, default-features = true}
+sp-consensus = {workspace = true, default-features = true}
+sp-transaction-storage-proof = {workspace = true, default-features = true}
 frame-system = { workspace = true, default-features = true }
 substrate-frame-rpc-system = { workspace = true, default-features = true }
 pallet-transaction-payment = { workspace = true, default-features = true }
 pallet-transaction-payment-rpc = { workspace = true, default-features = true }
 pallet-im-online = {workspace = true, default-features = true}
 pallet-restaking = { path = "../pallets/restaking" }
+sc-rpc = {workspace = true}
 vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
 vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api" }

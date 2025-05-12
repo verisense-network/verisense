@@ -42,7 +42,7 @@ substrate-frame-rpc-system = { version = "36.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "33.0.0", default-features = false }
 frame-benchmarking = { version = "33.0.0", default-features = false }
 # frame pallets
-pallet-aura = { version = "35.0.0", default-features = false }
+pallet-babe = { version = "36.0.0", default-features = false }
 pallet-balances = { version = "37.0.0", default-features = false }
 pallet-grandpa = { version = "36.0.0", default-features = false }
 pallet-sudo = { version = "36.0.0", default-features = false }
@@ -60,7 +60,7 @@ parity-scale-codec = { version = "3.6.12", default-features = false }
 # primitives
 sp-api = { version = "33.0.0", default-features = false }
 sp-block-builder = { version = "33.0.0", default-features = false }
-sp-consensus-aura = { features = [
+sp-consensus-babe = { features = [
     "serde",
 ], version = "0.39.0", default-features = false }
 sp-authority-discovery = { version = "33.0.0", default-features = false }
@@ -88,6 +88,10 @@ sp-keyring = { version = "38.0.0", default-features = false }
 sp-blockchain = { version = "35.0.0", default-features = false }
 sp-application-crypto = { version = "37.0.0", default-features = false }
 sp-staking = { version = "33.0.0", default-features = false }
+sp-transaction-storage-proof = {version = "33.0.0", default-features = false}
+sc-consensus-beefy = {version = "21.0.0", default-features = false}
+sp-consensus = {version = "0.39.1", default-features = false}
+
 # sc
 sc-network-types = "0.12.1"
 sc-cli = "0.44.0"
@@ -98,11 +102,14 @@ sc-telemetry = "22.0.0"
 sc-transaction-pool = "35.0.0"
 sc-transaction-pool-api = "35.0.0"
 sc-offchain = "37.0.0"
-sc-consensus-aura = "0.42.0"
+sc-consensus-babe = "0.42.0"
+
+sc-consensus-babe-rpc = "0.42.0"
 sc-consensus = "0.41.0"
 sc-consensus-grandpa = "0.27.0"
 sc-client-api = "35.0.0"
 sc-rpc-api = "0.41.0"
+sc-rpc = "37.0.0"
 sc-basic-authorship = "0.42.0"
 sc-authority-discovery = "0.42.0"
 

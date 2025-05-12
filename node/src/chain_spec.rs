@@ -1,6 +1,6 @@
 use sc_service::ChainType;
 use sp_authority_discovery::AuthorityId;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_consensus_babe::AuthorityId as BabeId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
@@ -37,7 +37,7 @@ pub fn authority_keys_from_phrase(
     s: &str,
 ) -> (
     AccountId,
-    AuraId,
+    BabeId,
     GrandpaId,
     AuthorityId,
     RestakingId,
@@ -46,7 +46,7 @@ pub fn authority_keys_from_phrase(
 ) {
     (
         get_account_id_from_phrase::<sr25519::Public>(&s),
-        get_from_phrase::<AuraId>(s),
+        get_from_phrase::<BabeId>(s),
         get_from_phrase::<GrandpaId>(s),
         get_from_phrase::<AuthorityId>(s),
         get_from_phrase::<RestakingId>(s),
@@ -65,13 +65,13 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate an Aura authority key.
+/// Generate an babe authority key.
 
 pub fn authority_keys_from_seed(
     s: &str,
 ) -> (
     AccountId,
-    AuraId,
+    BabeId,
     GrandpaId,
     AuthorityId,
     RestakingId,
@@ -80,7 +80,7 @@ pub fn authority_keys_from_seed(
 ) {
     (
         get_account_id_from_seed::<sr25519::Public>(&s),
-        get_from_seed::<AuraId>(s),
+        get_from_seed::<BabeId>(s),
         get_from_seed::<GrandpaId>(s),
         get_from_seed::<AuthorityId>(s),
         get_from_seed::<RestakingId>(s),
@@ -197,7 +197,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             authority_keys_from_seed("Alice"),
             authority_keys_from_seed("Bob"),
             authority_keys_from_seed("Charlie"),
-            // authority_keys_from_seed("Dave"),
+            authority_keys_from_seed("Dave"),
         ],
         vec![
             authority_keys_from_seed("Alice"),
@@ -244,7 +244,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 fn testnet_genesis(
     initial_authorities: Vec<(
         AccountId,
-        AuraId,
+        BabeId,
         GrandpaId,
         AuthorityId,
         RestakingId,
@@ -253,7 +253,7 @@ fn testnet_genesis(
     )>,
     initial_session_keys:Vec<(
         AccountId,
-        AuraId,
+        BabeId,
         GrandpaId,
         AuthorityId,
         RestakingId,
@@ -309,7 +309,7 @@ fn testnet_genesis(
 }
 
 fn session_keys(
-    aura: AuraId,
+    babe: BabeId,
     grandpa: GrandpaId,
     authority: AuthorityId,
     restaking: RestakingId,
@@ -317,7 +317,7 @@ fn session_keys(
     im_online: ImOnlineId,
 ) -> SessionKeys {
     SessionKeys {
-        aura,
+        babe,
         grandpa,
         authority,
         restaking,

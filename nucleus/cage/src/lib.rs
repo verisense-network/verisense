@@ -112,7 +112,7 @@ where
         });
         //////////////////////////////////////////////////////
         let author = keystore
-            .sr25519_public_keys(sp_core::crypto::key_types::AURA)
+            .sr25519_public_keys(sp_core::crypto::key_types::BABE)
             .first()
             .copied()
             .expect("No essential session key found, please insert one");
@@ -120,7 +120,7 @@ where
         let hash = client.info().best_hash;
         let api = client.runtime_api();
         let controller = api
-            .is_active_validator(hash, sp_core::crypto::key_types::AURA, author.to_vec())
+            .is_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
             .expect("couldn't load runtime api");
         if controller.is_none() {
             log::warn!("Our node is not a validator!");
