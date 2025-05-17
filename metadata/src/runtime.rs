@@ -6,10 +6,10 @@ pub mod codegen {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 16usize] = [
+    pub static PALLETS: [&str; 17usize] = [
         "System",
         "Timestamp",
-        "Aura",
+        "Babe",
         "Authorship",
         "Restaking",
         "AuthorityDiscovery",
@@ -21,6 +21,7 @@ pub mod codegen {
         "Balances",
         "TransactionPayment",
         "Sudo",
+        "Offences",
         "Nucleus",
         "Assets",
     ];
@@ -65,8 +66,8 @@ pub mod codegen {
         pub fn timestamp(&self) -> timestamp::constants::ConstantsApi {
             timestamp::constants::ConstantsApi
         }
-        pub fn aura(&self) -> aura::constants::ConstantsApi {
-            aura::constants::ConstantsApi
+        pub fn babe(&self) -> babe::constants::ConstantsApi {
+            babe::constants::ConstantsApi
         }
         pub fn restaking(&self) -> restaking::constants::ConstantsApi {
             restaking::constants::ConstantsApi
@@ -101,8 +102,8 @@ pub mod codegen {
         pub fn timestamp(&self) -> timestamp::storage::StorageApi {
             timestamp::storage::StorageApi
         }
-        pub fn aura(&self) -> aura::storage::StorageApi {
-            aura::storage::StorageApi
+        pub fn babe(&self) -> babe::storage::StorageApi {
+            babe::storage::StorageApi
         }
         pub fn authorship(&self) -> authorship::storage::StorageApi {
             authorship::storage::StorageApi
@@ -137,6 +138,9 @@ pub mod codegen {
         pub fn sudo(&self) -> sudo::storage::StorageApi {
             sudo::storage::StorageApi
         }
+        pub fn offences(&self) -> offences::storage::StorageApi {
+            offences::storage::StorageApi
+        }
         pub fn nucleus(&self) -> nucleus::storage::StorageApi {
             nucleus::storage::StorageApi
         }
@@ -151,6 +155,9 @@ pub mod codegen {
         }
         pub fn timestamp(&self) -> timestamp::calls::TransactionApi {
             timestamp::calls::TransactionApi
+        }
+        pub fn babe(&self) -> babe::calls::TransactionApi {
+            babe::calls::TransactionApi
         }
         pub fn restaking(&self) -> restaking::calls::TransactionApi {
             restaking::calls::TransactionApi
@@ -186,9 +193,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                83u8, 57u8, 185u8, 150u8, 160u8, 29u8, 106u8, 100u8, 168u8, 250u8, 146u8, 84u8,
-                222u8, 221u8, 152u8, 23u8, 97u8, 118u8, 169u8, 131u8, 34u8, 234u8, 3u8, 48u8,
-                126u8, 69u8, 57u8, 152u8, 44u8, 169u8, 230u8, 15u8,
+                218u8, 210u8, 83u8, 157u8, 12u8, 203u8, 92u8, 13u8, 169u8, 30u8, 4u8, 117u8, 94u8,
+                90u8, 167u8, 36u8, 109u8, 9u8, 85u8, 201u8, 111u8, 221u8, 221u8, 185u8, 16u8,
+                229u8, 166u8, 131u8, 195u8, 25u8, 196u8, 253u8,
             ]
     }
     pub mod system {
@@ -1154,9 +1161,10 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            73u8, 172u8, 22u8, 255u8, 30u8, 46u8, 76u8, 246u8, 201u8, 72u8, 28u8,
-                            167u8, 125u8, 156u8, 65u8, 17u8, 101u8, 28u8, 181u8, 62u8, 199u8, 38u8,
-                            83u8, 111u8, 228u8, 253u8, 65u8, 85u8, 252u8, 35u8, 195u8, 108u8,
+                            107u8, 148u8, 126u8, 181u8, 213u8, 212u8, 216u8, 94u8, 136u8, 180u8,
+                            66u8, 138u8, 233u8, 133u8, 179u8, 146u8, 220u8, 200u8, 117u8, 139u8,
+                            242u8, 67u8, 62u8, 224u8, 12u8, 196u8, 201u8, 98u8, 64u8, 94u8, 63u8,
+                            49u8,
                         ],
                     )
                 }
@@ -1555,27 +1563,284 @@ pub mod codegen {
             }
         }
     }
-    pub mod aura {
+    pub mod babe {
         use super::root_mod;
         use super::runtime_types;
+        pub type Error = runtime_types::pallet_babe::pallet::Error;
+        pub type Call = runtime_types::pallet_babe::pallet::Call;
+        pub mod calls {
+            use super::root_mod;
+            use super::runtime_types;
+            type DispatchError = runtime_types::sp_runtime::DispatchError;
+            pub mod types {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct ReportEquivocation {
+                    pub equivocation_proof:
+                        ::subxt_core::alloc::boxed::Box<report_equivocation::EquivocationProof>,
+                    pub key_owner_proof: report_equivocation::KeyOwnerProof,
+                }
+                pub mod report_equivocation {
+                    use super::runtime_types;
+                    pub type EquivocationProof =
+                        runtime_types::sp_consensus_slots::EquivocationProof<
+                            runtime_types::sp_runtime::generic::header::Header<
+                                ::core::primitive::u32,
+                            >,
+                            runtime_types::sp_consensus_babe::app::Public,
+                        >;
+                    pub type KeyOwnerProof = runtime_types::sp_session::MembershipProof;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for ReportEquivocation {
+                    const PALLET: &'static str = "Babe";
+                    const CALL: &'static str = "report_equivocation";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct ReportEquivocationUnsigned {
+                    pub equivocation_proof: ::subxt_core::alloc::boxed::Box<
+                        report_equivocation_unsigned::EquivocationProof,
+                    >,
+                    pub key_owner_proof: report_equivocation_unsigned::KeyOwnerProof,
+                }
+                pub mod report_equivocation_unsigned {
+                    use super::runtime_types;
+                    pub type EquivocationProof =
+                        runtime_types::sp_consensus_slots::EquivocationProof<
+                            runtime_types::sp_runtime::generic::header::Header<
+                                ::core::primitive::u32,
+                            >,
+                            runtime_types::sp_consensus_babe::app::Public,
+                        >;
+                    pub type KeyOwnerProof = runtime_types::sp_session::MembershipProof;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for ReportEquivocationUnsigned {
+                    const PALLET: &'static str = "Babe";
+                    const CALL: &'static str = "report_equivocation_unsigned";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct PlanConfigChange {
+                    pub config: plan_config_change::Config,
+                }
+                pub mod plan_config_change {
+                    use super::runtime_types;
+                    pub type Config =
+                        runtime_types::sp_consensus_babe::digests::NextConfigDescriptor;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for PlanConfigChange {
+                    const PALLET: &'static str = "Babe";
+                    const CALL: &'static str = "plan_config_change";
+                }
+            }
+            pub struct TransactionApi;
+            impl TransactionApi {
+                pub fn report_equivocation(
+                    &self,
+                    equivocation_proof: types::report_equivocation::EquivocationProof,
+                    key_owner_proof: types::report_equivocation::KeyOwnerProof,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::ReportEquivocation>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Babe",
+                        "report_equivocation",
+                        types::ReportEquivocation {
+                            equivocation_proof: ::subxt_core::alloc::boxed::Box::new(
+                                equivocation_proof,
+                            ),
+                            key_owner_proof,
+                        },
+                        [
+                            97u8, 65u8, 136u8, 207u8, 137u8, 113u8, 206u8, 76u8, 166u8, 245u8,
+                            231u8, 162u8, 65u8, 47u8, 251u8, 149u8, 68u8, 179u8, 13u8, 123u8,
+                            209u8, 146u8, 83u8, 54u8, 14u8, 150u8, 62u8, 195u8, 27u8, 190u8, 76u8,
+                            224u8,
+                        ],
+                    )
+                }
+                pub fn report_equivocation_unsigned(
+                    &self,
+                    equivocation_proof: types::report_equivocation_unsigned::EquivocationProof,
+                    key_owner_proof: types::report_equivocation_unsigned::KeyOwnerProof,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::ReportEquivocationUnsigned>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Babe",
+                        "report_equivocation_unsigned",
+                        types::ReportEquivocationUnsigned {
+                            equivocation_proof: ::subxt_core::alloc::boxed::Box::new(
+                                equivocation_proof,
+                            ),
+                            key_owner_proof,
+                        },
+                        [
+                            184u8, 158u8, 14u8, 168u8, 175u8, 23u8, 10u8, 63u8, 54u8, 15u8, 182u8,
+                            163u8, 5u8, 49u8, 223u8, 197u8, 45u8, 204u8, 216u8, 26u8, 126u8, 157u8,
+                            242u8, 233u8, 228u8, 203u8, 117u8, 216u8, 185u8, 157u8, 199u8, 117u8,
+                        ],
+                    )
+                }
+                pub fn plan_config_change(
+                    &self,
+                    config: types::plan_config_change::Config,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::PlanConfigChange>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Babe",
+                        "plan_config_change",
+                        types::PlanConfigChange { config },
+                        [
+                            227u8, 155u8, 182u8, 231u8, 240u8, 107u8, 30u8, 22u8, 15u8, 52u8,
+                            172u8, 203u8, 115u8, 47u8, 6u8, 66u8, 170u8, 231u8, 186u8, 77u8, 19u8,
+                            235u8, 91u8, 136u8, 95u8, 149u8, 188u8, 163u8, 161u8, 109u8, 164u8,
+                            179u8,
+                        ],
+                    )
+                }
+            }
+        }
         pub mod storage {
             use super::runtime_types;
             pub mod types {
                 use super::runtime_types;
+                pub mod epoch_index {
+                    use super::runtime_types;
+                    pub type EpochIndex = ::core::primitive::u64;
+                }
                 pub mod authorities {
                     use super::runtime_types;
                     pub type Authorities =
-                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
-                            runtime_types::sp_consensus_aura::sr25519::app_sr25519::Public,
-                        >;
+                        runtime_types::bounded_collections::weak_bounded_vec::WeakBoundedVec<(
+                            runtime_types::sp_consensus_babe::app::Public,
+                            ::core::primitive::u64,
+                        )>;
+                }
+                pub mod genesis_slot {
+                    use super::runtime_types;
+                    pub type GenesisSlot = runtime_types::sp_consensus_slots::Slot;
                 }
                 pub mod current_slot {
                     use super::runtime_types;
                     pub type CurrentSlot = runtime_types::sp_consensus_slots::Slot;
                 }
+                pub mod randomness {
+                    use super::runtime_types;
+                    pub type Randomness = [::core::primitive::u8; 32usize];
+                }
+                pub mod pending_epoch_config_change {
+                    use super::runtime_types;
+                    pub type PendingEpochConfigChange =
+                        runtime_types::sp_consensus_babe::digests::NextConfigDescriptor;
+                }
+                pub mod next_randomness {
+                    use super::runtime_types;
+                    pub type NextRandomness = [::core::primitive::u8; 32usize];
+                }
+                pub mod next_authorities {
+                    use super::runtime_types;
+                    pub type NextAuthorities =
+                        runtime_types::bounded_collections::weak_bounded_vec::WeakBoundedVec<(
+                            runtime_types::sp_consensus_babe::app::Public,
+                            ::core::primitive::u64,
+                        )>;
+                }
+                pub mod segment_index {
+                    use super::runtime_types;
+                    pub type SegmentIndex = ::core::primitive::u32;
+                }
+                pub mod under_construction {
+                    use super::runtime_types;
+                    pub type UnderConstruction =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<
+                            [::core::primitive::u8; 32usize],
+                        >;
+                    pub type Param0 = ::core::primitive::u32;
+                }
+                pub mod initialized {
+                    use super::runtime_types;
+                    pub type Initialized = ::core::option::Option<
+                        runtime_types::sp_consensus_babe::digests::PreDigest,
+                    >;
+                }
+                pub mod author_vrf_randomness {
+                    use super::runtime_types;
+                    pub type AuthorVrfRandomness =
+                        ::core::option::Option<[::core::primitive::u8; 32usize]>;
+                }
+                pub mod epoch_start {
+                    use super::runtime_types;
+                    pub type EpochStart = (::core::primitive::u32, ::core::primitive::u32);
+                }
+                pub mod lateness {
+                    use super::runtime_types;
+                    pub type Lateness = ::core::primitive::u32;
+                }
+                pub mod epoch_config {
+                    use super::runtime_types;
+                    pub type EpochConfig = runtime_types::sp_consensus_babe::BabeEpochConfiguration;
+                }
+                pub mod next_epoch_config {
+                    use super::runtime_types;
+                    pub type NextEpochConfig =
+                        runtime_types::sp_consensus_babe::BabeEpochConfiguration;
+                }
+                pub mod skipped_epochs {
+                    use super::runtime_types;
+                    pub type SkippedEpochs =
+                        runtime_types::bounded_collections::bounded_vec::BoundedVec<(
+                            ::core::primitive::u64,
+                            ::core::primitive::u32,
+                        )>;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
+                pub fn epoch_index(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::epoch_index::EpochIndex,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "EpochIndex",
+                        (),
+                        [
+                            32u8, 82u8, 130u8, 31u8, 190u8, 162u8, 237u8, 189u8, 104u8, 244u8,
+                            30u8, 199u8, 179u8, 0u8, 161u8, 107u8, 72u8, 240u8, 201u8, 222u8,
+                            177u8, 222u8, 35u8, 156u8, 81u8, 132u8, 162u8, 118u8, 238u8, 84u8,
+                            112u8, 89u8,
+                        ],
+                    )
+                }
                 pub fn authorities(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
@@ -1586,14 +1851,35 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Aura",
+                        "Babe",
                         "Authorities",
                         (),
                         [
-                            95u8, 52u8, 203u8, 53u8, 254u8, 107u8, 134u8, 122u8, 95u8, 253u8, 51u8,
-                            137u8, 142u8, 106u8, 237u8, 248u8, 159u8, 80u8, 41u8, 233u8, 137u8,
-                            133u8, 13u8, 217u8, 176u8, 88u8, 132u8, 199u8, 241u8, 47u8, 125u8,
-                            27u8,
+                            192u8, 157u8, 98u8, 244u8, 104u8, 38u8, 195u8, 114u8, 183u8, 62u8,
+                            247u8, 18u8, 31u8, 152u8, 246u8, 206u8, 97u8, 13u8, 118u8, 211u8,
+                            104u8, 54u8, 150u8, 152u8, 126u8, 170u8, 228u8, 158u8, 108u8, 129u8,
+                            134u8, 44u8,
+                        ],
+                    )
+                }
+                pub fn genesis_slot(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::genesis_slot::GenesisSlot,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "GenesisSlot",
+                        (),
+                        [
+                            218u8, 174u8, 152u8, 76u8, 188u8, 214u8, 7u8, 88u8, 253u8, 187u8,
+                            139u8, 234u8, 51u8, 28u8, 220u8, 57u8, 73u8, 1u8, 18u8, 205u8, 80u8,
+                            160u8, 120u8, 216u8, 139u8, 191u8, 100u8, 108u8, 162u8, 106u8, 175u8,
+                            107u8,
                         ],
                     )
                 }
@@ -1607,7 +1893,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Aura",
+                        "Babe",
                         "CurrentSlot",
                         (),
                         [
@@ -1618,24 +1904,360 @@ pub mod codegen {
                         ],
                     )
                 }
+                pub fn randomness(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::randomness::Randomness,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "Randomness",
+                        (),
+                        [
+                            36u8, 15u8, 52u8, 73u8, 195u8, 177u8, 186u8, 125u8, 134u8, 11u8, 103u8,
+                            248u8, 170u8, 237u8, 105u8, 239u8, 168u8, 204u8, 147u8, 52u8, 15u8,
+                            226u8, 126u8, 176u8, 133u8, 186u8, 169u8, 241u8, 156u8, 118u8, 67u8,
+                            58u8,
+                        ],
+                    )
+                }
+                pub fn pending_epoch_config_change(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::pending_epoch_config_change::PendingEpochConfigChange,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "PendingEpochConfigChange",
+                        (),
+                        [
+                            79u8, 216u8, 84u8, 210u8, 83u8, 149u8, 122u8, 160u8, 159u8, 164u8,
+                            16u8, 134u8, 154u8, 104u8, 77u8, 254u8, 139u8, 18u8, 163u8, 59u8, 92u8,
+                            9u8, 135u8, 141u8, 147u8, 86u8, 44u8, 95u8, 183u8, 101u8, 11u8, 58u8,
+                        ],
+                    )
+                }
+                pub fn next_randomness(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::next_randomness::NextRandomness,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "NextRandomness",
+                        (),
+                        [
+                            96u8, 191u8, 139u8, 171u8, 144u8, 92u8, 33u8, 58u8, 23u8, 219u8, 164u8,
+                            121u8, 59u8, 209u8, 112u8, 244u8, 50u8, 8u8, 14u8, 244u8, 103u8, 125u8,
+                            120u8, 210u8, 16u8, 250u8, 54u8, 192u8, 72u8, 8u8, 219u8, 152u8,
+                        ],
+                    )
+                }
+                pub fn next_authorities(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::next_authorities::NextAuthorities,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "NextAuthorities",
+                        (),
+                        [
+                            29u8, 161u8, 79u8, 221u8, 198u8, 101u8, 11u8, 17u8, 20u8, 17u8, 225u8,
+                            144u8, 35u8, 150u8, 241u8, 190u8, 106u8, 32u8, 230u8, 14u8, 212u8,
+                            126u8, 1u8, 96u8, 73u8, 173u8, 245u8, 39u8, 153u8, 33u8, 205u8, 174u8,
+                        ],
+                    )
+                }
+                pub fn segment_index(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::segment_index::SegmentIndex,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "SegmentIndex",
+                        (),
+                        [
+                            145u8, 91u8, 142u8, 240u8, 184u8, 94u8, 68u8, 52u8, 130u8, 3u8, 75u8,
+                            175u8, 155u8, 130u8, 66u8, 9u8, 150u8, 242u8, 123u8, 111u8, 124u8,
+                            241u8, 100u8, 128u8, 220u8, 133u8, 96u8, 227u8, 164u8, 241u8, 170u8,
+                            34u8,
+                        ],
+                    )
+                }
+                pub fn under_construction_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::under_construction::UnderConstruction,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "UnderConstruction",
+                        (),
+                        [
+                            120u8, 120u8, 59u8, 247u8, 50u8, 6u8, 220u8, 14u8, 2u8, 76u8, 203u8,
+                            244u8, 232u8, 144u8, 253u8, 191u8, 101u8, 35u8, 99u8, 85u8, 111u8,
+                            168u8, 31u8, 110u8, 187u8, 124u8, 72u8, 32u8, 43u8, 66u8, 8u8, 215u8,
+                        ],
+                    )
+                }
+                pub fn under_construction(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::under_construction::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::under_construction::Param0,
+                    >,
+                    types::under_construction::UnderConstruction,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "UnderConstruction",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            120u8, 120u8, 59u8, 247u8, 50u8, 6u8, 220u8, 14u8, 2u8, 76u8, 203u8,
+                            244u8, 232u8, 144u8, 253u8, 191u8, 101u8, 35u8, 99u8, 85u8, 111u8,
+                            168u8, 31u8, 110u8, 187u8, 124u8, 72u8, 32u8, 43u8, 66u8, 8u8, 215u8,
+                        ],
+                    )
+                }
+                pub fn initialized(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::initialized::Initialized,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "Initialized",
+                        (),
+                        [
+                            169u8, 217u8, 237u8, 78u8, 186u8, 202u8, 206u8, 213u8, 54u8, 85u8,
+                            206u8, 166u8, 22u8, 138u8, 236u8, 60u8, 211u8, 169u8, 12u8, 183u8,
+                            23u8, 69u8, 194u8, 236u8, 112u8, 21u8, 62u8, 219u8, 92u8, 131u8, 134u8,
+                            145u8,
+                        ],
+                    )
+                }
+                pub fn author_vrf_randomness(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::author_vrf_randomness::AuthorVrfRandomness,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "AuthorVrfRandomness",
+                        (),
+                        [
+                            160u8, 157u8, 62u8, 48u8, 196u8, 136u8, 63u8, 132u8, 155u8, 183u8,
+                            91u8, 201u8, 146u8, 29u8, 192u8, 142u8, 168u8, 152u8, 197u8, 233u8,
+                            5u8, 25u8, 0u8, 154u8, 234u8, 180u8, 146u8, 132u8, 106u8, 164u8, 149u8,
+                            63u8,
+                        ],
+                    )
+                }
+                pub fn epoch_start(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::epoch_start::EpochStart,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "EpochStart",
+                        (),
+                        [
+                            144u8, 133u8, 140u8, 56u8, 241u8, 203u8, 199u8, 123u8, 244u8, 126u8,
+                            196u8, 151u8, 214u8, 204u8, 243u8, 244u8, 210u8, 198u8, 174u8, 126u8,
+                            200u8, 236u8, 248u8, 190u8, 181u8, 152u8, 113u8, 224u8, 95u8, 234u8,
+                            169u8, 14u8,
+                        ],
+                    )
+                }
+                pub fn lateness(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::lateness::Lateness,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "Lateness",
+                        (),
+                        [
+                            229u8, 214u8, 133u8, 149u8, 32u8, 159u8, 26u8, 22u8, 252u8, 131u8,
+                            200u8, 191u8, 231u8, 176u8, 178u8, 127u8, 33u8, 212u8, 139u8, 220u8,
+                            157u8, 38u8, 4u8, 226u8, 204u8, 32u8, 55u8, 20u8, 205u8, 141u8, 29u8,
+                            87u8,
+                        ],
+                    )
+                }
+                pub fn epoch_config(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::epoch_config::EpochConfig,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "EpochConfig",
+                        (),
+                        [
+                            151u8, 58u8, 93u8, 2u8, 19u8, 98u8, 41u8, 144u8, 241u8, 70u8, 195u8,
+                            37u8, 126u8, 241u8, 111u8, 65u8, 16u8, 228u8, 111u8, 220u8, 241u8,
+                            215u8, 179u8, 235u8, 122u8, 88u8, 92u8, 95u8, 131u8, 252u8, 236u8,
+                            46u8,
+                        ],
+                    )
+                }
+                pub fn next_epoch_config(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::next_epoch_config::NextEpochConfig,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "NextEpochConfig",
+                        (),
+                        [
+                            65u8, 54u8, 74u8, 141u8, 193u8, 124u8, 130u8, 238u8, 106u8, 27u8,
+                            221u8, 189u8, 103u8, 53u8, 39u8, 243u8, 212u8, 216u8, 75u8, 185u8,
+                            104u8, 220u8, 70u8, 108u8, 87u8, 172u8, 201u8, 185u8, 39u8, 55u8,
+                            145u8, 6u8,
+                        ],
+                    )
+                }
+                pub fn skipped_epochs(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::skipped_epochs::SkippedEpochs,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Babe",
+                        "SkippedEpochs",
+                        (),
+                        [
+                            120u8, 167u8, 144u8, 97u8, 41u8, 216u8, 103u8, 90u8, 3u8, 86u8, 196u8,
+                            35u8, 160u8, 150u8, 144u8, 233u8, 128u8, 35u8, 119u8, 66u8, 6u8, 63u8,
+                            114u8, 140u8, 182u8, 228u8, 192u8, 30u8, 50u8, 145u8, 217u8, 108u8,
+                        ],
+                    )
+                }
             }
         }
         pub mod constants {
             use super::runtime_types;
             pub struct ConstantsApi;
             impl ConstantsApi {
-                pub fn slot_duration(
+                pub fn epoch_duration(
                     &self,
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u64>
                 {
                     ::subxt_core::constants::address::StaticAddress::new_static(
-                        "Aura",
-                        "SlotDuration",
+                        "Babe",
+                        "EpochDuration",
                         [
                             128u8, 214u8, 205u8, 242u8, 181u8, 142u8, 124u8, 231u8, 190u8, 146u8,
                             59u8, 226u8, 157u8, 101u8, 103u8, 117u8, 249u8, 65u8, 18u8, 191u8,
                             103u8, 119u8, 53u8, 85u8, 81u8, 96u8, 220u8, 42u8, 184u8, 239u8, 42u8,
                             246u8,
+                        ],
+                    )
+                }
+                pub fn expected_block_time(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u64>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Babe",
+                        "ExpectedBlockTime",
+                        [
+                            128u8, 214u8, 205u8, 242u8, 181u8, 142u8, 124u8, 231u8, 190u8, 146u8,
+                            59u8, 226u8, 157u8, 101u8, 103u8, 117u8, 249u8, 65u8, 18u8, 191u8,
+                            103u8, 119u8, 53u8, 85u8, 81u8, 96u8, 220u8, 42u8, 184u8, 239u8, 42u8,
+                            246u8,
+                        ],
+                    )
+                }
+                pub fn max_authorities(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Babe",
+                        "MaxAuthorities",
+                        [
+                            98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
+                            125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
+                            178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
+                            145u8,
+                        ],
+                    )
+                }
+                pub fn max_nominators(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Babe",
+                        "MaxNominators",
+                        [
+                            98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
+                            125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
+                            178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
+                            145u8,
                         ],
                     )
                 }
@@ -2731,6 +3353,22 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type ForceEra = runtime_types::pallet_validators::types::Forcing;
                 }
+                pub mod current_session {
+                    use super::runtime_types;
+                    pub type CurrentSession = ::core::primitive::u32;
+                }
+                pub mod era_validators {
+                    use super::runtime_types;
+                    pub type EraValidators =
+                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
+                    pub type Param0 = ::core::primitive::u32;
+                }
+                pub mod session_offenders {
+                    use super::runtime_types;
+                    pub type SessionOffenders =
+                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
+                    pub type Param0 = ::core::primitive::u32;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
@@ -3126,6 +3764,113 @@ pub mod codegen {
                         ],
                     )
                 }
+                pub fn current_session(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::current_session::CurrentSession,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Validators",
+                        "CurrentSession",
+                        (),
+                        [
+                            206u8, 79u8, 91u8, 17u8, 25u8, 230u8, 101u8, 217u8, 216u8, 213u8,
+                            118u8, 134u8, 133u8, 128u8, 245u8, 237u8, 131u8, 145u8, 7u8, 117u8,
+                            157u8, 228u8, 42u8, 119u8, 177u8, 124u8, 188u8, 251u8, 135u8, 118u8,
+                            23u8, 4u8,
+                        ],
+                    )
+                }
+                pub fn era_validators_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::era_validators::EraValidators,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Validators",
+                        "EraValidators",
+                        (),
+                        [
+                            11u8, 112u8, 128u8, 103u8, 243u8, 145u8, 85u8, 191u8, 228u8, 218u8,
+                            236u8, 54u8, 9u8, 218u8, 206u8, 51u8, 82u8, 199u8, 87u8, 40u8, 211u8,
+                            152u8, 119u8, 158u8, 4u8, 221u8, 126u8, 47u8, 208u8, 212u8, 149u8, 5u8,
+                        ],
+                    )
+                }
+                pub fn era_validators(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::era_validators::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<types::era_validators::Param0>,
+                    types::era_validators::EraValidators,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Validators",
+                        "EraValidators",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            11u8, 112u8, 128u8, 103u8, 243u8, 145u8, 85u8, 191u8, 228u8, 218u8,
+                            236u8, 54u8, 9u8, 218u8, 206u8, 51u8, 82u8, 199u8, 87u8, 40u8, 211u8,
+                            152u8, 119u8, 158u8, 4u8, 221u8, 126u8, 47u8, 208u8, 212u8, 149u8, 5u8,
+                        ],
+                    )
+                }
+                pub fn session_offenders_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::session_offenders::SessionOffenders,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Validators",
+                        "SessionOffenders",
+                        (),
+                        [
+                            173u8, 83u8, 41u8, 232u8, 177u8, 164u8, 9u8, 255u8, 8u8, 241u8, 60u8,
+                            145u8, 22u8, 191u8, 168u8, 218u8, 237u8, 64u8, 142u8, 39u8, 176u8,
+                            197u8, 150u8, 228u8, 72u8, 175u8, 205u8, 135u8, 213u8, 183u8, 48u8,
+                            246u8,
+                        ],
+                    )
+                }
+                pub fn session_offenders(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::session_offenders::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::session_offenders::Param0,
+                    >,
+                    types::session_offenders::SessionOffenders,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Validators",
+                        "SessionOffenders",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            173u8, 83u8, 41u8, 232u8, 177u8, 164u8, 9u8, 255u8, 8u8, 241u8, 60u8,
+                            145u8, 22u8, 191u8, 168u8, 218u8, 237u8, 64u8, 142u8, 39u8, 176u8,
+                            197u8, 150u8, 228u8, 72u8, 175u8, 205u8, 135u8, 213u8, 183u8, 48u8,
+                            246u8,
+                        ],
+                    )
+                }
             }
         }
         pub mod constants {
@@ -3242,9 +3987,9 @@ pub mod codegen {
                         "set_keys",
                         types::SetKeys { keys, proof },
                         [
-                            29u8, 19u8, 89u8, 66u8, 105u8, 97u8, 56u8, 148u8, 230u8, 167u8, 53u8,
-                            176u8, 80u8, 95u8, 231u8, 103u8, 235u8, 127u8, 14u8, 62u8, 34u8, 28u8,
-                            57u8, 123u8, 87u8, 106u8, 123u8, 125u8, 55u8, 16u8, 44u8, 188u8,
+                            112u8, 178u8, 9u8, 24u8, 201u8, 35u8, 145u8, 2u8, 107u8, 143u8, 109u8,
+                            170u8, 66u8, 60u8, 9u8, 169u8, 234u8, 176u8, 189u8, 168u8, 162u8,
+                            170u8, 199u8, 83u8, 47u8, 227u8, 95u8, 43u8, 147u8, 168u8, 238u8, 5u8,
                         ],
                     )
                 }
@@ -3410,9 +4155,10 @@ pub mod codegen {
                         "QueuedKeys",
                         (),
                         [
-                            254u8, 50u8, 177u8, 134u8, 221u8, 137u8, 38u8, 92u8, 22u8, 61u8, 140u8,
-                            32u8, 243u8, 121u8, 2u8, 236u8, 35u8, 205u8, 218u8, 48u8, 102u8, 240u8,
-                            39u8, 50u8, 99u8, 59u8, 93u8, 138u8, 102u8, 212u8, 191u8, 0u8,
+                            120u8, 161u8, 6u8, 54u8, 111u8, 241u8, 196u8, 162u8, 244u8, 142u8, 1u8,
+                            69u8, 227u8, 220u8, 171u8, 145u8, 77u8, 164u8, 112u8, 110u8, 84u8,
+                            124u8, 120u8, 102u8, 34u8, 31u8, 71u8, 193u8, 13u8, 162u8, 223u8,
+                            198u8,
                         ],
                     )
                 }
@@ -3450,9 +4196,9 @@ pub mod codegen {
                         "NextKeys",
                         (),
                         [
-                            239u8, 62u8, 207u8, 194u8, 78u8, 119u8, 147u8, 225u8, 7u8, 105u8,
-                            230u8, 71u8, 199u8, 252u8, 67u8, 15u8, 235u8, 183u8, 118u8, 166u8,
-                            255u8, 45u8, 246u8, 6u8, 133u8, 179u8, 82u8, 165u8, 209u8, 85u8, 158u8,
+                            154u8, 60u8, 230u8, 242u8, 241u8, 104u8, 157u8, 128u8, 10u8, 61u8,
+                            77u8, 83u8, 88u8, 250u8, 121u8, 250u8, 183u8, 233u8, 35u8, 13u8, 163u8,
+                            42u8, 42u8, 79u8, 212u8, 151u8, 209u8, 170u8, 243u8, 210u8, 178u8,
                             34u8,
                         ],
                     )
@@ -3472,9 +4218,9 @@ pub mod codegen {
                         "NextKeys",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            239u8, 62u8, 207u8, 194u8, 78u8, 119u8, 147u8, 225u8, 7u8, 105u8,
-                            230u8, 71u8, 199u8, 252u8, 67u8, 15u8, 235u8, 183u8, 118u8, 166u8,
-                            255u8, 45u8, 246u8, 6u8, 133u8, 179u8, 82u8, 165u8, 209u8, 85u8, 158u8,
+                            154u8, 60u8, 230u8, 242u8, 241u8, 104u8, 157u8, 128u8, 10u8, 61u8,
+                            77u8, 83u8, 88u8, 250u8, 121u8, 250u8, 183u8, 233u8, 35u8, 13u8, 163u8,
+                            42u8, 42u8, 79u8, 212u8, 151u8, 209u8, 170u8, 243u8, 210u8, 178u8,
                             34u8,
                         ],
                     )
@@ -6018,9 +6764,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            171u8, 94u8, 0u8, 73u8, 93u8, 214u8, 68u8, 78u8, 153u8, 221u8, 106u8,
-                            179u8, 119u8, 153u8, 68u8, 92u8, 116u8, 216u8, 82u8, 69u8, 32u8, 172u8,
-                            194u8, 151u8, 128u8, 213u8, 104u8, 121u8, 69u8, 155u8, 182u8, 51u8,
+                            60u8, 72u8, 81u8, 60u8, 164u8, 166u8, 93u8, 252u8, 230u8, 46u8, 193u8,
+                            236u8, 248u8, 74u8, 192u8, 80u8, 44u8, 52u8, 139u8, 200u8, 29u8, 222u8,
+                            195u8, 128u8, 144u8, 241u8, 212u8, 72u8, 44u8, 184u8, 218u8, 54u8,
                         ],
                     )
                 }
@@ -6038,9 +6784,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            78u8, 44u8, 221u8, 50u8, 86u8, 136u8, 220u8, 10u8, 49u8, 184u8, 204u8,
-                            150u8, 141u8, 83u8, 111u8, 181u8, 136u8, 202u8, 40u8, 30u8, 21u8, 3u8,
-                            75u8, 223u8, 173u8, 26u8, 115u8, 174u8, 119u8, 64u8, 175u8, 207u8,
+                            44u8, 100u8, 117u8, 31u8, 192u8, 10u8, 56u8, 170u8, 56u8, 247u8, 43u8,
+                            110u8, 184u8, 52u8, 54u8, 138u8, 211u8, 48u8, 181u8, 77u8, 25u8, 5u8,
+                            48u8, 62u8, 82u8, 192u8, 132u8, 84u8, 135u8, 134u8, 136u8, 149u8,
                         ],
                     )
                 }
@@ -6072,9 +6818,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            59u8, 22u8, 96u8, 193u8, 105u8, 203u8, 43u8, 37u8, 143u8, 165u8, 139u8,
-                            250u8, 128u8, 47u8, 187u8, 147u8, 100u8, 51u8, 90u8, 69u8, 157u8, 28u8,
-                            217u8, 91u8, 178u8, 64u8, 222u8, 51u8, 118u8, 215u8, 208u8, 196u8,
+                            239u8, 214u8, 49u8, 249u8, 124u8, 111u8, 151u8, 72u8, 125u8, 55u8,
+                            66u8, 217u8, 136u8, 0u8, 180u8, 125u8, 246u8, 164u8, 235u8, 226u8,
+                            186u8, 172u8, 19u8, 153u8, 51u8, 186u8, 108u8, 47u8, 180u8, 135u8,
+                            100u8, 244u8,
                         ],
                     )
                 }
@@ -6209,6 +6956,180 @@ pub mod codegen {
                             72u8, 14u8, 225u8, 162u8, 205u8, 247u8, 227u8, 105u8, 116u8, 57u8, 4u8,
                             31u8, 84u8, 137u8, 227u8, 228u8, 133u8, 245u8, 206u8, 227u8, 117u8,
                             36u8, 252u8, 151u8, 107u8, 15u8, 180u8, 4u8, 4u8, 152u8, 195u8, 144u8,
+                        ],
+                    )
+                }
+            }
+        }
+    }
+    pub mod offences {
+        use super::root_mod;
+        use super::runtime_types;
+        pub type Event = runtime_types::pallet_offences::pallet::Event;
+        pub mod events {
+            use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct Offence {
+                pub kind: offence::Kind,
+                pub timeslot: offence::Timeslot,
+            }
+            pub mod offence {
+                use super::runtime_types;
+                pub type Kind = [::core::primitive::u8; 16usize];
+                pub type Timeslot = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
+            }
+            impl ::subxt_core::events::StaticEvent for Offence {
+                const PALLET: &'static str = "Offences";
+                const EVENT: &'static str = "Offence";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod reports {
+                    use super::runtime_types;
+                    pub type Reports = runtime_types::sp_staking::offence::OffenceDetails<
+                        ::subxt_core::utils::AccountId32,
+                        (::subxt_core::utils::AccountId32, ::core::primitive::u128),
+                    >;
+                    pub type Param0 = ::subxt_core::utils::H256;
+                }
+                pub mod concurrent_reports_index {
+                    use super::runtime_types;
+                    pub type ConcurrentReportsIndex =
+                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::H256>;
+                    pub type Param0 = [::core::primitive::u8; 16usize];
+                    pub type Param1 = [::core::primitive::u8];
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                pub fn reports_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::reports::Reports,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Offences",
+                        "Reports",
+                        (),
+                        [
+                            171u8, 112u8, 78u8, 81u8, 159u8, 18u8, 37u8, 11u8, 198u8, 246u8, 247u8,
+                            185u8, 176u8, 78u8, 37u8, 236u8, 168u8, 20u8, 226u8, 36u8, 72u8, 230u8,
+                            91u8, 184u8, 247u8, 156u8, 100u8, 82u8, 30u8, 12u8, 108u8, 233u8,
+                        ],
+                    )
+                }
+                pub fn reports(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::reports::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<types::reports::Param0>,
+                    types::reports::Reports,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Offences",
+                        "Reports",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            171u8, 112u8, 78u8, 81u8, 159u8, 18u8, 37u8, 11u8, 198u8, 246u8, 247u8,
+                            185u8, 176u8, 78u8, 37u8, 236u8, 168u8, 20u8, 226u8, 36u8, 72u8, 230u8,
+                            91u8, 184u8, 247u8, 156u8, 100u8, 82u8, 30u8, 12u8, 108u8, 233u8,
+                        ],
+                    )
+                }
+                pub fn concurrent_reports_index_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::concurrent_reports_index::ConcurrentReportsIndex,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Offences",
+                        "ConcurrentReportsIndex",
+                        (),
+                        [
+                            170u8, 186u8, 72u8, 29u8, 251u8, 38u8, 193u8, 195u8, 109u8, 86u8, 0u8,
+                            241u8, 20u8, 235u8, 108u8, 126u8, 215u8, 82u8, 73u8, 113u8, 199u8,
+                            138u8, 24u8, 58u8, 216u8, 72u8, 221u8, 232u8, 252u8, 244u8, 96u8,
+                            247u8,
+                        ],
+                    )
+                }
+                pub fn concurrent_reports_index_iter1(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::concurrent_reports_index::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::concurrent_reports_index::Param0,
+                    >,
+                    types::concurrent_reports_index::ConcurrentReportsIndex,
+                    (),
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Offences",
+                        "ConcurrentReportsIndex",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            170u8, 186u8, 72u8, 29u8, 251u8, 38u8, 193u8, 195u8, 109u8, 86u8, 0u8,
+                            241u8, 20u8, 235u8, 108u8, 126u8, 215u8, 82u8, 73u8, 113u8, 199u8,
+                            138u8, 24u8, 58u8, 216u8, 72u8, 221u8, 232u8, 252u8, 244u8, 96u8,
+                            247u8,
+                        ],
+                    )
+                }
+                pub fn concurrent_reports_index(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::concurrent_reports_index::Param0>,
+                    _1: impl ::core::borrow::Borrow<types::concurrent_reports_index::Param1>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (
+                        ::subxt_core::storage::address::StaticStorageKey<
+                            types::concurrent_reports_index::Param0,
+                        >,
+                        ::subxt_core::storage::address::StaticStorageKey<
+                            types::concurrent_reports_index::Param1,
+                        >,
+                    ),
+                    types::concurrent_reports_index::ConcurrentReportsIndex,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Offences",
+                        "ConcurrentReportsIndex",
+                        (
+                            ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                            ::subxt_core::storage::address::StaticStorageKey::new(_1.borrow()),
+                        ),
+                        [
+                            170u8, 186u8, 72u8, 29u8, 251u8, 38u8, 193u8, 195u8, 109u8, 86u8, 0u8,
+                            241u8, 20u8, 235u8, 108u8, 126u8, 215u8, 82u8, 73u8, 113u8, 199u8,
+                            138u8, 24u8, 58u8, 216u8, 72u8, 221u8, 232u8, 252u8, 244u8, 96u8,
+                            247u8,
                         ],
                     )
                 }
@@ -10381,6 +11302,72 @@ pub mod codegen {
                 }
             }
         }
+        pub mod pallet_babe {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    report_equivocation {
+                        equivocation_proof: ::subxt_core::alloc::boxed::Box<
+                            runtime_types::sp_consensus_slots::EquivocationProof<
+                                runtime_types::sp_runtime::generic::header::Header<
+                                    ::core::primitive::u32,
+                                >,
+                                runtime_types::sp_consensus_babe::app::Public,
+                            >,
+                        >,
+                        key_owner_proof: runtime_types::sp_session::MembershipProof,
+                    },
+                    #[codec(index = 1)]
+                    report_equivocation_unsigned {
+                        equivocation_proof: ::subxt_core::alloc::boxed::Box<
+                            runtime_types::sp_consensus_slots::EquivocationProof<
+                                runtime_types::sp_runtime::generic::header::Header<
+                                    ::core::primitive::u32,
+                                >,
+                                runtime_types::sp_consensus_babe::app::Public,
+                            >,
+                        >,
+                        key_owner_proof: runtime_types::sp_session::MembershipProof,
+                    },
+                    #[codec(index = 2)]
+                    plan_config_change {
+                        config: runtime_types::sp_consensus_babe::digests::NextConfigDescriptor,
+                    },
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Error {
+                    #[codec(index = 0)]
+                    InvalidEquivocationProof,
+                    #[codec(index = 1)]
+                    InvalidKeyOwnershipProof,
+                    #[codec(index = 2)]
+                    DuplicateOffenceReport,
+                    #[codec(index = 3)]
+                    InvalidConfiguration,
+                }
+            }
+        }
         pub mod pallet_balances {
             use super::runtime_types;
             pub mod pallet {
@@ -11090,6 +12077,29 @@ pub mod codegen {
                 }
             }
         }
+        pub mod pallet_offences {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Event {
+                    #[codec(index = 0)]
+                    Offence {
+                        kind: [::core::primitive::u8; 16usize],
+                        timeslot: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    },
+                }
+            }
+        }
         pub mod pallet_restaking {
             use super::runtime_types;
             pub mod pallet {
@@ -11784,24 +12794,137 @@ pub mod codegen {
                 pub struct Public(pub [::core::primitive::u8; 32usize]);
             }
         }
-        pub mod sp_consensus_aura {
+        pub mod sp_consensus_babe {
             use super::runtime_types;
-            pub mod sr25519 {
+            pub mod app {
                 use super::runtime_types;
-                pub mod app_sr25519 {
-                    use super::runtime_types;
-                    #[derive(
-                        :: subxt_core :: ext :: codec :: Decode,
-                        :: subxt_core :: ext :: codec :: Encode,
-                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                        Debug,
-                    )]
-                    # [codec (crate = :: subxt_core :: ext :: codec)]
-                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                    pub struct Public(pub [::core::primitive::u8; 32usize]);
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct Public(pub [::core::primitive::u8; 32usize]);
+            }
+            pub mod digests {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum NextConfigDescriptor {
+                    #[codec(index = 1)]
+                    V1 {
+                        c: (::core::primitive::u64, ::core::primitive::u64),
+                        allowed_slots: runtime_types::sp_consensus_babe::AllowedSlots,
+                    },
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum PreDigest {
+                    #[codec(index = 1)]
+                    Primary(runtime_types::sp_consensus_babe::digests::PrimaryPreDigest),
+                    #[codec(index = 2)]
+                    SecondaryPlain(
+                        runtime_types::sp_consensus_babe::digests::SecondaryPlainPreDigest,
+                    ),
+                    #[codec(index = 3)]
+                    SecondaryVRF(runtime_types::sp_consensus_babe::digests::SecondaryVRFPreDigest),
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct PrimaryPreDigest {
+                    pub authority_index: ::core::primitive::u32,
+                    pub slot: runtime_types::sp_consensus_slots::Slot,
+                    pub vrf_signature: runtime_types::sp_core::sr25519::vrf::VrfSignature,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct SecondaryPlainPreDigest {
+                    pub authority_index: ::core::primitive::u32,
+                    pub slot: runtime_types::sp_consensus_slots::Slot,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct SecondaryVRFPreDigest {
+                    pub authority_index: ::core::primitive::u32,
+                    pub slot: runtime_types::sp_consensus_slots::Slot,
+                    pub vrf_signature: runtime_types::sp_core::sr25519::vrf::VrfSignature,
+                }
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub enum AllowedSlots {
+                #[codec(index = 0)]
+                PrimarySlots,
+                #[codec(index = 1)]
+                PrimaryAndSecondaryPlainSlots,
+                #[codec(index = 2)]
+                PrimaryAndSecondaryVRFSlots,
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct BabeEpochConfiguration {
+                pub c: (::core::primitive::u64, ::core::primitive::u64),
+                pub allowed_slots: runtime_types::sp_consensus_babe::AllowedSlots,
             }
         }
         pub mod sp_consensus_grandpa {
@@ -11876,6 +12999,22 @@ pub mod codegen {
         }
         pub mod sp_consensus_slots {
             use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct EquivocationProof<_0, _1> {
+                pub offender: _1,
+                pub slot: runtime_types::sp_consensus_slots::Slot,
+                pub first_header: _0,
+                pub second_header: _0,
+            }
             #[derive(
                 :: subxt_core :: ext :: codec :: CompactAs,
                 :: subxt_core :: ext :: codec :: Decode,
@@ -12528,6 +13667,27 @@ pub mod codegen {
                         Mortal255(::core::primitive::u8),
                     }
                 }
+                pub mod header {
+                    use super::runtime_types;
+                    #[derive(
+                        :: subxt_core :: ext :: codec :: Decode,
+                        :: subxt_core :: ext :: codec :: Encode,
+                        :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                        :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                        Debug,
+                    )]
+                    # [codec (crate = :: subxt_core :: ext :: codec)]
+                    #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                    #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                    pub struct Header<_0> {
+                        pub parent_hash: ::subxt_core::utils::H256,
+                        #[codec(compact)]
+                        pub number: _0,
+                        pub state_root: ::subxt_core::utils::H256,
+                        pub extrinsics_root: ::subxt_core::utils::H256,
+                        pub digest: runtime_types::sp_runtime::generic::digest::Digest,
+                    }
+                }
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -12668,6 +13828,46 @@ pub mod codegen {
                 NoLayer,
             }
         }
+        pub mod sp_session {
+            use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct MembershipProof {
+                pub session: ::core::primitive::u32,
+                pub trie_nodes: ::subxt_core::alloc::vec::Vec<
+                    ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                >,
+                pub validator_count: ::core::primitive::u32,
+            }
+        }
+        pub mod sp_staking {
+            use super::runtime_types;
+            pub mod offence {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct OffenceDetails<_0, _1> {
+                    pub offender: _1,
+                    pub reporters: ::subxt_core::alloc::vec::Vec<_0>,
+                }
+            }
+        }
         pub mod sp_version {
             use super::runtime_types;
             #[derive(
@@ -12785,7 +13985,7 @@ pub mod codegen {
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub struct SessionKeys {
-                    pub aura: runtime_types::sp_consensus_aura::sr25519::app_sr25519::Public,
+                    pub babe: runtime_types::sp_consensus_babe::app::Public,
                     pub grandpa: runtime_types::sp_consensus_grandpa::app::Public,
                     pub authority: runtime_types::sp_authority_discovery::app::Public,
                     pub restaking:
@@ -12820,6 +14020,8 @@ pub mod codegen {
                 System(runtime_types::frame_system::pallet::Call),
                 #[codec(index = 1)]
                 Timestamp(runtime_types::pallet_timestamp::pallet::Call),
+                #[codec(index = 2)]
+                Babe(runtime_types::pallet_babe::pallet::Call),
                 #[codec(index = 4)]
                 Restaking(runtime_types::pallet_restaking::pallet::Call),
                 #[codec(index = 7)]
@@ -12832,9 +14034,9 @@ pub mod codegen {
                 Balances(runtime_types::pallet_balances::pallet::Call),
                 #[codec(index = 13)]
                 Sudo(runtime_types::pallet_sudo::pallet::Call),
-                #[codec(index = 14)]
-                Nucleus(runtime_types::pallet_nucleus::pallet::Call),
                 #[codec(index = 15)]
+                Nucleus(runtime_types::pallet_nucleus::pallet::Call),
+                #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Call),
             }
             #[derive(
@@ -12850,6 +14052,8 @@ pub mod codegen {
             pub enum RuntimeError {
                 #[codec(index = 0)]
                 System(runtime_types::frame_system::pallet::Error),
+                #[codec(index = 2)]
+                Babe(runtime_types::pallet_babe::pallet::Error),
                 #[codec(index = 4)]
                 Restaking(runtime_types::pallet_restaking::pallet::Error),
                 #[codec(index = 6)]
@@ -12864,9 +14068,9 @@ pub mod codegen {
                 Balances(runtime_types::pallet_balances::pallet::Error),
                 #[codec(index = 13)]
                 Sudo(runtime_types::pallet_sudo::pallet::Error),
-                #[codec(index = 14)]
-                Nucleus(runtime_types::pallet_nucleus::pallet::Error),
                 #[codec(index = 15)]
+                Nucleus(runtime_types::pallet_nucleus::pallet::Error),
+                #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Error),
             }
             #[derive(
@@ -12899,8 +14103,10 @@ pub mod codegen {
                 #[codec(index = 13)]
                 Sudo(runtime_types::pallet_sudo::pallet::Event),
                 #[codec(index = 14)]
-                Nucleus(runtime_types::pallet_nucleus::pallet::Event),
+                Offences(runtime_types::pallet_offences::pallet::Event),
                 #[codec(index = 15)]
+                Nucleus(runtime_types::pallet_nucleus::pallet::Event),
+                #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Event),
             }
             #[derive(

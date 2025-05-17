@@ -16,10 +16,7 @@ sp-runtime = { features = [
 sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 sc-network-types = { workspace = true, optional = true }
-
-[dependencies.sp-application-crypto]
-version = "37.0.0"
-default-features = false
+sp-application-crypto = {workspace = true, default-features = false}
 
 [features]
 std = [

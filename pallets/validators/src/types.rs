@@ -34,7 +34,7 @@ impl Default for Forcing {
 }
 
 /// Information regarding the active era (era in used in session).
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
 pub struct ActiveEraInfo {
     pub index: EraIndex,
     pub set_id: u32,

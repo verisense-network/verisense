@@ -2,10 +2,7 @@ use super::*;
 use crate::solidity::query_validators_params;
 use crate::types::JsonResponse;
 use crate::validator_data::{decode_validator_datas, parse_to_tokens, ValidatorData};
-use const_hex::ToHexExt;
 use frame_system::pallet_prelude::BlockNumberFor;
-use serde::Serialize;
-use serde_json::Value;
 use sp_core::bounded::alloc;
 use sp_core::offchain::Duration;
 use sp_runtime::offchain::http;
@@ -81,12 +78,12 @@ impl<T: Config> Pallet<T> {
                 log!(info, "{:?}", &r);
                 log!(info, "query validators result {}", r.result.clone());
                 let tokens = parse_to_tokens(r.result.as_str());
-                let mut vd = decode_validator_datas(tokens)
+                let vd = decode_validator_datas(tokens)
                     .map_err(|e| log::error!("{:?}", e))
                     .unwrap_or(Vec::new());
                 let mut final_validators: Vec<ValidatorData> = vec![];
                 for mut v in vd {
-                    v.source = source.clone().to_string();
+                    v.source = source.to_string();
                     final_validators.push(v);
                 }
                 Ok(final_validators)
