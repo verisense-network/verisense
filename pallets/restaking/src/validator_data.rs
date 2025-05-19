@@ -89,7 +89,7 @@ pub fn parse_to_tokens(value: &str) -> Vec<Token> {
             &v,
         )
         .unwrap_or(vec![]),
-        Err(e) => {
+        Err(_e) => {
             return vec![];
         }
     }

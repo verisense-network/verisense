@@ -21,13 +21,13 @@ jobs:
       - name: Install Rust toochain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
-          override: true
+          toolchain: stable
+          override: false
           target: wasm32-unknown-unknown
           components: rustfmt, clippy, rust-src
 
       - name: Build
-        run: cargo build --all-features --verbose
+        run: cargo build --all-features --release --verbose
 
     # - name: Run tests
     #   run: cargo test --verbose

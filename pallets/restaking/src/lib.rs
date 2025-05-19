@@ -27,7 +27,6 @@ use types::{Observation, ObservationType, ObservationsPayload};
 use vrs_primitives::keys::RESTAKING_KEY_TYPE as KEY_TYPE;
 use vrs_support::{log, ValidatorsInterface};
 
-mod merkle;
 mod outchain;
 pub(crate) mod solidity;
 pub mod types;
@@ -36,7 +35,6 @@ pub type ValidatorSource = String;
 pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
 #[frame_support::pallet]
 pub mod pallet {
-    use const_hex::ToHexExt;
     use frame_support::pallet_prelude::*;
     use frame_support::traits::UnixTime;
     use frame_system::pallet_prelude::*;
@@ -44,7 +42,7 @@ pub mod pallet {
     use super::*;
     use crate::validator_data::ValidatorData;
     use vrs_support::consts::ORIGINAL_VALIDATOR_SOURCE;
-    use vrs_support::{EraRewardPoints, RestakingInterface, RewardPoint};
+    use vrs_support::{EraRewardPoints, RestakingInterface};
 
     #[pallet::config]
     pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
@@ -206,7 +204,6 @@ pub mod pallet {
 
     impl<T: Config> RestakingInterface<T::AccountId> for Pallet<T> {
         fn provide() -> Vec<(T::AccountId, u128)> {
-            use sp_runtime::traits::TrailingZeroInput;
             PlannedValidators::<T>::get()
                 .iter()
                 .map(|s| (s.0.clone(), s.1))

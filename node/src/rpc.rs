@@ -8,6 +8,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use jsonrpsee::RpcModule;
+use sc_consensus_babe::BabeWorkerHandle;
 use sc_network_types::PeerId;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -15,8 +16,12 @@ use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use vrs_nucleus_cage::NucleusRpcChannel;
 use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce};
+use sc_consensus_babe_rpc::{Babe, BabeApiServer};
+use sp_keystore::KeystorePtr;
+use sp_consensus::SelectChain;
 
 pub use sc_rpc_api::DenyUnsafe;
+use sp_consensus_babe::BabeApi;
 
 #[derive(Clone)]
 pub struct NucleusDeps {
@@ -25,22 +30,31 @@ pub struct NucleusDeps {
     pub home_dir: PathBuf,
 }
 
+pub struct BabeDeps {
+    /// A handle to the BABE worker for issuing requests.
+    pub babe_worker_handle: BabeWorkerHandle<Block>,
+    /// The keystore that manages the keys of the node.
+    pub keystore: KeystorePtr,
+}
+
 /// Full client dependencies.
-pub struct FullDeps<C, P, B> {
+pub struct FullDeps<C, P, SC,B> {
     /// The client instance to use.
     pub client: Arc<C>,
+    pub select_chain: SC,
     /// Transaction pool instance.
     pub pool: Arc<P>,
     /// blocks backend
     pub backend: Arc<B>,
+    pub babe: BabeDeps,
     /// Nucleus cage connector
     pub nucleus: Option<NucleusDeps>,
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<C, P, B>(
+pub fn create_full<C, P, SC, B>(
     deny_unsafe: DenyUnsafe,
-    deps: FullDeps<C, P, B>,
+    deps: FullDeps<C, P, SC, B>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
     P: TransactionPool<Block = Block, Hash = <Block as sp_runtime::traits::Block>::Hash> + 'static,
@@ -52,7 +66,9 @@ where
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce> + 'static,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> + 'static,
     C::Api: vrs_nucleus_runtime_api::NucleusApi<Block> + 'static,
-    C::Api: vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId>,
+    C::Api: BabeApi<Block> + 'static,
+    SC: SelectChain<Block> + 'static,
+  //  C::Api: vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId>,
     C::Api: BlockBuilder<Block> + 'static,
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
@@ -70,10 +86,26 @@ where
     let mut module = RpcModule::new(());
     let FullDeps {
         client,
+        select_chain,
         pool,
         backend: _backend,
+        babe,
         nucleus,
     } = deps;
+
+    let BabeDeps {
+        keystore,
+        babe_worker_handle,
+    } = babe;
+    module.merge(
+        Babe::new(
+            client.clone(),
+            babe_worker_handle.clone(),
+            keystore,
+            select_chain,
+            deny_unsafe,
+        ).into_rpc(),
+    )?;
     module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 
