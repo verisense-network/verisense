@@ -436,9 +436,9 @@ impl pallet_im_online::Config for Runtime {
     type MaxKeys = MaxKeys;
     type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
     type RuntimeEvent = RuntimeEvent;
-    type ValidatorSet = Validators;//Historical;
+    type ValidatorSet = Historical;
     type NextSessionRotation = Babe;
-    type ReportUnresponsiveness = Validators;  //Offences;
+    type ReportUnresponsiveness = Offences;
     type UnsignedPriority = ImOnlineUnsignedPriority;
     type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
 }

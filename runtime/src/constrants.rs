@@ -9,6 +9,6 @@ pub mod time {
     pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
     pub const HOURS: BlockNumber = MINUTES * 60;
     pub const DAYS: BlockNumber = HOURS * 24;
-    pub const SESSION_IN_BLOCKS: BlockNumber = MINUTES;
+    pub const SESSION_IN_BLOCKS: BlockNumber = 4 * HOURS;
     pub const SESSION_PER_ERA: u32 = DAYS / SESSION_IN_BLOCKS;
 }
