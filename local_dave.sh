@@ -1,6 +1,8 @@
 ./target/release/verisense key generate-node-key --file /tmp/dave/node-key
 ./target/release/verisense \
 --base-path /tmp/dave \
+--dave \
+--validator \
 --chain local \
 --node-key-file /tmp/dave/node-key \
 --port 30336 \
