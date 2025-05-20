@@ -39,10 +39,7 @@ pub use frame_support::{
     },
     StorageValue,
 };
-use frame_support::{
-    genesis_builder_helper::{build_state, get_preset},
-    traits::VariantCountOf,
-};
+use frame_support::{genesis_builder_helper::{build_state, get_preset}, traits::VariantCountOf, PalletId};
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
@@ -470,6 +467,26 @@ impl pallet_offences::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+parameter_types! {
+    pub const SwapPalletId: PalletId = pallet_swap::PALLET_ID;
+
+}
+impl pallet_swap::Config for Runtime {
+    type PalletId = SwapPalletId;
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type AssetBalance = Balance;
+    type AssetToCurrencyBalance = ConvertInto;
+    type CurrencyToAssetBalance = ConvertInto;
+    type AssetId = u32;
+    type Assets = Assets;
+    type AssetRegistry = Assets;
+    type WeightInfo = ();
+    type ProviderFeeNumerator = ConstU128<1>;
+    type ProviderFeeDenominator = ConstU128<1>;
+    type MinDeposit = ConstU128<1>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -537,6 +554,9 @@ mod runtime {
 
     #[runtime::pallet_index(16)]
     pub type Assets = pallet_assets;
+
+    #[runtime::pallet_index(17)]
+    pub type Swap = pallet_swap;
 }
 
 /// Block header type as expected by this runtime.

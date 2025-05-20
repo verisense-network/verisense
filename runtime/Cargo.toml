@@ -34,6 +34,7 @@ pallet-assets = { workspace = true, default-features = false }
 pallet-restaking = { path = "../pallets/restaking", default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validators = { path = "../pallets/validators", default-features = false }
+pallet-swap = { path = "../pallets/swap", default-features = false }
 # primitives
 vrs-support = { path = "../support", default-features = false }
 vrs-primitives = { path = "../primitives", default-features = false }
@@ -94,6 +95,7 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-validators/std",
 	"pallet-restaking/std",
+	"pallet-swap/std",
 	"pallet-nucleus/std",
 	"vrs-primitives/std",
 	"vrs-nucleus-runtime-api/std",

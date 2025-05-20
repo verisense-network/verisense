@@ -6,7 +6,7 @@ pub mod codegen {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 17usize] = [
+    pub static PALLETS: [&str; 18usize] = [
         "System",
         "Timestamp",
         "Babe",
@@ -24,6 +24,7 @@ pub mod codegen {
         "Offences",
         "Nucleus",
         "Assets",
+        "Swap",
     ];
     pub static RUNTIME_APIS: [&str; 0usize] = [];
     #[doc = r" The error type returned when there is a runtime issue."]
@@ -93,6 +94,9 @@ pub mod codegen {
         pub fn assets(&self) -> assets::constants::ConstantsApi {
             assets::constants::ConstantsApi
         }
+        pub fn swap(&self) -> swap::constants::ConstantsApi {
+            swap::constants::ConstantsApi
+        }
     }
     pub struct StorageApi;
     impl StorageApi {
@@ -147,6 +151,9 @@ pub mod codegen {
         pub fn assets(&self) -> assets::storage::StorageApi {
             assets::storage::StorageApi
         }
+        pub fn swap(&self) -> swap::storage::StorageApi {
+            swap::storage::StorageApi
+        }
     }
     pub struct TransactionApi;
     impl TransactionApi {
@@ -183,6 +190,9 @@ pub mod codegen {
         pub fn assets(&self) -> assets::calls::TransactionApi {
             assets::calls::TransactionApi
         }
+        pub fn swap(&self) -> swap::calls::TransactionApi {
+            swap::calls::TransactionApi
+        }
     }
     #[doc = r" check whether the metadata provided is aligned with this statically generated code."]
     pub fn is_codegen_valid_for(metadata: &::subxt_core::Metadata) -> bool {
@@ -193,9 +203,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                218u8, 210u8, 83u8, 157u8, 12u8, 203u8, 92u8, 13u8, 169u8, 30u8, 4u8, 117u8, 94u8,
-                90u8, 167u8, 36u8, 109u8, 9u8, 85u8, 201u8, 111u8, 221u8, 221u8, 185u8, 16u8,
-                229u8, 166u8, 131u8, 195u8, 25u8, 196u8, 253u8,
+                11u8, 217u8, 162u8, 166u8, 7u8, 130u8, 212u8, 219u8, 28u8, 244u8, 81u8, 82u8,
+                246u8, 188u8, 116u8, 17u8, 134u8, 242u8, 106u8, 199u8, 139u8, 212u8, 193u8, 176u8,
+                175u8, 83u8, 194u8, 72u8, 124u8, 206u8, 252u8, 42u8,
             ]
     }
     pub mod system {
@@ -1161,10 +1171,10 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            107u8, 148u8, 126u8, 181u8, 213u8, 212u8, 216u8, 94u8, 136u8, 180u8,
-                            66u8, 138u8, 233u8, 133u8, 179u8, 146u8, 220u8, 200u8, 117u8, 139u8,
-                            242u8, 67u8, 62u8, 224u8, 12u8, 196u8, 201u8, 98u8, 64u8, 94u8, 63u8,
-                            49u8,
+                            118u8, 24u8, 188u8, 52u8, 122u8, 114u8, 142u8, 146u8, 83u8, 12u8,
+                            200u8, 6u8, 233u8, 236u8, 191u8, 7u8, 159u8, 131u8, 140u8, 58u8, 9u8,
+                            102u8, 124u8, 53u8, 222u8, 32u8, 17u8, 179u8, 30u8, 187u8, 218u8,
+                            113u8,
                         ],
                     )
                 }
@@ -6764,9 +6774,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            60u8, 72u8, 81u8, 60u8, 164u8, 166u8, 93u8, 252u8, 230u8, 46u8, 193u8,
-                            236u8, 248u8, 74u8, 192u8, 80u8, 44u8, 52u8, 139u8, 200u8, 29u8, 222u8,
-                            195u8, 128u8, 144u8, 241u8, 212u8, 72u8, 44u8, 184u8, 218u8, 54u8,
+                            165u8, 235u8, 113u8, 11u8, 244u8, 145u8, 166u8, 141u8, 165u8, 117u8,
+                            209u8, 159u8, 213u8, 10u8, 169u8, 3u8, 30u8, 148u8, 139u8, 151u8,
+                            254u8, 196u8, 133u8, 8u8, 207u8, 115u8, 101u8, 100u8, 239u8, 192u8,
+                            8u8, 90u8,
                         ],
                     )
                 }
@@ -6784,9 +6795,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            44u8, 100u8, 117u8, 31u8, 192u8, 10u8, 56u8, 170u8, 56u8, 247u8, 43u8,
-                            110u8, 184u8, 52u8, 54u8, 138u8, 211u8, 48u8, 181u8, 77u8, 25u8, 5u8,
-                            48u8, 62u8, 82u8, 192u8, 132u8, 84u8, 135u8, 134u8, 136u8, 149u8,
+                            117u8, 105u8, 173u8, 117u8, 26u8, 99u8, 56u8, 87u8, 242u8, 118u8,
+                            240u8, 71u8, 194u8, 136u8, 58u8, 1u8, 87u8, 159u8, 31u8, 235u8, 196u8,
+                            74u8, 3u8, 75u8, 95u8, 92u8, 47u8, 91u8, 80u8, 133u8, 160u8, 155u8,
                         ],
                     )
                 }
@@ -6818,10 +6829,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            239u8, 214u8, 49u8, 249u8, 124u8, 111u8, 151u8, 72u8, 125u8, 55u8,
-                            66u8, 217u8, 136u8, 0u8, 180u8, 125u8, 246u8, 164u8, 235u8, 226u8,
-                            186u8, 172u8, 19u8, 153u8, 51u8, 186u8, 108u8, 47u8, 180u8, 135u8,
-                            100u8, 244u8,
+                            135u8, 148u8, 42u8, 153u8, 69u8, 42u8, 238u8, 184u8, 16u8, 106u8, 49u8,
+                            138u8, 162u8, 141u8, 187u8, 182u8, 7u8, 206u8, 160u8, 173u8, 42u8,
+                            21u8, 11u8, 63u8, 147u8, 227u8, 6u8, 213u8, 20u8, 151u8, 94u8, 209u8,
                         ],
                     )
                 }
@@ -10224,6 +10234,612 @@ pub mod codegen {
             }
         }
     }
+    pub mod swap {
+        use super::root_mod;
+        use super::runtime_types;
+        pub type Error = runtime_types::pallet_swap::pallet::Error;
+        pub type Call = runtime_types::pallet_swap::pallet::Call;
+        pub mod calls {
+            use super::root_mod;
+            use super::runtime_types;
+            type DispatchError = runtime_types::sp_runtime::DispatchError;
+            pub mod types {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct CreateExchange {
+                    pub asset_id: create_exchange::AssetId,
+                    pub liquidity_token_id: create_exchange::LiquidityTokenId,
+                    pub currency_amount: create_exchange::CurrencyAmount,
+                    pub token_amount: create_exchange::TokenAmount,
+                }
+                pub mod create_exchange {
+                    use super::runtime_types;
+                    pub type AssetId = ::core::primitive::u32;
+                    pub type LiquidityTokenId = ::core::primitive::u32;
+                    pub type CurrencyAmount = ::core::primitive::u128;
+                    pub type TokenAmount = ::core::primitive::u128;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for CreateExchange {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "create_exchange";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AddLiquidity {
+                    pub asset_id: add_liquidity::AssetId,
+                    pub currency_amount: add_liquidity::CurrencyAmount,
+                    pub min_liquidity: add_liquidity::MinLiquidity,
+                    pub max_tokens: add_liquidity::MaxTokens,
+                    pub deadline: add_liquidity::Deadline,
+                }
+                pub mod add_liquidity {
+                    use super::runtime_types;
+                    pub type AssetId = ::core::primitive::u32;
+                    pub type CurrencyAmount = ::core::primitive::u128;
+                    pub type MinLiquidity = ::core::primitive::u128;
+                    pub type MaxTokens = ::core::primitive::u128;
+                    pub type Deadline = ::core::primitive::u32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AddLiquidity {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "add_liquidity";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct RemoveLiquidity {
+                    pub asset_id: remove_liquidity::AssetId,
+                    pub liquidity_amount: remove_liquidity::LiquidityAmount,
+                    pub min_currency: remove_liquidity::MinCurrency,
+                    pub min_tokens: remove_liquidity::MinTokens,
+                    pub deadline: remove_liquidity::Deadline,
+                }
+                pub mod remove_liquidity {
+                    use super::runtime_types;
+                    pub type AssetId = ::core::primitive::u32;
+                    pub type LiquidityAmount = ::core::primitive::u128;
+                    pub type MinCurrency = ::core::primitive::u128;
+                    pub type MinTokens = ::core::primitive::u128;
+                    pub type Deadline = ::core::primitive::u32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for RemoveLiquidity {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "remove_liquidity";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct CurrencyToAsset {
+                    pub asset_id: currency_to_asset::AssetId,
+                    pub amount: currency_to_asset::Amount,
+                    pub deadline: currency_to_asset::Deadline,
+                    pub recipient: currency_to_asset::Recipient,
+                }
+                pub mod currency_to_asset {
+                    use super::runtime_types;
+                    pub type AssetId = ::core::primitive::u32;
+                    pub type Amount = runtime_types::pallet_swap::pallet::TradeAmount<
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Deadline = ::core::primitive::u32;
+                    pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for CurrencyToAsset {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "currency_to_asset";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AssetToCurrency {
+                    pub asset_id: asset_to_currency::AssetId,
+                    pub amount: asset_to_currency::Amount,
+                    pub deadline: asset_to_currency::Deadline,
+                    pub recipient: asset_to_currency::Recipient,
+                }
+                pub mod asset_to_currency {
+                    use super::runtime_types;
+                    pub type AssetId = ::core::primitive::u32;
+                    pub type Amount = runtime_types::pallet_swap::pallet::TradeAmount<
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Deadline = ::core::primitive::u32;
+                    pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AssetToCurrency {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "asset_to_currency";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AssetToAsset {
+                    pub sold_asset_id: asset_to_asset::SoldAssetId,
+                    pub bought_asset_id: asset_to_asset::BoughtAssetId,
+                    pub amount: asset_to_asset::Amount,
+                    pub deadline: asset_to_asset::Deadline,
+                    pub recipient: asset_to_asset::Recipient,
+                }
+                pub mod asset_to_asset {
+                    use super::runtime_types;
+                    pub type SoldAssetId = ::core::primitive::u32;
+                    pub type BoughtAssetId = ::core::primitive::u32;
+                    pub type Amount = runtime_types::pallet_swap::pallet::TradeAmount<
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Deadline = ::core::primitive::u32;
+                    pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AssetToAsset {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "asset_to_asset";
+                }
+            }
+            pub struct TransactionApi;
+            impl TransactionApi {
+                pub fn create_exchange(
+                    &self,
+                    asset_id: types::create_exchange::AssetId,
+                    liquidity_token_id: types::create_exchange::LiquidityTokenId,
+                    currency_amount: types::create_exchange::CurrencyAmount,
+                    token_amount: types::create_exchange::TokenAmount,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::CreateExchange>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "create_exchange",
+                        types::CreateExchange {
+                            asset_id,
+                            liquidity_token_id,
+                            currency_amount,
+                            token_amount,
+                        },
+                        [
+                            7u8, 158u8, 165u8, 63u8, 235u8, 7u8, 145u8, 17u8, 137u8, 56u8, 128u8,
+                            250u8, 178u8, 158u8, 133u8, 4u8, 118u8, 67u8, 130u8, 58u8, 233u8,
+                            218u8, 113u8, 242u8, 86u8, 164u8, 16u8, 218u8, 197u8, 115u8, 236u8,
+                            164u8,
+                        ],
+                    )
+                }
+                pub fn add_liquidity(
+                    &self,
+                    asset_id: types::add_liquidity::AssetId,
+                    currency_amount: types::add_liquidity::CurrencyAmount,
+                    min_liquidity: types::add_liquidity::MinLiquidity,
+                    max_tokens: types::add_liquidity::MaxTokens,
+                    deadline: types::add_liquidity::Deadline,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AddLiquidity> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "add_liquidity",
+                        types::AddLiquidity {
+                            asset_id,
+                            currency_amount,
+                            min_liquidity,
+                            max_tokens,
+                            deadline,
+                        },
+                        [
+                            119u8, 237u8, 21u8, 171u8, 26u8, 111u8, 4u8, 199u8, 31u8, 251u8, 75u8,
+                            206u8, 34u8, 69u8, 51u8, 62u8, 18u8, 67u8, 0u8, 224u8, 139u8, 116u8,
+                            151u8, 186u8, 93u8, 204u8, 32u8, 50u8, 231u8, 78u8, 110u8, 182u8,
+                        ],
+                    )
+                }
+                pub fn remove_liquidity(
+                    &self,
+                    asset_id: types::remove_liquidity::AssetId,
+                    liquidity_amount: types::remove_liquidity::LiquidityAmount,
+                    min_currency: types::remove_liquidity::MinCurrency,
+                    min_tokens: types::remove_liquidity::MinTokens,
+                    deadline: types::remove_liquidity::Deadline,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::RemoveLiquidity>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "remove_liquidity",
+                        types::RemoveLiquidity {
+                            asset_id,
+                            liquidity_amount,
+                            min_currency,
+                            min_tokens,
+                            deadline,
+                        },
+                        [
+                            241u8, 78u8, 124u8, 213u8, 208u8, 209u8, 63u8, 66u8, 77u8, 50u8, 97u8,
+                            24u8, 104u8, 146u8, 110u8, 238u8, 1u8, 122u8, 57u8, 207u8, 43u8, 127u8,
+                            76u8, 230u8, 67u8, 231u8, 200u8, 198u8, 111u8, 216u8, 230u8, 130u8,
+                        ],
+                    )
+                }
+                pub fn currency_to_asset(
+                    &self,
+                    asset_id: types::currency_to_asset::AssetId,
+                    amount: types::currency_to_asset::Amount,
+                    deadline: types::currency_to_asset::Deadline,
+                    recipient: types::currency_to_asset::Recipient,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::CurrencyToAsset>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "currency_to_asset",
+                        types::CurrencyToAsset {
+                            asset_id,
+                            amount,
+                            deadline,
+                            recipient,
+                        },
+                        [
+                            16u8, 135u8, 216u8, 213u8, 87u8, 209u8, 190u8, 236u8, 121u8, 24u8,
+                            178u8, 223u8, 59u8, 16u8, 128u8, 121u8, 99u8, 25u8, 123u8, 22u8, 19u8,
+                            172u8, 217u8, 141u8, 23u8, 78u8, 102u8, 177u8, 75u8, 13u8, 106u8, 4u8,
+                        ],
+                    )
+                }
+                pub fn asset_to_currency(
+                    &self,
+                    asset_id: types::asset_to_currency::AssetId,
+                    amount: types::asset_to_currency::Amount,
+                    deadline: types::asset_to_currency::Deadline,
+                    recipient: types::asset_to_currency::Recipient,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AssetToCurrency>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "asset_to_currency",
+                        types::AssetToCurrency {
+                            asset_id,
+                            amount,
+                            deadline,
+                            recipient,
+                        },
+                        [
+                            227u8, 151u8, 217u8, 181u8, 218u8, 167u8, 11u8, 155u8, 252u8, 250u8,
+                            127u8, 136u8, 117u8, 58u8, 185u8, 236u8, 96u8, 97u8, 190u8, 59u8, 24u8,
+                            213u8, 254u8, 172u8, 199u8, 166u8, 21u8, 153u8, 12u8, 139u8, 67u8,
+                            227u8,
+                        ],
+                    )
+                }
+                pub fn asset_to_asset(
+                    &self,
+                    sold_asset_id: types::asset_to_asset::SoldAssetId,
+                    bought_asset_id: types::asset_to_asset::BoughtAssetId,
+                    amount: types::asset_to_asset::Amount,
+                    deadline: types::asset_to_asset::Deadline,
+                    recipient: types::asset_to_asset::Recipient,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AssetToAsset> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "asset_to_asset",
+                        types::AssetToAsset {
+                            sold_asset_id,
+                            bought_asset_id,
+                            amount,
+                            deadline,
+                            recipient,
+                        },
+                        [
+                            46u8, 240u8, 125u8, 220u8, 213u8, 30u8, 59u8, 45u8, 24u8, 43u8, 160u8,
+                            164u8, 139u8, 245u8, 44u8, 109u8, 130u8, 24u8, 96u8, 23u8, 83u8, 72u8,
+                            224u8, 106u8, 155u8, 57u8, 82u8, 214u8, 162u8, 189u8, 141u8, 157u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub type Event = runtime_types::pallet_swap::pallet::Event;
+        pub mod events {
+            use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct ExchangeCreated(pub exchange_created::Field0, pub exchange_created::Field1);
+            pub mod exchange_created {
+                use super::runtime_types;
+                pub type Field0 = ::core::primitive::u32;
+                pub type Field1 = ::core::primitive::u32;
+            }
+            impl ::subxt_core::events::StaticEvent for ExchangeCreated {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "ExchangeCreated";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct LiquidityAdded(
+                pub liquidity_added::Field0,
+                pub liquidity_added::Field1,
+                pub liquidity_added::Field2,
+                pub liquidity_added::Field3,
+                pub liquidity_added::Field4,
+            );
+            pub mod liquidity_added {
+                use super::runtime_types;
+                pub type Field0 = ::subxt_core::utils::AccountId32;
+                pub type Field1 = ::core::primitive::u32;
+                pub type Field2 = ::core::primitive::u128;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for LiquidityAdded {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "LiquidityAdded";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct LiquidityRemoved(
+                pub liquidity_removed::Field0,
+                pub liquidity_removed::Field1,
+                pub liquidity_removed::Field2,
+                pub liquidity_removed::Field3,
+                pub liquidity_removed::Field4,
+            );
+            pub mod liquidity_removed {
+                use super::runtime_types;
+                pub type Field0 = ::subxt_core::utils::AccountId32;
+                pub type Field1 = ::core::primitive::u32;
+                pub type Field2 = ::core::primitive::u128;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for LiquidityRemoved {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "LiquidityRemoved";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct CurrencyTradedForAsset(
+                pub currency_traded_for_asset::Field0,
+                pub currency_traded_for_asset::Field1,
+                pub currency_traded_for_asset::Field2,
+                pub currency_traded_for_asset::Field3,
+                pub currency_traded_for_asset::Field4,
+            );
+            pub mod currency_traded_for_asset {
+                use super::runtime_types;
+                pub type Field0 = ::core::primitive::u32;
+                pub type Field1 = ::subxt_core::utils::AccountId32;
+                pub type Field2 = ::subxt_core::utils::AccountId32;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for CurrencyTradedForAsset {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "CurrencyTradedForAsset";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct AssetTradedForCurrency(
+                pub asset_traded_for_currency::Field0,
+                pub asset_traded_for_currency::Field1,
+                pub asset_traded_for_currency::Field2,
+                pub asset_traded_for_currency::Field3,
+                pub asset_traded_for_currency::Field4,
+            );
+            pub mod asset_traded_for_currency {
+                use super::runtime_types;
+                pub type Field0 = ::core::primitive::u32;
+                pub type Field1 = ::subxt_core::utils::AccountId32;
+                pub type Field2 = ::subxt_core::utils::AccountId32;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for AssetTradedForCurrency {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "AssetTradedForCurrency";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod exchanges {
+                    use super::runtime_types;
+                    pub type Exchanges = runtime_types::pallet_swap::pallet::Exchange<
+                        ::core::primitive::u32,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Param0 = ::core::primitive::u32;
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                pub fn exchanges_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::exchanges::Exchanges,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Swap",
+                        "Exchanges",
+                        (),
+                        [
+                            70u8, 33u8, 226u8, 66u8, 214u8, 227u8, 47u8, 151u8, 171u8, 57u8, 251u8,
+                            196u8, 69u8, 85u8, 18u8, 240u8, 75u8, 15u8, 87u8, 46u8, 77u8, 153u8,
+                            247u8, 117u8, 235u8, 100u8, 113u8, 195u8, 96u8, 54u8, 96u8, 108u8,
+                        ],
+                    )
+                }
+                pub fn exchanges(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::exchanges::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<types::exchanges::Param0>,
+                    types::exchanges::Exchanges,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Swap",
+                        "Exchanges",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            70u8, 33u8, 226u8, 66u8, 214u8, 227u8, 47u8, 151u8, 171u8, 57u8, 251u8,
+                            196u8, 69u8, 85u8, 18u8, 240u8, 75u8, 15u8, 87u8, 46u8, 77u8, 153u8,
+                            247u8, 117u8, 235u8, 100u8, 113u8, 195u8, 96u8, 54u8, 96u8, 108u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub mod constants {
+            use super::runtime_types;
+            pub struct ConstantsApi;
+            impl ConstantsApi {
+                pub fn pallet_id(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<
+                    runtime_types::frame_support::PalletId,
+                > {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "PalletId",
+                        [
+                            56u8, 243u8, 53u8, 83u8, 154u8, 179u8, 170u8, 80u8, 133u8, 173u8, 61u8,
+                            161u8, 47u8, 225u8, 146u8, 21u8, 50u8, 229u8, 248u8, 27u8, 104u8, 58u8,
+                            129u8, 197u8, 102u8, 160u8, 168u8, 205u8, 154u8, 42u8, 217u8, 53u8,
+                        ],
+                    )
+                }
+                pub fn provider_fee_numerator(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u128>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "ProviderFeeNumerator",
+                        [
+                            84u8, 157u8, 140u8, 4u8, 93u8, 57u8, 29u8, 133u8, 105u8, 200u8, 214u8,
+                            27u8, 144u8, 208u8, 218u8, 160u8, 130u8, 109u8, 101u8, 54u8, 210u8,
+                            136u8, 71u8, 63u8, 49u8, 237u8, 234u8, 15u8, 178u8, 98u8, 148u8, 156u8,
+                        ],
+                    )
+                }
+                pub fn provider_fee_denominator(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u128>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "ProviderFeeDenominator",
+                        [
+                            84u8, 157u8, 140u8, 4u8, 93u8, 57u8, 29u8, 133u8, 105u8, 200u8, 214u8,
+                            27u8, 144u8, 208u8, 218u8, 160u8, 130u8, 109u8, 101u8, 54u8, 210u8,
+                            136u8, 71u8, 63u8, 49u8, 237u8, 234u8, 15u8, 178u8, 98u8, 148u8, 156u8,
+                        ],
+                    )
+                }
+                pub fn min_deposit(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u128>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "MinDeposit",
+                        [
+                            84u8, 157u8, 140u8, 4u8, 93u8, 57u8, 29u8, 133u8, 105u8, 200u8, 214u8,
+                            27u8, 144u8, 208u8, 218u8, 160u8, 130u8, 109u8, 101u8, 54u8, 210u8,
+                            136u8, 71u8, 63u8, 49u8, 237u8, 234u8, 15u8, 178u8, 98u8, 148u8, 156u8,
+                        ],
+                    )
+                }
+            }
+        }
+    }
     pub mod runtime_types {
         use super::runtime_types;
         pub mod bounded_collections {
@@ -10412,6 +11028,17 @@ pub mod codegen {
                     }
                 }
             }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct PalletId(pub [::core::primitive::u8; 8usize]);
         }
         pub mod frame_system {
             use super::runtime_types;
@@ -12571,6 +13198,224 @@ pub mod codegen {
                 }
             }
         }
+        pub mod pallet_swap {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    create_exchange {
+                        asset_id: ::core::primitive::u32,
+                        liquidity_token_id: ::core::primitive::u32,
+                        currency_amount: ::core::primitive::u128,
+                        token_amount: ::core::primitive::u128,
+                    },
+                    #[codec(index = 1)]
+                    add_liquidity {
+                        asset_id: ::core::primitive::u32,
+                        currency_amount: ::core::primitive::u128,
+                        min_liquidity: ::core::primitive::u128,
+                        max_tokens: ::core::primitive::u128,
+                        deadline: ::core::primitive::u32,
+                    },
+                    #[codec(index = 2)]
+                    remove_liquidity {
+                        asset_id: ::core::primitive::u32,
+                        liquidity_amount: ::core::primitive::u128,
+                        min_currency: ::core::primitive::u128,
+                        min_tokens: ::core::primitive::u128,
+                        deadline: ::core::primitive::u32,
+                    },
+                    #[codec(index = 3)]
+                    currency_to_asset {
+                        asset_id: ::core::primitive::u32,
+                        amount: runtime_types::pallet_swap::pallet::TradeAmount<
+                            ::core::primitive::u128,
+                            ::core::primitive::u128,
+                        >,
+                        deadline: ::core::primitive::u32,
+                        recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
+                    },
+                    #[codec(index = 4)]
+                    asset_to_currency {
+                        asset_id: ::core::primitive::u32,
+                        amount: runtime_types::pallet_swap::pallet::TradeAmount<
+                            ::core::primitive::u128,
+                            ::core::primitive::u128,
+                        >,
+                        deadline: ::core::primitive::u32,
+                        recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
+                    },
+                    #[codec(index = 5)]
+                    asset_to_asset {
+                        sold_asset_id: ::core::primitive::u32,
+                        bought_asset_id: ::core::primitive::u32,
+                        amount: runtime_types::pallet_swap::pallet::TradeAmount<
+                            ::core::primitive::u128,
+                            ::core::primitive::u128,
+                        >,
+                        deadline: ::core::primitive::u32,
+                        recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
+                    },
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Error {
+                    #[codec(index = 0)]
+                    AssetNotFound,
+                    #[codec(index = 1)]
+                    ExchangeAlreadyExists,
+                    #[codec(index = 2)]
+                    TokenIdTaken,
+                    #[codec(index = 3)]
+                    BalanceTooLow,
+                    #[codec(index = 4)]
+                    NotEnoughTokens,
+                    #[codec(index = 5)]
+                    ProviderLiquidityTooLow,
+                    #[codec(index = 6)]
+                    ExchangeNotFound,
+                    #[codec(index = 7)]
+                    TradeAmountIsZero,
+                    #[codec(index = 8)]
+                    TokenAmountIsZero,
+                    #[codec(index = 9)]
+                    MaxTokensIsZero,
+                    #[codec(index = 10)]
+                    CurrencyAmountIsZero,
+                    #[codec(index = 11)]
+                    CurrencyAmountTooHigh,
+                    #[codec(index = 12)]
+                    CurrencyAmountTooLow,
+                    #[codec(index = 13)]
+                    MinLiquidityIsZero,
+                    #[codec(index = 14)]
+                    MaxTokensTooLow,
+                    #[codec(index = 15)]
+                    MinLiquidityTooHigh,
+                    #[codec(index = 16)]
+                    LiquidityAmountIsZero,
+                    #[codec(index = 17)]
+                    MinCurrencyIsZero,
+                    #[codec(index = 18)]
+                    MinTokensIsZero,
+                    #[codec(index = 19)]
+                    MinCurrencyTooHigh,
+                    #[codec(index = 20)]
+                    MinTokensTooHigh,
+                    #[codec(index = 21)]
+                    MaxCurrencyTooLow,
+                    #[codec(index = 22)]
+                    MinBoughtTokensTooHigh,
+                    #[codec(index = 23)]
+                    MaxSoldTokensTooLow,
+                    #[codec(index = 24)]
+                    NotEnoughLiquidity,
+                    #[codec(index = 25)]
+                    Overflow,
+                    #[codec(index = 26)]
+                    Underflow,
+                    #[codec(index = 27)]
+                    DeadlinePassed,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Event {
+                    #[codec(index = 0)]
+                    ExchangeCreated(::core::primitive::u32, ::core::primitive::u32),
+                    #[codec(index = 1)]
+                    LiquidityAdded(
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u32,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                    #[codec(index = 2)]
+                    LiquidityRemoved(
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u32,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                    #[codec(index = 3)]
+                    CurrencyTradedForAsset(
+                        ::core::primitive::u32,
+                        ::subxt_core::utils::AccountId32,
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                    #[codec(index = 4)]
+                    AssetTradedForCurrency(
+                        ::core::primitive::u32,
+                        ::subxt_core::utils::AccountId32,
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct Exchange<_0, _1, _2> {
+                    pub asset_id: _0,
+                    pub currency_reserve: _1,
+                    pub token_reserve: _2,
+                    pub liquidity_token_id: _0,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum TradeAmount<_0, _1> {
+                    #[codec(index = 0)]
+                    FixedInput { input_amount: _0, min_output: _1 },
+                    #[codec(index = 1)]
+                    FixedOutput { max_input: _0, output_amount: _1 },
+                }
+            }
+        }
         pub mod pallet_timestamp {
             use super::runtime_types;
             pub mod pallet {
@@ -14038,6 +14883,8 @@ pub mod codegen {
                 Nucleus(runtime_types::pallet_nucleus::pallet::Call),
                 #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Call),
+                #[codec(index = 17)]
+                Swap(runtime_types::pallet_swap::pallet::Call),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -14072,6 +14919,8 @@ pub mod codegen {
                 Nucleus(runtime_types::pallet_nucleus::pallet::Error),
                 #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Error),
+                #[codec(index = 17)]
+                Swap(runtime_types::pallet_swap::pallet::Error),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -14108,6 +14957,8 @@ pub mod codegen {
                 Nucleus(runtime_types::pallet_nucleus::pallet::Event),
                 #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Event),
+                #[codec(index = 17)]
+                Swap(runtime_types::pallet_swap::pallet::Event),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
