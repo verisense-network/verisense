@@ -14,7 +14,6 @@ pub trait WeightInfo {
     fn currency_to_asset() -> Weight;
     fn asset_to_currency() -> Weight;
     fn asset_to_asset() -> Weight;
-
 }
 
 /// Weight functions for `pallet_dex`.
