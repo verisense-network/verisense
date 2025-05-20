@@ -36,6 +36,8 @@ pub type NucleusId = AccountId32;
 
 pub type NodeId = sp_core::OpaquePeerId;
 
+pub type AssetId = u32;
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
 pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub name: alloc::vec::Vec<u8>,

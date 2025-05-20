@@ -22,6 +22,7 @@ use sp_consensus::SelectChain;
 
 pub use sc_rpc_api::DenyUnsafe;
 use sp_consensus_babe::BabeApi;
+use vrs_primitives::AssetId;
 
 #[derive(Clone)]
 pub struct NucleusDeps {
@@ -68,6 +69,7 @@ where
     C::Api: vrs_nucleus_runtime_api::NucleusApi<Block> + 'static,
     C::Api: BabeApi<Block> + 'static,
     SC: SelectChain<Block> + 'static,
+    C::Api: vrs_swap_runtime_api::SwapApi<Block, AssetId, Balance, Balance> + 'static,
   //  C::Api: vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId>,
     C::Api: BlockBuilder<Block> + 'static,
 {

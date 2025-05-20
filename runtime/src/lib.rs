@@ -444,7 +444,7 @@ impl pallet_assets::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type RemoveItemsLimit = ConstU32<5>;
-    type AssetId = u32;
+    type AssetId = AssetId;
     type AssetIdParameter = u32;
     type Currency = Balances;
     type CreateOrigin = NoAssetCreators;
@@ -478,7 +478,7 @@ impl pallet_swap::Config for Runtime {
     type AssetBalance = Balance;
     type AssetToCurrencyBalance = ConvertInto;
     type CurrencyToAssetBalance = ConvertInto;
-    type AssetId = u32;
+    type AssetId = AssetId;
     type Assets = Assets;
     type AssetRegistry = Assets;
     type WeightInfo = ();
@@ -597,6 +597,7 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
     Migrations,
 >;
+use pallet_swap::rpc::RpcResult;
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
@@ -851,9 +852,26 @@ impl_runtime_apis! {
             vec![]
         }
     }
+
     impl vrs_tss_runtime_api::VrsTssRuntimeApi<Block> for Runtime {
         fn get_all_validators() -> Vec<sp_runtime::AccountId32> {
             Session::validators().to_vec()
+        }
+    }
+
+    impl vrs_swap_runtime_api::SwapApi<Block, AssetId, Balance, Balance> for Runtime {
+
+        fn get_currency_to_asset_output_amount(asset_id: AssetId, currency_amount: Balance) -> RpcResult<Balance> {
+            Swap::get_currency_to_asset_output_amount(asset_id, currency_amount)
+        }
+        fn get_currency_to_asset_input_amount(asset_id: AssetId, token_amount: Balance) -> RpcResult<Balance>{
+            Swap::get_currency_to_asset_input_amount(asset_id, token_amount)
+        }
+        fn get_asset_to_currency_output_amount(asset_id: AssetId, token_amount: Balance) -> RpcResult<Balance> {
+            Swap::get_asset_to_currency_output_amount(asset_id, token_amount)
+        }
+        fn get_asset_to_currency_input_amount(asset_id: AssetId, currency_amount: Balance) -> RpcResult<Balance> {
+            Swap::get_asset_to_currency_input_amount(asset_id, currency_amount)
         }
     }
 

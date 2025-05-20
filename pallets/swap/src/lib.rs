@@ -3,8 +3,8 @@
 pub mod rpc;
 pub mod weights;
 
-use frame_support::PalletId;
 use frame_support::traits::Currency;
+use frame_support::PalletId;
 use sp_std::prelude::*;
 
 pub use pallet::*;
@@ -55,10 +55,10 @@ pub mod pallet {
 
         /// The balance type for assets (i.e. tokens).
         type AssetBalance: Balance
-        + FixedPointOperand
-        + MaxEncodedLen
-        + MaybeSerializeDeserialize
-        + TypeInfo;
+            + FixedPointOperand
+            + MaxEncodedLen
+            + MaybeSerializeDeserialize
+            + TypeInfo;
 
         // Two-way conversion between asset and currency balances
         type AssetToCurrencyBalance: Convert<Self::AssetBalance, BalanceOf<Self>>;
@@ -66,23 +66,23 @@ pub mod pallet {
 
         /// The asset ID type.
         type AssetId: MaybeSerializeDeserialize
-        + MaxEncodedLen
-        + TypeInfo
-        + Clone
-        + Debug
-        + PartialEq
-        + EncodeLike
-        + Decode;
+            + MaxEncodedLen
+            + TypeInfo
+            + Clone
+            + Debug
+            + PartialEq
+            + EncodeLike
+            + Decode;
 
         /// The type for tradable assets.
         type Assets: Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-        + Mutate<Self::AccountId>;
+            + Mutate<Self::AccountId>;
 
         /// The type for liquidity tokens.
         type AssetRegistry: Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-        + Mutate<Self::AccountId>
-        + Create<Self::AccountId>
-        + Destroy<Self::AccountId>;
+            + Mutate<Self::AccountId>
+            + Create<Self::AccountId>
+            + Destroy<Self::AccountId>;
 
         /// Information on runtime weights.
         type WeightInfo: WeightInfo;
@@ -131,8 +131,13 @@ pub mod pallet {
         }
     }
 
-    type GenesisExchangeInfo<T> =
-    (AccountIdOf<T>, AssetIdOf<T>, AssetIdOf<T>, BalanceOf<T>, AssetBalanceOf<T>);
+    type GenesisExchangeInfo<T> = (
+        AccountIdOf<T>,
+        AssetIdOf<T>,
+        AssetIdOf<T>,
+        BalanceOf<T>,
+        AssetBalanceOf<T>,
+    );
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
@@ -153,7 +158,10 @@ pub mod pallet {
                 &self.exchanges
             {
                 // ----------------------- Create liquidity token ----------------------
-                assert!(!<Exchanges<T>>::contains_key(asset_id), "Exchange already created");
+                assert!(
+                    !<Exchanges<T>>::contains_key(asset_id),
+                    "Exchange already created"
+                );
                 assert!(
                     T::AssetRegistry::create(
                         liquidity_token_id.clone(),
@@ -161,7 +169,7 @@ pub mod pallet {
                         false,
                         <AssetBalanceOf<T>>::one(),
                     )
-                        .is_ok(),
+                    .is_ok(),
                     "Liquidity token id already in use"
                 );
 
@@ -183,7 +191,7 @@ pub mod pallet {
                         *currency_amount,
                         ExistenceRequirement::KeepAlive,
                     )
-                        .is_ok(),
+                    .is_ok(),
                     "Provider does not have enough amount of currency"
                 );
 
@@ -195,7 +203,7 @@ pub mod pallet {
                         *token_amount,
                         Preservation::Preserve,
                     )
-                        .is_ok(),
+                    .is_ok(),
                     "Provider does not have enough amount of asset tokens"
                 );
 
@@ -205,7 +213,7 @@ pub mod pallet {
                         provider,
                         liquidity_minted
                     )
-                        .is_ok(),
+                    .is_ok(),
                     "Unexpected error while minting liquidity tokens for Provider"
                 );
 
@@ -349,7 +357,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn exchanges)]
     pub(super) type Exchanges<T: Config> =
-    StorageMap<_, Twox64Concat, AssetIdOf<T>, ExchangeOf<T>, OptionQuery>;
+        StorageMap<_, Twox64Concat, AssetIdOf<T>, ExchangeOf<T>, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -383,7 +391,10 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            ensure!(currency_amount >= T::MinDeposit::get(), Error::<T>::CurrencyAmountTooLow);
+            ensure!(
+                currency_amount >= T::MinDeposit::get(),
+                Error::<T>::CurrencyAmountTooLow
+            );
             ensure!(token_amount > Zero::zero(), Error::<T>::TokenAmountIsZero);
             if T::Assets::total_issuance(asset_id.clone()).is_zero() {
                 Err(Error::<T>::AssetNotFound)?
@@ -399,7 +410,7 @@ pub mod pallet {
                 false,
                 <AssetBalanceOf<T>>::one(),
             )
-                .map_err(|_| Error::<T>::TokenIdTaken)?;
+            .map_err(|_| Error::<T>::TokenIdTaken)?;
 
             // -------------------------- Update storage ---------------------------
             let exchange = Exchange {
@@ -459,7 +470,10 @@ pub mod pallet {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
             Self::check_deadline(&deadline)?;
-            ensure!(currency_amount > Zero::zero(), Error::<T>::CurrencyAmountIsZero);
+            ensure!(
+                currency_amount > Zero::zero(),
+                Error::<T>::CurrencyAmountIsZero
+            );
             ensure!(max_tokens > Zero::zero(), Error::<T>::MaxTokensIsZero);
             ensure!(min_liquidity > Zero::zero(), Error::<T>::MinLiquidityIsZero);
             Self::check_enough_currency(&caller, &currency_amount)?;
@@ -479,7 +493,10 @@ pub mod pallet {
                 FixedU128::saturating_from_rational(currency_amount, currency_reserve)
                     .saturating_mul_int(total_liquidity);
             ensure!(token_amount <= max_tokens, Error::<T>::MaxTokensTooLow);
-            ensure!(liquidity_minted >= min_liquidity, Error::<T>::MinLiquidityTooHigh);
+            ensure!(
+                liquidity_minted >= min_liquidity,
+                Error::<T>::MinLiquidityTooHigh
+            );
 
             // ----------------------------- State update ----------------------------
             Self::do_add_liquidity(
@@ -528,7 +545,10 @@ pub mod pallet {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
             Self::check_deadline(&deadline)?;
-            ensure!(liquidity_amount > Zero::zero(), Error::<T>::LiquidityAmountIsZero);
+            ensure!(
+                liquidity_amount > Zero::zero(),
+                Error::<T>::LiquidityAmountIsZero
+            );
             ensure!(min_currency > Zero::zero(), Error::<T>::MinCurrencyIsZero);
             ensure!(min_tokens > Zero::zero(), Error::<T>::MinTokensIsZero);
             let exchange = Self::get_exchange(&asset_id)?;
@@ -544,7 +564,10 @@ pub mod pallet {
             let token_amount =
                 FixedU128::saturating_from_rational(liquidity_amount, total_liquidity)
                     .saturating_mul_int(exchange.token_reserve);
-            ensure!(currency_amount >= min_currency, Error::<T>::MinCurrencyTooHigh);
+            ensure!(
+                currency_amount >= min_currency,
+                Error::<T>::MinCurrencyTooHigh
+            );
             ensure!(token_amount >= min_tokens, Error::<T>::MinTokensTooHigh);
 
             // ----------------------------- State update ----------------------------
@@ -739,7 +762,10 @@ pub mod pallet {
         }
 
         fn check_deadline(deadline: &BlockNumberFor<T>) -> Result<(), Error<T>> {
-            ensure!(deadline >= &<frame_system::Pallet<T>>::block_number(), Error::DeadlinePassed);
+            ensure!(
+                deadline >= &<frame_system::Pallet<T>>::block_number(),
+                Error::DeadlinePassed
+            );
             Ok(())
         }
 
@@ -831,7 +857,10 @@ pub mod pallet {
         ) -> Result<BalanceOf<T>, Error<T>> {
             debug_assert!(!input_reserve.is_zero());
             debug_assert!(!output_reserve.is_zero());
-            ensure!(output_amount < output_reserve, Error::<T>::NotEnoughLiquidity);
+            ensure!(
+                output_amount < output_reserve,
+                Error::<T>::NotEnoughLiquidity
+            );
             let numerator = input_reserve
                 .checked_mul(output_amount)
                 .ok_or(Error::Overflow)?
@@ -952,7 +981,10 @@ pub mod pallet {
                         &sold_asset_exchange.currency_reserve,
                     )?;
                     let sold_token_amount = T::currency_to_asset(sold_token_amount);
-                    ensure!(sold_token_amount <= max_sold_tokens, Error::<T>::MaxSoldTokensTooLow);
+                    ensure!(
+                        sold_token_amount <= max_sold_tokens,
+                        Error::<T>::MaxSoldTokensTooLow
+                    );
                     Ok((sold_token_amount, currency_amount, bought_token_amount))
                 }
             }
@@ -1020,14 +1052,14 @@ pub mod pallet {
             let asset_id = exchange.asset_id.clone();
             let pallet_account = T::pallet_account();
             //TODO
-          /*  T::AssetRegistry::burn_from(
+            T::AssetRegistry::burn_from(
                 exchange.liquidity_token_id.clone(),
                 &provider,
                 liquidity_amount,
+                Preservation::Preserve,
                 Precision::Exact,
                 Fortitude::Polite,
-            )?;*/
-            
+            )?;
             <T as pallet::Config>::Currency::transfer(
                 &pallet_account,
                 &provider,

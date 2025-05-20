@@ -13039,6 +13039,7 @@ dependencies = [
  "vrs-restaking-runtime-api",
  "vrs-runtime",
  "vrs-support",
+ "vrs-swap-runtime-api",
  "vrs-tss",
  "vrs-tss-runtime-api",
 ]
@@ -13302,6 +13303,7 @@ dependencies = [
  "vrs-primitives",
  "vrs-restaking-runtime-api",
  "vrs-support",
+ "vrs-swap-runtime-api",
  "vrs-tss-runtime-api",
 ]
 
@@ -13314,6 +13316,16 @@ dependencies = [
  "scale-info",
  "sp-runtime 38.0.1",
  "sp-std",
+]
+
+[[package]]
+name = "vrs-swap-runtime-api"
+version = "0.0.1"
+dependencies = [
+ "pallet-swap",
+ "parity-scale-codec",
+ "sp-api 33.0.0",
+ "sp-runtime 38.0.1",
 ]
 
 [[package]]
