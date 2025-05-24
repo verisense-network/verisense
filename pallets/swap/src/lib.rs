@@ -391,46 +391,7 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            ensure!(
-                currency_amount >= T::MinDeposit::get(),
-                Error::<T>::CurrencyAmountTooLow
-            );
-            ensure!(token_amount > Zero::zero(), Error::<T>::TokenAmountIsZero);
-            if T::Assets::total_issuance(asset_id.clone()).is_zero() {
-                Err(Error::<T>::AssetNotFound)?
-            }
-            if <Exchanges<T>>::contains_key(asset_id.clone()) {
-                Err(Error::<T>::ExchangeAlreadyExists)?
-            }
-
-            // ----------------------- Create liquidity token ----------------------
-            T::AssetRegistry::create(
-                liquidity_token_id.clone(),
-                T::pallet_account(),
-                false,
-                <AssetBalanceOf<T>>::one(),
-            )
-            .map_err(|_| Error::<T>::TokenIdTaken)?;
-
-            // -------------------------- Update storage ---------------------------
-            let exchange = Exchange {
-                asset_id: asset_id.clone(),
-                currency_reserve: <BalanceOf<T>>::zero(),
-                token_reserve: <AssetBalanceOf<T>>::zero(),
-                liquidity_token_id: liquidity_token_id.clone(),
-            };
-            let liquidity_minted = T::currency_to_asset(currency_amount);
-            Self::do_add_liquidity(
-                exchange,
-                currency_amount,
-                token_amount,
-                liquidity_minted,
-                caller,
-            )?;
-
-            // ---------------------------- Emit event -----------------------------
-            Self::deposit_event(Event::ExchangeCreated(asset_id, liquidity_token_id));
-            Ok(())
+            Self::inner_create_exchange(caller, asset_id, liquidity_token_id, currency_amount, token_amount)
         }
 
         /// Add liquidity to an existing exchange. The caller specifies an exact amount of currency
@@ -469,6 +430,227 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
+            Self::inner_add_liquidity(caller, asset_id, currency_amount, min_liquidity, max_tokens, deadline)
+        }
+
+        /// Remove liquidity from an exchange. The caller specifies the amount of liquidity tokens
+        /// to burn, and minimum amounts of currency and asset to receive.
+        /// Emit `LiquidityRemoved` event on success.
+        ///
+        /// **Parameters:**
+        ///   * `origin` – Origin for the call. Must be signed.
+        ///   * `asset_id` – ID of the withdrawn asset. An exchange for this asset must exist.
+        ///   * `liquidity_amount` – The amount of liquidity tokens to be burned. Must be greater than 0.
+        ///   * `min_currency` – The minimum amount of currency to receive. Must be greater than 0.
+        ///   * `min_tokens` – The minimum amount of tokens to receive. Must be greater than 0.
+        ///   * `deadline` – Number of the last block in which the transaction can be included.
+        ///
+        /// **Errors:**
+        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
+        ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
+        ///   * `LiquidityAmountIsZero` – Specified `liquidity_amount` equals 0.
+        ///   * `MinCurrencyIsZero` – Specified `min_currency` equals 0.
+        ///   * `MinTokensIsZero` – Specified `min_tokens` equals 0.
+        ///   * `ProviderLiquidityTooLow` – Specified `liquidity_amount` is greater than the liquidity
+        ///     token balance of the caller account.
+        ///   * `MinCurrencyTooHigh` – The amount of currency which could be received in exchange for the specified
+        ///     `liquidity_amount` is lower than the specified `min_currency`.
+        ///   * `MinTokensTooHigh` – The amount of tokens which could be received in exchange for the specified
+        ///     `liquidity_amount` is lower than the specified `min_tokens`.
+        #[pallet::call_index(2)]
+        #[pallet::weight(<T as Config>::WeightInfo::remove_liquidity())]
+        pub fn remove_liquidity(
+            origin: OriginFor<T>,
+            asset_id: AssetIdOf<T>,
+            liquidity_amount: AssetBalanceOf<T>,
+            min_currency: BalanceOf<T>,
+            min_tokens: AssetBalanceOf<T>,
+            deadline: BlockNumberFor<T>,
+        ) -> DispatchResult {
+            // -------------------------- Validation part --------------------------
+            let caller = ensure_signed(origin)?;
+            Self::inner_remove_liquidity(caller, asset_id, liquidity_amount, min_currency, min_tokens, deadline)
+        }
+
+        /// Exchange currency for asset. Optionally, transfer bought asset to `recipient`. The caller can specify either:
+        ///   * exact amount of currency to sell (`input_amount`) and minimum amount of tokens to buy (`min_output`), or
+        ///   * exact amount of tokens to buy (`output_amount`) and maximum amount of currency to sell (`max_input`).
+        ///
+        /// Emit `CurrencyTradedForAsset` event on success.
+        ///
+        /// **Parameters:**
+        ///   * `origin` – Origin for the call. Must be signed.
+        ///   * `asset_id` – ID of the bought asset. An exchange for this asset must exist and have sufficient liquidity.
+        ///   * `amount` – Amount of the currency and asset to trade.
+        ///   * `deadline` – Number of the last block in which the transaction can be included.
+        ///   * `recipient` – (Optional) account to transfer the bought tokens to.
+        ///
+        /// **Errors:**
+        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
+        ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
+        ///   * `TradeAmountIsZero` – Specified currency or token amount equals 0.
+        ///   * `MinTokensTooHigh` – The amount of tokens which could be received in exchange for the specified
+        ///     currency amount (`input_amount`) is lower than the specified minimum (`min_output`).
+        ///   * `MaxCurrencyTooLow` – The amount of currency which must be spent to receive the specified
+        ///     asset amount (`output_amount`) is higher than the specified maximum (`max_input`).
+        ///   * `NotEnoughLiquidity` – There is not enough liquidity in the pool to buy the specified
+        ///     amount of tokens (`output_amount`).
+        ///   * `BalanceTooLow` – The available currency balance of the caller account is not enough to perform the trade.
+        ///   * `Overflow` – An overflow occurred during price computation.
+        #[pallet::call_index(3)]
+        #[pallet::weight(<T as Config>::WeightInfo::currency_to_asset())]
+        pub fn currency_to_asset(
+            origin: OriginFor<T>,
+            asset_id: AssetIdOf<T>,
+            amount: TradeAmount<BalanceOf<T>, AssetBalanceOf<T>>,
+            deadline: BlockNumberFor<T>,
+            recipient: Option<AccountIdOf<T>>,
+        ) -> DispatchResult {
+            // -------------------------- Validation part --------------------------
+            let caller = ensure_signed(origin)?;
+            Self::inner_currency_to_asset(caller,asset_id, amount, deadline, recipient)
+        }
+
+        /// Exchange asset for currency. Optionally, transfer bought currency to `recipient`. The caller can specify either:
+        ///   * exact amount of tokes to sell (`input_amount`) and minimum amount of currency to buy (`min_output`), or
+        ///   * exact amount of currency to buy (`output_amount`) and maximum amount of tokens to sell (`max_input`).
+        ///
+        /// Emit `AssetTradedForCurrency` event on success.
+        ///
+        /// **Parameters:**
+        ///   * `origin` – Origin for the call. Must be signed.
+        ///   * `asset_id` – ID of the sold asset. An exchange for this asset must exist and have sufficient liquidity.
+        ///   * `amount` – Amount of the currency and asset to trade.
+        ///   * `deadline` – Number of the last block in which the transaction can be included.
+        ///   * `recipient` – (Optional) account to transfer the currency tokens to.
+        ///
+        /// **Errors:**
+        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
+        ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
+        ///   * `TradeAmountIsZero` – Specified currency or token amount equals 0.
+        ///   * `MinCurrencyTooHigh` – The amount of currency which could be received in exchange for the specified
+        ///     asset amount (`input_amount`) is lower than the specified minimum (`min_output`).
+        ///   * `MaxTokensTooLow` – The amount of asset which must be spent to receive the specified
+        ///     currency amount (`output_amount`) is higher than the specified maximum (`max_input`).
+        ///   * `NotEnoughLiquidity` – There is not enough liquidity in the pool to buy the specified
+        ///     amount of currency (`output_amount`).
+        ///   * `NotEnoughTokens` – The available asset balance of the caller account is not enough to perform the trade.
+        ///   * `Overflow` – An overflow occurred during price computation.
+        #[pallet::call_index(4)]
+        #[pallet::weight(<T as Config>::WeightInfo::asset_to_currency())]
+        pub fn asset_to_currency(
+            origin: OriginFor<T>,
+            asset_id: AssetIdOf<T>,
+            amount: TradeAmount<AssetBalanceOf<T>, BalanceOf<T>>,
+            deadline: BlockNumberFor<T>,
+            recipient: Option<AccountIdOf<T>>,
+        ) -> DispatchResult {
+            // -------------------------- Validation part --------------------------
+            let caller = ensure_signed(origin)?;
+            Self::inner_asset_to_currency(caller, asset_id, amount, deadline, recipient)
+        }
+
+        /// Exchange asset for another asset. Optionally, transfer bought asset to `recipient`. The caller can specify either:
+        ///   * exact amount of tokes to sell (`input_amount`) and minimum amount of tokens to buy (`min_output`), or
+        ///   * exact amount of tokens to buy (`output_amount`) and maximum amount of tokens to sell (`max_input`).
+        ///
+        /// **Parameters:**
+        ///   * `origin` – Origin for the call. Must be signed.
+        ///   * `sold_asset_id` – ID of the sold asset. An exchange for this asset must exist and have sufficient liquidity.
+        ///   * `bought_asset_id` – ID of the bought asset. An exchange for this asset must exist and have sufficient liquidity.
+        ///   * `amount` – Amount of the assets to trade.
+        ///   * `deadline` – Number of the last block in which the transaction can be included.
+        ///   * `recipient` – (Optional) account to transfer the bought tokens to.
+        ///
+        /// **Errors:**
+        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
+        ///   * `ExchangeNotFound` – There is no exchange for the given `sold_asset_id` or `bought_asset_id`.
+        ///   * `TradeAmountIsZero` – Specified bought or sold token amount equals 0.
+        ///   * `MinBoughtTokensTooHigh` – The amount of asset which could be bought in exchange for the specified
+        ///     sold asset amount (`input_amount`) is lower than the specified minimum (`min_output`).
+        ///   * `MaxSoldTokensTooLow` – The amount of asset which must be sold to receive the specified
+        ///     bought asset amount (`output_amount`) is higher than the specified maximum (`max_input`).
+        ///   * `NotEnoughLiquidity` – There is not enough liquidity in one of the pools to buy the specified amount of asset
+        ///     (`output_amount`).
+        ///   * `NotEnoughTokens` – The available sold asset balance of the caller account is not enough to perform the trade.
+        ///   * `Overflow` – An overflow occurred during price computation.
+        #[pallet::call_index(5)]
+        #[pallet::weight(<T as Config>::WeightInfo::asset_to_asset())]
+        pub fn asset_to_asset(
+            origin: OriginFor<T>,
+            sold_asset_id: AssetIdOf<T>,
+            bought_asset_id: AssetIdOf<T>,
+            amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
+            deadline: BlockNumberFor<T>,
+            recipient: Option<AccountIdOf<T>>,
+        ) -> DispatchResult {
+            // -------------------------- Validation part --------------------------
+            let caller = ensure_signed(origin)?;
+            Self::inner_asset_to_asset(caller, sold_asset_id, bought_asset_id, amount, deadline, recipient)
+        }
+    }
+
+
+    impl <T: Config> Pallet<T> {
+        pub fn inner_create_exchange(
+            caller: AccountIdOf<T>,
+            asset_id: AssetIdOf<T>,
+            liquidity_token_id: AssetIdOf<T>,
+            currency_amount: BalanceOf<T>,
+            token_amount: AssetBalanceOf<T>,
+        ) -> DispatchResult {
+            // -------------------------- Validation part --------------------------
+            ensure!(
+                currency_amount >= T::MinDeposit::get(),
+                Error::<T>::CurrencyAmountTooLow
+            );
+            ensure!(token_amount > Zero::zero(), Error::<T>::TokenAmountIsZero);
+            if T::Assets::total_issuance(asset_id.clone()).is_zero() {
+                Err(crate::pallet::Error::<T>::AssetNotFound)?
+            }
+            if <crate::pallet::Exchanges<T>>::contains_key(asset_id.clone()) {
+                Err(crate::pallet::Error::<T>::ExchangeAlreadyExists)?
+            }
+
+            // ----------------------- Create liquidity token ----------------------
+            T::AssetRegistry::create(
+                liquidity_token_id.clone(),
+                T::pallet_account(),
+                false,
+                <AssetBalanceOf<T>>::one(),
+            )
+                .map_err(|_| crate::pallet::Error::<T>::TokenIdTaken)?;
+
+            // -------------------------- Update storage ---------------------------
+            let exchange = crate::pallet::Exchange {
+                asset_id: asset_id.clone(),
+                currency_reserve: <BalanceOf<T>>::zero(),
+                token_reserve: <AssetBalanceOf<T>>::zero(),
+                liquidity_token_id: liquidity_token_id.clone(),
+            };
+            let liquidity_minted = T::currency_to_asset(currency_amount);
+            Self::do_add_liquidity(
+                exchange,
+                currency_amount,
+                token_amount,
+                liquidity_minted,
+                caller,
+            )?;
+
+            // ---------------------------- Emit event -----------------------------
+            Self::deposit_event(crate::pallet::Event::ExchangeCreated(asset_id, liquidity_token_id));
+            Ok(())
+        }
+
+        pub fn inner_add_liquidity(
+            caller: AccountIdOf<T>,
+            asset_id: AssetIdOf<T>,
+            currency_amount: BalanceOf<T>,
+            min_liquidity: AssetBalanceOf<T>,
+            max_tokens: AssetBalanceOf<T>,
+            deadline: BlockNumberFor<T>,
+        ) -> DispatchResult {
+            // -------------------------- Validation part --------------------------
             Self::check_deadline(&deadline)?;
             ensure!(
                 currency_amount > Zero::zero(),
@@ -508,42 +690,14 @@ pub mod pallet {
             )
         }
 
-        /// Remove liquidity from an exchange. The caller specifies the amount of liquidity tokens
-        /// to burn, and minimum amounts of currency and asset to receive.
-        /// Emit `LiquidityRemoved` event on success.
-        ///
-        /// **Parameters:**
-        ///   * `origin` – Origin for the call. Must be signed.
-        ///   * `asset_id` – ID of the withdrawn asset. An exchange for this asset must exist.
-        ///   * `liquidity_amount` – The amount of liquidity tokens to be burned. Must be greater than 0.
-        ///   * `min_currency` – The minimum amount of currency to receive. Must be greater than 0.
-        ///   * `min_tokens` – The minimum amount of tokens to receive. Must be greater than 0.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
-        ///
-        /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
-        ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
-        ///   * `LiquidityAmountIsZero` – Specified `liquidity_amount` equals 0.
-        ///   * `MinCurrencyIsZero` – Specified `min_currency` equals 0.
-        ///   * `MinTokensIsZero` – Specified `min_tokens` equals 0.
-        ///   * `ProviderLiquidityTooLow` – Specified `liquidity_amount` is greater than the liquidity
-        ///     token balance of the caller account.
-        ///   * `MinCurrencyTooHigh` – The amount of currency which could be received in exchange for the specified
-        ///     `liquidity_amount` is lower than the specified `min_currency`.
-        ///   * `MinTokensTooHigh` – The amount of tokens which could be received in exchange for the specified
-        ///     `liquidity_amount` is lower than the specified `min_tokens`.
-        #[pallet::call_index(2)]
-        #[pallet::weight(<T as Config>::WeightInfo::remove_liquidity())]
-        pub fn remove_liquidity(
-            origin: OriginFor<T>,
+        pub fn inner_remove_liquidity(
+            caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             liquidity_amount: AssetBalanceOf<T>,
             min_currency: BalanceOf<T>,
             min_tokens: AssetBalanceOf<T>,
             deadline: BlockNumberFor<T>,
         ) -> DispatchResult {
-            // -------------------------- Validation part --------------------------
-            let caller = ensure_signed(origin)?;
             Self::check_deadline(&deadline)?;
             ensure!(
                 liquidity_amount > Zero::zero(),
@@ -580,42 +734,13 @@ pub mod pallet {
             )
         }
 
-        /// Exchange currency for asset. Optionally, transfer bought asset to `recipient`. The caller can specify either:
-        ///   * exact amount of currency to sell (`input_amount`) and minimum amount of tokens to buy (`min_output`), or
-        ///   * exact amount of tokens to buy (`output_amount`) and maximum amount of currency to sell (`max_input`).
-        ///
-        /// Emit `CurrencyTradedForAsset` event on success.
-        ///
-        /// **Parameters:**
-        ///   * `origin` – Origin for the call. Must be signed.
-        ///   * `asset_id` – ID of the bought asset. An exchange for this asset must exist and have sufficient liquidity.
-        ///   * `amount` – Amount of the currency and asset to trade.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
-        ///   * `recipient` – (Optional) account to transfer the bought tokens to.
-        ///
-        /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
-        ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
-        ///   * `TradeAmountIsZero` – Specified currency or token amount equals 0.
-        ///   * `MinTokensTooHigh` – The amount of tokens which could be received in exchange for the specified
-        ///     currency amount (`input_amount`) is lower than the specified minimum (`min_output`).
-        ///   * `MaxCurrencyTooLow` – The amount of currency which must be spent to receive the specified
-        ///     asset amount (`output_amount`) is higher than the specified maximum (`max_input`).
-        ///   * `NotEnoughLiquidity` – There is not enough liquidity in the pool to buy the specified
-        ///     amount of tokens (`output_amount`).
-        ///   * `BalanceTooLow` – The available currency balance of the caller account is not enough to perform the trade.
-        ///   * `Overflow` – An overflow occurred during price computation.
-        #[pallet::call_index(3)]
-        #[pallet::weight(<T as Config>::WeightInfo::currency_to_asset())]
-        pub fn currency_to_asset(
-            origin: OriginFor<T>,
+        pub fn inner_currency_to_asset(
+            caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<BalanceOf<T>, AssetBalanceOf<T>>,
             deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
-            // -------------------------- Validation part --------------------------
-            let caller = ensure_signed(origin)?;
             let recipient = recipient.unwrap_or_else(|| caller.clone());
             Self::check_deadline(&deadline)?;
             Self::check_trade_amount(&amount)?;
@@ -636,42 +761,13 @@ pub mod pallet {
             )
         }
 
-        /// Exchange asset for currency. Optionally, transfer bought currency to `recipient`. The caller can specify either:
-        ///   * exact amount of tokes to sell (`input_amount`) and minimum amount of currency to buy (`min_output`), or
-        ///   * exact amount of currency to buy (`output_amount`) and maximum amount of tokens to sell (`max_input`).
-        ///
-        /// Emit `AssetTradedForCurrency` event on success.
-        ///
-        /// **Parameters:**
-        ///   * `origin` – Origin for the call. Must be signed.
-        ///   * `asset_id` – ID of the sold asset. An exchange for this asset must exist and have sufficient liquidity.
-        ///   * `amount` – Amount of the currency and asset to trade.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
-        ///   * `recipient` – (Optional) account to transfer the currency tokens to.
-        ///
-        /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
-        ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
-        ///   * `TradeAmountIsZero` – Specified currency or token amount equals 0.
-        ///   * `MinCurrencyTooHigh` – The amount of currency which could be received in exchange for the specified
-        ///     asset amount (`input_amount`) is lower than the specified minimum (`min_output`).
-        ///   * `MaxTokensTooLow` – The amount of asset which must be spent to receive the specified
-        ///     currency amount (`output_amount`) is higher than the specified maximum (`max_input`).
-        ///   * `NotEnoughLiquidity` – There is not enough liquidity in the pool to buy the specified
-        ///     amount of currency (`output_amount`).
-        ///   * `NotEnoughTokens` – The available asset balance of the caller account is not enough to perform the trade.
-        ///   * `Overflow` – An overflow occurred during price computation.
-        #[pallet::call_index(4)]
-        #[pallet::weight(<T as Config>::WeightInfo::asset_to_currency())]
-        pub fn asset_to_currency(
-            origin: OriginFor<T>,
+        pub fn inner_asset_to_currency(
+            caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, BalanceOf<T>>,
             deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
-            // -------------------------- Validation part --------------------------
-            let caller = ensure_signed(origin)?;
             let recipient = recipient.unwrap_or_else(|| caller.clone());
             Self::check_deadline(&deadline)?;
             Self::check_trade_amount(&amount)?;
@@ -692,42 +788,14 @@ pub mod pallet {
             )
         }
 
-        /// Exchange asset for another asset. Optionally, transfer bought asset to `recipient`. The caller can specify either:
-        ///   * exact amount of tokes to sell (`input_amount`) and minimum amount of tokens to buy (`min_output`), or
-        ///   * exact amount of tokens to buy (`output_amount`) and maximum amount of tokens to sell (`max_input`).
-        ///
-        /// **Parameters:**
-        ///   * `origin` – Origin for the call. Must be signed.
-        ///   * `sold_asset_id` – ID of the sold asset. An exchange for this asset must exist and have sufficient liquidity.
-        ///   * `bought_asset_id` – ID of the bought asset. An exchange for this asset must exist and have sufficient liquidity.
-        ///   * `amount` – Amount of the assets to trade.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
-        ///   * `recipient` – (Optional) account to transfer the bought tokens to.
-        ///
-        /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
-        ///   * `ExchangeNotFound` – There is no exchange for the given `sold_asset_id` or `bought_asset_id`.
-        ///   * `TradeAmountIsZero` – Specified bought or sold token amount equals 0.
-        ///   * `MinBoughtTokensTooHigh` – The amount of asset which could be bought in exchange for the specified
-        ///     sold asset amount (`input_amount`) is lower than the specified minimum (`min_output`).
-        ///   * `MaxSoldTokensTooLow` – The amount of asset which must be sold to receive the specified
-        ///     bought asset amount (`output_amount`) is higher than the specified maximum (`max_input`).
-        ///   * `NotEnoughLiquidity` – There is not enough liquidity in one of the pools to buy the specified amount of asset
-        ///     (`output_amount`).
-        ///   * `NotEnoughTokens` – The available sold asset balance of the caller account is not enough to perform the trade.
-        ///   * `Overflow` – An overflow occurred during price computation.
-        #[pallet::call_index(5)]
-        #[pallet::weight(<T as Config>::WeightInfo::asset_to_asset())]
-        pub fn asset_to_asset(
-            origin: OriginFor<T>,
+        pub fn inner_asset_to_asset(
+            caller: AccountIdOf<T>,
             sold_asset_id: AssetIdOf<T>,
             bought_asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
             deadline: BlockNumberFor<T>,
-            recipient: Option<AccountIdOf<T>>,
+            recipient: Option<AccountIdOf<T>>
         ) -> DispatchResult {
-            // -------------------------- Validation part --------------------------
-            let caller = ensure_signed(origin)?;
             let recipient = recipient.unwrap_or_else(|| caller.clone());
             Self::check_deadline(&deadline)?;
             Self::check_trade_amount(&amount)?;
