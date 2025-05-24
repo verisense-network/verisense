@@ -3,8 +3,10 @@
 pub mod rpc;
 pub mod weights;
 
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Currency;
 use frame_support::PalletId;
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_std::prelude::*;
 
 pub use pallet::*;
@@ -591,8 +593,8 @@ pub mod pallet {
     }
 
 
-    impl <T: Config> Pallet<T> {
-        pub fn inner_create_exchange(
+    impl <T: Config> SwapInterface<T> for Pallet<T> {
+        fn inner_create_exchange(
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             liquidity_token_id: AssetIdOf<T>,
@@ -642,7 +644,7 @@ pub mod pallet {
             Ok(())
         }
 
-        pub fn inner_add_liquidity(
+        fn inner_add_liquidity(
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             currency_amount: BalanceOf<T>,
@@ -690,7 +692,7 @@ pub mod pallet {
             )
         }
 
-        pub fn inner_remove_liquidity(
+        fn inner_remove_liquidity(
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             liquidity_amount: AssetBalanceOf<T>,
@@ -734,7 +736,7 @@ pub mod pallet {
             )
         }
 
-        pub fn inner_currency_to_asset(
+        fn inner_currency_to_asset(
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<BalanceOf<T>, AssetBalanceOf<T>>,
@@ -761,7 +763,7 @@ pub mod pallet {
             )
         }
 
-        pub fn inner_asset_to_currency(
+        fn inner_asset_to_currency(
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, BalanceOf<T>>,
@@ -788,7 +790,7 @@ pub mod pallet {
             )
         }
 
-        pub fn inner_asset_to_asset(
+        fn inner_asset_to_asset(
             caller: AccountIdOf<T>,
             sold_asset_id: AssetIdOf<T>,
             bought_asset_id: AssetIdOf<T>,
@@ -1274,4 +1276,59 @@ pub mod pallet {
             )
         }
     }
+}
+
+
+
+pub trait SwapInterface<T: Config> {
+    fn inner_add_liquidity(
+        caller: AccountIdOf<T>,
+        asset_id: AssetIdOf<T>,
+        currency_amount: BalanceOf<T>,
+        min_liquidity: AssetBalanceOf<T>,
+        max_tokens: AssetBalanceOf<T>,
+        deadline: BlockNumberFor<T>,
+    ) -> DispatchResult;
+
+    fn inner_asset_to_asset(
+        caller: AccountIdOf<T>,
+        sold_asset_id: AssetIdOf<T>,
+        bought_asset_id: AssetIdOf<T>,
+        amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
+        deadline: BlockNumberFor<T>,
+        recipient: Option<AccountIdOf<T>>
+    ) -> DispatchResult;
+
+    fn inner_asset_to_currency(
+        caller: AccountIdOf<T>,
+        asset_id: AssetIdOf<T>,
+        amount: TradeAmount<AssetBalanceOf<T>, BalanceOf<T>>,
+        deadline: BlockNumberFor<T>,
+        recipient: Option<AccountIdOf<T>>,
+    ) -> DispatchResult;
+
+    fn inner_remove_liquidity(
+        caller: AccountIdOf<T>,
+        asset_id: AssetIdOf<T>,
+        liquidity_amount: AssetBalanceOf<T>,
+        min_currency: BalanceOf<T>,
+        min_tokens: AssetBalanceOf<T>,
+        deadline: BlockNumberFor<T>,
+    ) -> DispatchResult;
+
+    fn inner_create_exchange(
+        caller: AccountIdOf<T>,
+        asset_id: AssetIdOf<T>,
+        liquidity_token_id: AssetIdOf<T>,
+        currency_amount: BalanceOf<T>,
+        token_amount: AssetBalanceOf<T>,
+    ) -> DispatchResult;
+
+    fn inner_currency_to_asset(
+        caller: AccountIdOf<T>,
+        asset_id: AssetIdOf<T>,
+        amount: TradeAmount<BalanceOf<T>, AssetBalanceOf<T>>,
+        deadline: BlockNumberFor<T>,
+        recipient: Option<AccountIdOf<T>>,
+    ) -> DispatchResult;
 }
