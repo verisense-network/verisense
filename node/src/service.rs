@@ -1,25 +1,25 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use crate::cli::TssCmd;
+use crate::rpc::BabeDeps;
 use futures::{prelude::*, FutureExt};
 use sc_client_api::{Backend, BlockBackend};
-use sc_consensus_babe::{self, SlotProportion,ImportQueueParams};
+use sc_consensus_babe::{self, ImportQueueParams, SlotProportion};
 use sc_consensus_grandpa::SharedVoterState;
 use sc_network::{event::Event, NetworkEventStream};
+use sc_rpc_api::DenyUnsafe;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
+use sp_api::ApiExt;
 use sp_authority_discovery::AuthorityId;
 use sp_core::crypto::Ss58Codec;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
 use std::{collections::HashSet, sync::Arc, time::Duration};
-use sc_rpc_api::DenyUnsafe;
-use sp_api::{ApiExt};
 use tokio::sync::Mutex;
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
-use crate::rpc::BabeDeps;
 
 pub(crate) type FullClient = sc_service::TFullClient<
     Block,
@@ -44,18 +44,11 @@ pub fn new_partial(
         sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::FullPool<Block, FullClient>,
         (
-            impl Fn(
-                DenyUnsafe,
-                sc_rpc::SubscriptionTaskExecutor,
-            ) -> Result<jsonrpsee::RpcModule<()>, sc_service::Error>,
             (
-                sc_consensus_babe::BabeBlockImport<
-                    Block,
-                    FullClient,
-                    FullGrandpaBlockImport,
-                >,
+                sc_consensus_babe::BabeBlockImport<Block, FullClient, FullGrandpaBlockImport>,
                 sc_consensus_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
                 sc_consensus_babe::BabeLink<Block>,
+                sc_consensus_babe::BabeWorkerHandle<Block>,
             ),
             sc_consensus_grandpa::SharedVoterState,
             Option<Telemetry>,
@@ -114,8 +107,8 @@ pub fn new_partial(
         client.clone(),
     )?;
     let slot_duration = babe_link.config().slot_duration();
-    let (import_queue, babe_worker_handle) =
-        sc_consensus_babe::import_queue(sc_consensus_babe::ImportQueueParams {
+    let (import_queue, babe_worker_handle) = sc_consensus_babe::import_queue(
+        sc_consensus_babe::ImportQueueParams {
             link: babe_link.clone(),
             block_import: block_import.clone(),
             justification_import: Some(Box::new(justification_import)),
@@ -136,36 +129,10 @@ pub fn new_partial(
             registry: config.prometheus_registry(),
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool.clone()),
-        })?;
-
-    let import_setup = (block_import, grandpa_link, babe_link);
-    let (rpc_extensions_builder, rpc_setup) = {
-        let (_, grandpa_link, _) = &import_setup;
-        let shared_voter_state = sc_consensus_grandpa::SharedVoterState::empty();
-        let shared_voter_state2 = shared_voter_state.clone();
-        let client = client.clone();
-        let pool = transaction_pool.clone();
-        let select_chain = select_chain.clone();
-        let keystore = keystore_container.keystore();
-        let rpc_backend = backend.clone();
-        let rpc_extensions_builder =
-            move |deny_unsafe, _subscription_executor: sc_rpc::SubscriptionTaskExecutor| {
-                let deps = crate::rpc::FullDeps {
-                    client: client.clone(),
-                    pool: pool.clone(),
-                    select_chain: select_chain.clone(),
-                    babe: crate::rpc::BabeDeps {
-                        keystore: keystore.clone(),
-                        babe_worker_handle: babe_worker_handle.clone(),
-                    },
-                    backend: rpc_backend.clone(),
-                    nucleus: None,
-                };
-                crate::rpc::create_full(deny_unsafe, deps).map_err(Into::into)
-            };
-
-        (rpc_extensions_builder, shared_voter_state2)
-    };
+        },
+    )?;
+    let import_setup = (block_import, grandpa_link, babe_link, babe_worker_handle);
+    let shared_voter_state = sc_consensus_grandpa::SharedVoterState::empty();
 
     Ok(sc_service::PartialComponents {
         client,
@@ -175,15 +142,9 @@ pub fn new_partial(
         select_chain,
         import_queue,
         transaction_pool,
-        other: (
-            rpc_extensions_builder,
-            import_setup,
-            rpc_setup,
-            telemetry,
-        ),
+        other: (import_setup, shared_voter_state, telemetry),
     })
 }
-
 
 pub fn new_full<
     N: sc_network::NetworkBackend<Block, <Block as sp_runtime::traits::Block>::Hash>,
@@ -201,7 +162,12 @@ pub fn new_full<
         keystore_container,
         select_chain,
         transaction_pool,
-        other: (rpc_extensions_builder, (block_import, grandpa_link, babe_link), shared_vote_state, mut telemetry),
+        other:
+            (
+                (block_import, grandpa_link, babe_link, babe_worker_handle),
+                shared_vote_state,
+                mut telemetry,
+            ),
     } = new_partial(&config)?;
 
     let mut net_config = sc_network::config::FullNetworkConfiguration::<
@@ -299,6 +265,36 @@ pub fn new_full<
     let tss_path = config.base_path.path().join("veritss");
     // TODO config the capacity of pending requests
     let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
+    let rpc_extensions_builder = {
+        let client = client.clone();
+        let pool = transaction_pool.clone();
+        let select_chain = select_chain.clone();
+        let keystore = keystore_container.keystore();
+        let rpc_backend = backend.clone();
+        let nucleus_rpc_tx = nucleus_rpc_tx.clone();
+        let node_id = node_id.clone();
+        let nucleus_home_dir = nucleus_home_dir.clone();
+        let role = role.clone();
+
+        move |deny_unsafe, _subscription_executor: sc_rpc::SubscriptionTaskExecutor| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: pool.clone(),
+                select_chain: select_chain.clone(),
+                babe: crate::rpc::BabeDeps {
+                    keystore: keystore.clone(),
+                    babe_worker_handle: babe_worker_handle.clone(),
+                },
+                backend: rpc_backend.clone(),
+                nucleus: role.is_authority().then(|| crate::rpc::NucleusDeps {
+                    rpc_channel: nucleus_rpc_tx.clone(),
+                    node_id: node_id.clone(),
+                    home_dir: nucleus_home_dir.clone(),
+                }),
+            };
+            crate::rpc::create_full(deny_unsafe, deps).map_err(Into::into)
+        }
+    };
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         network: Arc::new(network.clone()),
@@ -321,9 +317,6 @@ pub fn new_full<
         .flatten()
         .expect("Genesis block exists; qed");
 
-    // let chain_spec_data = client
-    //     .runtime_api()
-    //     .get_chain_spec_data(&genesis_block_hash);
     use sp_api::ProvideRuntimeApi;
     use vrs_tss_runtime_api::VrsTssRuntimeApi;
     let validators = client
@@ -338,8 +331,9 @@ pub fn new_full<
     let start_tss = whitelisted_ids.len() >= 2;
     if role.is_authority() && start_tss {
         let tss_keystore =
-            vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY)
-                .map_err(|e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)))?;
+            vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY).map_err(
+                |e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)),
+            )?;
         // use aura key to initialize signer
         // if the node is an authority, it will run a signer service
         // since we cannot get the sudo account from the chain spec, we start the coordinator for all authorities
@@ -563,6 +557,18 @@ pub fn new_full<
             None,
             vrs_nucleus_cage::start_nucleus_cage(params),
         );
+        let args = vrs_nucleus_rpc_server::NucleusRpcServerArgs {
+            sender: nucleus_rpc_tx,
+            client: client.clone(),
+            pool: transaction_pool.clone(),
+            node_id: node_id.clone(),
+            nucleus_home_dir: nucleus_home_dir.clone(),
+        };
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "nucleus-rpc-server",
+            None,
+            vrs_nucleus_rpc_server::start_nucleus_rpc(args),
+        );
     }
 
     if role.is_authority() {
@@ -618,7 +624,7 @@ pub fn new_full<
             Some("block-authoring"),
             babe,
         );
-/*
+        /*
         let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 
         let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
