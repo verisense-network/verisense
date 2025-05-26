@@ -91,11 +91,11 @@ pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), 
         {
             let export_name = format!(
                 "__nucleus_{}_{}",
-                func.get("method").ok_or(format!(
+                func.get("method").and_then(|m| m.as_str()).ok_or(format!(
                     "Invalid ABI specification: missing `method` field near {}",
                     item
                 ))?,
-                func.get("name").ok_or(format!(
+                func.get("name").and_then(|m| m.as_str()).ok_or(format!(
                     "Invalid ABI specification: missing `name` field near {}",
                     item
                 ))?
@@ -110,7 +110,7 @@ pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), 
 
 impl<R> Vm<R>
 where
-    R: FuncRegister<Runtime = R> + ContextAware + Clone,
+    R: FuncRegister<Runtime = R> + Clone + ContextAware,
 {
     pub fn new_instance(wasm: &WasmInfo, runtime: &R) -> anyhow::Result<Self> {
         let engine = Engine::default();

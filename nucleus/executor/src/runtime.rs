@@ -23,6 +23,10 @@ pub trait ContextAware {
     fn enqueue_all_pending_timer(&self);
 
     fn get_nucleus_id(&self) -> NucleusId;
+
+    fn get_nucleus_home(&self) -> &std::path::Path;
+
+    fn stdout(&mut self) -> &mut std::fs::File;
 }
 
 pub trait ComponentProvider<T> {
@@ -31,7 +35,7 @@ pub trait ComponentProvider<T> {
 
 #[derive(Clone)]
 pub struct RuntimeParams {
-    pub db_path: Box<std::path::Path>,
+    pub nucleus_home: Box<std::path::Path>,
     pub nucleus_id: NucleusId,
     pub http_register: Arc<http::HttpCallRegister>,
     pub timer_scheduler: Arc<timer::SchedulerAsync>,
@@ -41,8 +45,20 @@ pub struct RuntimeParams {
 impl Runtime {
     pub fn init(config: RuntimeParams) -> anyhow::Result<Self> {
         Ok(Self {
-            id: config.nucleus_id,
-            state: Arc::new(NucleusState::new(config.db_path)?),
+            id: config.nucleus_id.clone(),
+            state: Arc::new(NucleusState::new(config.nucleus_home.join("db"))?),
+            stdout: std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(config.nucleus_home.join("stdout.log"))
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "Failed to open stdout for nucleus {}: {:?}",
+                        config.nucleus_id,
+                        e
+                    )
+                })?,
+            nucleus_home: config.nucleus_home,
             http: config.http_register,
             read_only: false,
             timer_scheduler: config.timer_scheduler,
@@ -53,6 +69,14 @@ impl Runtime {
 
     pub fn state(&self) -> Arc<NucleusState> {
         self.state.clone()
+    }
+
+    fn db_path(&self) -> std::path::PathBuf {
+        self.nucleus_home.join("db")
+    }
+
+    fn code_path(&self) -> std::path::PathBuf {
+        self.nucleus_home.join("wasm")
     }
 }
 
@@ -69,6 +93,14 @@ impl ContextAware for Runtime {
         self.id.clone()
     }
 
+    fn get_nucleus_home(&self) -> &std::path::Path {
+        self.nucleus_home.as_ref()
+    }
+
+    fn stdout(&mut self) -> &mut std::fs::File {
+        &mut self.stdout
+    }
+
     fn rollback_all_pending_timer(&self) -> Vec<TimerEntry> {
         let mut timers = vec![];
         while let Some(e) = self.timer_register.pop() {
@@ -76,6 +108,7 @@ impl ContextAware for Runtime {
         }
         timers
     }
+
     fn enqueue_all_pending_timer(&self) {
         while let Some(e) = self.timer_register.pop() {
             self.timer_scheduler.push(e);
@@ -204,9 +237,10 @@ impl FuncRegister for Runtime {
     }
 }
 
-#[derive(Clone)]
 pub struct Runtime {
     pub(crate) id: NucleusId,
+    pub(crate) nucleus_home: Box<std::path::Path>,
+    pub(crate) stdout: std::fs::File,
     pub(crate) state: Arc<NucleusState>,
     pub(crate) http: Arc<HttpCallRegister>,
     pub(crate) read_only: bool,
@@ -214,4 +248,24 @@ pub struct Runtime {
     pub(crate) timer_register: Arc<PendingTimerQueue>,
     pub(crate) tss_node: Arc<NodeRuntime>,
     // TODO we need runtime storage to read
+}
+
+impl Clone for Runtime {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            nucleus_home: self.nucleus_home.clone(),
+            stdout: std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(self.nucleus_home.join("stdout.log"))
+                .expect("Failed to open stdout log"),
+            state: self.state.clone(),
+            http: self.http.clone(),
+            read_only: self.read_only,
+            timer_scheduler: self.timer_scheduler.clone(),
+            timer_register: self.timer_register.clone(),
+            tss_node: self.tss_node.clone(),
+        }
+    }
 }

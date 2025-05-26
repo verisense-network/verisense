@@ -16,15 +16,18 @@ pub struct Nucleus<R> {
     receiver: Receiver<(u64, Gluon)>,
     vm: Option<Vm<R>>,
     runtime: R,
-    token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>
+    token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>,
 }
 
 impl<R> Nucleus<R>
 where
-    R: ContextAware + FuncRegister<Runtime = R> + Clone + Send + Sync + 'static,
+    R: ContextAware + FuncRegister<Runtime = R> + Send + Clone + Sync + 'static,
 {
     /// spawn a native thread to run nucleus
-    pub fn start(runtime: R,   token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>) -> NucleusTunnel {
+    pub fn start(
+        runtime: R,
+        token_timeout_tx: tokio::sync::mpsc::Sender<NucleusId>,
+    ) -> NucleusTunnel {
         let (tx, rx) = mpsc::channel();
         let mut nucleus = Nucleus {
             receiver: rx,
@@ -42,9 +45,10 @@ where
                 // TODO save msg with id to state
                 if let Err(e) = self.accept(msg) {
                     log::error!(
-                    "Nucleus {} interrupted: {:?}",
-                    self.runtime.get_nucleus_id(),
-                    e);
+                        "Nucleus {} interrupted: {:?}",
+                        self.runtime.get_nucleus_id(),
+                        e
+                    );
                     break;
                 }
             } else {
