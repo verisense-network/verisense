@@ -241,10 +241,11 @@ pub const NUCLEUS_FEE_COLLECTOR: AccountId = AccountId::new(hex_literal::hex!(
     "36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"
 ));
 
+use scale_info::prelude::string::String;
 parameter_types! {
     pub RegistryDuration: BlockNumber = 10;
     pub const NucleusFeeCollector: AccountId = NUCLEUS_FEE_COLLECTOR;
-    pub FeeAssetId: AssetId = AssetId("FEE".to_ascii_lowercase());
+    pub FeeAssetId: AssetId = AssetId(String::from("FEE"));
 }
 
 impl pallet_nucleus::Config for Runtime {
@@ -484,7 +485,7 @@ impl pallet_swap::Config for Runtime {
     type AssetRegistry = Assets;
     type WeightInfo = ();
     type ProviderFeeNumerator = ConstU128<1>;
-    type ProviderFeeDenominator = ConstU128<1>;
+    type ProviderFeeDenominator = ConstU128<100>;
     type MinDeposit = ConstU128<1>;
 }
 

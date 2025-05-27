@@ -18,6 +18,8 @@ pallet-assets = { workspace = true }
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
+log = { workspace = true, default-features = false }
+vrs-support = { path = "../../support", default-features = false }
 
 
 [features]
@@ -30,5 +32,6 @@ std = [
     "frame-benchmarking/std",
     "frame-support/std",
     "frame-system/std",
+    "vrs-support/std",
     "pallet-assets/std"
 ]

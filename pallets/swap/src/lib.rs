@@ -17,6 +17,7 @@ type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balan
 type AssetIdOf<T> = <T as Config>::AssetId;
 type AssetBalanceOf<T> = <T as Config>::AssetBalance;
 pub const PALLET_ID: PalletId = PalletId(*b"pal/swap");
+pub(crate) const LOG_TARGET: &'static str = "runtime::swap";
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -393,7 +394,13 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_create_exchange(caller, asset_id, liquidity_token_id, currency_amount, token_amount)
+            Self::inner_create_exchange(
+                caller,
+                asset_id,
+                liquidity_token_id,
+                currency_amount,
+                token_amount,
+            )
         }
 
         /// Add liquidity to an existing exchange. The caller specifies an exact amount of currency
@@ -432,7 +439,14 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_add_liquidity(caller, asset_id, currency_amount, min_liquidity, max_tokens, deadline)
+            Self::inner_add_liquidity(
+                caller,
+                asset_id,
+                currency_amount,
+                min_liquidity,
+                max_tokens,
+                deadline,
+            )
         }
 
         /// Remove liquidity from an exchange. The caller specifies the amount of liquidity tokens
@@ -471,7 +485,14 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_remove_liquidity(caller, asset_id, liquidity_amount, min_currency, min_tokens, deadline)
+            Self::inner_remove_liquidity(
+                caller,
+                asset_id,
+                liquidity_amount,
+                min_currency,
+                min_tokens,
+                deadline,
+            )
         }
 
         /// Exchange currency for asset. Optionally, transfer bought asset to `recipient`. The caller can specify either:
@@ -510,7 +531,7 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_currency_to_asset(caller,asset_id, amount, deadline, recipient)
+            Self::inner_currency_to_asset(caller, asset_id, amount, deadline, recipient)
         }
 
         /// Exchange asset for currency. Optionally, transfer bought currency to `recipient`. The caller can specify either:
@@ -588,12 +609,18 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_asset_to_asset(caller, sold_asset_id, bought_asset_id, amount, deadline, recipient)
+            Self::inner_asset_to_asset(
+                caller,
+                sold_asset_id,
+                bought_asset_id,
+                amount,
+                deadline,
+                recipient,
+            )
         }
     }
 
-
-    impl <T: Config> SwapInterface<T> for Pallet<T> {
+    impl<T: Config> SwapInterface<T> for Pallet<T> {
         fn inner_create_exchange(
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
@@ -621,7 +648,7 @@ pub mod pallet {
                 false,
                 <AssetBalanceOf<T>>::one(),
             )
-                .map_err(|_| crate::pallet::Error::<T>::TokenIdTaken)?;
+            .map_err(|_| crate::pallet::Error::<T>::TokenIdTaken)?;
 
             // -------------------------- Update storage ---------------------------
             let exchange = crate::pallet::Exchange {
@@ -640,7 +667,10 @@ pub mod pallet {
             )?;
 
             // ---------------------------- Emit event -----------------------------
-            Self::deposit_event(crate::pallet::Event::ExchangeCreated(asset_id, liquidity_token_id));
+            Self::deposit_event(crate::pallet::Event::ExchangeCreated(
+                asset_id,
+                liquidity_token_id,
+            ));
             Ok(())
         }
 
@@ -796,7 +826,7 @@ pub mod pallet {
             bought_asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
             deadline: BlockNumberFor<T>,
-            recipient: Option<AccountIdOf<T>>
+            recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
             let recipient = recipient.unwrap_or_else(|| caller.clone());
             Self::check_deadline(&deadline)?;
@@ -1278,8 +1308,6 @@ pub mod pallet {
     }
 }
 
-
-
 pub trait SwapInterface<T: Config> {
     fn inner_add_liquidity(
         caller: AccountIdOf<T>,
@@ -1296,7 +1324,7 @@ pub trait SwapInterface<T: Config> {
         bought_asset_id: AssetIdOf<T>,
         amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
         deadline: BlockNumberFor<T>,
-        recipient: Option<AccountIdOf<T>>
+        recipient: Option<AccountIdOf<T>>,
     ) -> DispatchResult;
 
     fn inner_asset_to_currency(

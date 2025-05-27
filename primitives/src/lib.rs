@@ -49,6 +49,17 @@ impl codec::MaxEncodedLen for AssetId {
     }
 }
 
+impl AssetId {
+    pub fn new(id: String) -> Self {
+        AssetId(id)
+    }
+}
+impl From<String> for AssetId {
+    fn from(value: String) -> Self {
+        AssetId(value)
+    }
+}
+
 impl Display for AssetId {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(&self.0)

@@ -6,12 +6,15 @@ use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_primitives::keys::{restaking::AuthorityId as RestakingId, vrf::AuthorityId as VrfId};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use vrs_metadata::codegen::runtime_types::pallet_balances::types::Reasons::Fee;
+use vrs_primitives::AssetId;
 use vrs_runtime::opaque::SessionKeys;
-use vrs_runtime::{AccountId, Signature, WASM_BINARY};
+use vrs_runtime::{AccountId, FeeAssetId, Signature, WASM_BINARY};
 use vrs_support::consts::{ORIGINAL_VALIDATOR_SOURCE, SENSE};
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec;
 
+pub const FEE_ASSET_ID: &str = "FEE";
 /// Generate a crypto pair from seed.
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
     TPublic::Pair::from_string(&format!("//{}", seed), None)
@@ -114,13 +117,13 @@ pub fn development_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
         ],
         vec![(
-            1,
+            AssetId(FEE_ASSET_ID.to_string()),
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             false,
             1,
         )],
         vec![(
-            1,
+            AssetId(FEE_ASSET_ID.to_string()),
             "USDT".as_bytes().to_vec(),
             "USDT".as_bytes().to_vec(),
             18,
@@ -165,13 +168,13 @@ pub fn gamma_config() -> Result<ChainSpec, String> {
                 get_account_id_from_phrase::<sr25519::Public>(""),
             ],
             vec![(
-                1,
+                AssetId(FEE_ASSET_ID.to_string()),
                 get_account_id_from_phrase::<sr25519::Public>(""),
                 false,
                 1,
             )],
             vec![(
-                1,
+                AssetId(FEE_ASSET_ID.to_string()),
                 "VRS".as_bytes().to_vec(),
                 "VRS".as_bytes().to_vec(),
                 18,
@@ -223,18 +226,22 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
         ],
         vec![(
-            1,
+            AssetId(FEE_ASSET_ID.to_string()),
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             false,
             1,
         )],
         vec![(
-            1,
+            AssetId(FEE_ASSET_ID.to_string()),
             "USDT".as_bytes().to_vec(),
             "USDT".as_bytes().to_vec(),
             18,
         )],
-        vec![],
+        vec![(
+            AssetId(FEE_ASSET_ID.to_string()),
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            100000000000000000000000000
+            )],
         true,
     ))
     .build())
@@ -262,9 +269,9 @@ fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
-    assets: Vec<(u32, AccountId, bool, u128)>,
-    metadata: Vec<(u32, Vec<u8>, Vec<u8>, u8)>,
-    asset_accounts: Vec<(u32, AccountId, u128)>,
+    assets: Vec<(AssetId, AccountId, bool, u128)>,
+    metadata: Vec<(AssetId, Vec<u8>, Vec<u8>, u8)>,
+    asset_accounts: Vec<(AssetId, AccountId, u128)>,
     _enable_println: bool,
 ) -> serde_json::Value {
     serde_json::json!({
@@ -303,7 +310,7 @@ fn testnet_genesis(
             "assets": assets,
             "metadata": metadata,
             "accounts": asset_accounts,
-            "next_asset_id": None::<u32>,
+            "next_asset_id": None::<AssetId>,
         }
     })
 }

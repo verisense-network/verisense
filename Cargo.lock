@@ -7082,11 +7082,13 @@ dependencies = [
  "frame-benchmarking 33.0.0",
  "frame-support 36.0.1",
  "frame-system 36.1.0",
+ "log",
  "pallet-assets",
  "parity-scale-codec",
  "scale-info",
  "sp-runtime 38.0.1",
  "sp-std",
+ "vrs-support",
 ]
 
 [[package]]
@@ -13233,6 +13235,7 @@ dependencies = [
 name = "vrs-primitives"
 version = "0.0.1"
 dependencies = [
+ "hex",
  "parity-scale-codec",
  "sc-network-types",
  "scale-info",

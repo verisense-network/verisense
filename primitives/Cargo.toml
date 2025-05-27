@@ -18,6 +18,8 @@ sp-std = { workspace = true, default-features = false }
 sc-network-types = { workspace = true, optional = true }
 sp-application-crypto = {workspace = true, default-features = false}
 serde = { workspace = true, features = ["derive"],default-features = false}
+[dev-dependencies]
+hex = {version = "0.4.3"}
 [features]
 std = [
     "codec/std",

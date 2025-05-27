@@ -1,8 +1,11 @@
-use crate::{AssetBalanceOf, AssetIdOf, BalanceOf, Config, ConfigHelper, Error, Pallet};
+use crate::{
+    AccountIdOf, AssetBalanceOf, AssetIdOf, BalanceOf, Config, ConfigHelper, Error, Pallet,
+};
 use codec::{Decode, Encode};
 use scale_info::prelude::format;
 use sp_std::fmt::Debug;
 use sp_std::vec::Vec;
+use vrs_support::log;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
 pub enum RpcError {
@@ -77,6 +80,7 @@ impl<T: Config> Pallet<T> {
         asset_id: AssetIdOf<T>,
         currency_amount: BalanceOf<T>,
     ) -> RpcResult<AssetBalanceOf<T>> {
+        use codec::alloc::string::ToString;
         let exchange = Self::get_exchange(&asset_id)?;
         let input_amount = Self::get_input_amount(
             &currency_amount,
