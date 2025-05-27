@@ -1,10 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate core;
 
 use alloc::string::String;
+use core::fmt::{Debug, Display, Formatter};
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
@@ -36,7 +39,21 @@ pub type NucleusId = AccountId32;
 
 pub type NodeId = sp_core::OpaquePeerId;
 
-pub type AssetId = u32;
+
+#[derive(Decode, Encode, Debug, Clone,Serialize, Deserialize, Eq, PartialEq, TypeInfo)]
+pub struct AssetId(pub String);
+
+impl codec::MaxEncodedLen for AssetId {
+    fn max_encoded_len() -> usize {
+        100
+    }
+}
+
+impl Display for AssetId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
 pub struct NucleusInfo<AccountId, Hash, NodeId> {

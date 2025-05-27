@@ -13236,6 +13236,7 @@ dependencies = [
  "parity-scale-codec",
  "sc-network-types",
  "scale-info",
+ "serde",
  "sp-application-crypto 37.0.0",
  "sp-core 34.0.0",
  "sp-runtime 38.0.1",

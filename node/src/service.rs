@@ -3,7 +3,7 @@
 use crate::cli::TssCmd;
 use futures::{prelude::*, FutureExt};
 use sc_client_api::{Backend, BlockBackend};
-use sc_consensus_babe::{self, SlotProportion,ImportQueueParams};
+use sc_consensus_babe::{self, SlotProportion};
 use sc_consensus_grandpa::SharedVoterState;
 use sc_network::{event::Event, NetworkEventStream};
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
@@ -14,12 +14,10 @@ use sp_core::crypto::Ss58Codec;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use sc_rpc_api::DenyUnsafe;
-use sp_api::{ApiExt};
 use tokio::sync::Mutex;
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
-use crate::rpc::BabeDeps;
 
 pub(crate) type FullClient = sc_service::TFullClient<
     Block,

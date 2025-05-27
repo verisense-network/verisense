@@ -7,7 +7,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use codec::Encode;
+use codec::{Encode};
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -244,6 +244,7 @@ pub const NUCLEUS_FEE_COLLECTOR: AccountId = AccountId::new(hex_literal::hex!(
 parameter_types! {
     pub RegistryDuration: BlockNumber = 10;
     pub const NucleusFeeCollector: AccountId = NUCLEUS_FEE_COLLECTOR;
+    pub FeeAssetId: AssetId = AssetId("FEE".to_ascii_lowercase());
 }
 
 impl pallet_nucleus::Config for Runtime {
@@ -257,7 +258,7 @@ impl pallet_nucleus::Config for Runtime {
     type Validators = Validators;
     type Assets = Assets;
     type FeeCollector = NucleusFeeCollector;
-    type FeeAssetId = ConstU32<1>;
+    type FeeAssetId = FeeAssetId;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -420,10 +421,10 @@ impl pallet_restaking::Config for Runtime {
 }
 
 pub struct NoAssetCreators;
-impl EnsureOriginWithArg<RuntimeOrigin, u32> for NoAssetCreators {
+impl EnsureOriginWithArg<RuntimeOrigin, AssetId> for NoAssetCreators {
     type Success = AccountId;
 
-    fn try_origin(o: RuntimeOrigin, _a: &u32) -> Result<Self::Success, RuntimeOrigin> {
+    fn try_origin(o: RuntimeOrigin, _a: &AssetId) -> Result<Self::Success, RuntimeOrigin> {
         Err(o)
     }
 }
@@ -445,7 +446,7 @@ impl pallet_assets::Config for Runtime {
     type Balance = Balance;
     type RemoveItemsLimit = ConstU32<5>;
     type AssetId = AssetId;
-    type AssetIdParameter = u32;
+    type AssetIdParameter = AssetId;
     type Currency = Balances;
     type CreateOrigin = NoAssetCreators;
     type ForceOrigin = EnsureRoot<AccountId>;
