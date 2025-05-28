@@ -8,6 +8,7 @@ use frame_support::traits::Currency;
 use frame_support::PalletId;
 use frame_system::pallet_prelude::BlockNumberFor;
 use sp_std::prelude::*;
+use vrs_primitives::IntoLiquidityAssetId;
 
 pub use pallet::*;
 pub use weights::WeightInfo;
@@ -40,6 +41,7 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use sp_std::fmt::Debug;
+    use vrs_primitives::AssetId;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -75,7 +77,8 @@ pub mod pallet {
             + Debug
             + PartialEq
             + EncodeLike
-            + Decode;
+            + Decode
+            + IntoLiquidityAssetId;
 
         /// The type for tradable assets.
         type Assets: Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
@@ -388,7 +391,6 @@ pub mod pallet {
         pub fn create_exchange(
             origin: OriginFor<T>,
             asset_id: AssetIdOf<T>,
-            liquidity_token_id: AssetIdOf<T>,
             currency_amount: BalanceOf<T>,
             token_amount: AssetBalanceOf<T>,
         ) -> DispatchResult {
@@ -397,7 +399,6 @@ pub mod pallet {
             Self::inner_create_exchange(
                 caller,
                 asset_id,
-                liquidity_token_id,
                 currency_amount,
                 token_amount,
             )
@@ -624,7 +625,6 @@ pub mod pallet {
         fn inner_create_exchange(
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
-            liquidity_token_id: AssetIdOf<T>,
             currency_amount: BalanceOf<T>,
             token_amount: AssetBalanceOf<T>,
         ) -> DispatchResult {
@@ -642,6 +642,7 @@ pub mod pallet {
             }
 
             // ----------------------- Create liquidity token ----------------------
+            let liquidity_token_id = asset_id.into_liquidity_asset_id();
             T::AssetRegistry::create(
                 liquidity_token_id.clone(),
                 T::pallet_account(),
@@ -1347,7 +1348,6 @@ pub trait SwapInterface<T: Config> {
     fn inner_create_exchange(
         caller: AccountIdOf<T>,
         asset_id: AssetIdOf<T>,
-        liquidity_token_id: AssetIdOf<T>,
         currency_amount: BalanceOf<T>,
         token_amount: AssetBalanceOf<T>,
     ) -> DispatchResult;

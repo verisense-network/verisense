@@ -7088,6 +7088,7 @@ dependencies = [
  "scale-info",
  "sp-runtime 38.0.1",
  "sp-std",
+ "vrs-primitives",
  "vrs-support",
 ]
 

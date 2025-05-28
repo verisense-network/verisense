@@ -60,6 +60,16 @@ impl From<String> for AssetId {
     }
 }
 
+impl IntoLiquidityAssetId for AssetId {
+    fn into_liquidity_asset_id(&self) -> Self {
+        use scale_info::prelude::format;
+        AssetId(format!("{}_LP", self.0.clone()))
+    }
+}
+
+pub trait IntoLiquidityAssetId {
+    fn into_liquidity_asset_id(&self) -> Self;
+}
 impl Display for AssetId {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(&self.0)
