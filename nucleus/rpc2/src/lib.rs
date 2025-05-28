@@ -646,7 +646,6 @@ where
     let ws_jsonrpc = warp::ws()
         .and(warp::path::param())
         .and(warp::path::end())
-        .and(warp::body::content_length_limit(10 * 1024 * 1024))
         .and(with_context(args.clone()))
         .and_then(ws_handshake);
 
