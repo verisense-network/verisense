@@ -8,7 +8,7 @@ mod mem;
 mod nucleus;
 mod runtime;
 pub mod state;
-mod vm;
+pub mod vm;
 
 pub use code::WasmInfo;
 pub use nucleus::{Event, Gluon, Nucleus};

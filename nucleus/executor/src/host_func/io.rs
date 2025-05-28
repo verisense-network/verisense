@@ -1,5 +1,6 @@
 use crate::runtime::ContextAware;
 use codec::Decode;
+use std::io::Write;
 use wasmtime::{Caller, Engine, FuncType, Val, ValType};
 
 pub(crate) fn stdout_print_signature(engine: &Engine) -> FuncType {
@@ -10,13 +11,19 @@ pub fn stdout_print<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],
     _result: &mut [Val],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    R: ContextAware,
+{
     let ptr = params[0].unwrap_i32();
     let len = params[1].unwrap_i32();
     let bytes = crate::mem::read_bytes_from_memory(&mut caller, ptr, len)
         .expect("can't read bytes from wasm");
     let s = <String as Decode>::decode(&mut bytes.as_slice()).expect("can't decode string");
-    log::info!("ℹ️nucleus stdout: {}", s);
+    let stdout = caller.data_mut().stdout();
+    if let Err(e) = write!(stdout, "{}", s) {
+        log::error!("ℹ️failed to append to nucleus stdout: {}", s);
+    }
     Ok(())
 }
 
@@ -28,13 +35,19 @@ pub fn stderr_print<R>(
     mut caller: Caller<'_, R>,
     params: &[Val],
     _result: &mut [Val],
-) -> anyhow::Result<()> {
+) -> anyhow::Result<()>
+where
+    R: ContextAware,
+{
     let ptr = params[0].unwrap_i32();
     let len = params[1].unwrap_i32();
     let bytes = crate::mem::read_bytes_from_memory(&mut caller, ptr, len)
         .expect("can't read bytes from wasm");
     let s = <String as Decode>::decode(&mut bytes.as_slice()).expect("can't decode string");
-    log::error!("⚠️nucleus stderr: {}", s);
+    let stdout = caller.data_mut().stdout();
+    if let Err(e) = write!(stdout, "{}", s) {
+        log::error!("⚠️failed to append to nucleus stderr: {}", s);
+    }
     Ok(())
 }
 

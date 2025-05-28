@@ -134,7 +134,7 @@ where
             start_nucleus(
                 id.clone(),
                 info,
-                nucleus_path.as_path(),
+                nucleus_path,
                 http_register.clone(),
                 timer_scheduler.clone(),
                 tss_node.clone(),
@@ -334,7 +334,7 @@ where
                             start_nucleus(
                                 NucleusId::from(nucleus_id.0),
                                 info,
-                                nucleus_path.as_path(),
+                                nucleus_path,
                                 http_register.clone(),
                                 timer_scheduler.clone(),
                                 tss_node.clone(),
@@ -624,7 +624,7 @@ fn init_nucleus_home<P: AsRef<std::path::Path>>(dir: P) {
 fn start_nucleus(
     id: NucleusId,
     nucleus_info: NucleusInfo<AccountId, Hash, NodeId>,
-    nucleus_path: &std::path::Path,
+    nucleus_path: std::path::PathBuf,
     http_register: Arc<HttpCallRegister>,
     timer_scheduler: Arc<SchedulerAsync>,
     tss_node: Arc<vrs_tss::NodeRuntime>,
@@ -643,7 +643,7 @@ fn start_nucleus(
     } = nucleus_info;
     let config: RuntimeParams = RuntimeParams {
         nucleus_id: id.clone(),
-        db_path: nucleus_path.join("db").into_boxed_path(),
+        nucleus_home: nucleus_path.clone().into_boxed_path(),
         http_register,
         timer_scheduler,
         tss_node,
@@ -663,7 +663,7 @@ fn start_nucleus(
         },
     );
     // TODO if start before wasm uploaded, we should skip this, but we must ensure the wasm is downloaded to local
-    if let Ok(wasm) = try_load_wasm(id.clone(), nucleus_path, wasm_version) {
+    if let Ok(wasm) = try_load_wasm(id.clone(), nucleus_path.as_ref(), wasm_version) {
         let cage = nuclei
             .get_mut(&id)
             .expect("just inserted nucleus, should be found;qed");

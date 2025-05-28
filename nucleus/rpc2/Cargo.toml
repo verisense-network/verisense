@@ -1,0 +1,31 @@
+[package]
+name = "vrs-nucleus-rpc-server"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+codec = { workspace = true, default-features = true }
+sp-api = { workspace = true, default-features = true }
+sp-core = { workspace = true, default-features = true }
+sp-runtime = { workspace = true, default-features = true }
+sp-blockchain = { workspace = true, default-features = true }
+sc-transaction-pool-api = "35.0.0"
+sc-network = "0.42.0"
+sc-network-types = "0.12.1"
+
+futures = { features = ["thread-pool"], version = "0.3.30" }
+anyhow = "1"
+serde_json = { version = "1.0" }
+async-trait  = { version = "0.1.81" }
+tokio = { version = "1", features = ["full"] }
+log = "0.4"
+env_logger = "0.10"
+hex = "0.4"
+vrs-nucleus-executor = { path = "../executor" }
+vrs-primitives = { path = "../../primitives" }
+vrs-nucleus-runtime-api = { path = "../runtime-api" }
+warp = "0.3"
+jsonrpc-core = "18.0"
+serde = { version = "1.0", features = ["derive"] }
+bytes = "1"
