@@ -41,7 +41,7 @@ pub type NodeId = sp_core::OpaquePeerId;
 
 
 #[derive(Decode, Encode, Debug, Clone,Serialize, Deserialize, Eq, PartialEq, TypeInfo)]
-pub struct AssetId(pub String);
+pub struct AssetId(String);
 
 impl codec::MaxEncodedLen for AssetId {
     fn max_encoded_len() -> usize {
@@ -49,20 +49,24 @@ impl codec::MaxEncodedLen for AssetId {
     }
 }
 
-impl AssetId {
-    pub fn new(id: String) -> Self {
-        AssetId(id)
-    }
-}
-impl From<String> for AssetId {
-    fn from(value: String) -> Self {
-        AssetId(value)
+impl TryFrom<String> for AssetId {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.ends_with("_LP"){
+            use crate::alloc::string::ToString;
+            return Err("asset id can't end with '_LP'".to_string())
+        }
+        Ok(AssetId(value))
     }
 }
 
 impl IntoLiquidityAssetId for AssetId {
     fn into_liquidity_asset_id(&self) -> Self {
         use scale_info::prelude::format;
+        if self.0.ends_with("_LP") {
+            return self.clone();
+        }
         AssetId(format!("{}_LP", self.0.clone()))
     }
 }

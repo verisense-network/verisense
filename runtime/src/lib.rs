@@ -245,7 +245,7 @@ use scale_info::prelude::string::String;
 parameter_types! {
     pub RegistryDuration: BlockNumber = 10;
     pub const NucleusFeeCollector: AccountId = NUCLEUS_FEE_COLLECTOR;
-    pub FeeAssetId: AssetId = AssetId(String::from("FEE"));
+    pub FeeAssetId: AssetId = AssetId::try_from(String::from("FEE")).unwrap();
 }
 
 impl pallet_nucleus::Config for Runtime {

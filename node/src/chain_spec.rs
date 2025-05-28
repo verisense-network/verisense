@@ -116,13 +116,13 @@ pub fn development_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
         ],
         vec![(
-            AssetId(FEE_ASSET_ID.to_string()),
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             false,
             1,
         )],
         vec![(
-            AssetId(FEE_ASSET_ID.to_string()),
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
             "USDT".as_bytes().to_vec(),
             "USDT".as_bytes().to_vec(),
             18,
@@ -167,13 +167,64 @@ pub fn gamma_config() -> Result<ChainSpec, String> {
                 get_account_id_from_phrase::<sr25519::Public>(""),
             ],
             vec![(
-                AssetId(FEE_ASSET_ID.to_string()),
+                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
                 get_account_id_from_phrase::<sr25519::Public>(""),
                 false,
                 1,
             )],
             vec![(
-                AssetId(FEE_ASSET_ID.to_string()),
+                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
+                "VRS".as_bytes().to_vec(),
+                "VRS".as_bytes().to_vec(),
+                18,
+            )],
+            vec![],
+            true,
+        ))
+        .build())
+}
+
+
+pub fn mainnet_config() -> Result<ChainSpec, String> {
+    Ok(ChainSpec::builder(
+        WASM_BINARY.ok_or_else(|| "Mainnet wasm not available".to_string())?,
+        None,
+    )
+        .with_name("Mainnet")
+        .with_id("mainnet")
+        .with_protocol_id("vrs")
+        .with_properties(chain_spec_properties())
+        .with_chain_type(ChainType::Live)
+        .with_genesis_config_patch(testnet_genesis(
+            // Initial PoA authorities
+            vec![
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+            ],
+            vec![
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+                authority_keys_from_phrase(""),
+            ],
+            // Sudo account
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            // Pre-funded accounts
+            vec![
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                get_account_id_from_phrase::<sr25519::Public>(""),
+            ],
+            vec![(
+                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
+                get_account_id_from_phrase::<sr25519::Public>(""),
+                false,
+                1,
+            )],
+            vec![(
+                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
                 "VRS".as_bytes().to_vec(),
                 "VRS".as_bytes().to_vec(),
                 18,
@@ -225,19 +276,19 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
         ],
         vec![(
-            AssetId(FEE_ASSET_ID.to_string()),
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             false,
             1,
         )],
         vec![(
-            AssetId(FEE_ASSET_ID.to_string()),
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
             "USDT".as_bytes().to_vec(),
             "USDT".as_bytes().to_vec(),
             18,
         )],
         vec![(
-            AssetId(FEE_ASSET_ID.to_string()),
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             100000000000000000000000000
             )],
