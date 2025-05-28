@@ -40,6 +40,7 @@ pub mod pallet {
     pub struct NucleusEquation<AccountId, Hash, NodeId> {
         pub name: Vec<u8>,
         pub manager: AccountId,
+        pub a2a_compatiable: bool,
         pub wasm_hash: Hash,
         pub wasm_version: u32,
         pub wasm_location: Option<NodeId>,
@@ -191,6 +192,7 @@ pub mod pallet {
             name: Vec<u8>,
             energy: Option<u128>,
             capacity: u8,
+            a2a_compatiable: bool,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
             ensure!(name.len() <= 80, "Name too long");
@@ -218,6 +220,7 @@ pub mod pallet {
                 NucleusEquation {
                     name: name.clone(),
                     manager: manager.clone(),
+                    a2a_compatiable,
                     wasm_hash: Default::default(),
                     wasm_version: 0,
                     wasm_location: None,
