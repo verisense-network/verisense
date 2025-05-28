@@ -80,7 +80,6 @@ impl<T: Config> Pallet<T> {
         asset_id: AssetIdOf<T>,
         currency_amount: BalanceOf<T>,
     ) -> RpcResult<AssetBalanceOf<T>> {
-        use codec::alloc::string::ToString;
         let exchange = Self::get_exchange(&asset_id)?;
         let input_amount = Self::get_input_amount(
             &currency_amount,

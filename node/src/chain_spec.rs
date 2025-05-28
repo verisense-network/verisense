@@ -6,10 +6,9 @@ use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_primitives::keys::{restaking::AuthorityId as RestakingId, vrf::AuthorityId as VrfId};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use vrs_metadata::codegen::runtime_types::pallet_balances::types::Reasons::Fee;
 use vrs_primitives::AssetId;
 use vrs_runtime::opaque::SessionKeys;
-use vrs_runtime::{AccountId, FeeAssetId, Signature, WASM_BINARY};
+use vrs_runtime::{AccountId, Signature, WASM_BINARY};
 use vrs_support::consts::{ORIGINAL_VALIDATOR_SOURCE, SENSE};
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec;
