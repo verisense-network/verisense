@@ -2,10 +2,8 @@ use codec::Decode;
 use constants::*;
 use futures::prelude::*;
 use jsonrpc_core::types::{
-    params::Params,
-    request::{Call, MethodCall, Request as JsonRpcRequest},
-    response::{Failure, Output, Response as JsonRpcResponse, Success},
-    Error as JsonRpcError, ErrorCode, Id,
+    Call, Error as JsonRpcError, ErrorCode, Failure, Id, MethodCall, Output, Params,
+    Request as JsonRpcRequest, Response as JsonRpcResponse, Success, Version,
 };
 use jsonrpc_core::IoHandler;
 use sc_network_types::PeerId;
@@ -71,7 +69,7 @@ where
                     .map(|b| hex::decode(b).ok())
                     .flatten()
                     .ok_or(Output::Failure(Failure {
-                        jsonrpc: None,
+                        jsonrpc: Version::V2,
                         id: method_call.id.clone(),
                         error: JsonRpcError::new(ErrorCode::InvalidParams),
                     }))?;
@@ -81,12 +79,12 @@ where
                     .map(|b| hex::decode(b).ok())
                     .flatten()
                     .ok_or(Output::Failure(Failure {
-                        jsonrpc: None,
+                        jsonrpc: Version::V2,
                         id: method_call.id.clone(),
                         error: JsonRpcError::new(ErrorCode::InvalidParams),
                     }))?;
                 let arg2 = vec[2].as_array().cloned().ok_or(Output::Failure(Failure {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: method_call.id.clone(),
                     error: JsonRpcError::new(ErrorCode::InvalidParams),
                 }))?;
@@ -97,7 +95,7 @@ where
         }
     };
     let (tx, wasm, abi) = args.ok_or(Output::Failure(Failure {
-        jsonrpc: None,
+        jsonrpc: Version:V2,
         id: method_call.id.clone(),
         error: JsonRpcError::new(ErrorCode::InvalidParams),
     }))?;
@@ -107,7 +105,7 @@ where
         Ok(xt) => xt,
         Err(_) => {
             return Err(Output::Failure(Failure {
-                jsonrpc: None,
+                jsonrpc: Version::V2,
                 id: method_call.id.clone(),
                 error: JsonRpcError::invalid_params(NUCLEUS_UPGRADE_TX_ERR_MSG),
             }));
@@ -119,7 +117,7 @@ where
         .ok()
         .flatten()
         .ok_or(Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: method_call.id.clone(),
             error: JsonRpcError::invalid_params(NUCLEUS_UPGRADE_TX_ERR_MSG),
         }))?;
@@ -127,7 +125,7 @@ where
         .ok()
         .filter(|id| context.node_id == *id)
         .ok_or(Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: method_call.id.clone(),
             error: JsonRpcError::invalid_params(INVALID_NODE_ADDRESS_MSG),
         }))?;
@@ -143,13 +141,13 @@ where
         .ok()
         .flatten()
         .ok_or(Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: method_call.id.clone(),
             error: JsonRpcError::invalid_params(NUCLEUS_NOT_EXISTS_MSG),
         }))?;
     vrs_nucleus_executor::vm::validate_wasm_abi(&wasm, &abi).map_err(|e| {
         Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: method_call.id.clone(),
             error: JsonRpcError::invalid_params(format!("invalid abi: {}", e)),
         })
@@ -165,7 +163,7 @@ where
     ) {
         std::fs::create_dir_all(&path).map_err(|e| {
             Output::Failure(Failure {
-                jsonrpc: None,
+                jsonrpc: Version::V2,
                 id: method_call.id.clone(),
                 error: JsonRpcError::invalid_params(format!(
                     "Couldn't write the wasm file, caused by {:?}",
@@ -178,7 +176,7 @@ where
         .and_then(|mut f| f.write_all(&wasm))
         .map_err(|e| {
             Output::Failure(Failure {
-                jsonrpc: None,
+                jsonrpc: Version::V2,
                 id: method_call.id.clone(),
                 error: JsonRpcError::invalid_params(format!(
                     "Couldn't write the wasm file, caused by {:?}",
@@ -191,7 +189,7 @@ where
         .and_then(|mut f| f.write_all(&abi))
         .map_err(|e| {
             Output::Failure(Failure {
-                jsonrpc: None,
+                jsonrpc: Version::V2,
                 id: method_call.id.clone(),
                 error: JsonRpcError::invalid_params(format!(
                     "Couldn't write abi file, caused by {:?}",
@@ -206,7 +204,7 @@ where
         .await
         .map_err(|e| {
             Output::Failure(Failure {
-                jsonrpc: None,
+                jsonrpc: Version::V2,
                 id: method_call.id.clone(),
                 error: JsonRpcError::invalid_params(format!(
                     "Couldn't accept the transaction, caused by {:?}",
@@ -216,13 +214,13 @@ where
         })?;
     loop {
         match submit.next().await.ok_or(Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: method_call.id.clone(),
             error: JsonRpcError::invalid_params("Transaction is not included in the block."),
         }))? {
             TransactionStatus::InBlock((block, _)) => {
                 return Ok(Output::Success(Success {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: method_call.id.clone(),
                     result: serde_json::Value::String(block.to_string()),
                 }));
@@ -232,7 +230,7 @@ where
             | TransactionStatus::Invalid
             | TransactionStatus::Dropped => {
                 break Err(Output::Failure(Failure {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: method_call.id.clone(),
                     error: JsonRpcError::invalid_params(
                         "Transaction is not included in the block.",
@@ -268,7 +266,7 @@ where
         .join("wasm/abi.json");
     let abi = tokio::fs::read_to_string(path).await.map_err(|e| {
         Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: call.id.clone(),
             error: JsonRpcError::invalid_params(format!(
                 "Couldn't read the abi file, caused by {:?}",
@@ -278,7 +276,7 @@ where
     })?;
     let abi: serde_json::Value = serde_json::from_str(&abi).map_err(|e| {
         Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: call.id.clone(),
             error: JsonRpcError::invalid_params(format!(
                 "Couldn't parse the abi file, caused by {:?}",
@@ -287,7 +285,7 @@ where
         })
     })?;
     Ok(Output::Success(Success {
-        jsonrpc: None,
+        jsonrpc: Version::V2,
         id: call.id.clone(),
         result: abi,
     }))
@@ -315,7 +313,7 @@ where
         .as_str()
         .split_once("_")
         .ok_or(Output::Failure(Failure {
-            jsonrpc: None,
+            jsonrpc: Version::V2,
             id: call.id.clone(),
             error: JsonRpcError::new(ErrorCode::MethodNotFound),
         }))?;
@@ -329,7 +327,7 @@ where
             .and_then(|s| hex::decode(s).ok()),
     };
     let args = args.ok_or(Output::Failure(Failure {
-        jsonrpc: None,
+        jsonrpc: Version::V2,
         id: call.id.clone(),
         error: JsonRpcError::new(ErrorCode::InvalidParams),
     }))?;
@@ -353,7 +351,7 @@ where
         _ => None,
     };
     let req = payload.ok_or(Output::Failure(Failure {
-        jsonrpc: None,
+        jsonrpc: Version::V2,
         id: call.id.clone(),
         error: JsonRpcError::new(ErrorCode::MethodNotFound),
     }))?;
@@ -362,7 +360,7 @@ where
         v = context.sender.send(req) => {
             if v.is_err() {
                 return Err(Output::Failure(Failure {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: call.id.clone(),
                     error: JsonRpcError {
                         code: ErrorCode::ServerError(NUCLEUS_OFFLINE_CODE),
@@ -374,7 +372,7 @@ where
         }
         _ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {
             return Err(Output::Failure(Failure {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: call.id.clone(),
                     error: JsonRpcError {
                         code: ErrorCode::ServerError(NUCLEUS_OFFLINE_CODE),
@@ -388,12 +386,12 @@ where
         reply = rx => {
             match reply {
                 Ok(Ok(r)) => Ok(Output::Success(Success {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: call.id.clone(),
                     result: serde_json::Value::String(hex::encode(r)),
                 })),
                 Ok(Err(e)) => Err(Output::Failure(Failure {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: call.id.clone(),
                     error: JsonRpcError {
                         code: ErrorCode::ServerError(e.0.into()),
@@ -402,7 +400,7 @@ where
                     },
                 })),
                 Err(_) => Err(Output::Failure(Failure {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: call.id.clone(),
                     error: JsonRpcError {
                         code: ErrorCode::ServerError(NUCLEUS_OFFLINE_CODE),
@@ -414,7 +412,7 @@ where
         }
         _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
             Err(Output::Failure(Failure {
-                    jsonrpc: None,
+                    jsonrpc: Version::V2,
                     id: call.id.clone(),
                     error: JsonRpcError {
                         code: ErrorCode::ServerError(NUCLEUS_OFFLINE_CODE),
@@ -493,7 +491,7 @@ where
                                 Call::Invalid { id } => {
                                     let r = async move {
                                         Output::Failure(Failure {
-                                            jsonrpc: None,
+                                            jsonrpc: Version::V2,
                                             id,
                                             error: JsonRpcError::new(ErrorCode::InvalidRequest),
                                         })
