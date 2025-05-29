@@ -563,6 +563,9 @@ pub fn new_full<
             pool: transaction_pool.clone(),
             node_id: node_id.clone(),
             nucleus_home_dir: nucleus_home_dir.clone(),
+            // TODO config
+            sys_rpc_port: 9944,
+            entry_rpc_port: 9955,
         };
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-rpc-server",
