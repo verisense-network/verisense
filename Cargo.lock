@@ -12773,7 +12773,7 @@ dependencies = [
  "vrs-metadata",
  "vrs-nucleus-cage",
  "vrs-nucleus-p2p",
- "vrs-nucleus-rpc-proxy",
+ "vrs-nucleus-rpc",
  "vrs-nucleus-rpc-server",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
@@ -12934,7 +12934,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "vrs-nucleus-rpc-proxy"
+name = "vrs-nucleus-rpc"
 version = "0.0.1"
 dependencies = [
  "async-trait",

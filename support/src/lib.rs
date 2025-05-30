@@ -5,9 +5,9 @@ pub mod consts;
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
 use sp_runtime::KeyTypeId;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
 
-use sp_std::collections::btree_map::BTreeMap;
 #[macro_export]
 macro_rules! log {
     ($level:tt, $patter:expr $(, $values:expr)* $(,)?) => {
@@ -40,7 +40,6 @@ pub struct EraRewardPoints<AccountId: Ord> {
     pub total: RewardPoint,
     pub individual: BTreeMap<AccountId, RewardPoint>,
 }
-
 
 impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
     fn default() -> Self {

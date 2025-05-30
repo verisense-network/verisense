@@ -453,7 +453,6 @@ where
         .and(warp::ws())
         .map(move |ws: warp::ws::Ws| {
             ws.on_upgrade(move |socket| {
-                println!("WebSocket connection established for system RPC proxy.");
                 crate::proxy::relay_ws_connection(socket, args.sys_rpc_port)
             })
         });

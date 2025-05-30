@@ -56,12 +56,7 @@ pub async fn relay_ws_connection(ws: WebSocket, port: u16) {
 
     match tokio_tungstenite::connect_async(&format!("ws://127.0.0.1:{}", port)).await {
         Ok((target_ws_stream, _)) => {
-            println!(
-                "Connected to target WebSocket server on port {} +++++++++++",
-                port
-            );
             let (mut target_write, mut target_read) = target_ws_stream.split();
-
             tokio::spawn(async move {
                 while let Some(result) = ws_rx.next().await {
                     match result {
@@ -84,9 +79,7 @@ pub async fn relay_ws_connection(ws: WebSocket, port: u16) {
                             } else {
                                 continue;
                             };
-                            log::info!("Forwarding message to 9944: {:?}", forwarded_msg);
                             if let Err(e) = target_write.send(forwarded_msg).await {
-                                log::error!("Failed to send message to 9944: {:?}", e);
                                 break;
                             }
                         }
@@ -108,12 +101,10 @@ pub async fn relay_ws_connection(ws: WebSocket, port: u16) {
                                 _ => continue,
                             };
                             if let Err(e) = tx.send(Ok(forwarded_msg)) {
-                                log::error!("Failed to relay message to client: {:?}", e);
                                 break;
                             }
                         }
                         Err(e) => {
-                            log::error!("Error receiving message from 9944: {:?}", e);
                             break;
                         }
                     }
