@@ -5,6 +5,7 @@ members = [
     "metadata",
     "pallets/*",
     "pallets/restaking/runtime-api",
+    "pallets/swap/runtime-api",
     "nucleus/*",
     "primitives",
     "metadata",

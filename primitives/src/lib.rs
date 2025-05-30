@@ -1,10 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
+extern crate core;
 
 use alloc::string::String;
+use core::fmt::{Debug, Display, Formatter};
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
     AccountId32, MultiAddress, MultiSignature,
@@ -35,6 +38,47 @@ pub type Address = MultiAddress<AccountId, ()>;
 pub type NucleusId = AccountId32;
 
 pub type NodeId = sp_core::OpaquePeerId;
+
+
+#[derive(Decode, Encode, Debug, Clone,Serialize, Deserialize, Eq, PartialEq, TypeInfo)]
+pub struct AssetId(String);
+
+impl codec::MaxEncodedLen for AssetId {
+    fn max_encoded_len() -> usize {
+        100
+    }
+}
+
+impl TryFrom<String> for AssetId {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.ends_with("_LP"){
+            use crate::alloc::string::ToString;
+            return Err("asset id can't end with '_LP'".to_string())
+        }
+        Ok(AssetId(value))
+    }
+}
+
+impl IntoLiquidityAssetId for AssetId {
+    fn into_liquidity_asset_id(&self) -> Self {
+        use scale_info::prelude::format;
+        if self.0.ends_with("_LP") {
+            return self.clone();
+        }
+        AssetId(format!("{}_LP", self.0.clone()))
+    }
+}
+
+pub trait IntoLiquidityAssetId {
+    fn into_liquidity_asset_id(&self) -> Self;
+}
+impl Display for AssetId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
 pub struct NucleusInfo<AccountId, Hash, NodeId> {

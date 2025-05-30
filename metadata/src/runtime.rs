@@ -6,7 +6,7 @@ pub mod codegen {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 17usize] = [
+    pub static PALLETS: [&str; 18usize] = [
         "System",
         "Timestamp",
         "Babe",
@@ -24,6 +24,7 @@ pub mod codegen {
         "Offences",
         "Nucleus",
         "Assets",
+        "Swap",
     ];
     pub static RUNTIME_APIS: [&str; 0usize] = [];
     #[doc = r" The error type returned when there is a runtime issue."]
@@ -93,6 +94,9 @@ pub mod codegen {
         pub fn assets(&self) -> assets::constants::ConstantsApi {
             assets::constants::ConstantsApi
         }
+        pub fn swap(&self) -> swap::constants::ConstantsApi {
+            swap::constants::ConstantsApi
+        }
     }
     pub struct StorageApi;
     impl StorageApi {
@@ -147,6 +151,9 @@ pub mod codegen {
         pub fn assets(&self) -> assets::storage::StorageApi {
             assets::storage::StorageApi
         }
+        pub fn swap(&self) -> swap::storage::StorageApi {
+            swap::storage::StorageApi
+        }
     }
     pub struct TransactionApi;
     impl TransactionApi {
@@ -183,6 +190,9 @@ pub mod codegen {
         pub fn assets(&self) -> assets::calls::TransactionApi {
             assets::calls::TransactionApi
         }
+        pub fn swap(&self) -> swap::calls::TransactionApi {
+            swap::calls::TransactionApi
+        }
     }
     #[doc = r" check whether the metadata provided is aligned with this statically generated code."]
     pub fn is_codegen_valid_for(metadata: &::subxt_core::Metadata) -> bool {
@@ -193,9 +203,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                218u8, 210u8, 83u8, 157u8, 12u8, 203u8, 92u8, 13u8, 169u8, 30u8, 4u8, 117u8, 94u8,
-                90u8, 167u8, 36u8, 109u8, 9u8, 85u8, 201u8, 111u8, 221u8, 221u8, 185u8, 16u8,
-                229u8, 166u8, 131u8, 195u8, 25u8, 196u8, 253u8,
+                52u8, 147u8, 61u8, 86u8, 156u8, 190u8, 174u8, 12u8, 38u8, 133u8, 174u8, 110u8,
+                71u8, 201u8, 87u8, 21u8, 254u8, 234u8, 192u8, 191u8, 229u8, 187u8, 187u8, 241u8,
+                171u8, 72u8, 201u8, 212u8, 211u8, 12u8, 143u8, 96u8,
             ]
     }
     pub mod system {
@@ -1161,10 +1171,9 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            107u8, 148u8, 126u8, 181u8, 213u8, 212u8, 216u8, 94u8, 136u8, 180u8,
-                            66u8, 138u8, 233u8, 133u8, 179u8, 146u8, 220u8, 200u8, 117u8, 139u8,
-                            242u8, 67u8, 62u8, 224u8, 12u8, 196u8, 201u8, 98u8, 64u8, 94u8, 63u8,
-                            49u8,
+                            236u8, 47u8, 209u8, 170u8, 157u8, 155u8, 169u8, 224u8, 135u8, 1u8,
+                            78u8, 45u8, 49u8, 68u8, 24u8, 34u8, 161u8, 43u8, 68u8, 70u8, 139u8,
+                            88u8, 161u8, 229u8, 169u8, 217u8, 220u8, 244u8, 57u8, 44u8, 20u8, 20u8,
                         ],
                     )
                 }
@@ -6764,9 +6773,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            60u8, 72u8, 81u8, 60u8, 164u8, 166u8, 93u8, 252u8, 230u8, 46u8, 193u8,
-                            236u8, 248u8, 74u8, 192u8, 80u8, 44u8, 52u8, 139u8, 200u8, 29u8, 222u8,
-                            195u8, 128u8, 144u8, 241u8, 212u8, 72u8, 44u8, 184u8, 218u8, 54u8,
+                            237u8, 142u8, 31u8, 130u8, 124u8, 38u8, 54u8, 59u8, 141u8, 35u8, 167u8,
+                            237u8, 171u8, 54u8, 178u8, 168u8, 215u8, 238u8, 229u8, 197u8, 201u8,
+                            2u8, 209u8, 193u8, 49u8, 210u8, 236u8, 201u8, 55u8, 0u8, 97u8, 66u8,
                         ],
                     )
                 }
@@ -6784,9 +6793,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            44u8, 100u8, 117u8, 31u8, 192u8, 10u8, 56u8, 170u8, 56u8, 247u8, 43u8,
-                            110u8, 184u8, 52u8, 54u8, 138u8, 211u8, 48u8, 181u8, 77u8, 25u8, 5u8,
-                            48u8, 62u8, 82u8, 192u8, 132u8, 84u8, 135u8, 134u8, 136u8, 149u8,
+                            178u8, 59u8, 183u8, 152u8, 47u8, 238u8, 20u8, 105u8, 35u8, 139u8, 76u8,
+                            220u8, 156u8, 109u8, 106u8, 4u8, 211u8, 137u8, 251u8, 107u8, 20u8, 5u8,
+                            79u8, 25u8, 1u8, 135u8, 193u8, 118u8, 209u8, 205u8, 175u8, 17u8,
                         ],
                     )
                 }
@@ -6818,10 +6827,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            239u8, 214u8, 49u8, 249u8, 124u8, 111u8, 151u8, 72u8, 125u8, 55u8,
-                            66u8, 217u8, 136u8, 0u8, 180u8, 125u8, 246u8, 164u8, 235u8, 226u8,
-                            186u8, 172u8, 19u8, 153u8, 51u8, 186u8, 108u8, 47u8, 180u8, 135u8,
-                            100u8, 244u8,
+                            80u8, 131u8, 233u8, 197u8, 65u8, 96u8, 59u8, 121u8, 123u8, 33u8, 77u8,
+                            98u8, 200u8, 50u8, 147u8, 203u8, 235u8, 210u8, 51u8, 245u8, 194u8,
+                            73u8, 203u8, 120u8, 143u8, 62u8, 82u8, 126u8, 141u8, 109u8, 134u8,
+                            211u8,
                         ],
                     )
                 }
@@ -7703,16 +7712,16 @@ pub mod codegen {
             impl ConstantsApi {
                 pub fn fee_asset_id(
                     &self,
-                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
-                {
+                ) -> ::subxt_core::constants::address::StaticAddress<
+                    runtime_types::vrs_primitives::AssetId,
+                > {
                     ::subxt_core::constants::address::StaticAddress::new_static(
                         "Nucleus",
                         "FeeAssetId",
                         [
-                            98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
-                            125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
-                            178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
-                            145u8,
+                            81u8, 164u8, 181u8, 74u8, 47u8, 81u8, 8u8, 148u8, 228u8, 167u8, 47u8,
+                            161u8, 126u8, 164u8, 87u8, 84u8, 31u8, 109u8, 217u8, 254u8, 240u8, 3u8,
+                            129u8, 252u8, 10u8, 99u8, 152u8, 188u8, 250u8, 60u8, 118u8, 55u8,
                         ],
                     )
                 }
@@ -7747,7 +7756,7 @@ pub mod codegen {
                 }
                 pub mod create {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Admin =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type MinBalance = ::core::primitive::u128;
@@ -7775,7 +7784,7 @@ pub mod codegen {
                 }
                 pub mod force_create {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Owner =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type IsSufficient = ::core::primitive::bool;
@@ -7800,7 +7809,7 @@ pub mod codegen {
                 }
                 pub mod start_destroy {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for StartDestroy {
                     const PALLET: &'static str = "Assets";
@@ -7821,7 +7830,7 @@ pub mod codegen {
                 }
                 pub mod destroy_accounts {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for DestroyAccounts {
                     const PALLET: &'static str = "Assets";
@@ -7842,7 +7851,7 @@ pub mod codegen {
                 }
                 pub mod destroy_approvals {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for DestroyApprovals {
                     const PALLET: &'static str = "Assets";
@@ -7863,7 +7872,7 @@ pub mod codegen {
                 }
                 pub mod finish_destroy {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for FinishDestroy {
                     const PALLET: &'static str = "Assets";
@@ -7887,7 +7896,7 @@ pub mod codegen {
                 }
                 pub mod mint {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Beneficiary =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Amount = ::core::primitive::u128;
@@ -7914,7 +7923,7 @@ pub mod codegen {
                 }
                 pub mod burn {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Who =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Amount = ::core::primitive::u128;
@@ -7941,7 +7950,7 @@ pub mod codegen {
                 }
                 pub mod transfer {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Target =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Amount = ::core::primitive::u128;
@@ -7968,7 +7977,7 @@ pub mod codegen {
                 }
                 pub mod transfer_keep_alive {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Target =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Amount = ::core::primitive::u128;
@@ -7996,7 +8005,7 @@ pub mod codegen {
                 }
                 pub mod force_transfer {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Source =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Dest =
@@ -8023,7 +8032,7 @@ pub mod codegen {
                 }
                 pub mod freeze {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Who =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
@@ -8047,7 +8056,7 @@ pub mod codegen {
                 }
                 pub mod thaw {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Who =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
@@ -8070,7 +8079,7 @@ pub mod codegen {
                 }
                 pub mod freeze_asset {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for FreezeAsset {
                     const PALLET: &'static str = "Assets";
@@ -8091,7 +8100,7 @@ pub mod codegen {
                 }
                 pub mod thaw_asset {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ThawAsset {
                     const PALLET: &'static str = "Assets";
@@ -8113,7 +8122,7 @@ pub mod codegen {
                 }
                 pub mod transfer_ownership {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Owner =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
@@ -8139,7 +8148,7 @@ pub mod codegen {
                 }
                 pub mod set_team {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Issuer =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Admin =
@@ -8169,7 +8178,7 @@ pub mod codegen {
                 }
                 pub mod set_metadata {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                     pub type Symbol = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                     pub type Decimals = ::core::primitive::u8;
@@ -8193,7 +8202,7 @@ pub mod codegen {
                 }
                 pub mod clear_metadata {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ClearMetadata {
                     const PALLET: &'static str = "Assets";
@@ -8218,7 +8227,7 @@ pub mod codegen {
                 }
                 pub mod force_set_metadata {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                     pub type Symbol = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                     pub type Decimals = ::core::primitive::u8;
@@ -8243,7 +8252,7 @@ pub mod codegen {
                 }
                 pub mod force_clear_metadata {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for ForceClearMetadata {
                     const PALLET: &'static str = "Assets";
@@ -8272,7 +8281,7 @@ pub mod codegen {
                 }
                 pub mod force_asset_status {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Owner =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Issuer =
@@ -8307,7 +8316,7 @@ pub mod codegen {
                 }
                 pub mod approve_transfer {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Delegate =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Amount = ::core::primitive::u128;
@@ -8332,7 +8341,7 @@ pub mod codegen {
                 }
                 pub mod cancel_approval {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Delegate =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
@@ -8357,7 +8366,7 @@ pub mod codegen {
                 }
                 pub mod force_cancel_approval {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Owner =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Delegate =
@@ -8386,7 +8395,7 @@ pub mod codegen {
                 }
                 pub mod transfer_approved {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Owner =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                     pub type Destination =
@@ -8412,7 +8421,7 @@ pub mod codegen {
                 }
                 pub mod touch {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Touch {
                     const PALLET: &'static str = "Assets";
@@ -8434,7 +8443,7 @@ pub mod codegen {
                 }
                 pub mod refund {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type AllowBurn = ::core::primitive::bool;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Refund {
@@ -8457,7 +8466,7 @@ pub mod codegen {
                 }
                 pub mod set_min_balance {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type MinBalance = ::core::primitive::u128;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for SetMinBalance {
@@ -8480,7 +8489,7 @@ pub mod codegen {
                 }
                 pub mod touch_other {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Who =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
@@ -8504,7 +8513,7 @@ pub mod codegen {
                 }
                 pub mod refund_other {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Who =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
@@ -8528,7 +8537,7 @@ pub mod codegen {
                 }
                 pub mod block {
                     use super::runtime_types;
-                    pub type Id = ::core::primitive::u32;
+                    pub type Id = runtime_types::vrs_primitives::AssetId;
                     pub type Who =
                         ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>;
                 }
@@ -8554,10 +8563,9 @@ pub mod codegen {
                             min_balance,
                         },
                         [
-                            78u8, 202u8, 27u8, 49u8, 230u8, 162u8, 170u8, 55u8, 205u8, 65u8, 147u8,
-                            75u8, 123u8, 174u8, 13u8, 21u8, 181u8, 254u8, 130u8, 154u8, 144u8,
-                            47u8, 36u8, 180u8, 119u8, 161u8, 44u8, 217u8, 135u8, 159u8, 83u8,
-                            217u8,
+                            231u8, 4u8, 206u8, 44u8, 181u8, 191u8, 167u8, 65u8, 2u8, 30u8, 251u8,
+                            145u8, 247u8, 51u8, 76u8, 31u8, 243u8, 8u8, 17u8, 104u8, 213u8, 243u8,
+                            61u8, 241u8, 124u8, 105u8, 14u8, 66u8, 127u8, 184u8, 20u8, 166u8,
                         ],
                     )
                 }
@@ -8578,9 +8586,10 @@ pub mod codegen {
                             min_balance,
                         },
                         [
-                            155u8, 255u8, 57u8, 85u8, 2u8, 184u8, 12u8, 45u8, 63u8, 30u8, 62u8,
-                            201u8, 158u8, 31u8, 99u8, 238u8, 221u8, 17u8, 16u8, 174u8, 68u8, 196u8,
-                            46u8, 50u8, 169u8, 11u8, 28u8, 75u8, 18u8, 22u8, 162u8, 116u8,
+                            108u8, 6u8, 230u8, 20u8, 55u8, 233u8, 203u8, 216u8, 190u8, 168u8, 5u8,
+                            173u8, 1u8, 82u8, 33u8, 250u8, 128u8, 179u8, 186u8, 212u8, 245u8,
+                            200u8, 92u8, 216u8, 183u8, 43u8, 232u8, 119u8, 105u8, 7u8, 127u8,
+                            157u8,
                         ],
                     )
                 }
@@ -8593,9 +8602,10 @@ pub mod codegen {
                         "start_destroy",
                         types::StartDestroy { id },
                         [
-                            3u8, 161u8, 140u8, 0u8, 215u8, 243u8, 5u8, 231u8, 229u8, 82u8, 250u8,
-                            105u8, 196u8, 94u8, 219u8, 5u8, 29u8, 254u8, 173u8, 85u8, 50u8, 60u8,
-                            140u8, 69u8, 48u8, 255u8, 155u8, 192u8, 66u8, 252u8, 37u8, 216u8,
+                            48u8, 212u8, 199u8, 237u8, 192u8, 94u8, 213u8, 169u8, 88u8, 87u8,
+                            247u8, 215u8, 214u8, 180u8, 2u8, 189u8, 147u8, 40u8, 222u8, 128u8,
+                            237u8, 55u8, 155u8, 9u8, 11u8, 104u8, 6u8, 37u8, 178u8, 28u8, 54u8,
+                            183u8,
                         ],
                     )
                 }
@@ -8609,10 +8619,9 @@ pub mod codegen {
                         "destroy_accounts",
                         types::DestroyAccounts { id },
                         [
-                            97u8, 100u8, 174u8, 58u8, 137u8, 214u8, 36u8, 157u8, 195u8, 223u8,
-                            139u8, 45u8, 77u8, 127u8, 254u8, 196u8, 214u8, 0u8, 228u8, 134u8,
-                            248u8, 101u8, 2u8, 61u8, 86u8, 23u8, 71u8, 129u8, 162u8, 156u8, 86u8,
-                            54u8,
+                            94u8, 26u8, 5u8, 157u8, 215u8, 87u8, 13u8, 102u8, 204u8, 5u8, 94u8,
+                            67u8, 245u8, 130u8, 235u8, 118u8, 84u8, 209u8, 232u8, 225u8, 249u8,
+                            170u8, 119u8, 7u8, 176u8, 179u8, 246u8, 30u8, 0u8, 117u8, 196u8, 185u8,
                         ],
                     )
                 }
@@ -8626,9 +8635,10 @@ pub mod codegen {
                         "destroy_approvals",
                         types::DestroyApprovals { id },
                         [
-                            193u8, 199u8, 60u8, 227u8, 11u8, 136u8, 94u8, 83u8, 216u8, 103u8,
-                            224u8, 166u8, 193u8, 59u8, 5u8, 71u8, 159u8, 231u8, 169u8, 24u8, 58u8,
-                            222u8, 14u8, 199u8, 138u8, 85u8, 153u8, 49u8, 149u8, 210u8, 36u8, 92u8,
+                            170u8, 11u8, 196u8, 47u8, 181u8, 80u8, 121u8, 201u8, 199u8, 164u8,
+                            138u8, 151u8, 74u8, 144u8, 253u8, 41u8, 20u8, 121u8, 25u8, 221u8,
+                            162u8, 24u8, 89u8, 247u8, 174u8, 197u8, 243u8, 118u8, 9u8, 161u8,
+                            122u8, 11u8,
                         ],
                     )
                 }
@@ -8642,9 +8652,10 @@ pub mod codegen {
                         "finish_destroy",
                         types::FinishDestroy { id },
                         [
-                            111u8, 32u8, 127u8, 59u8, 73u8, 87u8, 227u8, 96u8, 77u8, 178u8, 119u8,
-                            70u8, 40u8, 203u8, 58u8, 122u8, 43u8, 166u8, 252u8, 51u8, 54u8, 206u8,
-                            107u8, 94u8, 155u8, 245u8, 51u8, 148u8, 153u8, 206u8, 153u8, 139u8,
+                            209u8, 165u8, 192u8, 152u8, 59u8, 254u8, 16u8, 103u8, 136u8, 144u8,
+                            186u8, 186u8, 226u8, 233u8, 22u8, 175u8, 222u8, 30u8, 168u8, 172u8,
+                            28u8, 192u8, 20u8, 34u8, 176u8, 246u8, 114u8, 17u8, 30u8, 65u8, 230u8,
+                            46u8,
                         ],
                     )
                 }
@@ -8663,10 +8674,10 @@ pub mod codegen {
                             amount,
                         },
                         [
-                            133u8, 112u8, 192u8, 165u8, 110u8, 107u8, 106u8, 225u8, 2u8, 157u8,
-                            164u8, 249u8, 233u8, 41u8, 40u8, 159u8, 129u8, 111u8, 176u8, 27u8,
-                            31u8, 221u8, 133u8, 1u8, 217u8, 136u8, 34u8, 228u8, 135u8, 146u8,
-                            200u8, 152u8,
+                            210u8, 185u8, 73u8, 147u8, 46u8, 114u8, 45u8, 18u8, 213u8, 196u8,
+                            117u8, 100u8, 109u8, 41u8, 206u8, 46u8, 131u8, 20u8, 23u8, 185u8,
+                            122u8, 61u8, 125u8, 234u8, 226u8, 45u8, 244u8, 183u8, 168u8, 232u8,
+                            215u8, 88u8,
                         ],
                     )
                 }
@@ -8681,10 +8692,10 @@ pub mod codegen {
                         "burn",
                         types::Burn { id, who, amount },
                         [
-                            127u8, 154u8, 9u8, 33u8, 131u8, 81u8, 63u8, 151u8, 236u8, 36u8, 210u8,
-                            58u8, 54u8, 100u8, 236u8, 57u8, 121u8, 55u8, 185u8, 132u8, 183u8,
-                            197u8, 247u8, 248u8, 73u8, 132u8, 172u8, 240u8, 132u8, 214u8, 135u8,
-                            246u8,
+                            148u8, 72u8, 205u8, 48u8, 153u8, 103u8, 214u8, 112u8, 103u8, 159u8,
+                            68u8, 3u8, 117u8, 208u8, 199u8, 110u8, 111u8, 12u8, 218u8, 203u8,
+                            181u8, 147u8, 36u8, 41u8, 59u8, 26u8, 248u8, 168u8, 180u8, 199u8,
+                            126u8, 194u8,
                         ],
                     )
                 }
@@ -8699,10 +8710,10 @@ pub mod codegen {
                         "transfer",
                         types::Transfer { id, target, amount },
                         [
-                            61u8, 252u8, 251u8, 254u8, 74u8, 213u8, 183u8, 81u8, 236u8, 70u8,
-                            129u8, 238u8, 226u8, 204u8, 156u8, 33u8, 91u8, 198u8, 74u8, 116u8,
-                            157u8, 34u8, 210u8, 233u8, 26u8, 151u8, 132u8, 3u8, 37u8, 160u8, 7u8,
-                            248u8,
+                            52u8, 84u8, 202u8, 14u8, 130u8, 19u8, 0u8, 200u8, 85u8, 50u8, 52u8,
+                            249u8, 215u8, 179u8, 224u8, 253u8, 13u8, 158u8, 40u8, 71u8, 253u8,
+                            65u8, 103u8, 197u8, 103u8, 80u8, 138u8, 163u8, 137u8, 89u8, 194u8,
+                            154u8,
                         ],
                     )
                 }
@@ -8718,9 +8729,10 @@ pub mod codegen {
                         "transfer_keep_alive",
                         types::TransferKeepAlive { id, target, amount },
                         [
-                            237u8, 221u8, 48u8, 97u8, 220u8, 157u8, 147u8, 181u8, 201u8, 103u8,
-                            165u8, 21u8, 3u8, 175u8, 153u8, 88u8, 249u8, 249u8, 22u8, 90u8, 105u8,
-                            6u8, 107u8, 135u8, 68u8, 73u8, 38u8, 20u8, 241u8, 80u8, 48u8, 135u8,
+                            199u8, 197u8, 198u8, 89u8, 82u8, 12u8, 150u8, 223u8, 231u8, 108u8,
+                            141u8, 64u8, 93u8, 117u8, 39u8, 9u8, 115u8, 58u8, 103u8, 231u8, 189u8,
+                            87u8, 68u8, 153u8, 233u8, 106u8, 254u8, 125u8, 121u8, 183u8, 0u8,
+                            152u8,
                         ],
                     )
                 }
@@ -8742,10 +8754,10 @@ pub mod codegen {
                             amount,
                         },
                         [
-                            233u8, 177u8, 202u8, 83u8, 244u8, 164u8, 156u8, 127u8, 204u8, 193u8,
-                            182u8, 38u8, 170u8, 191u8, 250u8, 107u8, 243u8, 94u8, 20u8, 150u8,
-                            236u8, 65u8, 239u8, 48u8, 41u8, 118u8, 28u8, 56u8, 137u8, 23u8, 122u8,
-                            145u8,
+                            11u8, 115u8, 194u8, 93u8, 73u8, 216u8, 191u8, 59u8, 179u8, 165u8,
+                            248u8, 255u8, 27u8, 133u8, 210u8, 198u8, 226u8, 55u8, 21u8, 127u8,
+                            30u8, 239u8, 107u8, 188u8, 133u8, 141u8, 40u8, 143u8, 226u8, 104u8,
+                            63u8, 210u8,
                         ],
                     )
                 }
@@ -8759,10 +8771,9 @@ pub mod codegen {
                         "freeze",
                         types::Freeze { id, who },
                         [
-                            226u8, 26u8, 89u8, 205u8, 240u8, 104u8, 149u8, 58u8, 80u8, 38u8, 110u8,
-                            2u8, 226u8, 182u8, 253u8, 85u8, 197u8, 121u8, 189u8, 73u8, 186u8,
-                            136u8, 221u8, 11u8, 95u8, 207u8, 84u8, 123u8, 158u8, 217u8, 234u8,
-                            174u8,
+                            253u8, 118u8, 252u8, 124u8, 73u8, 101u8, 13u8, 241u8, 21u8, 120u8,
+                            91u8, 188u8, 16u8, 158u8, 146u8, 65u8, 114u8, 138u8, 57u8, 212u8, 54u8,
+                            237u8, 7u8, 162u8, 71u8, 97u8, 232u8, 116u8, 80u8, 93u8, 8u8, 86u8,
                         ],
                     )
                 }
@@ -8776,10 +8787,9 @@ pub mod codegen {
                         "thaw",
                         types::Thaw { id, who },
                         [
-                            93u8, 49u8, 106u8, 162u8, 157u8, 143u8, 143u8, 212u8, 122u8, 37u8,
-                            191u8, 234u8, 121u8, 136u8, 146u8, 33u8, 7u8, 225u8, 70u8, 129u8,
-                            111u8, 231u8, 47u8, 88u8, 43u8, 127u8, 193u8, 54u8, 50u8, 151u8, 57u8,
-                            244u8,
+                            63u8, 247u8, 101u8, 110u8, 87u8, 114u8, 125u8, 53u8, 69u8, 255u8, 60u8,
+                            12u8, 145u8, 243u8, 78u8, 107u8, 71u8, 111u8, 145u8, 130u8, 80u8,
+                            239u8, 57u8, 86u8, 194u8, 74u8, 61u8, 171u8, 226u8, 232u8, 60u8, 26u8,
                         ],
                     )
                 }
@@ -8792,10 +8802,9 @@ pub mod codegen {
                         "freeze_asset",
                         types::FreezeAsset { id },
                         [
-                            94u8, 119u8, 203u8, 112u8, 126u8, 13u8, 141u8, 126u8, 109u8, 221u8,
-                            183u8, 255u8, 160u8, 137u8, 9u8, 164u8, 131u8, 112u8, 38u8, 2u8, 156u8,
-                            39u8, 64u8, 111u8, 22u8, 247u8, 252u8, 255u8, 243u8, 148u8, 148u8,
-                            60u8,
+                            126u8, 44u8, 64u8, 109u8, 7u8, 84u8, 171u8, 163u8, 54u8, 216u8, 115u8,
+                            62u8, 235u8, 66u8, 152u8, 163u8, 226u8, 61u8, 173u8, 2u8, 170u8, 137u8,
+                            23u8, 80u8, 155u8, 60u8, 87u8, 230u8, 71u8, 75u8, 119u8, 182u8,
                         ],
                     )
                 }
@@ -8808,10 +8817,10 @@ pub mod codegen {
                         "thaw_asset",
                         types::ThawAsset { id },
                         [
-                            100u8, 99u8, 202u8, 221u8, 106u8, 106u8, 184u8, 56u8, 48u8, 229u8,
-                            25u8, 54u8, 148u8, 159u8, 126u8, 80u8, 8u8, 27u8, 102u8, 13u8, 9u8,
-                            111u8, 201u8, 118u8, 240u8, 125u8, 120u8, 253u8, 87u8, 242u8, 114u8,
-                            186u8,
+                            210u8, 37u8, 160u8, 223u8, 252u8, 232u8, 185u8, 44u8, 103u8, 66u8,
+                            240u8, 130u8, 73u8, 25u8, 112u8, 179u8, 72u8, 130u8, 154u8, 146u8,
+                            217u8, 59u8, 181u8, 78u8, 232u8, 80u8, 54u8, 2u8, 70u8, 226u8, 224u8,
+                            211u8,
                         ],
                     )
                 }
@@ -8826,10 +8835,9 @@ pub mod codegen {
                         "transfer_ownership",
                         types::TransferOwnership { id, owner },
                         [
-                            154u8, 120u8, 161u8, 10u8, 16u8, 88u8, 73u8, 235u8, 158u8, 120u8,
-                            225u8, 141u8, 108u8, 187u8, 180u8, 104u8, 12u8, 35u8, 46u8, 238u8,
-                            254u8, 209u8, 81u8, 146u8, 122u8, 226u8, 216u8, 93u8, 32u8, 78u8,
-                            241u8, 246u8,
+                            6u8, 121u8, 171u8, 85u8, 202u8, 232u8, 144u8, 5u8, 208u8, 171u8, 247u8,
+                            37u8, 227u8, 153u8, 167u8, 60u8, 44u8, 87u8, 18u8, 225u8, 5u8, 89u8,
+                            130u8, 167u8, 249u8, 228u8, 172u8, 253u8, 98u8, 251u8, 188u8, 59u8,
                         ],
                     )
                 }
@@ -8850,9 +8858,10 @@ pub mod codegen {
                             freezer,
                         },
                         [
-                            34u8, 212u8, 201u8, 215u8, 199u8, 62u8, 192u8, 244u8, 86u8, 214u8, 5u8,
-                            14u8, 144u8, 177u8, 196u8, 94u8, 213u8, 233u8, 138u8, 237u8, 215u8,
-                            80u8, 241u8, 31u8, 245u8, 93u8, 68u8, 224u8, 225u8, 43u8, 194u8, 3u8,
+                            186u8, 186u8, 142u8, 107u8, 124u8, 109u8, 65u8, 12u8, 252u8, 193u8,
+                            190u8, 221u8, 175u8, 187u8, 255u8, 173u8, 10u8, 163u8, 37u8, 224u8,
+                            183u8, 161u8, 240u8, 54u8, 79u8, 104u8, 77u8, 43u8, 50u8, 246u8, 29u8,
+                            24u8,
                         ],
                     )
                 }
@@ -8873,10 +8882,10 @@ pub mod codegen {
                             decimals,
                         },
                         [
-                            29u8, 3u8, 184u8, 94u8, 94u8, 10u8, 132u8, 231u8, 25u8, 52u8, 130u8,
-                            198u8, 230u8, 69u8, 97u8, 111u8, 211u8, 127u8, 223u8, 20u8, 138u8,
-                            196u8, 110u8, 197u8, 10u8, 235u8, 191u8, 65u8, 10u8, 160u8, 168u8,
-                            137u8,
+                            92u8, 158u8, 102u8, 161u8, 203u8, 203u8, 26u8, 174u8, 103u8, 191u8,
+                            71u8, 122u8, 107u8, 255u8, 53u8, 196u8, 28u8, 122u8, 184u8, 193u8,
+                            188u8, 132u8, 213u8, 113u8, 77u8, 217u8, 142u8, 72u8, 186u8, 66u8,
+                            137u8, 35u8,
                         ],
                     )
                 }
@@ -8890,9 +8899,9 @@ pub mod codegen {
                         "clear_metadata",
                         types::ClearMetadata { id },
                         [
-                            132u8, 26u8, 216u8, 84u8, 173u8, 50u8, 28u8, 149u8, 203u8, 86u8, 180u8,
-                            50u8, 156u8, 58u8, 226u8, 3u8, 105u8, 144u8, 118u8, 69u8, 71u8, 98u8,
-                            66u8, 213u8, 239u8, 48u8, 229u8, 82u8, 159u8, 198u8, 7u8, 108u8,
+                            122u8, 92u8, 81u8, 147u8, 172u8, 173u8, 169u8, 15u8, 6u8, 21u8, 190u8,
+                            117u8, 188u8, 58u8, 131u8, 84u8, 228u8, 116u8, 32u8, 101u8, 231u8,
+                            143u8, 172u8, 202u8, 20u8, 0u8, 232u8, 79u8, 202u8, 218u8, 135u8, 83u8,
                         ],
                     )
                 }
@@ -8916,9 +8925,10 @@ pub mod codegen {
                             is_frozen,
                         },
                         [
-                            212u8, 38u8, 70u8, 177u8, 22u8, 81u8, 240u8, 124u8, 179u8, 93u8, 23u8,
-                            85u8, 197u8, 240u8, 82u8, 207u8, 149u8, 115u8, 27u8, 27u8, 32u8, 99u8,
-                            28u8, 125u8, 231u8, 193u8, 127u8, 149u8, 246u8, 74u8, 246u8, 82u8,
+                            207u8, 182u8, 96u8, 158u8, 99u8, 213u8, 211u8, 93u8, 139u8, 147u8,
+                            69u8, 151u8, 135u8, 82u8, 96u8, 102u8, 149u8, 12u8, 31u8, 238u8, 17u8,
+                            102u8, 204u8, 68u8, 160u8, 123u8, 66u8, 166u8, 250u8, 189u8, 52u8,
+                            240u8,
                         ],
                     )
                 }
@@ -8932,10 +8942,9 @@ pub mod codegen {
                         "force_clear_metadata",
                         types::ForceClearMetadata { id },
                         [
-                            88u8, 97u8, 154u8, 136u8, 14u8, 184u8, 243u8, 111u8, 219u8, 41u8,
-                            176u8, 42u8, 164u8, 79u8, 252u8, 159u8, 27u8, 62u8, 125u8, 100u8,
-                            250u8, 2u8, 210u8, 247u8, 21u8, 97u8, 204u8, 33u8, 72u8, 122u8, 203u8,
-                            103u8,
+                            74u8, 134u8, 63u8, 227u8, 75u8, 4u8, 55u8, 255u8, 14u8, 118u8, 234u8,
+                            98u8, 228u8, 236u8, 27u8, 104u8, 234u8, 240u8, 204u8, 108u8, 255u8,
+                            222u8, 54u8, 74u8, 88u8, 195u8, 122u8, 239u8, 67u8, 78u8, 2u8, 99u8,
                         ],
                     )
                 }
@@ -8965,10 +8974,9 @@ pub mod codegen {
                             is_frozen,
                         },
                         [
-                            67u8, 175u8, 112u8, 49u8, 123u8, 113u8, 17u8, 62u8, 13u8, 126u8, 162u8,
-                            102u8, 192u8, 186u8, 64u8, 160u8, 111u8, 243u8, 172u8, 223u8, 46u8,
-                            142u8, 116u8, 119u8, 27u8, 192u8, 66u8, 161u8, 64u8, 106u8, 40u8,
-                            236u8,
+                            89u8, 198u8, 134u8, 38u8, 93u8, 49u8, 25u8, 96u8, 247u8, 175u8, 115u8,
+                            156u8, 30u8, 117u8, 38u8, 254u8, 186u8, 6u8, 135u8, 201u8, 54u8, 127u8,
+                            202u8, 74u8, 73u8, 85u8, 65u8, 21u8, 166u8, 221u8, 160u8, 126u8,
                         ],
                     )
                 }
@@ -8988,9 +8996,10 @@ pub mod codegen {
                             amount,
                         },
                         [
-                            250u8, 164u8, 207u8, 68u8, 98u8, 162u8, 225u8, 161u8, 203u8, 176u8,
-                            231u8, 51u8, 220u8, 149u8, 32u8, 216u8, 224u8, 96u8, 0u8, 214u8, 27u8,
-                            50u8, 197u8, 184u8, 173u8, 155u8, 93u8, 97u8, 93u8, 4u8, 109u8, 203u8,
+                            157u8, 118u8, 112u8, 226u8, 178u8, 181u8, 184u8, 102u8, 220u8, 114u8,
+                            223u8, 5u8, 23u8, 44u8, 52u8, 195u8, 246u8, 133u8, 40u8, 231u8, 136u8,
+                            119u8, 206u8, 115u8, 164u8, 222u8, 136u8, 255u8, 174u8, 103u8, 92u8,
+                            32u8,
                         ],
                     )
                 }
@@ -9005,10 +9014,9 @@ pub mod codegen {
                         "cancel_approval",
                         types::CancelApproval { id, delegate },
                         [
-                            146u8, 103u8, 219u8, 148u8, 224u8, 195u8, 172u8, 47u8, 222u8, 139u8,
-                            180u8, 101u8, 37u8, 66u8, 150u8, 152u8, 110u8, 82u8, 171u8, 232u8,
-                            54u8, 22u8, 89u8, 232u8, 148u8, 66u8, 156u8, 2u8, 125u8, 204u8, 129u8,
-                            124u8,
+                            231u8, 104u8, 37u8, 160u8, 99u8, 145u8, 2u8, 49u8, 211u8, 185u8, 120u8,
+                            26u8, 95u8, 4u8, 125u8, 87u8, 44u8, 63u8, 145u8, 108u8, 37u8, 141u8,
+                            85u8, 116u8, 217u8, 11u8, 253u8, 216u8, 117u8, 157u8, 222u8, 243u8,
                         ],
                     )
                 }
@@ -9028,10 +9036,10 @@ pub mod codegen {
                             delegate,
                         },
                         [
-                            252u8, 206u8, 210u8, 244u8, 30u8, 65u8, 100u8, 236u8, 48u8, 216u8,
-                            240u8, 16u8, 161u8, 71u8, 252u8, 28u8, 192u8, 94u8, 63u8, 11u8, 245u8,
-                            100u8, 169u8, 219u8, 180u8, 30u8, 31u8, 254u8, 210u8, 188u8, 50u8,
-                            66u8,
+                            120u8, 250u8, 71u8, 134u8, 67u8, 34u8, 228u8, 12u8, 231u8, 118u8,
+                            111u8, 13u8, 170u8, 146u8, 140u8, 217u8, 175u8, 47u8, 138u8, 21u8,
+                            149u8, 118u8, 192u8, 65u8, 153u8, 20u8, 63u8, 131u8, 76u8, 66u8, 150u8,
+                            246u8,
                         ],
                     )
                 }
@@ -9053,10 +9061,10 @@ pub mod codegen {
                             amount,
                         },
                         [
-                            135u8, 205u8, 40u8, 214u8, 191u8, 198u8, 23u8, 244u8, 186u8, 191u8,
-                            23u8, 253u8, 159u8, 133u8, 27u8, 228u8, 226u8, 96u8, 200u8, 122u8,
-                            153u8, 20u8, 103u8, 0u8, 84u8, 11u8, 199u8, 160u8, 21u8, 126u8, 36u8,
-                            202u8,
+                            207u8, 110u8, 19u8, 110u8, 13u8, 78u8, 151u8, 20u8, 213u8, 246u8,
+                            100u8, 157u8, 178u8, 97u8, 123u8, 137u8, 141u8, 53u8, 182u8, 57u8,
+                            13u8, 96u8, 33u8, 35u8, 179u8, 20u8, 219u8, 145u8, 3u8, 14u8, 111u8,
+                            255u8,
                         ],
                     )
                 }
@@ -9069,9 +9077,10 @@ pub mod codegen {
                         "touch",
                         types::Touch { id },
                         [
-                            250u8, 202u8, 50u8, 115u8, 105u8, 229u8, 117u8, 143u8, 58u8, 210u8,
-                            103u8, 156u8, 40u8, 210u8, 33u8, 224u8, 60u8, 97u8, 169u8, 230u8, 60u8,
-                            100u8, 97u8, 160u8, 55u8, 127u8, 12u8, 39u8, 17u8, 59u8, 108u8, 226u8,
+                            178u8, 59u8, 116u8, 98u8, 79u8, 172u8, 134u8, 194u8, 221u8, 11u8,
+                            184u8, 24u8, 45u8, 240u8, 216u8, 112u8, 46u8, 124u8, 236u8, 153u8,
+                            199u8, 165u8, 17u8, 241u8, 49u8, 187u8, 249u8, 149u8, 96u8, 51u8, 46u8,
+                            177u8,
                         ],
                     )
                 }
@@ -9085,9 +9094,10 @@ pub mod codegen {
                         "refund",
                         types::Refund { id, allow_burn },
                         [
-                            158u8, 105u8, 132u8, 143u8, 58u8, 179u8, 76u8, 231u8, 85u8, 171u8,
-                            42u8, 71u8, 15u8, 209u8, 36u8, 17u8, 238u8, 225u8, 209u8, 178u8, 55u8,
-                            100u8, 33u8, 180u8, 226u8, 228u8, 3u8, 255u8, 236u8, 14u8, 6u8, 198u8,
+                            72u8, 205u8, 89u8, 54u8, 233u8, 45u8, 102u8, 214u8, 255u8, 156u8,
+                            185u8, 131u8, 57u8, 254u8, 26u8, 255u8, 205u8, 145u8, 211u8, 234u8,
+                            157u8, 159u8, 10u8, 148u8, 175u8, 59u8, 185u8, 164u8, 214u8, 68u8,
+                            137u8, 246u8,
                         ],
                     )
                 }
@@ -9102,9 +9112,10 @@ pub mod codegen {
                         "set_min_balance",
                         types::SetMinBalance { id, min_balance },
                         [
-                            116u8, 101u8, 107u8, 196u8, 24u8, 2u8, 188u8, 0u8, 84u8, 63u8, 72u8,
-                            244u8, 153u8, 22u8, 66u8, 154u8, 220u8, 151u8, 237u8, 174u8, 167u8,
-                            85u8, 122u8, 96u8, 91u8, 104u8, 187u8, 31u8, 2u8, 233u8, 87u8, 39u8,
+                            224u8, 17u8, 150u8, 106u8, 225u8, 82u8, 40u8, 192u8, 154u8, 109u8,
+                            150u8, 234u8, 86u8, 216u8, 194u8, 26u8, 249u8, 81u8, 44u8, 63u8, 235u8,
+                            235u8, 129u8, 118u8, 220u8, 31u8, 230u8, 209u8, 219u8, 216u8, 177u8,
+                            105u8,
                         ],
                     )
                 }
@@ -9118,10 +9129,10 @@ pub mod codegen {
                         "touch_other",
                         types::TouchOther { id, who },
                         [
-                            190u8, 219u8, 212u8, 39u8, 114u8, 111u8, 242u8, 184u8, 208u8, 41u8,
-                            15u8, 36u8, 192u8, 105u8, 222u8, 204u8, 54u8, 76u8, 102u8, 28u8, 14u8,
-                            250u8, 121u8, 94u8, 255u8, 35u8, 248u8, 85u8, 156u8, 27u8, 150u8,
-                            213u8,
+                            89u8, 21u8, 186u8, 115u8, 86u8, 59u8, 198u8, 50u8, 231u8, 129u8, 58u8,
+                            232u8, 105u8, 248u8, 157u8, 91u8, 176u8, 53u8, 188u8, 206u8, 135u8,
+                            193u8, 157u8, 252u8, 46u8, 69u8, 18u8, 159u8, 78u8, 151u8, 200u8,
+                            246u8,
                         ],
                     )
                 }
@@ -9135,10 +9146,10 @@ pub mod codegen {
                         "refund_other",
                         types::RefundOther { id, who },
                         [
-                            44u8, 234u8, 153u8, 203u8, 183u8, 152u8, 238u8, 250u8, 245u8, 206u8,
-                            44u8, 116u8, 93u8, 191u8, 174u8, 144u8, 197u8, 70u8, 126u8, 85u8,
-                            141u8, 144u8, 39u8, 223u8, 86u8, 99u8, 206u8, 236u8, 189u8, 41u8, 97u8,
-                            15u8,
+                            118u8, 150u8, 100u8, 157u8, 241u8, 7u8, 199u8, 161u8, 228u8, 147u8,
+                            248u8, 241u8, 218u8, 236u8, 111u8, 150u8, 155u8, 198u8, 248u8, 119u8,
+                            133u8, 208u8, 209u8, 150u8, 194u8, 143u8, 42u8, 23u8, 80u8, 107u8,
+                            116u8, 177u8,
                         ],
                     )
                 }
@@ -9152,10 +9163,9 @@ pub mod codegen {
                         "block",
                         types::Block { id, who },
                         [
-                            48u8, 252u8, 219u8, 34u8, 190u8, 9u8, 238u8, 252u8, 106u8, 184u8,
-                            127u8, 26u8, 133u8, 109u8, 250u8, 174u8, 155u8, 18u8, 51u8, 156u8,
-                            155u8, 236u8, 41u8, 15u8, 167u8, 120u8, 113u8, 69u8, 102u8, 101u8,
-                            123u8, 191u8,
+                            19u8, 48u8, 18u8, 173u8, 63u8, 104u8, 51u8, 30u8, 192u8, 67u8, 215u8,
+                            244u8, 62u8, 93u8, 225u8, 21u8, 121u8, 160u8, 224u8, 158u8, 103u8, 4u8,
+                            120u8, 120u8, 29u8, 245u8, 203u8, 37u8, 223u8, 88u8, 80u8, 71u8,
                         ],
                     )
                 }
@@ -9181,7 +9191,7 @@ pub mod codegen {
             }
             pub mod created {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Creator = ::subxt_core::utils::AccountId32;
                 pub type Owner = ::subxt_core::utils::AccountId32;
             }
@@ -9206,7 +9216,7 @@ pub mod codegen {
             }
             pub mod issued {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Owner = ::subxt_core::utils::AccountId32;
                 pub type Amount = ::core::primitive::u128;
             }
@@ -9232,7 +9242,7 @@ pub mod codegen {
             }
             pub mod transferred {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type From = ::subxt_core::utils::AccountId32;
                 pub type To = ::subxt_core::utils::AccountId32;
                 pub type Amount = ::core::primitive::u128;
@@ -9258,7 +9268,7 @@ pub mod codegen {
             }
             pub mod burned {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Owner = ::subxt_core::utils::AccountId32;
                 pub type Balance = ::core::primitive::u128;
             }
@@ -9284,7 +9294,7 @@ pub mod codegen {
             }
             pub mod team_changed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Issuer = ::subxt_core::utils::AccountId32;
                 pub type Admin = ::subxt_core::utils::AccountId32;
                 pub type Freezer = ::subxt_core::utils::AccountId32;
@@ -9309,7 +9319,7 @@ pub mod codegen {
             }
             pub mod owner_changed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Owner = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for OwnerChanged {
@@ -9332,7 +9342,7 @@ pub mod codegen {
             }
             pub mod frozen {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Who = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for Frozen {
@@ -9355,7 +9365,7 @@ pub mod codegen {
             }
             pub mod thawed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Who = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for Thawed {
@@ -9377,7 +9387,7 @@ pub mod codegen {
             }
             pub mod asset_frozen {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
             }
             impl ::subxt_core::events::StaticEvent for AssetFrozen {
                 const PALLET: &'static str = "Assets";
@@ -9398,7 +9408,7 @@ pub mod codegen {
             }
             pub mod asset_thawed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
             }
             impl ::subxt_core::events::StaticEvent for AssetThawed {
                 const PALLET: &'static str = "Assets";
@@ -9421,7 +9431,7 @@ pub mod codegen {
             }
             pub mod accounts_destroyed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type AccountsDestroyed = ::core::primitive::u32;
                 pub type AccountsRemaining = ::core::primitive::u32;
             }
@@ -9446,7 +9456,7 @@ pub mod codegen {
             }
             pub mod approvals_destroyed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type ApprovalsDestroyed = ::core::primitive::u32;
                 pub type ApprovalsRemaining = ::core::primitive::u32;
             }
@@ -9469,7 +9479,7 @@ pub mod codegen {
             }
             pub mod destruction_started {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
             }
             impl ::subxt_core::events::StaticEvent for DestructionStarted {
                 const PALLET: &'static str = "Assets";
@@ -9490,7 +9500,7 @@ pub mod codegen {
             }
             pub mod destroyed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
             }
             impl ::subxt_core::events::StaticEvent for Destroyed {
                 const PALLET: &'static str = "Assets";
@@ -9512,7 +9522,7 @@ pub mod codegen {
             }
             pub mod force_created {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Owner = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for ForceCreated {
@@ -9538,7 +9548,7 @@ pub mod codegen {
             }
             pub mod metadata_set {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 pub type Symbol = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                 pub type Decimals = ::core::primitive::u8;
@@ -9563,7 +9573,7 @@ pub mod codegen {
             }
             pub mod metadata_cleared {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
             }
             impl ::subxt_core::events::StaticEvent for MetadataCleared {
                 const PALLET: &'static str = "Assets";
@@ -9587,7 +9597,7 @@ pub mod codegen {
             }
             pub mod approved_transfer {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Source = ::subxt_core::utils::AccountId32;
                 pub type Delegate = ::subxt_core::utils::AccountId32;
                 pub type Amount = ::core::primitive::u128;
@@ -9613,7 +9623,7 @@ pub mod codegen {
             }
             pub mod approval_cancelled {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Owner = ::subxt_core::utils::AccountId32;
                 pub type Delegate = ::subxt_core::utils::AccountId32;
             }
@@ -9640,7 +9650,7 @@ pub mod codegen {
             }
             pub mod transferred_approved {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Owner = ::subxt_core::utils::AccountId32;
                 pub type Delegate = ::subxt_core::utils::AccountId32;
                 pub type Destination = ::subxt_core::utils::AccountId32;
@@ -9665,7 +9675,7 @@ pub mod codegen {
             }
             pub mod asset_status_changed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
             }
             impl ::subxt_core::events::StaticEvent for AssetStatusChanged {
                 const PALLET: &'static str = "Assets";
@@ -9687,7 +9697,7 @@ pub mod codegen {
             }
             pub mod asset_min_balance_changed {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type NewMinBalance = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for AssetMinBalanceChanged {
@@ -9711,7 +9721,7 @@ pub mod codegen {
             }
             pub mod touched {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Who = ::subxt_core::utils::AccountId32;
                 pub type Depositor = ::subxt_core::utils::AccountId32;
             }
@@ -9735,7 +9745,7 @@ pub mod codegen {
             }
             pub mod blocked {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Who = ::subxt_core::utils::AccountId32;
             }
             impl ::subxt_core::events::StaticEvent for Blocked {
@@ -9759,7 +9769,7 @@ pub mod codegen {
             }
             pub mod deposited {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Who = ::subxt_core::utils::AccountId32;
                 pub type Amount = ::core::primitive::u128;
             }
@@ -9784,7 +9794,7 @@ pub mod codegen {
             }
             pub mod withdrawn {
                 use super::runtime_types;
-                pub type AssetId = ::core::primitive::u32;
+                pub type AssetId = runtime_types::vrs_primitives::AssetId;
                 pub type Who = ::subxt_core::utils::AccountId32;
                 pub type Amount = ::core::primitive::u128;
             }
@@ -9804,7 +9814,7 @@ pub mod codegen {
                         ::subxt_core::utils::AccountId32,
                         ::core::primitive::u128,
                     >;
-                    pub type Param0 = ::core::primitive::u32;
+                    pub type Param0 = runtime_types::vrs_primitives::AssetId;
                 }
                 pub mod account {
                     use super::runtime_types;
@@ -9814,7 +9824,7 @@ pub mod codegen {
                         (),
                         ::subxt_core::utils::AccountId32,
                     >;
-                    pub type Param0 = ::core::primitive::u32;
+                    pub type Param0 = runtime_types::vrs_primitives::AssetId;
                     pub type Param1 = ::subxt_core::utils::AccountId32;
                 }
                 pub mod approvals {
@@ -9823,7 +9833,7 @@ pub mod codegen {
                         ::core::primitive::u128,
                         ::core::primitive::u128,
                     >;
-                    pub type Param0 = ::core::primitive::u32;
+                    pub type Param0 = runtime_types::vrs_primitives::AssetId;
                     pub type Param1 = ::subxt_core::utils::AccountId32;
                     pub type Param2 = ::subxt_core::utils::AccountId32;
                 }
@@ -9835,11 +9845,11 @@ pub mod codegen {
                             ::core::primitive::u8,
                         >,
                     >;
-                    pub type Param0 = ::core::primitive::u32;
+                    pub type Param0 = runtime_types::vrs_primitives::AssetId;
                 }
                 pub mod next_asset_id {
                     use super::runtime_types;
-                    pub type NextAssetId = ::core::primitive::u32;
+                    pub type NextAssetId = runtime_types::vrs_primitives::AssetId;
                 }
             }
             pub struct StorageApi;
@@ -9858,9 +9868,9 @@ pub mod codegen {
                         "Asset",
                         (),
                         [
-                            159u8, 234u8, 177u8, 31u8, 58u8, 51u8, 173u8, 184u8, 250u8, 169u8,
-                            246u8, 122u8, 54u8, 19u8, 232u8, 60u8, 0u8, 165u8, 12u8, 101u8, 93u8,
-                            169u8, 23u8, 34u8, 154u8, 44u8, 134u8, 128u8, 97u8, 71u8, 167u8, 224u8,
+                            12u8, 73u8, 197u8, 11u8, 154u8, 222u8, 86u8, 108u8, 105u8, 15u8, 187u8,
+                            139u8, 152u8, 237u8, 49u8, 42u8, 182u8, 66u8, 226u8, 109u8, 136u8,
+                            29u8, 50u8, 74u8, 25u8, 66u8, 138u8, 251u8, 217u8, 232u8, 202u8, 222u8,
                         ],
                     )
                 }
@@ -9879,9 +9889,9 @@ pub mod codegen {
                         "Asset",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            159u8, 234u8, 177u8, 31u8, 58u8, 51u8, 173u8, 184u8, 250u8, 169u8,
-                            246u8, 122u8, 54u8, 19u8, 232u8, 60u8, 0u8, 165u8, 12u8, 101u8, 93u8,
-                            169u8, 23u8, 34u8, 154u8, 44u8, 134u8, 128u8, 97u8, 71u8, 167u8, 224u8,
+                            12u8, 73u8, 197u8, 11u8, 154u8, 222u8, 86u8, 108u8, 105u8, 15u8, 187u8,
+                            139u8, 152u8, 237u8, 49u8, 42u8, 182u8, 66u8, 226u8, 109u8, 136u8,
+                            29u8, 50u8, 74u8, 25u8, 66u8, 138u8, 251u8, 217u8, 232u8, 202u8, 222u8,
                         ],
                     )
                 }
@@ -9899,9 +9909,9 @@ pub mod codegen {
                         "Account",
                         (),
                         [
-                            188u8, 242u8, 133u8, 64u8, 0u8, 11u8, 57u8, 146u8, 60u8, 137u8, 35u8,
-                            23u8, 183u8, 200u8, 242u8, 8u8, 94u8, 158u8, 218u8, 13u8, 104u8, 215u8,
-                            87u8, 86u8, 69u8, 200u8, 11u8, 51u8, 6u8, 65u8, 216u8, 102u8,
+                            38u8, 178u8, 135u8, 173u8, 85u8, 150u8, 100u8, 83u8, 227u8, 76u8, 68u8,
+                            86u8, 227u8, 171u8, 59u8, 169u8, 18u8, 38u8, 156u8, 77u8, 234u8, 130u8,
+                            71u8, 60u8, 245u8, 119u8, 36u8, 35u8, 152u8, 72u8, 96u8, 116u8,
                         ],
                     )
                 }
@@ -9920,9 +9930,9 @@ pub mod codegen {
                         "Account",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            188u8, 242u8, 133u8, 64u8, 0u8, 11u8, 57u8, 146u8, 60u8, 137u8, 35u8,
-                            23u8, 183u8, 200u8, 242u8, 8u8, 94u8, 158u8, 218u8, 13u8, 104u8, 215u8,
-                            87u8, 86u8, 69u8, 200u8, 11u8, 51u8, 6u8, 65u8, 216u8, 102u8,
+                            38u8, 178u8, 135u8, 173u8, 85u8, 150u8, 100u8, 83u8, 227u8, 76u8, 68u8,
+                            86u8, 227u8, 171u8, 59u8, 169u8, 18u8, 38u8, 156u8, 77u8, 234u8, 130u8,
+                            71u8, 60u8, 245u8, 119u8, 36u8, 35u8, 152u8, 72u8, 96u8, 116u8,
                         ],
                     )
                 }
@@ -9948,9 +9958,9 @@ pub mod codegen {
                             ::subxt_core::storage::address::StaticStorageKey::new(_1.borrow()),
                         ),
                         [
-                            188u8, 242u8, 133u8, 64u8, 0u8, 11u8, 57u8, 146u8, 60u8, 137u8, 35u8,
-                            23u8, 183u8, 200u8, 242u8, 8u8, 94u8, 158u8, 218u8, 13u8, 104u8, 215u8,
-                            87u8, 86u8, 69u8, 200u8, 11u8, 51u8, 6u8, 65u8, 216u8, 102u8,
+                            38u8, 178u8, 135u8, 173u8, 85u8, 150u8, 100u8, 83u8, 227u8, 76u8, 68u8,
+                            86u8, 227u8, 171u8, 59u8, 169u8, 18u8, 38u8, 156u8, 77u8, 234u8, 130u8,
+                            71u8, 60u8, 245u8, 119u8, 36u8, 35u8, 152u8, 72u8, 96u8, 116u8,
                         ],
                     )
                 }
@@ -9968,9 +9978,9 @@ pub mod codegen {
                         "Approvals",
                         (),
                         [
-                            122u8, 92u8, 51u8, 45u8, 200u8, 200u8, 182u8, 208u8, 18u8, 47u8, 139u8,
-                            68u8, 254u8, 15u8, 152u8, 110u8, 3u8, 138u8, 13u8, 183u8, 5u8, 185u8,
-                            218u8, 44u8, 93u8, 28u8, 56u8, 189u8, 125u8, 127u8, 123u8, 8u8,
+                            129u8, 238u8, 163u8, 45u8, 147u8, 111u8, 158u8, 33u8, 249u8, 20u8,
+                            43u8, 19u8, 208u8, 226u8, 59u8, 29u8, 200u8, 73u8, 225u8, 226u8, 39u8,
+                            87u8, 53u8, 38u8, 30u8, 67u8, 154u8, 71u8, 15u8, 217u8, 112u8, 217u8,
                         ],
                     )
                 }
@@ -9989,9 +9999,9 @@ pub mod codegen {
                         "Approvals",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            122u8, 92u8, 51u8, 45u8, 200u8, 200u8, 182u8, 208u8, 18u8, 47u8, 139u8,
-                            68u8, 254u8, 15u8, 152u8, 110u8, 3u8, 138u8, 13u8, 183u8, 5u8, 185u8,
-                            218u8, 44u8, 93u8, 28u8, 56u8, 189u8, 125u8, 127u8, 123u8, 8u8,
+                            129u8, 238u8, 163u8, 45u8, 147u8, 111u8, 158u8, 33u8, 249u8, 20u8,
+                            43u8, 19u8, 208u8, 226u8, 59u8, 29u8, 200u8, 73u8, 225u8, 226u8, 39u8,
+                            87u8, 53u8, 38u8, 30u8, 67u8, 154u8, 71u8, 15u8, 217u8, 112u8, 217u8,
                         ],
                     )
                 }
@@ -10017,9 +10027,9 @@ pub mod codegen {
                             ::subxt_core::storage::address::StaticStorageKey::new(_1.borrow()),
                         ),
                         [
-                            122u8, 92u8, 51u8, 45u8, 200u8, 200u8, 182u8, 208u8, 18u8, 47u8, 139u8,
-                            68u8, 254u8, 15u8, 152u8, 110u8, 3u8, 138u8, 13u8, 183u8, 5u8, 185u8,
-                            218u8, 44u8, 93u8, 28u8, 56u8, 189u8, 125u8, 127u8, 123u8, 8u8,
+                            129u8, 238u8, 163u8, 45u8, 147u8, 111u8, 158u8, 33u8, 249u8, 20u8,
+                            43u8, 19u8, 208u8, 226u8, 59u8, 29u8, 200u8, 73u8, 225u8, 226u8, 39u8,
+                            87u8, 53u8, 38u8, 30u8, 67u8, 154u8, 71u8, 15u8, 217u8, 112u8, 217u8,
                         ],
                     )
                 }
@@ -10048,9 +10058,9 @@ pub mod codegen {
                             ::subxt_core::storage::address::StaticStorageKey::new(_2.borrow()),
                         ),
                         [
-                            122u8, 92u8, 51u8, 45u8, 200u8, 200u8, 182u8, 208u8, 18u8, 47u8, 139u8,
-                            68u8, 254u8, 15u8, 152u8, 110u8, 3u8, 138u8, 13u8, 183u8, 5u8, 185u8,
-                            218u8, 44u8, 93u8, 28u8, 56u8, 189u8, 125u8, 127u8, 123u8, 8u8,
+                            129u8, 238u8, 163u8, 45u8, 147u8, 111u8, 158u8, 33u8, 249u8, 20u8,
+                            43u8, 19u8, 208u8, 226u8, 59u8, 29u8, 200u8, 73u8, 225u8, 226u8, 39u8,
+                            87u8, 53u8, 38u8, 30u8, 67u8, 154u8, 71u8, 15u8, 217u8, 112u8, 217u8,
                         ],
                     )
                 }
@@ -10068,9 +10078,10 @@ pub mod codegen {
                         "Metadata",
                         (),
                         [
-                            129u8, 202u8, 244u8, 77u8, 55u8, 81u8, 86u8, 106u8, 20u8, 153u8, 209u8,
-                            69u8, 199u8, 107u8, 111u8, 49u8, 88u8, 157u8, 84u8, 41u8, 198u8, 190u8,
-                            234u8, 218u8, 68u8, 207u8, 87u8, 217u8, 73u8, 66u8, 211u8, 163u8,
+                            74u8, 166u8, 135u8, 161u8, 189u8, 223u8, 221u8, 98u8, 193u8, 169u8,
+                            175u8, 199u8, 150u8, 83u8, 78u8, 5u8, 2u8, 235u8, 111u8, 206u8, 239u8,
+                            115u8, 130u8, 10u8, 117u8, 122u8, 239u8, 163u8, 192u8, 19u8, 33u8,
+                            180u8,
                         ],
                     )
                 }
@@ -10089,9 +10100,10 @@ pub mod codegen {
                         "Metadata",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            129u8, 202u8, 244u8, 77u8, 55u8, 81u8, 86u8, 106u8, 20u8, 153u8, 209u8,
-                            69u8, 199u8, 107u8, 111u8, 49u8, 88u8, 157u8, 84u8, 41u8, 198u8, 190u8,
-                            234u8, 218u8, 68u8, 207u8, 87u8, 217u8, 73u8, 66u8, 211u8, 163u8,
+                            74u8, 166u8, 135u8, 161u8, 189u8, 223u8, 221u8, 98u8, 193u8, 169u8,
+                            175u8, 199u8, 150u8, 83u8, 78u8, 5u8, 2u8, 235u8, 111u8, 206u8, 239u8,
+                            115u8, 130u8, 10u8, 117u8, 122u8, 239u8, 163u8, 192u8, 19u8, 33u8,
+                            180u8,
                         ],
                     )
                 }
@@ -10109,9 +10121,10 @@ pub mod codegen {
                         "NextAssetId",
                         (),
                         [
-                            15u8, 61u8, 40u8, 217u8, 236u8, 34u8, 95u8, 53u8, 159u8, 182u8, 70u8,
-                            251u8, 234u8, 188u8, 115u8, 23u8, 199u8, 118u8, 220u8, 40u8, 147u8,
-                            174u8, 247u8, 129u8, 246u8, 107u8, 178u8, 43u8, 8u8, 19u8, 74u8, 116u8,
+                            60u8, 91u8, 232u8, 68u8, 209u8, 62u8, 132u8, 141u8, 226u8, 3u8, 79u8,
+                            23u8, 198u8, 39u8, 237u8, 37u8, 237u8, 211u8, 100u8, 199u8, 115u8,
+                            198u8, 187u8, 120u8, 181u8, 173u8, 128u8, 135u8, 238u8, 124u8, 73u8,
+                            110u8,
                         ],
                     )
                 }
@@ -10218,6 +10231,609 @@ pub mod codegen {
                             125u8, 151u8, 53u8, 76u8, 168u8, 26u8, 10u8, 9u8, 98u8, 68u8, 9u8,
                             178u8, 197u8, 113u8, 31u8, 79u8, 200u8, 90u8, 203u8, 100u8, 41u8,
                             145u8,
+                        ],
+                    )
+                }
+            }
+        }
+    }
+    pub mod swap {
+        use super::root_mod;
+        use super::runtime_types;
+        pub type Error = runtime_types::pallet_swap::pallet::Error;
+        pub type Call = runtime_types::pallet_swap::pallet::Call;
+        pub mod calls {
+            use super::root_mod;
+            use super::runtime_types;
+            type DispatchError = runtime_types::sp_runtime::DispatchError;
+            pub mod types {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct CreateExchange {
+                    pub asset_id: create_exchange::AssetId,
+                    pub currency_amount: create_exchange::CurrencyAmount,
+                    pub token_amount: create_exchange::TokenAmount,
+                }
+                pub mod create_exchange {
+                    use super::runtime_types;
+                    pub type AssetId = runtime_types::vrs_primitives::AssetId;
+                    pub type CurrencyAmount = ::core::primitive::u128;
+                    pub type TokenAmount = ::core::primitive::u128;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for CreateExchange {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "create_exchange";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AddLiquidity {
+                    pub asset_id: add_liquidity::AssetId,
+                    pub currency_amount: add_liquidity::CurrencyAmount,
+                    pub min_liquidity: add_liquidity::MinLiquidity,
+                    pub max_tokens: add_liquidity::MaxTokens,
+                    pub deadline: add_liquidity::Deadline,
+                }
+                pub mod add_liquidity {
+                    use super::runtime_types;
+                    pub type AssetId = runtime_types::vrs_primitives::AssetId;
+                    pub type CurrencyAmount = ::core::primitive::u128;
+                    pub type MinLiquidity = ::core::primitive::u128;
+                    pub type MaxTokens = ::core::primitive::u128;
+                    pub type Deadline = ::core::primitive::u32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AddLiquidity {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "add_liquidity";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct RemoveLiquidity {
+                    pub asset_id: remove_liquidity::AssetId,
+                    pub liquidity_amount: remove_liquidity::LiquidityAmount,
+                    pub min_currency: remove_liquidity::MinCurrency,
+                    pub min_tokens: remove_liquidity::MinTokens,
+                    pub deadline: remove_liquidity::Deadline,
+                }
+                pub mod remove_liquidity {
+                    use super::runtime_types;
+                    pub type AssetId = runtime_types::vrs_primitives::AssetId;
+                    pub type LiquidityAmount = ::core::primitive::u128;
+                    pub type MinCurrency = ::core::primitive::u128;
+                    pub type MinTokens = ::core::primitive::u128;
+                    pub type Deadline = ::core::primitive::u32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for RemoveLiquidity {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "remove_liquidity";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct CurrencyToAsset {
+                    pub asset_id: currency_to_asset::AssetId,
+                    pub amount: currency_to_asset::Amount,
+                    pub deadline: currency_to_asset::Deadline,
+                    pub recipient: currency_to_asset::Recipient,
+                }
+                pub mod currency_to_asset {
+                    use super::runtime_types;
+                    pub type AssetId = runtime_types::vrs_primitives::AssetId;
+                    pub type Amount = runtime_types::pallet_swap::pallet::TradeAmount<
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Deadline = ::core::primitive::u32;
+                    pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for CurrencyToAsset {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "currency_to_asset";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AssetToCurrency {
+                    pub asset_id: asset_to_currency::AssetId,
+                    pub amount: asset_to_currency::Amount,
+                    pub deadline: asset_to_currency::Deadline,
+                    pub recipient: asset_to_currency::Recipient,
+                }
+                pub mod asset_to_currency {
+                    use super::runtime_types;
+                    pub type AssetId = runtime_types::vrs_primitives::AssetId;
+                    pub type Amount = runtime_types::pallet_swap::pallet::TradeAmount<
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Deadline = ::core::primitive::u32;
+                    pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AssetToCurrency {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "asset_to_currency";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AssetToAsset {
+                    pub sold_asset_id: asset_to_asset::SoldAssetId,
+                    pub bought_asset_id: asset_to_asset::BoughtAssetId,
+                    pub amount: asset_to_asset::Amount,
+                    pub deadline: asset_to_asset::Deadline,
+                    pub recipient: asset_to_asset::Recipient,
+                }
+                pub mod asset_to_asset {
+                    use super::runtime_types;
+                    pub type SoldAssetId = runtime_types::vrs_primitives::AssetId;
+                    pub type BoughtAssetId = runtime_types::vrs_primitives::AssetId;
+                    pub type Amount = runtime_types::pallet_swap::pallet::TradeAmount<
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Deadline = ::core::primitive::u32;
+                    pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AssetToAsset {
+                    const PALLET: &'static str = "Swap";
+                    const CALL: &'static str = "asset_to_asset";
+                }
+            }
+            pub struct TransactionApi;
+            impl TransactionApi {
+                pub fn create_exchange(
+                    &self,
+                    asset_id: types::create_exchange::AssetId,
+                    currency_amount: types::create_exchange::CurrencyAmount,
+                    token_amount: types::create_exchange::TokenAmount,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::CreateExchange>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "create_exchange",
+                        types::CreateExchange {
+                            asset_id,
+                            currency_amount,
+                            token_amount,
+                        },
+                        [
+                            239u8, 6u8, 55u8, 49u8, 175u8, 215u8, 250u8, 69u8, 134u8, 124u8, 212u8,
+                            93u8, 46u8, 136u8, 123u8, 93u8, 27u8, 67u8, 127u8, 61u8, 86u8, 245u8,
+                            40u8, 29u8, 132u8, 112u8, 187u8, 5u8, 114u8, 176u8, 40u8, 68u8,
+                        ],
+                    )
+                }
+                pub fn add_liquidity(
+                    &self,
+                    asset_id: types::add_liquidity::AssetId,
+                    currency_amount: types::add_liquidity::CurrencyAmount,
+                    min_liquidity: types::add_liquidity::MinLiquidity,
+                    max_tokens: types::add_liquidity::MaxTokens,
+                    deadline: types::add_liquidity::Deadline,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AddLiquidity> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "add_liquidity",
+                        types::AddLiquidity {
+                            asset_id,
+                            currency_amount,
+                            min_liquidity,
+                            max_tokens,
+                            deadline,
+                        },
+                        [
+                            26u8, 67u8, 59u8, 204u8, 215u8, 3u8, 161u8, 91u8, 228u8, 41u8, 174u8,
+                            231u8, 2u8, 84u8, 221u8, 105u8, 252u8, 137u8, 49u8, 100u8, 11u8, 60u8,
+                            48u8, 89u8, 53u8, 47u8, 40u8, 56u8, 143u8, 89u8, 27u8, 147u8,
+                        ],
+                    )
+                }
+                pub fn remove_liquidity(
+                    &self,
+                    asset_id: types::remove_liquidity::AssetId,
+                    liquidity_amount: types::remove_liquidity::LiquidityAmount,
+                    min_currency: types::remove_liquidity::MinCurrency,
+                    min_tokens: types::remove_liquidity::MinTokens,
+                    deadline: types::remove_liquidity::Deadline,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::RemoveLiquidity>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "remove_liquidity",
+                        types::RemoveLiquidity {
+                            asset_id,
+                            liquidity_amount,
+                            min_currency,
+                            min_tokens,
+                            deadline,
+                        },
+                        [
+                            109u8, 199u8, 209u8, 189u8, 174u8, 255u8, 163u8, 182u8, 111u8, 62u8,
+                            68u8, 249u8, 11u8, 137u8, 225u8, 231u8, 61u8, 113u8, 234u8, 157u8,
+                            72u8, 7u8, 103u8, 105u8, 8u8, 85u8, 108u8, 68u8, 26u8, 86u8, 227u8,
+                            35u8,
+                        ],
+                    )
+                }
+                pub fn currency_to_asset(
+                    &self,
+                    asset_id: types::currency_to_asset::AssetId,
+                    amount: types::currency_to_asset::Amount,
+                    deadline: types::currency_to_asset::Deadline,
+                    recipient: types::currency_to_asset::Recipient,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::CurrencyToAsset>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "currency_to_asset",
+                        types::CurrencyToAsset {
+                            asset_id,
+                            amount,
+                            deadline,
+                            recipient,
+                        },
+                        [
+                            121u8, 47u8, 215u8, 55u8, 93u8, 184u8, 97u8, 91u8, 90u8, 3u8, 156u8,
+                            123u8, 43u8, 169u8, 143u8, 91u8, 62u8, 126u8, 102u8, 21u8, 90u8, 234u8,
+                            62u8, 4u8, 255u8, 181u8, 149u8, 33u8, 18u8, 188u8, 23u8, 2u8,
+                        ],
+                    )
+                }
+                pub fn asset_to_currency(
+                    &self,
+                    asset_id: types::asset_to_currency::AssetId,
+                    amount: types::asset_to_currency::Amount,
+                    deadline: types::asset_to_currency::Deadline,
+                    recipient: types::asset_to_currency::Recipient,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AssetToCurrency>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "asset_to_currency",
+                        types::AssetToCurrency {
+                            asset_id,
+                            amount,
+                            deadline,
+                            recipient,
+                        },
+                        [
+                            135u8, 204u8, 33u8, 116u8, 163u8, 157u8, 51u8, 114u8, 219u8, 125u8,
+                            7u8, 117u8, 138u8, 185u8, 202u8, 86u8, 168u8, 249u8, 89u8, 174u8,
+                            200u8, 194u8, 212u8, 200u8, 13u8, 22u8, 67u8, 115u8, 13u8, 242u8, 93u8,
+                            163u8,
+                        ],
+                    )
+                }
+                pub fn asset_to_asset(
+                    &self,
+                    sold_asset_id: types::asset_to_asset::SoldAssetId,
+                    bought_asset_id: types::asset_to_asset::BoughtAssetId,
+                    amount: types::asset_to_asset::Amount,
+                    deadline: types::asset_to_asset::Deadline,
+                    recipient: types::asset_to_asset::Recipient,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AssetToAsset> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Swap",
+                        "asset_to_asset",
+                        types::AssetToAsset {
+                            sold_asset_id,
+                            bought_asset_id,
+                            amount,
+                            deadline,
+                            recipient,
+                        },
+                        [
+                            7u8, 238u8, 227u8, 55u8, 61u8, 154u8, 139u8, 35u8, 61u8, 37u8, 100u8,
+                            67u8, 69u8, 209u8, 152u8, 101u8, 177u8, 184u8, 238u8, 188u8, 41u8,
+                            108u8, 123u8, 79u8, 148u8, 57u8, 98u8, 239u8, 255u8, 253u8, 57u8,
+                            202u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub type Event = runtime_types::pallet_swap::pallet::Event;
+        pub mod events {
+            use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct ExchangeCreated(pub exchange_created::Field0, pub exchange_created::Field1);
+            pub mod exchange_created {
+                use super::runtime_types;
+                pub type Field0 = runtime_types::vrs_primitives::AssetId;
+                pub type Field1 = runtime_types::vrs_primitives::AssetId;
+            }
+            impl ::subxt_core::events::StaticEvent for ExchangeCreated {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "ExchangeCreated";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct LiquidityAdded(
+                pub liquidity_added::Field0,
+                pub liquidity_added::Field1,
+                pub liquidity_added::Field2,
+                pub liquidity_added::Field3,
+                pub liquidity_added::Field4,
+            );
+            pub mod liquidity_added {
+                use super::runtime_types;
+                pub type Field0 = ::subxt_core::utils::AccountId32;
+                pub type Field1 = runtime_types::vrs_primitives::AssetId;
+                pub type Field2 = ::core::primitive::u128;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for LiquidityAdded {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "LiquidityAdded";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct LiquidityRemoved(
+                pub liquidity_removed::Field0,
+                pub liquidity_removed::Field1,
+                pub liquidity_removed::Field2,
+                pub liquidity_removed::Field3,
+                pub liquidity_removed::Field4,
+            );
+            pub mod liquidity_removed {
+                use super::runtime_types;
+                pub type Field0 = ::subxt_core::utils::AccountId32;
+                pub type Field1 = runtime_types::vrs_primitives::AssetId;
+                pub type Field2 = ::core::primitive::u128;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for LiquidityRemoved {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "LiquidityRemoved";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct CurrencyTradedForAsset(
+                pub currency_traded_for_asset::Field0,
+                pub currency_traded_for_asset::Field1,
+                pub currency_traded_for_asset::Field2,
+                pub currency_traded_for_asset::Field3,
+                pub currency_traded_for_asset::Field4,
+            );
+            pub mod currency_traded_for_asset {
+                use super::runtime_types;
+                pub type Field0 = runtime_types::vrs_primitives::AssetId;
+                pub type Field1 = ::subxt_core::utils::AccountId32;
+                pub type Field2 = ::subxt_core::utils::AccountId32;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for CurrencyTradedForAsset {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "CurrencyTradedForAsset";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct AssetTradedForCurrency(
+                pub asset_traded_for_currency::Field0,
+                pub asset_traded_for_currency::Field1,
+                pub asset_traded_for_currency::Field2,
+                pub asset_traded_for_currency::Field3,
+                pub asset_traded_for_currency::Field4,
+            );
+            pub mod asset_traded_for_currency {
+                use super::runtime_types;
+                pub type Field0 = runtime_types::vrs_primitives::AssetId;
+                pub type Field1 = ::subxt_core::utils::AccountId32;
+                pub type Field2 = ::subxt_core::utils::AccountId32;
+                pub type Field3 = ::core::primitive::u128;
+                pub type Field4 = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for AssetTradedForCurrency {
+                const PALLET: &'static str = "Swap";
+                const EVENT: &'static str = "AssetTradedForCurrency";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod exchanges {
+                    use super::runtime_types;
+                    pub type Exchanges = runtime_types::pallet_swap::pallet::Exchange<
+                        runtime_types::vrs_primitives::AssetId,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    >;
+                    pub type Param0 = runtime_types::vrs_primitives::AssetId;
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                pub fn exchanges_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::exchanges::Exchanges,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Swap",
+                        "Exchanges",
+                        (),
+                        [
+                            92u8, 38u8, 239u8, 152u8, 68u8, 217u8, 86u8, 164u8, 34u8, 12u8, 206u8,
+                            199u8, 18u8, 226u8, 111u8, 7u8, 118u8, 97u8, 121u8, 166u8, 184u8, 64u8,
+                            115u8, 175u8, 178u8, 255u8, 103u8, 102u8, 176u8, 236u8, 99u8, 86u8,
+                        ],
+                    )
+                }
+                pub fn exchanges(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::exchanges::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<types::exchanges::Param0>,
+                    types::exchanges::Exchanges,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Swap",
+                        "Exchanges",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            92u8, 38u8, 239u8, 152u8, 68u8, 217u8, 86u8, 164u8, 34u8, 12u8, 206u8,
+                            199u8, 18u8, 226u8, 111u8, 7u8, 118u8, 97u8, 121u8, 166u8, 184u8, 64u8,
+                            115u8, 175u8, 178u8, 255u8, 103u8, 102u8, 176u8, 236u8, 99u8, 86u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub mod constants {
+            use super::runtime_types;
+            pub struct ConstantsApi;
+            impl ConstantsApi {
+                pub fn pallet_id(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<
+                    runtime_types::frame_support::PalletId,
+                > {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "PalletId",
+                        [
+                            56u8, 243u8, 53u8, 83u8, 154u8, 179u8, 170u8, 80u8, 133u8, 173u8, 61u8,
+                            161u8, 47u8, 225u8, 146u8, 21u8, 50u8, 229u8, 248u8, 27u8, 104u8, 58u8,
+                            129u8, 197u8, 102u8, 160u8, 168u8, 205u8, 154u8, 42u8, 217u8, 53u8,
+                        ],
+                    )
+                }
+                pub fn provider_fee_numerator(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u128>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "ProviderFeeNumerator",
+                        [
+                            84u8, 157u8, 140u8, 4u8, 93u8, 57u8, 29u8, 133u8, 105u8, 200u8, 214u8,
+                            27u8, 144u8, 208u8, 218u8, 160u8, 130u8, 109u8, 101u8, 54u8, 210u8,
+                            136u8, 71u8, 63u8, 49u8, 237u8, 234u8, 15u8, 178u8, 98u8, 148u8, 156u8,
+                        ],
+                    )
+                }
+                pub fn provider_fee_denominator(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u128>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "ProviderFeeDenominator",
+                        [
+                            84u8, 157u8, 140u8, 4u8, 93u8, 57u8, 29u8, 133u8, 105u8, 200u8, 214u8,
+                            27u8, 144u8, 208u8, 218u8, 160u8, 130u8, 109u8, 101u8, 54u8, 210u8,
+                            136u8, 71u8, 63u8, 49u8, 237u8, 234u8, 15u8, 178u8, 98u8, 148u8, 156u8,
+                        ],
+                    )
+                }
+                pub fn min_deposit(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u128>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Swap",
+                        "MinDeposit",
+                        [
+                            84u8, 157u8, 140u8, 4u8, 93u8, 57u8, 29u8, 133u8, 105u8, 200u8, 214u8,
+                            27u8, 144u8, 208u8, 218u8, 160u8, 130u8, 109u8, 101u8, 54u8, 210u8,
+                            136u8, 71u8, 63u8, 49u8, 237u8, 234u8, 15u8, 178u8, 98u8, 148u8, 156u8,
                         ],
                     )
                 }
@@ -10412,6 +11028,17 @@ pub mod codegen {
                     }
                 }
             }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct PalletId(pub [::core::primitive::u8; 8usize]);
         }
         pub mod frame_system {
             use super::runtime_types;
@@ -10773,14 +11400,14 @@ pub mod codegen {
                 pub enum Call {
                     #[codec(index = 0)]
                     create {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         admin:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         min_balance: ::core::primitive::u128,
                     },
                     #[codec(index = 1)]
                     force_create {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         owner:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         is_sufficient: ::core::primitive::bool,
@@ -10788,16 +11415,24 @@ pub mod codegen {
                         min_balance: ::core::primitive::u128,
                     },
                     #[codec(index = 2)]
-                    start_destroy { id: ::core::primitive::u32 },
+                    start_destroy {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 3)]
-                    destroy_accounts { id: ::core::primitive::u32 },
+                    destroy_accounts {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 4)]
-                    destroy_approvals { id: ::core::primitive::u32 },
+                    destroy_approvals {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 5)]
-                    finish_destroy { id: ::core::primitive::u32 },
+                    finish_destroy {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 6)]
                     mint {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         beneficiary:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         #[codec(compact)]
@@ -10805,7 +11440,7 @@ pub mod codegen {
                     },
                     #[codec(index = 7)]
                     burn {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         who:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         #[codec(compact)]
@@ -10813,7 +11448,7 @@ pub mod codegen {
                     },
                     #[codec(index = 8)]
                     transfer {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         target:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         #[codec(compact)]
@@ -10821,7 +11456,7 @@ pub mod codegen {
                     },
                     #[codec(index = 9)]
                     transfer_keep_alive {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         target:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         #[codec(compact)]
@@ -10829,7 +11464,7 @@ pub mod codegen {
                     },
                     #[codec(index = 10)]
                     force_transfer {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         source:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         dest:
@@ -10839,29 +11474,33 @@ pub mod codegen {
                     },
                     #[codec(index = 11)]
                     freeze {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         who:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                     },
                     #[codec(index = 12)]
                     thaw {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         who:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                     },
                     #[codec(index = 13)]
-                    freeze_asset { id: ::core::primitive::u32 },
+                    freeze_asset {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 14)]
-                    thaw_asset { id: ::core::primitive::u32 },
+                    thaw_asset {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 15)]
                     transfer_ownership {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         owner:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                     },
                     #[codec(index = 16)]
                     set_team {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         issuer:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         admin:
@@ -10871,26 +11510,30 @@ pub mod codegen {
                     },
                     #[codec(index = 17)]
                     set_metadata {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         symbol: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         decimals: ::core::primitive::u8,
                     },
                     #[codec(index = 18)]
-                    clear_metadata { id: ::core::primitive::u32 },
+                    clear_metadata {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 19)]
                     force_set_metadata {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         symbol: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         decimals: ::core::primitive::u8,
                         is_frozen: ::core::primitive::bool,
                     },
                     #[codec(index = 20)]
-                    force_clear_metadata { id: ::core::primitive::u32 },
+                    force_clear_metadata {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 21)]
                     force_asset_status {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         owner:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         issuer:
@@ -10906,7 +11549,7 @@ pub mod codegen {
                     },
                     #[codec(index = 22)]
                     approve_transfer {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         delegate:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         #[codec(compact)]
@@ -10914,13 +11557,13 @@ pub mod codegen {
                     },
                     #[codec(index = 23)]
                     cancel_approval {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         delegate:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                     },
                     #[codec(index = 24)]
                     force_cancel_approval {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         owner:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         delegate:
@@ -10928,7 +11571,7 @@ pub mod codegen {
                     },
                     #[codec(index = 25)]
                     transfer_approved {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         owner:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                         destination:
@@ -10937,32 +11580,34 @@ pub mod codegen {
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 26)]
-                    touch { id: ::core::primitive::u32 },
+                    touch {
+                        id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 27)]
                     refund {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         allow_burn: ::core::primitive::bool,
                     },
                     #[codec(index = 28)]
                     set_min_balance {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         min_balance: ::core::primitive::u128,
                     },
                     #[codec(index = 29)]
                     touch_other {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         who:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                     },
                     #[codec(index = 30)]
                     refund_other {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         who:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                     },
                     #[codec(index = 31)]
                     block {
-                        id: ::core::primitive::u32,
+                        id: runtime_types::vrs_primitives::AssetId,
                         who:
                             ::subxt_core::utils::MultiAddress<::subxt_core::utils::AccountId32, ()>,
                     },
@@ -11034,134 +11679,146 @@ pub mod codegen {
                 pub enum Event {
                     #[codec(index = 0)]
                     Created {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         creator: ::subxt_core::utils::AccountId32,
                         owner: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 1)]
                     Issued {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         owner: ::subxt_core::utils::AccountId32,
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 2)]
                     Transferred {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         from: ::subxt_core::utils::AccountId32,
                         to: ::subxt_core::utils::AccountId32,
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 3)]
                     Burned {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         owner: ::subxt_core::utils::AccountId32,
                         balance: ::core::primitive::u128,
                     },
                     #[codec(index = 4)]
                     TeamChanged {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         issuer: ::subxt_core::utils::AccountId32,
                         admin: ::subxt_core::utils::AccountId32,
                         freezer: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 5)]
                     OwnerChanged {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         owner: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 6)]
                     Frozen {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         who: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 7)]
                     Thawed {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         who: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 8)]
-                    AssetFrozen { asset_id: ::core::primitive::u32 },
+                    AssetFrozen {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 9)]
-                    AssetThawed { asset_id: ::core::primitive::u32 },
+                    AssetThawed {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 10)]
                     AccountsDestroyed {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         accounts_destroyed: ::core::primitive::u32,
                         accounts_remaining: ::core::primitive::u32,
                     },
                     #[codec(index = 11)]
                     ApprovalsDestroyed {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         approvals_destroyed: ::core::primitive::u32,
                         approvals_remaining: ::core::primitive::u32,
                     },
                     #[codec(index = 12)]
-                    DestructionStarted { asset_id: ::core::primitive::u32 },
+                    DestructionStarted {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 13)]
-                    Destroyed { asset_id: ::core::primitive::u32 },
+                    Destroyed {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 14)]
                     ForceCreated {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         owner: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 15)]
                     MetadataSet {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         symbol: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         decimals: ::core::primitive::u8,
                         is_frozen: ::core::primitive::bool,
                     },
                     #[codec(index = 16)]
-                    MetadataCleared { asset_id: ::core::primitive::u32 },
+                    MetadataCleared {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 17)]
                     ApprovedTransfer {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         source: ::subxt_core::utils::AccountId32,
                         delegate: ::subxt_core::utils::AccountId32,
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 18)]
                     ApprovalCancelled {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         owner: ::subxt_core::utils::AccountId32,
                         delegate: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 19)]
                     TransferredApproved {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         owner: ::subxt_core::utils::AccountId32,
                         delegate: ::subxt_core::utils::AccountId32,
                         destination: ::subxt_core::utils::AccountId32,
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 20)]
-                    AssetStatusChanged { asset_id: ::core::primitive::u32 },
+                    AssetStatusChanged {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                    },
                     #[codec(index = 21)]
                     AssetMinBalanceChanged {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         new_min_balance: ::core::primitive::u128,
                     },
                     #[codec(index = 22)]
                     Touched {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         who: ::subxt_core::utils::AccountId32,
                         depositor: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 23)]
                     Blocked {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         who: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 24)]
                     Deposited {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         who: ::subxt_core::utils::AccountId32,
                         amount: ::core::primitive::u128,
                     },
                     #[codec(index = 25)]
                     Withdrawn {
-                        asset_id: ::core::primitive::u32,
+                        asset_id: runtime_types::vrs_primitives::AssetId,
                         who: ::subxt_core::utils::AccountId32,
                         amount: ::core::primitive::u128,
                     },
@@ -12571,6 +13228,226 @@ pub mod codegen {
                 }
             }
         }
+        pub mod pallet_swap {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    create_exchange {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                        currency_amount: ::core::primitive::u128,
+                        token_amount: ::core::primitive::u128,
+                    },
+                    #[codec(index = 1)]
+                    add_liquidity {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                        currency_amount: ::core::primitive::u128,
+                        min_liquidity: ::core::primitive::u128,
+                        max_tokens: ::core::primitive::u128,
+                        deadline: ::core::primitive::u32,
+                    },
+                    #[codec(index = 2)]
+                    remove_liquidity {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                        liquidity_amount: ::core::primitive::u128,
+                        min_currency: ::core::primitive::u128,
+                        min_tokens: ::core::primitive::u128,
+                        deadline: ::core::primitive::u32,
+                    },
+                    #[codec(index = 3)]
+                    currency_to_asset {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                        amount: runtime_types::pallet_swap::pallet::TradeAmount<
+                            ::core::primitive::u128,
+                            ::core::primitive::u128,
+                        >,
+                        deadline: ::core::primitive::u32,
+                        recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
+                    },
+                    #[codec(index = 4)]
+                    asset_to_currency {
+                        asset_id: runtime_types::vrs_primitives::AssetId,
+                        amount: runtime_types::pallet_swap::pallet::TradeAmount<
+                            ::core::primitive::u128,
+                            ::core::primitive::u128,
+                        >,
+                        deadline: ::core::primitive::u32,
+                        recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
+                    },
+                    #[codec(index = 5)]
+                    asset_to_asset {
+                        sold_asset_id: runtime_types::vrs_primitives::AssetId,
+                        bought_asset_id: runtime_types::vrs_primitives::AssetId,
+                        amount: runtime_types::pallet_swap::pallet::TradeAmount<
+                            ::core::primitive::u128,
+                            ::core::primitive::u128,
+                        >,
+                        deadline: ::core::primitive::u32,
+                        recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
+                    },
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Error {
+                    #[codec(index = 0)]
+                    AssetNotFound,
+                    #[codec(index = 1)]
+                    ExchangeAlreadyExists,
+                    #[codec(index = 2)]
+                    TokenIdTaken,
+                    #[codec(index = 3)]
+                    BalanceTooLow,
+                    #[codec(index = 4)]
+                    NotEnoughTokens,
+                    #[codec(index = 5)]
+                    ProviderLiquidityTooLow,
+                    #[codec(index = 6)]
+                    ExchangeNotFound,
+                    #[codec(index = 7)]
+                    TradeAmountIsZero,
+                    #[codec(index = 8)]
+                    TokenAmountIsZero,
+                    #[codec(index = 9)]
+                    MaxTokensIsZero,
+                    #[codec(index = 10)]
+                    CurrencyAmountIsZero,
+                    #[codec(index = 11)]
+                    CurrencyAmountTooHigh,
+                    #[codec(index = 12)]
+                    CurrencyAmountTooLow,
+                    #[codec(index = 13)]
+                    MinLiquidityIsZero,
+                    #[codec(index = 14)]
+                    MaxTokensTooLow,
+                    #[codec(index = 15)]
+                    MinLiquidityTooHigh,
+                    #[codec(index = 16)]
+                    LiquidityAmountIsZero,
+                    #[codec(index = 17)]
+                    MinCurrencyIsZero,
+                    #[codec(index = 18)]
+                    MinTokensIsZero,
+                    #[codec(index = 19)]
+                    MinCurrencyTooHigh,
+                    #[codec(index = 20)]
+                    MinTokensTooHigh,
+                    #[codec(index = 21)]
+                    MaxCurrencyTooLow,
+                    #[codec(index = 22)]
+                    MinBoughtTokensTooHigh,
+                    #[codec(index = 23)]
+                    MaxSoldTokensTooLow,
+                    #[codec(index = 24)]
+                    NotEnoughLiquidity,
+                    #[codec(index = 25)]
+                    Overflow,
+                    #[codec(index = 26)]
+                    Underflow,
+                    #[codec(index = 27)]
+                    DeadlinePassed,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Event {
+                    #[codec(index = 0)]
+                    ExchangeCreated(
+                        runtime_types::vrs_primitives::AssetId,
+                        runtime_types::vrs_primitives::AssetId,
+                    ),
+                    #[codec(index = 1)]
+                    LiquidityAdded(
+                        ::subxt_core::utils::AccountId32,
+                        runtime_types::vrs_primitives::AssetId,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                    #[codec(index = 2)]
+                    LiquidityRemoved(
+                        ::subxt_core::utils::AccountId32,
+                        runtime_types::vrs_primitives::AssetId,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                    #[codec(index = 3)]
+                    CurrencyTradedForAsset(
+                        runtime_types::vrs_primitives::AssetId,
+                        ::subxt_core::utils::AccountId32,
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                    #[codec(index = 4)]
+                    AssetTradedForCurrency(
+                        runtime_types::vrs_primitives::AssetId,
+                        ::subxt_core::utils::AccountId32,
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u128,
+                        ::core::primitive::u128,
+                    ),
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct Exchange<_0, _1, _2> {
+                    pub asset_id: _0,
+                    pub currency_reserve: _1,
+                    pub token_reserve: _2,
+                    pub liquidity_token_id: _0,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum TradeAmount<_0, _1> {
+                    #[codec(index = 0)]
+                    FixedInput { input_amount: _0, min_output: _1 },
+                    #[codec(index = 1)]
+                    FixedOutput { max_input: _0, output_amount: _1 },
+                }
+            }
+        }
         pub mod pallet_timestamp {
             use super::runtime_types;
             pub mod pallet {
@@ -13969,6 +14846,17 @@ pub mod codegen {
                     }
                 }
             }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct AssetId(pub ::subxt_core::alloc::string::String);
         }
         pub mod vrs_runtime {
             use super::runtime_types;
@@ -14038,6 +14926,8 @@ pub mod codegen {
                 Nucleus(runtime_types::pallet_nucleus::pallet::Call),
                 #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Call),
+                #[codec(index = 17)]
+                Swap(runtime_types::pallet_swap::pallet::Call),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -14072,6 +14962,8 @@ pub mod codegen {
                 Nucleus(runtime_types::pallet_nucleus::pallet::Error),
                 #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Error),
+                #[codec(index = 17)]
+                Swap(runtime_types::pallet_swap::pallet::Error),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -14108,6 +15000,8 @@ pub mod codegen {
                 Nucleus(runtime_types::pallet_nucleus::pallet::Event),
                 #[codec(index = 16)]
                 Assets(runtime_types::pallet_assets::pallet::Event),
+                #[codec(index = 17)]
+                Swap(runtime_types::pallet_swap::pallet::Event),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,

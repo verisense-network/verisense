@@ -7,7 +7,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use codec::Encode;
+use codec::{Encode};
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -39,10 +39,7 @@ pub use frame_support::{
     },
     StorageValue,
 };
-use frame_support::{
-    genesis_builder_helper::{build_state, get_preset},
-    traits::VariantCountOf,
-};
+use frame_support::{genesis_builder_helper::{build_state, get_preset}, traits::VariantCountOf, PalletId};
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
@@ -244,9 +241,11 @@ pub const NUCLEUS_FEE_COLLECTOR: AccountId = AccountId::new(hex_literal::hex!(
     "36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"
 ));
 
+use scale_info::prelude::string::String;
 parameter_types! {
     pub RegistryDuration: BlockNumber = 10;
     pub const NucleusFeeCollector: AccountId = NUCLEUS_FEE_COLLECTOR;
+    pub FeeAssetId: AssetId = AssetId::try_from(String::from("FEE")).unwrap();
 }
 
 impl pallet_nucleus::Config for Runtime {
@@ -260,7 +259,7 @@ impl pallet_nucleus::Config for Runtime {
     type Validators = Validators;
     type Assets = Assets;
     type FeeCollector = NucleusFeeCollector;
-    type FeeAssetId = ConstU32<1>;
+    type FeeAssetId = FeeAssetId;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -423,10 +422,10 @@ impl pallet_restaking::Config for Runtime {
 }
 
 pub struct NoAssetCreators;
-impl EnsureOriginWithArg<RuntimeOrigin, u32> for NoAssetCreators {
+impl EnsureOriginWithArg<RuntimeOrigin, AssetId> for NoAssetCreators {
     type Success = AccountId;
 
-    fn try_origin(o: RuntimeOrigin, _a: &u32) -> Result<Self::Success, RuntimeOrigin> {
+    fn try_origin(o: RuntimeOrigin, _a: &AssetId) -> Result<Self::Success, RuntimeOrigin> {
         Err(o)
     }
 }
@@ -447,8 +446,8 @@ impl pallet_assets::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type RemoveItemsLimit = ConstU32<5>;
-    type AssetId = u32;
-    type AssetIdParameter = u32;
+    type AssetId = AssetId;
+    type AssetIdParameter = AssetId;
     type Currency = Balances;
     type CreateOrigin = NoAssetCreators;
     type ForceOrigin = EnsureRoot<AccountId>;
@@ -468,6 +467,26 @@ impl pallet_offences::Config for Runtime {
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
     type OnOffenceHandler = ();
     type RuntimeEvent = RuntimeEvent;
+}
+
+parameter_types! {
+    pub const SwapPalletId: PalletId = pallet_swap::PALLET_ID;
+
+}
+impl pallet_swap::Config for Runtime {
+    type PalletId = SwapPalletId;
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type AssetBalance = Balance;
+    type AssetToCurrencyBalance = ConvertInto;
+    type CurrencyToAssetBalance = ConvertInto;
+    type AssetId = AssetId;
+    type Assets = Assets;
+    type AssetRegistry = Assets;
+    type WeightInfo = ();
+    type ProviderFeeNumerator = ConstU128<1>;
+    type ProviderFeeDenominator = ConstU128<100>;
+    type MinDeposit = ConstU128<1>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -537,6 +556,9 @@ mod runtime {
 
     #[runtime::pallet_index(16)]
     pub type Assets = pallet_assets;
+
+    #[runtime::pallet_index(17)]
+    pub type Swap = pallet_swap;
 }
 
 /// Block header type as expected by this runtime.
@@ -577,6 +599,7 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
     Migrations,
 >;
+use pallet_swap::rpc::RpcResult;
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
@@ -831,9 +854,26 @@ impl_runtime_apis! {
             vec![]
         }
     }
+
     impl vrs_tss_runtime_api::VrsTssRuntimeApi<Block> for Runtime {
         fn get_all_validators() -> Vec<sp_runtime::AccountId32> {
             Session::validators().to_vec()
+        }
+    }
+
+    impl vrs_swap_runtime_api::SwapApi<Block, AssetId, Balance, Balance> for Runtime {
+
+        fn get_currency_to_asset_output_amount(asset_id: AssetId, currency_amount: Balance) -> RpcResult<Balance> {
+            Swap::get_currency_to_asset_output_amount(asset_id, currency_amount)
+        }
+        fn get_currency_to_asset_input_amount(asset_id: AssetId, token_amount: Balance) -> RpcResult<Balance>{
+            Swap::get_currency_to_asset_input_amount(asset_id, token_amount)
+        }
+        fn get_asset_to_currency_output_amount(asset_id: AssetId, token_amount: Balance) -> RpcResult<Balance> {
+            Swap::get_asset_to_currency_output_amount(asset_id, token_amount)
+        }
+        fn get_asset_to_currency_input_amount(asset_id: AssetId, currency_amount: Balance) -> RpcResult<Balance> {
+            Swap::get_asset_to_currency_input_amount(asset_id, currency_amount)
         }
     }
 
