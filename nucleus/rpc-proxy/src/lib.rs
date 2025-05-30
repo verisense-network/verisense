@@ -26,7 +26,7 @@ pub trait NucleusRpc<Hash> {
     async fn get(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String>;
 
     #[method(name = "nucleus_deploy")]
-    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
+    async fn deploy(&self, tx: Bytes, wasm: Bytes, abi: serde_json::Value) -> RpcResult<Hash>;
 }
 
 pub struct NucleusEntry<P, C> {
@@ -118,7 +118,12 @@ where
         self.reply(req, rx).await
     }
 
-    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<BlockHash<P>> {
+    async fn deploy(
+        &self,
+        tx: Bytes,
+        wasm: Bytes,
+        abi: serde_json::Value,
+    ) -> RpcResult<BlockHash<P>> {
         let api = self.client.runtime_api();
         let xt: <P::Block as sp_runtime::traits::Block>::Extrinsic =
             match Decode::decode(&mut &tx[..]) {
@@ -165,6 +170,16 @@ where
                 NUCLEUS_NOT_EXISTS_MSG,
                 None::<()>,
             ))?;
+        vrs_nucleus_executor::vm::validate_wasm_abi(
+            &wasm.0,
+            abi.as_array().ok_or(ErrorObjectOwned::owned(
+                INVALID_NUCLEUS_ABI_CODE,
+                INVALID_NUCLEUS_ABI_MSG,
+                None::<()>,
+            ))?,
+        )
+        .map_err(|e| ErrorObjectOwned::owned(NUCLEUS_ABI_NOT_MATCH_CODE, e, None::<()>))?;
+
         let path = self
             .nucleus_home_dir
             .as_path()
@@ -188,6 +203,16 @@ where
                 ErrorObjectOwned::owned(
                     OS_ERR_CODE,
                     format!("Couldn't write the wasm file, caused by {:?}", e),
+                    None::<()>,
+                )
+            })?;
+        let abi = serde_json::to_vec(&abi).expect("abi should be serializable");
+        std::fs::File::create(path.join("abi.json"))
+            .and_then(|mut f| f.write_all(&abi))
+            .map_err(|e| {
+                ErrorObjectOwned::owned(
+                    OS_ERR_CODE,
+                    format!("Couldn't write the abi, caused by {:?}", e),
                     None::<()>,
                 )
             })?;
@@ -247,4 +272,7 @@ mod constants {
     pub const NUCLEUS_NOT_EXISTS_CODE: i32 = -40014;
     pub const NUCLEUS_NOT_EXISTS_MSG: &str = "Nucleus not exists.";
     pub const OS_ERR_CODE: i32 = -42000;
+    pub const NUCLEUS_ABI_NOT_MATCH_CODE: i32 = -40015;
+    pub const INVALID_NUCLEUS_ABI_CODE: i32 = -40016;
+    pub const INVALID_NUCLEUS_ABI_MSG: &str = "Invalid nucleus ABI.";
 }

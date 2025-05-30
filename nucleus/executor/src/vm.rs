@@ -62,9 +62,55 @@ impl WasmCallError {
     }
 }
 
+pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), String> {
+    let engine = Engine::default();
+    let module =
+        Module::from_binary(&engine, blob).map_err(|e| format!("Invalid WASM code blob: {}", e))?;
+    let exports = module
+        .exports()
+        .filter_map(|e| {
+            if let ExternType::Func(func) = e.ty() {
+                Some(e.name().to_string())
+            } else {
+                None
+            }
+        })
+        .map(|name| (name, ()))
+        .collect::<std::collections::HashMap<String, ()>>();
+    for item in spec {
+        let func = item.as_object().ok_or({
+            format!(
+                "Invalid ABI specification: expected an object, found {}",
+                item
+            )
+        })?;
+        if func.get("type").ok_or(format!(
+            "Invalid ABI specification: missing `type` field near {}",
+            item
+        ))? == "fn"
+        {
+            let export_name = format!(
+                "__nucleus_{}_{}",
+                func.get("method").and_then(|m| m.as_str()).ok_or(format!(
+                    "Invalid ABI specification: missing `method` field near {}",
+                    item
+                ))?,
+                func.get("name").and_then(|m| m.as_str()).ok_or(format!(
+                    "Invalid ABI specification: missing `name` field near {}",
+                    item
+                ))?
+            );
+            if !exports.contains_key(&export_name) {
+                return Err(format!("Missing export: {} in WASM code", export_name));
+            }
+        }
+    }
+    Ok(())
+}
+
 impl<R> Vm<R>
 where
-    R: FuncRegister<Runtime = R> + ContextAware + Clone,
+    R: FuncRegister<Runtime = R> + Clone + ContextAware,
 {
     pub fn new_instance(wasm: &WasmInfo, runtime: &R) -> anyhow::Result<Self> {
         let engine = Engine::default();

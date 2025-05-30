@@ -31,6 +31,7 @@ xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
 blake2 = "0.10.6"
 vrs-tss = { path = "../../tss" }
 sha2 = "0.10"
+serde_json = "1"
 
 [dev-dependencies]
 temp-dir = "0.1.13"
