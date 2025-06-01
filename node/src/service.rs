@@ -1,11 +1,8 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use crate::cli::TssCmd;
-use crate::rpc::BabeDeps;
 use futures::{prelude::*, FutureExt};
 use sc_client_api::{Backend, BlockBackend};
-use sc_consensus_babe::{self, ImportQueueParams, SlotProportion};
-use sc_consensus_grandpa::SharedVoterState;
 use sc_network::{event::Event, NetworkEventStream};
 use sc_rpc_api::DenyUnsafe;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
@@ -563,6 +560,9 @@ pub fn new_full<
             pool: transaction_pool.clone(),
             node_id: node_id.clone(),
             nucleus_home_dir: nucleus_home_dir.clone(),
+            // TODO config
+            sys_rpc_port: 9944,
+            entry_rpc_port: 9955,
         };
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-rpc-server",
@@ -613,7 +613,7 @@ pub fn new_full<
             force_authoring,
             backoff_authoring_blocks,
             babe_link,
-            block_proposal_slot_portion: SlotProportion::new(0.5),
+            block_proposal_slot_portion: sc_consensus_babe::SlotProportion::new(0.5),
             max_block_proposal_slot_portion: None,
             telemetry: telemetry.as_ref().map(|x| x.handle()),
         };
@@ -699,7 +699,7 @@ pub fn new_full<
             notification_service: grandpa_notification_service,
             voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
             prometheus_registry,
-            shared_voter_state: SharedVoterState::empty(),
+            shared_voter_state: sc_consensus_grandpa::SharedVoterState::empty(),
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
         };
