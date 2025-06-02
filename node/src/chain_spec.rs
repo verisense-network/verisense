@@ -190,9 +190,9 @@ pub fn mainnet_config() -> Result<ChainSpec, String> {
         WASM_BINARY.ok_or_else(|| "Mainnet wasm not available".to_string())?,
         None,
     )
-        .with_name("Mainnet")
-        .with_id("mainnet")
-        .with_protocol_id("vrs")
+        .with_name("aitonomy on eigenlayer")
+        .with_id("aitonomy")
+        .with_protocol_id("aitonomy")
         .with_properties(chain_spec_properties())
         .with_chain_type(ChainType::Live)
         .with_genesis_config_patch(testnet_genesis(

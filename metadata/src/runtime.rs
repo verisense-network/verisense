@@ -203,9 +203,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                133u8, 198u8, 129u8, 113u8, 74u8, 81u8, 32u8, 238u8, 102u8, 62u8, 69u8, 78u8, 91u8,
-                5u8, 36u8, 0u8, 140u8, 240u8, 192u8, 58u8, 234u8, 121u8, 69u8, 216u8, 215u8, 175u8,
-                123u8, 189u8, 161u8, 93u8, 37u8, 33u8,
+                19u8, 150u8, 182u8, 138u8, 68u8, 34u8, 231u8, 1u8, 70u8, 223u8, 123u8, 200u8, 49u8,
+                237u8, 237u8, 58u8, 100u8, 155u8, 155u8, 193u8, 74u8, 91u8, 182u8, 36u8, 87u8, 9u8,
+                233u8, 179u8, 37u8, 65u8, 183u8, 126u8,
             ]
     }
     pub mod system {
@@ -6773,10 +6773,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            35u8, 206u8, 193u8, 206u8, 197u8, 107u8, 145u8, 180u8, 131u8, 210u8,
-                            158u8, 162u8, 5u8, 195u8, 252u8, 153u8, 146u8, 174u8, 241u8, 78u8,
-                            165u8, 175u8, 73u8, 208u8, 137u8, 148u8, 207u8, 3u8, 145u8, 118u8,
-                            33u8, 234u8,
+                            75u8, 86u8, 16u8, 148u8, 210u8, 83u8, 97u8, 185u8, 185u8, 179u8, 222u8,
+                            21u8, 55u8, 41u8, 26u8, 112u8, 204u8, 29u8, 51u8, 17u8, 162u8, 156u8,
+                            227u8, 33u8, 128u8, 125u8, 244u8, 238u8, 67u8, 173u8, 121u8, 206u8,
                         ],
                     )
                 }
@@ -6794,9 +6793,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            15u8, 93u8, 242u8, 196u8, 21u8, 66u8, 99u8, 0u8, 232u8, 9u8, 62u8,
-                            33u8, 93u8, 150u8, 29u8, 220u8, 138u8, 158u8, 208u8, 157u8, 44u8, 52u8,
-                            126u8, 192u8, 201u8, 238u8, 240u8, 216u8, 88u8, 111u8, 230u8, 44u8,
+                            87u8, 254u8, 248u8, 255u8, 33u8, 94u8, 73u8, 174u8, 114u8, 129u8,
+                            142u8, 49u8, 222u8, 112u8, 97u8, 206u8, 176u8, 24u8, 168u8, 241u8,
+                            158u8, 50u8, 109u8, 69u8, 200u8, 123u8, 51u8, 100u8, 63u8, 60u8, 151u8,
+                            210u8,
                         ],
                     )
                 }
@@ -6828,9 +6828,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            137u8, 82u8, 46u8, 8u8, 217u8, 118u8, 110u8, 244u8, 69u8, 204u8, 196u8,
-                            183u8, 151u8, 186u8, 126u8, 36u8, 46u8, 129u8, 193u8, 26u8, 137u8,
-                            130u8, 26u8, 117u8, 51u8, 98u8, 201u8, 23u8, 106u8, 45u8, 244u8, 130u8,
+                            185u8, 65u8, 102u8, 118u8, 254u8, 182u8, 45u8, 255u8, 94u8, 235u8,
+                            57u8, 141u8, 249u8, 82u8, 44u8, 60u8, 124u8, 150u8, 103u8, 142u8,
+                            206u8, 161u8, 214u8, 211u8, 181u8, 171u8, 206u8, 9u8, 83u8, 102u8,
+                            140u8, 154u8,
                         ],
                     )
                 }
@@ -10290,7 +10291,6 @@ pub mod codegen {
                     pub currency_amount: add_liquidity::CurrencyAmount,
                     pub min_liquidity: add_liquidity::MinLiquidity,
                     pub max_tokens: add_liquidity::MaxTokens,
-                    pub deadline: add_liquidity::Deadline,
                 }
                 pub mod add_liquidity {
                     use super::runtime_types;
@@ -10298,7 +10298,6 @@ pub mod codegen {
                     pub type CurrencyAmount = ::core::primitive::u128;
                     pub type MinLiquidity = ::core::primitive::u128;
                     pub type MaxTokens = ::core::primitive::u128;
-                    pub type Deadline = ::core::primitive::u32;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for AddLiquidity {
                     const PALLET: &'static str = "Swap";
@@ -10319,7 +10318,6 @@ pub mod codegen {
                     pub liquidity_amount: remove_liquidity::LiquidityAmount,
                     pub min_currency: remove_liquidity::MinCurrency,
                     pub min_tokens: remove_liquidity::MinTokens,
-                    pub deadline: remove_liquidity::Deadline,
                 }
                 pub mod remove_liquidity {
                     use super::runtime_types;
@@ -10327,7 +10325,6 @@ pub mod codegen {
                     pub type LiquidityAmount = ::core::primitive::u128;
                     pub type MinCurrency = ::core::primitive::u128;
                     pub type MinTokens = ::core::primitive::u128;
-                    pub type Deadline = ::core::primitive::u32;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for RemoveLiquidity {
                     const PALLET: &'static str = "Swap";
@@ -10346,7 +10343,6 @@ pub mod codegen {
                 pub struct CurrencyToAsset {
                     pub asset_id: currency_to_asset::AssetId,
                     pub amount: currency_to_asset::Amount,
-                    pub deadline: currency_to_asset::Deadline,
                     pub recipient: currency_to_asset::Recipient,
                 }
                 pub mod currency_to_asset {
@@ -10356,7 +10352,6 @@ pub mod codegen {
                         ::core::primitive::u128,
                         ::core::primitive::u128,
                     >;
-                    pub type Deadline = ::core::primitive::u32;
                     pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for CurrencyToAsset {
@@ -10376,7 +10371,6 @@ pub mod codegen {
                 pub struct AssetToCurrency {
                     pub asset_id: asset_to_currency::AssetId,
                     pub amount: asset_to_currency::Amount,
-                    pub deadline: asset_to_currency::Deadline,
                     pub recipient: asset_to_currency::Recipient,
                 }
                 pub mod asset_to_currency {
@@ -10386,7 +10380,6 @@ pub mod codegen {
                         ::core::primitive::u128,
                         ::core::primitive::u128,
                     >;
-                    pub type Deadline = ::core::primitive::u32;
                     pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for AssetToCurrency {
@@ -10407,7 +10400,6 @@ pub mod codegen {
                     pub sold_asset_id: asset_to_asset::SoldAssetId,
                     pub bought_asset_id: asset_to_asset::BoughtAssetId,
                     pub amount: asset_to_asset::Amount,
-                    pub deadline: asset_to_asset::Deadline,
                     pub recipient: asset_to_asset::Recipient,
                 }
                 pub mod asset_to_asset {
@@ -10418,7 +10410,6 @@ pub mod codegen {
                         ::core::primitive::u128,
                         ::core::primitive::u128,
                     >;
-                    pub type Deadline = ::core::primitive::u32;
                     pub type Recipient = ::core::option::Option<::subxt_core::utils::AccountId32>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for AssetToAsset {
@@ -10456,7 +10447,6 @@ pub mod codegen {
                     currency_amount: types::add_liquidity::CurrencyAmount,
                     min_liquidity: types::add_liquidity::MinLiquidity,
                     max_tokens: types::add_liquidity::MaxTokens,
-                    deadline: types::add_liquidity::Deadline,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::AddLiquidity> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "Swap",
@@ -10466,12 +10456,12 @@ pub mod codegen {
                             currency_amount,
                             min_liquidity,
                             max_tokens,
-                            deadline,
                         },
                         [
-                            26u8, 67u8, 59u8, 204u8, 215u8, 3u8, 161u8, 91u8, 228u8, 41u8, 174u8,
-                            231u8, 2u8, 84u8, 221u8, 105u8, 252u8, 137u8, 49u8, 100u8, 11u8, 60u8,
-                            48u8, 89u8, 53u8, 47u8, 40u8, 56u8, 143u8, 89u8, 27u8, 147u8,
+                            187u8, 153u8, 19u8, 30u8, 251u8, 40u8, 97u8, 44u8, 192u8, 169u8, 107u8,
+                            125u8, 193u8, 159u8, 135u8, 101u8, 181u8, 153u8, 158u8, 178u8, 129u8,
+                            4u8, 216u8, 186u8, 173u8, 143u8, 192u8, 193u8, 227u8, 180u8, 233u8,
+                            184u8,
                         ],
                     )
                 }
@@ -10481,7 +10471,6 @@ pub mod codegen {
                     liquidity_amount: types::remove_liquidity::LiquidityAmount,
                     min_currency: types::remove_liquidity::MinCurrency,
                     min_tokens: types::remove_liquidity::MinTokens,
-                    deadline: types::remove_liquidity::Deadline,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::RemoveLiquidity>
                 {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
@@ -10492,13 +10481,11 @@ pub mod codegen {
                             liquidity_amount,
                             min_currency,
                             min_tokens,
-                            deadline,
                         },
                         [
-                            109u8, 199u8, 209u8, 189u8, 174u8, 255u8, 163u8, 182u8, 111u8, 62u8,
-                            68u8, 249u8, 11u8, 137u8, 225u8, 231u8, 61u8, 113u8, 234u8, 157u8,
-                            72u8, 7u8, 103u8, 105u8, 8u8, 85u8, 108u8, 68u8, 26u8, 86u8, 227u8,
-                            35u8,
+                            100u8, 95u8, 31u8, 122u8, 39u8, 138u8, 112u8, 149u8, 6u8, 67u8, 119u8,
+                            53u8, 227u8, 98u8, 82u8, 227u8, 227u8, 103u8, 140u8, 62u8, 215u8, 90u8,
+                            51u8, 70u8, 140u8, 112u8, 195u8, 40u8, 212u8, 176u8, 74u8, 32u8,
                         ],
                     )
                 }
@@ -10506,7 +10493,6 @@ pub mod codegen {
                     &self,
                     asset_id: types::currency_to_asset::AssetId,
                     amount: types::currency_to_asset::Amount,
-                    deadline: types::currency_to_asset::Deadline,
                     recipient: types::currency_to_asset::Recipient,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::CurrencyToAsset>
                 {
@@ -10516,13 +10502,12 @@ pub mod codegen {
                         types::CurrencyToAsset {
                             asset_id,
                             amount,
-                            deadline,
                             recipient,
                         },
                         [
-                            121u8, 47u8, 215u8, 55u8, 93u8, 184u8, 97u8, 91u8, 90u8, 3u8, 156u8,
-                            123u8, 43u8, 169u8, 143u8, 91u8, 62u8, 126u8, 102u8, 21u8, 90u8, 234u8,
-                            62u8, 4u8, 255u8, 181u8, 149u8, 33u8, 18u8, 188u8, 23u8, 2u8,
+                            115u8, 169u8, 158u8, 226u8, 44u8, 24u8, 132u8, 52u8, 205u8, 178u8, 1u8,
+                            214u8, 112u8, 189u8, 205u8, 37u8, 119u8, 230u8, 8u8, 48u8, 229u8, 89u8,
+                            182u8, 64u8, 191u8, 230u8, 166u8, 10u8, 227u8, 212u8, 228u8, 244u8,
                         ],
                     )
                 }
@@ -10530,7 +10515,6 @@ pub mod codegen {
                     &self,
                     asset_id: types::asset_to_currency::AssetId,
                     amount: types::asset_to_currency::Amount,
-                    deadline: types::asset_to_currency::Deadline,
                     recipient: types::asset_to_currency::Recipient,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::AssetToCurrency>
                 {
@@ -10540,14 +10524,12 @@ pub mod codegen {
                         types::AssetToCurrency {
                             asset_id,
                             amount,
-                            deadline,
                             recipient,
                         },
                         [
-                            135u8, 204u8, 33u8, 116u8, 163u8, 157u8, 51u8, 114u8, 219u8, 125u8,
-                            7u8, 117u8, 138u8, 185u8, 202u8, 86u8, 168u8, 249u8, 89u8, 174u8,
-                            200u8, 194u8, 212u8, 200u8, 13u8, 22u8, 67u8, 115u8, 13u8, 242u8, 93u8,
-                            163u8,
+                            223u8, 33u8, 96u8, 28u8, 9u8, 56u8, 101u8, 100u8, 51u8, 20u8, 190u8,
+                            131u8, 69u8, 188u8, 72u8, 61u8, 18u8, 125u8, 200u8, 147u8, 58u8, 165u8,
+                            4u8, 17u8, 228u8, 140u8, 119u8, 147u8, 130u8, 52u8, 134u8, 60u8,
                         ],
                     )
                 }
@@ -10556,7 +10538,6 @@ pub mod codegen {
                     sold_asset_id: types::asset_to_asset::SoldAssetId,
                     bought_asset_id: types::asset_to_asset::BoughtAssetId,
                     amount: types::asset_to_asset::Amount,
-                    deadline: types::asset_to_asset::Deadline,
                     recipient: types::asset_to_asset::Recipient,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::AssetToAsset> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
@@ -10566,14 +10547,12 @@ pub mod codegen {
                             sold_asset_id,
                             bought_asset_id,
                             amount,
-                            deadline,
                             recipient,
                         },
                         [
-                            7u8, 238u8, 227u8, 55u8, 61u8, 154u8, 139u8, 35u8, 61u8, 37u8, 100u8,
-                            67u8, 69u8, 209u8, 152u8, 101u8, 177u8, 184u8, 238u8, 188u8, 41u8,
-                            108u8, 123u8, 79u8, 148u8, 57u8, 98u8, 239u8, 255u8, 253u8, 57u8,
-                            202u8,
+                            158u8, 83u8, 57u8, 211u8, 73u8, 104u8, 157u8, 119u8, 1u8, 244u8, 60u8,
+                            104u8, 9u8, 16u8, 146u8, 172u8, 234u8, 35u8, 51u8, 64u8, 174u8, 213u8,
+                            221u8, 78u8, 171u8, 104u8, 147u8, 168u8, 221u8, 229u8, 9u8, 194u8,
                         ],
                     )
                 }
@@ -13259,7 +13238,6 @@ pub mod codegen {
                         currency_amount: ::core::primitive::u128,
                         min_liquidity: ::core::primitive::u128,
                         max_tokens: ::core::primitive::u128,
-                        deadline: ::core::primitive::u32,
                     },
                     #[codec(index = 2)]
                     remove_liquidity {
@@ -13267,7 +13245,6 @@ pub mod codegen {
                         liquidity_amount: ::core::primitive::u128,
                         min_currency: ::core::primitive::u128,
                         min_tokens: ::core::primitive::u128,
-                        deadline: ::core::primitive::u32,
                     },
                     #[codec(index = 3)]
                     currency_to_asset {
@@ -13276,7 +13253,6 @@ pub mod codegen {
                             ::core::primitive::u128,
                             ::core::primitive::u128,
                         >,
-                        deadline: ::core::primitive::u32,
                         recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
                     },
                     #[codec(index = 4)]
@@ -13286,7 +13262,6 @@ pub mod codegen {
                             ::core::primitive::u128,
                             ::core::primitive::u128,
                         >,
-                        deadline: ::core::primitive::u32,
                         recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
                     },
                     #[codec(index = 5)]
@@ -13297,7 +13272,6 @@ pub mod codegen {
                             ::core::primitive::u128,
                             ::core::primitive::u128,
                         >,
-                        deadline: ::core::primitive::u32,
                         recipient: ::core::option::Option<::subxt_core::utils::AccountId32>,
                     },
                 }
@@ -13366,8 +13340,6 @@ pub mod codegen {
                     Overflow,
                     #[codec(index = 26)]
                     Underflow,
-                    #[codec(index = 27)]
-                    DeadlinePassed,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
