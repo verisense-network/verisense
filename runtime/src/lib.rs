@@ -5,11 +5,11 @@ mod constrants;
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::Encode;
 use pallet_grandpa::AuthorityId as GrandpaId;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use codec::{Encode};
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -23,6 +23,11 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
+use crate::constrants::time::{
+    EPOCH_DURATION_IN_BLOCKS, MILLISECS_PER_BLOCK, SESSION_IN_BLOCKS, SESSION_PER_ERA,
+    SLOT_DURATION,
+};
+use crate::constrants::PRIMARY_PROBABILITY;
 use frame_support::__private::log;
 use frame_support::traits::EnsureOriginWithArg;
 pub use frame_support::{
@@ -39,7 +44,11 @@ pub use frame_support::{
     },
     StorageValue,
 };
-use frame_support::{genesis_builder_helper::{build_state, get_preset}, traits::VariantCountOf, PalletId};
+use frame_support::{
+    genesis_builder_helper::{build_state, get_preset},
+    traits::VariantCountOf,
+    PalletId,
+};
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
@@ -51,8 +60,6 @@ use sp_runtime::traits::{ConvertInto, Extrinsic, OpaqueKeys};
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
 pub use vrs_primitives::*;
-use crate::constrants::PRIMARY_PROBABILITY;
-use crate::constrants::time::{EPOCH_DURATION_IN_BLOCKS, MILLISECS_PER_BLOCK, SESSION_IN_BLOCKS, SESSION_PER_ERA, SLOT_DURATION};
 
 pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
     sp_consensus_babe::BabeEpochConfiguration {
@@ -167,7 +174,8 @@ impl pallet_babe::Config for Runtime {
     // session module is the trigger
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
     type EpochDuration = EpochDuration;
-    type EquivocationReportSystem = pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    type EquivocationReportSystem =
+        pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
     type ExpectedBlockTime = ExpectedBlockTime;
     type KeyOwnerProof = sp_session::MembershipProof;
     type MaxAuthorities = MaxAuthorities;
@@ -260,6 +268,12 @@ impl pallet_nucleus::Config for Runtime {
     type Assets = Assets;
     type FeeCollector = NucleusFeeCollector;
     type FeeAssetId = FeeAssetId;
+}
+
+impl pallet_a2a::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Weight = pallet_a2a::weights::SubstrateWeight<Runtime>;
+    type AgentId = AccountId;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -559,6 +573,9 @@ mod runtime {
 
     #[runtime::pallet_index(17)]
     pub type Swap = pallet_swap;
+
+    #[runtime::pallet_index(18)]
+    pub type A2A = pallet_a2a;
 }
 
 /// Block header type as expected by this runtime.

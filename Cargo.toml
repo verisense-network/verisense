@@ -7,12 +7,12 @@ members = [
     "pallets/restaking/runtime-api",
     "pallets/swap/runtime-api",
     "nucleus/*",
+    "crates/*",
     "primitives",
     "metadata",
     "support",
     "tss",
 ]
-#exclude = ["nucleus/p2p"]
 resolver = "2"
 
 [workspace.package]
@@ -41,7 +41,7 @@ frame-support = { version = "36.0.0", default-features = false }
 frame-system = { version = "36.0.0", default-features = false }
 substrate-frame-rpc-system = { version = "36.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "33.0.0", default-features = false }
-frame-benchmarking = { version = "33.0.0", default-features = false }
+frame-benchmarking = { version = "38.0.0", default-features = false }
 # frame pallets
 pallet-babe = { version = "36.0.0", default-features = false }
 pallet-balances = { version = "37.0.0", default-features = false }

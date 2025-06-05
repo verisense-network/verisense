@@ -10,14 +10,14 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive"] }
-frame-benchmarking = { workspace = true }
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-pallet-assets = { workspace = true }
-scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
-sp-runtime = { workspace = true }
-sp-std = { workspace = true }
+codec = { workspace = true, default-features = false, features = ["derive"] }
+frame-benchmarking = { workspace = true, default-features = false }
+frame-support = { workspace = true, default-features = false }
+frame-system = { workspace = true, default-features = false }
+pallet-assets = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false, features = ["derive"] }
+sp-runtime = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
 log = { workspace = true, default-features = false }
 vrs-support = { path = "../../support", default-features = false }
 vrs-primitives = {path = "../../primitives", default-features = false}

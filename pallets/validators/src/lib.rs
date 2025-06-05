@@ -9,10 +9,10 @@ use frame_support::traits::{ValidatorSet, ValidatorSetWithIdentification};
 use frame_system::pallet_prelude::*;
 use pallet_session::historical;
 use sp_core::crypto::KeyTypeId;
-use sp_runtime::SaturatedConversion;
 use sp_runtime::traits::Convert;
-use sp_staking::{EraIndex, SessionIndex};
+use sp_runtime::SaturatedConversion;
 use sp_staking::offence::{Offence, OffenceError, ReportOffence};
+use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
 use vrs_support::{log, EraRewardPoints, RestakingInterface, ValidatorsInterface};
 pub use weights::*;
@@ -24,8 +24,8 @@ pub mod pallet {
     use super::*;
     use crate::types::{ActiveEraInfo, SessionInterface};
     use frame_support::traits::UnixTime;
-    use sp_runtime::Percent;
     use sp_runtime::traits::Convert;
+    use sp_runtime::Percent;
     use sp_staking::EraIndex;
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -49,7 +49,7 @@ pub mod pallet {
         type HistoryDepth: Get<u32>;
 
         type RestakingInterface: RestakingInterface<Self::AccountId>;
-        
+
         type FullIdentification: Parameter;
 
         type FullIdentificationOf: Convert<Self::ValidatorId, Option<Self::FullIdentification>>;
@@ -102,7 +102,7 @@ pub mod pallet {
     #[pallet::getter(fn eras_stakers)]
     pub(crate) type ErasStakers<T: Config> =
         StorageDoubleMap<_, Twox64Concat, EraIndex, Twox64Concat, T::AccountId, u128, ValueQuery>;
-    
+
     #[pallet::storage]
     #[pallet::getter(fn force_era)]
     pub type ForceEra<T> = StorageValue<_, Forcing, ValueQuery>;
@@ -110,16 +110,18 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn current_session)]
     pub type CurrentSession<T> = StorageValue<_, SessionIndex, ValueQuery>;
-    
+
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn era_validators)]
-    pub type EraValidators<T: Config> = StorageMap<_, Twox64Concat, EraIndex, Vec<T::AccountId>, ValueQuery>;
+    pub type EraValidators<T: Config> =
+        StorageMap<_, Twox64Concat, EraIndex, Vec<T::AccountId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::unbounded]
     #[pallet::getter(fn session_offenders)]
-    pub type SessionOffenders<T: Config> = StorageMap<_, Twox64Concat, SessionIndex, Vec<T::AccountId>, ValueQuery>;
+    pub type SessionOffenders<T: Config> =
+        StorageMap<_, Twox64Concat, SessionIndex, Vec<T::AccountId>, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -175,7 +177,6 @@ impl<T: Config> ValidatorsInterface<T::AccountId> for Pallet<T> {
     }
 }
 
-
 impl<T: Config> ValidatorSet<T::AccountId> for Pallet<T> {
     type ValidatorId = T::ValidatorId;
     type ValidatorIdOf = T::ValidatorIdOf;
@@ -187,7 +188,9 @@ impl<T: Config> ValidatorSet<T::AccountId> for Pallet<T> {
     fn validators() -> Vec<Self::ValidatorId> {
         let active_era = Self::active_era().unwrap_or_default().index;
         let v = Self::era_validators(active_era);
-        v.into_iter().map(|v| T::ValidatorIdOf::convert(v).unwrap()).collect()
+        v.into_iter()
+            .map(|v| T::ValidatorIdOf::convert(v).unwrap())
+            .collect()
     }
 }
 
@@ -196,47 +199,55 @@ impl<T: Config> ValidatorSetWithIdentification<T::AccountId> for Pallet<T> {
     type IdentificationOf = T::FullIdentificationOf;
 }
 
-type IdentificationTuple<T: Config> = (T::ValidatorId, T::FullIdentification);
-impl<T, O> ReportOffence<T::AccountId, IdentificationTuple<T>, O> for Pallet<T>
+// type IdentificationTuple<ValidatorId, FullIdentification> = (T::ValidatorId, T::FullIdentification);
+
+impl<T, O> ReportOffence<T::AccountId, (T::ValidatorId, T::FullIdentification), O> for Pallet<T>
 where
     T: Config,
-    O: Offence<IdentificationTuple<T>>,
+    O: Offence<(T::ValidatorId, T::FullIdentification)>,
     T::ValidatorId: Into<T::AccountId>,
 {
     fn report_offence(reporters: Vec<T::AccountId>, offence: O) -> Result<(), OffenceError> {
-        let offenders = offence.offenders().into_iter().map(|s|s.0.into()).collect::<Vec<T::AccountId>>();
+        let offenders = offence
+            .offenders()
+            .into_iter()
+            .map(|s| s.0.into())
+            .collect::<Vec<T::AccountId>>();
         let session_index = offence.session_index();
         SessionOffenders::<T>::insert(session_index, offenders);
-       /* 
-        // Go through all offenders in the offence report and find all offenders that were spotted
-        // in unique reports.
-        let TriageOutcome { concurrent_offenders } =
-            match Self::triage_offence_report::<O>(reporters, &time_slot, offenders) {
-                Some(triage) => triage,
-                // The report contained only duplicates, so there is no need to slash again.
-                None => return Err(OffenceError::DuplicateReport),
-            };
+        /*
+                // Go through all offenders in the offence report and find all offenders that were spotted
+                // in unique reports.
+                let TriageOutcome { concurrent_offenders } =
+                    match Self::triage_offence_report::<O>(reporters, &time_slot, offenders) {
+                        Some(triage) => triage,
+                        // The report contained only duplicates, so there is no need to slash again.
+                        None => return Err(OffenceError::DuplicateReport),
+                    };
 
-        let offenders_count = concurrent_offenders.len() as u32;
+                let offenders_count = concurrent_offenders.len() as u32;
 
-        // The amount new offenders are slashed
-        let new_fraction = offence.slash_fraction(offenders_count);
+                // The amount new offenders are slashed
+                let new_fraction = offence.slash_fraction(offenders_count);
 
-        let slash_perbill: Vec<_> = (0..concurrent_offenders.len()).map(|_| new_fraction).collect();
+                let slash_perbill: Vec<_> = (0..concurrent_offenders.len()).map(|_| new_fraction).collect();
 
-        T::OnOffenceHandler::on_offence(
-            &concurrent_offenders,
-            &slash_perbill,
-            offence.session_index(),
-        );
+                T::OnOffenceHandler::on_offence(
+                    &concurrent_offenders,
+                    &slash_perbill,
+                    offence.session_index(),
+                );
 
-        // Deposit the event.
-        Self::deposit_event(Event::Offence { kind: O::ID, timeslot: time_slot.encode() });
-*/
+                // Deposit the event.
+                Self::deposit_event(Event::Offence { kind: O::ID, timeslot: time_slot.encode() });
+        */
         Ok(())
     }
 
-    fn is_known_offence(offenders: &[IdentificationTuple<T>], time_slot: &O::TimeSlot) -> bool {
+    fn is_known_offence(
+        offenders: &[(T::ValidatorId, T::FullIdentification)],
+        time_slot: &O::TimeSlot,
+    ) -> bool {
         true
     }
 }
@@ -360,12 +371,12 @@ impl<T: Config> Pallet<T> {
         Self::save_era_validators(validators.clone());
         Some(validators)
     }
-    
+
     pub(crate) fn save_era_validators(v: Vec<T::AccountId>) {
         let active_era = Self::active_era();
         let next_era_index = match active_era {
-            None => { 0 }
-            Some(a) => { a.index+1 }
+            None => 0,
+            Some(a) => a.index + 1,
         };
         EraValidators::<T>::insert(next_era_index, v);
     }
@@ -382,12 +393,17 @@ impl<T: Config> Pallet<T> {
     pub fn determine_session_validators(session_index: SessionIndex) -> Option<Vec<T::AccountId>> {
         let active_era = Self::active_era().unwrap_or_default().index;
         let validators = Self::era_validators(active_era);
-        if session_index <2 {
+        if session_index < 2 {
             Some(validators)
-        }else { 
+        } else {
             let history_session = session_index - 2;
             let offenders = SessionOffenders::<T>::get(history_session);
-            Some(validators.into_iter().filter(|s|!offenders.contains(s)).collect())
+            Some(
+                validators
+                    .into_iter()
+                    .filter(|s| !offenders.contains(s))
+                    .collect(),
+            )
         }
     }
     pub fn store_stakers_info(

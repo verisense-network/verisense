@@ -2,6 +2,7 @@
 
 pub mod consts;
 
+use a2a_rs::AgentCard;
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
 use sp_runtime::KeyTypeId;
@@ -30,6 +31,18 @@ pub trait ValidatorsInterface<AccountId> {
     fn validators() -> Vec<AccountId>;
     fn active_stake_of(who: &AccountId) -> u128;
     fn active_total_stake() -> Option<u128>;
+}
+
+pub trait AgentRegistry<AccountId, AgentId> {
+    type Err;
+
+    fn register_agent(
+        owner: AccountId,
+        agent_id: AgentId,
+        agent_card: AgentCard,
+    ) -> Result<(), Self::Err>;
+
+    fn find_agent(agent_id: &AgentId) -> Result<(AccountId, AgentCard), Self::Err>;
 }
 
 pub type RewardPoint = u128;

@@ -1,0 +1,18 @@
+[package]
+name = "a2a-rs"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+scale-info = { features = ["derive"], workspace = true, default-features = false }
+
+[features]
+std = [
+    "codec/std",
+    "scale-info/std",
+    "sp-std/std",
+]
+default = ["std"]
