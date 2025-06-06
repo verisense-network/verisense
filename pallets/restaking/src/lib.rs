@@ -36,9 +36,9 @@ pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::pallet_prelude::*;
-    use frame_support::traits::UnixTime;
+    use frame_support::traits::{Currency, UnixTime};
     use frame_system::pallet_prelude::*;
-
+    use sp_runtime::traits::CheckedConversion;
     use super::*;
     use crate::validator_data::ValidatorData;
     use vrs_support::consts::ORIGINAL_VALIDATOR_SOURCE;
@@ -72,6 +72,8 @@ pub mod pallet {
         type RestakingEnable: Get<bool>;
 
         type ValidatorsInterface: ValidatorsInterface<Self::AccountId>;
+
+        type Currency: Currency<Self::AccountId>;
     }
 
     type MaxObservations = ConstU32<100>;
@@ -183,6 +185,9 @@ pub mod pallet {
             receiver: T::AccountId,
             sequence: u32,
         },
+        RewardsPerPointUpdated {
+            value: u128
+        },
     }
 
     #[pallet::error]
@@ -196,6 +201,7 @@ pub mod pallet {
         InvalidReceiverId,
         NextSetIdOverflow,
         ObservationsExceededLimit,
+        InvalidRewardsPerPoint,
     }
 
     impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
@@ -233,6 +239,7 @@ pub mod pallet {
                     validator: source,
                     amount: rewds,
                 });
+                T::Currency::deposit_creating(&acc, rewds.checked_into().unwrap_or_default());
             }
             EraRewardsDetail::<T>::insert(era_idx, rewards);
             LatestClosedEra::<T>::put(era_idx);
@@ -386,6 +393,16 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
             RestakingPlatform::<T>::insert(platform_source_name, (url, middleware_address));
+            Ok(().into())
+        }
+
+        #[pallet::weight(1)]
+        #[pallet::call_index(2)]
+        pub fn set_rewards_pre_point(origin: OriginFor<T>, value: u128) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+            ensure!(value > 0, Error::<T>::InvalidRewardsPerPoint);
+            RewardsAmountPerPoint::<T>::put(value);
+            Self::deposit_event(Event::RewardsPerPointUpdated {value});
             Ok(().into())
         }
     }

@@ -385,7 +385,7 @@ fn session_keys(
 
 fn chain_spec_properties() -> serde_json::map::Map<String, serde_json::Value> {
     serde_json::json!({
-        "tokenSymbol": "SENSE",
+        "tokenSymbol": "RWT",
         "tokenDecimals": 18,
     })
     .as_object()

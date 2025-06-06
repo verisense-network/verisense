@@ -210,9 +210,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                244u8, 47u8, 198u8, 58u8, 250u8, 216u8, 231u8, 183u8, 133u8, 102u8, 83u8, 15u8,
-                158u8, 228u8, 182u8, 118u8, 164u8, 218u8, 71u8, 160u8, 50u8, 63u8, 155u8, 93u8,
-                121u8, 204u8, 9u8, 28u8, 60u8, 104u8, 197u8, 204u8,
+                140u8, 82u8, 156u8, 112u8, 122u8, 249u8, 88u8, 77u8, 20u8, 31u8, 87u8, 96u8, 6u8,
+                69u8, 86u8, 113u8, 131u8, 217u8, 95u8, 49u8, 94u8, 73u8, 100u8, 136u8, 138u8,
+                246u8, 4u8, 162u8, 151u8, 128u8, 108u8, 201u8,
             ]
     }
     pub mod system {
@@ -1178,9 +1178,10 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            56u8, 18u8, 88u8, 78u8, 20u8, 88u8, 160u8, 27u8, 96u8, 170u8, 119u8,
-                            58u8, 1u8, 126u8, 101u8, 143u8, 14u8, 112u8, 5u8, 188u8, 96u8, 173u8,
-                            211u8, 250u8, 139u8, 214u8, 180u8, 243u8, 159u8, 49u8, 4u8, 137u8,
+                            199u8, 180u8, 74u8, 23u8, 245u8, 113u8, 70u8, 63u8, 51u8, 49u8, 159u8,
+                            203u8, 228u8, 102u8, 12u8, 83u8, 141u8, 159u8, 75u8, 146u8, 203u8,
+                            104u8, 134u8, 125u8, 248u8, 187u8, 163u8, 118u8, 20u8, 164u8, 123u8,
+                            1u8,
                         ],
                     )
                 }
@@ -2380,6 +2381,27 @@ pub mod codegen {
                     const PALLET: &'static str = "Restaking";
                     const CALL: &'static str = "add_restaking_platform";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct SetRewardsPrePoint {
+                    pub value: set_rewards_pre_point::Value,
+                }
+                pub mod set_rewards_pre_point {
+                    use super::runtime_types;
+                    pub type Value = ::core::primitive::u128;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for SetRewardsPrePoint {
+                    const PALLET: &'static str = "Restaking";
+                    const CALL: &'static str = "set_rewards_pre_point";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -2421,6 +2443,23 @@ pub mod codegen {
                             153u8, 117u8, 79u8, 109u8, 48u8, 77u8, 21u8, 192u8, 182u8, 192u8,
                             216u8, 248u8, 33u8, 146u8, 161u8, 129u8, 121u8, 12u8, 150u8, 30u8,
                             38u8, 153u8,
+                        ],
+                    )
+                }
+                pub fn set_rewards_pre_point(
+                    &self,
+                    value: types::set_rewards_pre_point::Value,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::SetRewardsPrePoint>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Restaking",
+                        "set_rewards_pre_point",
+                        types::SetRewardsPrePoint { value },
+                        [
+                            255u8, 253u8, 68u8, 162u8, 145u8, 195u8, 203u8, 132u8, 176u8, 135u8,
+                            161u8, 210u8, 47u8, 118u8, 32u8, 14u8, 118u8, 27u8, 48u8, 125u8, 206u8,
+                            191u8, 123u8, 1u8, 148u8, 226u8, 217u8, 124u8, 46u8, 38u8, 150u8,
+                            126u8,
                         ],
                     )
                 }
@@ -2539,6 +2578,27 @@ pub mod codegen {
             impl ::subxt_core::events::StaticEvent for UnlockNonfungibleFailed {
                 const PALLET: &'static str = "Restaking";
                 const EVENT: &'static str = "UnlockNonfungibleFailed";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct RewardsPerPointUpdated {
+                pub value: rewards_per_point_updated::Value,
+            }
+            pub mod rewards_per_point_updated {
+                use super::runtime_types;
+                pub type Value = ::core::primitive::u128;
+            }
+            impl ::subxt_core::events::StaticEvent for RewardsPerPointUpdated {
+                const PALLET: &'static str = "Restaking";
+                const EVENT: &'static str = "RewardsPerPointUpdated";
             }
         }
         pub mod storage {
@@ -6780,10 +6840,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            21u8, 149u8, 9u8, 179u8, 159u8, 111u8, 177u8, 233u8, 208u8, 94u8, 31u8,
-                            19u8, 194u8, 30u8, 200u8, 101u8, 237u8, 204u8, 109u8, 99u8, 174u8,
-                            99u8, 191u8, 163u8, 146u8, 217u8, 210u8, 215u8, 10u8, 252u8, 237u8,
-                            196u8,
+                            244u8, 253u8, 98u8, 22u8, 146u8, 170u8, 214u8, 195u8, 225u8, 75u8,
+                            35u8, 211u8, 35u8, 36u8, 250u8, 183u8, 141u8, 226u8, 213u8, 174u8,
+                            165u8, 197u8, 247u8, 245u8, 67u8, 244u8, 115u8, 252u8, 48u8, 63u8,
+                            190u8, 100u8,
                         ],
                     )
                 }
@@ -6801,9 +6861,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            95u8, 122u8, 157u8, 119u8, 25u8, 215u8, 94u8, 73u8, 182u8, 104u8, 61u8,
-                            4u8, 10u8, 224u8, 166u8, 140u8, 226u8, 59u8, 225u8, 130u8, 98u8, 62u8,
-                            121u8, 31u8, 18u8, 140u8, 180u8, 71u8, 175u8, 46u8, 215u8, 35u8,
+                            109u8, 222u8, 31u8, 212u8, 156u8, 49u8, 172u8, 177u8, 33u8, 74u8,
+                            222u8, 197u8, 107u8, 99u8, 230u8, 178u8, 2u8, 83u8, 235u8, 1u8, 225u8,
+                            62u8, 111u8, 44u8, 61u8, 2u8, 235u8, 11u8, 101u8, 211u8, 12u8, 132u8,
                         ],
                     )
                 }
@@ -6835,10 +6895,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            21u8, 22u8, 55u8, 132u8, 210u8, 171u8, 153u8, 173u8, 11u8, 33u8, 219u8,
-                            158u8, 40u8, 149u8, 132u8, 114u8, 182u8, 234u8, 53u8, 106u8, 211u8,
-                            123u8, 125u8, 38u8, 66u8, 134u8, 190u8, 252u8, 149u8, 33u8, 148u8,
-                            227u8,
+                            191u8, 196u8, 236u8, 181u8, 175u8, 233u8, 72u8, 85u8, 161u8, 22u8,
+                            181u8, 68u8, 210u8, 139u8, 16u8, 84u8, 37u8, 73u8, 52u8, 92u8, 111u8,
+                            63u8, 20u8, 90u8, 98u8, 205u8, 153u8, 109u8, 19u8, 7u8, 130u8, 232u8,
                         ],
                     )
                 }
@@ -13183,6 +13242,8 @@ pub mod codegen {
                         url: ::subxt_core::alloc::string::String,
                         middleware_address: ::subxt_core::alloc::string::String,
                     },
+                    #[codec(index = 2)]
+                    set_rewards_pre_point { value: ::core::primitive::u128 },
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -13213,6 +13274,8 @@ pub mod codegen {
                     NextSetIdOverflow,
                     #[codec(index = 8)]
                     ObservationsExceededLimit,
+                    #[codec(index = 9)]
+                    InvalidRewardsPerPoint,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -13256,6 +13319,8 @@ pub mod codegen {
                         receiver: ::subxt_core::utils::AccountId32,
                         sequence: ::core::primitive::u32,
                     },
+                    #[codec(index = 4)]
+                    RewardsPerPointUpdated { value: ::core::primitive::u128 },
                 }
             }
             pub mod types {
