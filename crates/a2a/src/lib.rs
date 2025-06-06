@@ -77,7 +77,8 @@ pub struct AgentCard {
     /// Optional capabilities supported by the agent.
     pub capabilities: AgentCapabilities,
     /// Security scheme details used for authenticating with this agent.
-    pub security_schemes: Option<BTreeMap<Text, SecurityScheme>>,
+    // it's difficult to store kv mappings into substrate runtime, so we use transparent Text
+    pub security_schemes: Option<BTreeMap<Text, Text>>,
     /// Security requirements for contacting the agent.
     pub security: Option<Vec<BTreeMap<Text, Vec<Text>>>>,
     /// The set of interaction modes that the agent supports across all skills.
@@ -90,54 +91,4 @@ pub struct AgentCard {
     /// true if the agent supports providing an extended agent card when the user is authenticated.
     /// Defaults to false if not specified.
     pub supports_authenticated_extended_card: Option<bool>,
-}
-
-/// Base properties shared by all security schemes.
-#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
-pub struct SecuritySchemeBase {
-    pub description: Option<Text>,
-}
-
-/// API Key security scheme.
-#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
-pub struct ApiKeySecurityScheme {
-    pub type_: Text,
-    pub in_: Text,
-    pub name: Text,
-    pub base: SecuritySchemeBase,
-}
-
-/// HTTP Authentication security scheme.
-#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
-pub struct HttpAuthSecurityScheme {
-    pub type_: Text,
-    pub scheme: Text,
-    pub bearer_format: Option<Text>,
-    pub base: SecuritySchemeBase,
-}
-
-/// OAuth2.0 security scheme configuration.
-#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
-pub struct OAuth2SecurityScheme {
-    pub type_: Text,
-    // it's difficult to store kv mappings into substrate runtime, so we use transparent Text
-    pub flows: Text,
-    pub base: SecuritySchemeBase,
-}
-
-/// OpenID Connect security scheme configuration.
-#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
-pub struct OpenIdConnectSecurityScheme {
-    pub type_: Text,
-    pub open_id_connect_url: Text,
-    pub base: SecuritySchemeBase,
-}
-
-/// Mirrors the OpenAPI Security Scheme Object
-#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
-pub enum SecurityScheme {
-    ApiKey(ApiKeySecurityScheme),
-    Http(HttpAuthSecurityScheme),
-    OAuth2(OAuth2SecurityScheme),
-    OpenIdConnect(OpenIdConnectSecurityScheme),
 }

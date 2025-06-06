@@ -210,9 +210,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                140u8, 82u8, 156u8, 112u8, 122u8, 249u8, 88u8, 77u8, 20u8, 31u8, 87u8, 96u8, 6u8,
-                69u8, 86u8, 113u8, 131u8, 217u8, 95u8, 49u8, 94u8, 73u8, 100u8, 136u8, 138u8,
-                246u8, 4u8, 162u8, 151u8, 128u8, 108u8, 201u8,
+                216u8, 171u8, 170u8, 118u8, 142u8, 213u8, 49u8, 200u8, 61u8, 197u8, 198u8, 22u8,
+                215u8, 229u8, 88u8, 204u8, 44u8, 196u8, 164u8, 144u8, 50u8, 188u8, 255u8, 189u8,
+                1u8, 138u8, 87u8, 116u8, 199u8, 219u8, 68u8, 251u8,
             ]
     }
     pub mod system {
@@ -6840,10 +6840,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            244u8, 253u8, 98u8, 22u8, 146u8, 170u8, 214u8, 195u8, 225u8, 75u8,
-                            35u8, 211u8, 35u8, 36u8, 250u8, 183u8, 141u8, 226u8, 213u8, 174u8,
-                            165u8, 197u8, 247u8, 245u8, 67u8, 244u8, 115u8, 252u8, 48u8, 63u8,
-                            190u8, 100u8,
+                            211u8, 249u8, 156u8, 30u8, 255u8, 147u8, 120u8, 213u8, 39u8, 169u8,
+                            106u8, 130u8, 129u8, 247u8, 134u8, 240u8, 240u8, 112u8, 189u8, 12u8,
+                            162u8, 180u8, 148u8, 120u8, 247u8, 212u8, 8u8, 90u8, 29u8, 65u8, 64u8,
+                            58u8,
                         ],
                     )
                 }
@@ -6861,9 +6861,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            109u8, 222u8, 31u8, 212u8, 156u8, 49u8, 172u8, 177u8, 33u8, 74u8,
-                            222u8, 197u8, 107u8, 99u8, 230u8, 178u8, 2u8, 83u8, 235u8, 1u8, 225u8,
-                            62u8, 111u8, 44u8, 61u8, 2u8, 235u8, 11u8, 101u8, 211u8, 12u8, 132u8,
+                            81u8, 174u8, 158u8, 81u8, 107u8, 8u8, 111u8, 122u8, 80u8, 246u8, 44u8,
+                            194u8, 162u8, 70u8, 66u8, 56u8, 49u8, 227u8, 23u8, 1u8, 105u8, 207u8,
+                            174u8, 193u8, 135u8, 212u8, 29u8, 89u8, 166u8, 247u8, 64u8, 246u8,
                         ],
                     )
                 }
@@ -6895,9 +6895,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            191u8, 196u8, 236u8, 181u8, 175u8, 233u8, 72u8, 85u8, 161u8, 22u8,
-                            181u8, 68u8, 210u8, 139u8, 16u8, 84u8, 37u8, 73u8, 52u8, 92u8, 111u8,
-                            63u8, 20u8, 90u8, 98u8, 205u8, 153u8, 109u8, 19u8, 7u8, 130u8, 232u8,
+                            154u8, 10u8, 22u8, 49u8, 69u8, 143u8, 12u8, 122u8, 147u8, 190u8, 87u8,
+                            87u8, 100u8, 137u8, 128u8, 36u8, 123u8, 216u8, 84u8, 26u8, 36u8, 17u8,
+                            1u8, 218u8, 118u8, 73u8, 40u8, 144u8, 244u8, 180u8, 197u8, 153u8,
                         ],
                     )
                 }
@@ -10931,10 +10931,10 @@ pub mod codegen {
                         "register",
                         types::Register { agent_card },
                         [
-                            16u8, 190u8, 180u8, 164u8, 202u8, 175u8, 51u8, 222u8, 235u8, 53u8,
-                            123u8, 84u8, 177u8, 97u8, 225u8, 56u8, 205u8, 45u8, 45u8, 0u8, 79u8,
-                            110u8, 96u8, 225u8, 101u8, 248u8, 235u8, 139u8, 180u8, 45u8, 168u8,
-                            195u8,
+                            208u8, 196u8, 14u8, 38u8, 119u8, 95u8, 235u8, 184u8, 36u8, 110u8,
+                            152u8, 233u8, 35u8, 33u8, 232u8, 186u8, 2u8, 208u8, 165u8, 176u8,
+                            180u8, 126u8, 198u8, 18u8, 57u8, 17u8, 178u8, 212u8, 237u8, 45u8,
+                            231u8, 228u8,
                         ],
                     )
                 }
@@ -10996,10 +10996,9 @@ pub mod codegen {
                         "AgentCards",
                         (),
                         [
-                            157u8, 42u8, 106u8, 60u8, 227u8, 104u8, 177u8, 106u8, 87u8, 58u8,
-                            203u8, 7u8, 163u8, 172u8, 30u8, 217u8, 104u8, 97u8, 247u8, 32u8, 102u8,
-                            216u8, 153u8, 236u8, 75u8, 156u8, 109u8, 139u8, 247u8, 64u8, 202u8,
-                            24u8,
+                            45u8, 156u8, 154u8, 46u8, 4u8, 247u8, 53u8, 55u8, 27u8, 141u8, 97u8,
+                            178u8, 195u8, 156u8, 121u8, 237u8, 154u8, 173u8, 80u8, 190u8, 158u8,
+                            7u8, 40u8, 58u8, 27u8, 127u8, 89u8, 9u8, 63u8, 186u8, 161u8, 85u8,
                         ],
                     )
                 }
@@ -11018,10 +11017,9 @@ pub mod codegen {
                         "AgentCards",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            157u8, 42u8, 106u8, 60u8, 227u8, 104u8, 177u8, 106u8, 87u8, 58u8,
-                            203u8, 7u8, 163u8, 172u8, 30u8, 217u8, 104u8, 97u8, 247u8, 32u8, 102u8,
-                            216u8, 153u8, 236u8, 75u8, 156u8, 109u8, 139u8, 247u8, 64u8, 202u8,
-                            24u8,
+                            45u8, 156u8, 154u8, 46u8, 4u8, 247u8, 53u8, 55u8, 27u8, 141u8, 97u8,
+                            178u8, 195u8, 156u8, 121u8, 237u8, 154u8, 173u8, 80u8, 190u8, 158u8,
+                            7u8, 40u8, 58u8, 27u8, 127u8, 89u8, 9u8, 63u8, 186u8, 161u8, 85u8,
                         ],
                     )
                 }
@@ -11071,7 +11069,7 @@ pub mod codegen {
                 pub security_schemes: ::core::option::Option<
                     ::subxt_core::utils::KeyedVec<
                         ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                        runtime_types::a2a_rs::SecurityScheme,
+                        ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                     >,
                 >,
                 pub security: ::core::option::Option<
@@ -11140,103 +11138,6 @@ pub mod codegen {
                         ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                     >,
                 >,
-            }
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct ApiKeySecurityScheme {
-                pub type_: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub in_: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub base: runtime_types::a2a_rs::SecuritySchemeBase,
-            }
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct HttpAuthSecurityScheme {
-                pub type_: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub scheme: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub bearer_format:
-                    ::core::option::Option<::subxt_core::alloc::vec::Vec<::core::primitive::u8>>,
-                pub base: runtime_types::a2a_rs::SecuritySchemeBase,
-            }
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct OAuth2SecurityScheme {
-                pub type_: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub flows: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub base: runtime_types::a2a_rs::SecuritySchemeBase,
-            }
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct OpenIdConnectSecurityScheme {
-                pub type_: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub open_id_connect_url: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
-                pub base: runtime_types::a2a_rs::SecuritySchemeBase,
-            }
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub enum SecurityScheme {
-                #[codec(index = 0)]
-                ApiKey(runtime_types::a2a_rs::ApiKeySecurityScheme),
-                #[codec(index = 1)]
-                Http(runtime_types::a2a_rs::HttpAuthSecurityScheme),
-                #[codec(index = 2)]
-                OAuth2(runtime_types::a2a_rs::OAuth2SecurityScheme),
-                #[codec(index = 3)]
-                OpenIdConnect(runtime_types::a2a_rs::OpenIdConnectSecurityScheme),
-            }
-            #[derive(
-                :: subxt_core :: ext :: codec :: Decode,
-                :: subxt_core :: ext :: codec :: Encode,
-                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
-                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
-                Debug,
-            )]
-            # [codec (crate = :: subxt_core :: ext :: codec)]
-            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
-            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct SecuritySchemeBase {
-                pub description:
-                    ::core::option::Option<::subxt_core::alloc::vec::Vec<::core::primitive::u8>>,
             }
         }
         pub mod bounded_collections {

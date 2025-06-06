@@ -832,7 +832,7 @@ impl_runtime_apis! {
     }
 
     impl vrs_validator_runtime_api::ValidatorApi<Block> for Runtime {
-        fn is_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
+        fn try_find_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
             <Validators as vrs_support::ValidatorsInterface<AccountId>>::is_active_validator(id, key_data.as_ref())
         }
     }

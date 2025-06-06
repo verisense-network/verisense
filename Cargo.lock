@@ -13133,6 +13133,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 
 [[package]]
+name = "vrs-a2a-rpc"
+version = "0.0.1"
+dependencies = [
+ "a2a-rs",
+ "async-trait",
+ "env_logger",
+ "futures",
+ "hex",
+ "jsonrpsee",
+ "log",
+ "parity-scale-codec",
+ "sc-network",
+ "sc-network-types",
+ "sc-transaction-pool-api",
+ "serde",
+ "serde_json",
+ "sp-api 33.0.0",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime 38.0.1",
+ "tokio",
+ "vrs-nucleus-executor",
+ "vrs-nucleus-runtime-api",
+ "vrs-primitives",
+]
+
+[[package]]
 name = "vrs-core-macros"
 version = "0.0.4"
 source = "git+https://github.com/verisense-network/vrs-core-sdk.git?branch=master#2f3324d501be6f13439b139a9ca4b5e4a54eb2b5"
@@ -13197,6 +13224,7 @@ dependencies = [
  "vrs-primitives",
  "vrs-runtime",
  "vrs-tss",
+ "vrs-validator-runtime-api",
  "wasmtime 22.0.1",
 ]
 
@@ -13479,7 +13507,7 @@ dependencies = [
  "scale-info",
  "sp-api 33.0.0",
  "sp-core",
- "sp-runtime 38.0.1",
+ "sp-std",
  "vrs-primitives",
 ]
 

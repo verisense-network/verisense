@@ -554,7 +554,7 @@ pub fn new_full<
             None,
             vrs_nucleus_cage::start_nucleus_cage(params),
         );
-        let args = vrs_nucleus_rpc_server::NucleusRpcServerArgs {
+        let args = vrs_rpc_server::NucleusRpcServerArgs {
             sender: nucleus_rpc_tx,
             client: client.clone(),
             pool: transaction_pool.clone(),
@@ -567,7 +567,7 @@ pub fn new_full<
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-rpc-server",
             None,
-            vrs_nucleus_rpc_server::start_nucleus_rpc(args),
+            vrs_rpc_server::start_nucleus_rpc(args),
         );
     }
 

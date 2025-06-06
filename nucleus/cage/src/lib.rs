@@ -30,8 +30,9 @@ use vrs_nucleus_executor::{
     Event, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
 };
 use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestContent, SendMessage};
-use vrs_nucleus_runtime_api::{NucleusApi, ValidatorApi};
+use vrs_nucleus_runtime_api::NucleusApi;
 use vrs_primitives::{keys, AccountId, Hash, NodeId, NucleusId, NucleusInfo};
+use vrs_validator_runtime_api::ValidatorApi;
 
 pub type NucleusRpcChannel = Sender<(NucleusId, Gluon)>;
 pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
@@ -120,7 +121,7 @@ where
         let hash = client.info().best_hash;
         let api = client.runtime_api();
         let controller = api
-            .is_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
+            .try_find_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
             .expect("couldn't load runtime api");
         if controller.is_none() {
             log::warn!("Our node is not a validator!");

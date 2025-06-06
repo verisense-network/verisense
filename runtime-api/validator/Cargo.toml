@@ -5,10 +5,11 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-sp-api = { workspace = true }
-sp-runtime = { workspace = true }
-codec = { workspace = true }
-scale-info = { workspace = true }
+sp-api = { workspace = true, default-features = false }
+# sp-runtime = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+codec = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
 
@@ -17,7 +18,8 @@ default = ["std"]
 std = [
     "codec/std",
     "scale-info/std",
-    "sp-runtime/std",
+    "sp-core/std",
     "sp-api/std",
+    "sp-std/std",
     "vrs-primitives/std",
 ]

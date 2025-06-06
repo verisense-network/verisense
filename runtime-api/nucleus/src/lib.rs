@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::crypto::KeyTypeId;
-use sp_runtime::Vec;
 use vrs_primitives::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]

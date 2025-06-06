@@ -18,6 +18,7 @@ vrs-runtime = { path = "../../runtime" }
 vrs-metadata = { path = "../../metadata" }
 vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
+vrs-validator-runtime-api = { path = "../../runtime-api/validator" }
 vrs-nucleus-executor = { path = "../executor" }
 vrs-tss = { path = "../../tss" }
 vrs-nucleus-p2p = { path = "../p2p" }

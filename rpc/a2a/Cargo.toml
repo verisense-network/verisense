@@ -1,5 +1,5 @@
 [package]
-name = "vrs-nucleus-rpc"
+name = "vrs-a2a-rpc"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -15,12 +15,14 @@ sc-network = "0.42.0"
 sc-network-types = "0.12.1"
 jsonrpsee = { features = ["server", "macros"], version = "0.23" }
 futures = { features = ["thread-pool"], version = "0.3.30" }
-serde_json = { version = "1.0" }
 async-trait  = { version = "0.1.81" }
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.10"
 hex = "0.4"
+a2a-rs = { path = "../../crates/a2a" }
 vrs-nucleus-executor = { path = "../../nucleus/executor" }
 vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

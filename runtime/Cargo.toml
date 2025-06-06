@@ -70,7 +70,7 @@ pallet-transaction-payment-rpc-runtime-api = { workspace = true, default-feature
 
 # runtime api
 vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus", default-features = false }
-vrs-validator-runtime-api = { path = "../runtime-api/validators", default-features = false }
+vrs-validator-runtime-api = { path = "../runtime-api/validator", default-features = false }
 vrs-restaking-runtime-api = { path = "../runtime-api/restaking", default-features = false }
 vrs-tss-runtime-api = { path = "../runtime-api/tss", default-features = false }
 vrs-swap-runtime-api = {path = "../runtime-api/swap", default-features = false }
@@ -106,6 +106,7 @@ std = [
 	"vrs-primitives/std",
 	"vrs-nucleus-runtime-api/std",
 	"vrs-restaking-runtime-api/std",
+	"vrs-validator-runtime-api/std",
 	"vrs-swap-runtime-api/std",
 	"vrs-tss-runtime-api/std",
 	"sp-api/std",
