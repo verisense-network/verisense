@@ -4,15 +4,15 @@ members = [
     "runtime",
     "metadata",
     "pallets/*",
-    "pallets/restaking/runtime-api",
-    "pallets/swap/runtime-api",
     "nucleus/*",
+    "crates/*",
+    "rpc/*",
+    "runtime-api/*",
     "primitives",
     "metadata",
     "support",
     "tss",
 ]
-#exclude = ["nucleus/p2p"]
 resolver = "2"
 
 [workspace.package]
@@ -34,14 +34,13 @@ hex-literal = { version = "0.3.4", default-features = false }
 log = { version = "0.4", default-features = false }
 
 vrs-core-sdk = { git = "https://github.com/verisense-network/vrs-core-sdk.git", branch = "master" }
-# vrs-core-sdk = { version = "0.0.4" }
 # frame
 frame-executive = { version = "36.0.0", default-features = false }
 frame-support = { version = "36.0.0", default-features = false }
 frame-system = { version = "36.0.0", default-features = false }
 substrate-frame-rpc-system = { version = "36.0.0", default-features = false }
 frame-system-rpc-runtime-api = { version = "33.0.0", default-features = false }
-frame-benchmarking = { version = "33.0.0", default-features = false }
+frame-benchmarking = { version = "38.0.0", default-features = false }
 # frame pallets
 pallet-babe = { version = "36.0.0", default-features = false }
 pallet-balances = { version = "37.0.0", default-features = false }
@@ -89,9 +88,9 @@ sp-keyring = { version = "38.0.0", default-features = false }
 sp-blockchain = { version = "35.0.0", default-features = false }
 sp-application-crypto = { version = "37.0.0", default-features = false }
 sp-staking = { version = "33.0.0", default-features = false }
-sp-transaction-storage-proof = {version = "33.0.0", default-features = false}
-sc-consensus-beefy = {version = "21.0.0", default-features = false}
-sp-consensus = {version = "0.39.1", default-features = false}
+sp-transaction-storage-proof = { version = "33.0.0", default-features = false }
+sc-consensus-beefy = { version = "21.0.0", default-features = false }
+sp-consensus = { version = "0.39.1", default-features = false }
 
 # sc
 sc-network-types = "0.12.1"

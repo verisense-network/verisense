@@ -328,8 +328,6 @@ pub mod pallet {
         Overflow,
         /// Underflow occurred
         Underflow,
-        /// Deadline specified for the operation has passed
-        DeadlinePassed,
     }
 
     #[derive(
@@ -414,10 +412,8 @@ pub mod pallet {
         ///   * `currency_amount` – The amount of the currency to deposit in the pool. Must be greater than 0.
         ///   * `min_liquidity` – The minimum amount of liquidity tokens to receive. Must be greater than 0.
         ///   * `max_tokens` – The maximum amount of tokens to be deposited. Must be greater than 0.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
         ///
         /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
         ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
         ///   * `CurrencyAmountIsZero` – Specified `currency_amount` equals 0.
         ///   * `MinLiquidityIsZero` – Specified `min_liquidity` equals 0.
@@ -436,7 +432,6 @@ pub mod pallet {
             currency_amount: BalanceOf<T>,
             min_liquidity: AssetBalanceOf<T>,
             max_tokens: AssetBalanceOf<T>,
-            deadline: BlockNumberFor<T>,
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
@@ -446,7 +441,6 @@ pub mod pallet {
                 currency_amount,
                 min_liquidity,
                 max_tokens,
-                deadline,
             )
         }
 
@@ -460,10 +454,8 @@ pub mod pallet {
         ///   * `liquidity_amount` – The amount of liquidity tokens to be burned. Must be greater than 0.
         ///   * `min_currency` – The minimum amount of currency to receive. Must be greater than 0.
         ///   * `min_tokens` – The minimum amount of tokens to receive. Must be greater than 0.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
         ///
         /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
         ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
         ///   * `LiquidityAmountIsZero` – Specified `liquidity_amount` equals 0.
         ///   * `MinCurrencyIsZero` – Specified `min_currency` equals 0.
@@ -482,7 +474,6 @@ pub mod pallet {
             liquidity_amount: AssetBalanceOf<T>,
             min_currency: BalanceOf<T>,
             min_tokens: AssetBalanceOf<T>,
-            deadline: BlockNumberFor<T>,
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
@@ -492,7 +483,6 @@ pub mod pallet {
                 liquidity_amount,
                 min_currency,
                 min_tokens,
-                deadline,
             )
         }
 
@@ -506,11 +496,9 @@ pub mod pallet {
         ///   * `origin` – Origin for the call. Must be signed.
         ///   * `asset_id` – ID of the bought asset. An exchange for this asset must exist and have sufficient liquidity.
         ///   * `amount` – Amount of the currency and asset to trade.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
         ///   * `recipient` – (Optional) account to transfer the bought tokens to.
         ///
         /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
         ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
         ///   * `TradeAmountIsZero` – Specified currency or token amount equals 0.
         ///   * `MinTokensTooHigh` – The amount of tokens which could be received in exchange for the specified
@@ -527,12 +515,11 @@ pub mod pallet {
             origin: OriginFor<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<BalanceOf<T>, AssetBalanceOf<T>>,
-            deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_currency_to_asset(caller, asset_id, amount, deadline, recipient)
+            Self::inner_currency_to_asset(caller, asset_id, amount, recipient)
         }
 
         /// Exchange asset for currency. Optionally, transfer bought currency to `recipient`. The caller can specify either:
@@ -545,11 +532,9 @@ pub mod pallet {
         ///   * `origin` – Origin for the call. Must be signed.
         ///   * `asset_id` – ID of the sold asset. An exchange for this asset must exist and have sufficient liquidity.
         ///   * `amount` – Amount of the currency and asset to trade.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
         ///   * `recipient` – (Optional) account to transfer the currency tokens to.
         ///
         /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
         ///   * `ExchangeNotFound` – There is no exchange for the given `asset_id`.
         ///   * `TradeAmountIsZero` – Specified currency or token amount equals 0.
         ///   * `MinCurrencyTooHigh` – The amount of currency which could be received in exchange for the specified
@@ -566,12 +551,11 @@ pub mod pallet {
             origin: OriginFor<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, BalanceOf<T>>,
-            deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_asset_to_currency(caller, asset_id, amount, deadline, recipient)
+            Self::inner_asset_to_currency(caller, asset_id, amount, recipient)
         }
 
         /// Exchange asset for another asset. Optionally, transfer bought asset to `recipient`. The caller can specify either:
@@ -583,11 +567,9 @@ pub mod pallet {
         ///   * `sold_asset_id` – ID of the sold asset. An exchange for this asset must exist and have sufficient liquidity.
         ///   * `bought_asset_id` – ID of the bought asset. An exchange for this asset must exist and have sufficient liquidity.
         ///   * `amount` – Amount of the assets to trade.
-        ///   * `deadline` – Number of the last block in which the transaction can be included.
         ///   * `recipient` – (Optional) account to transfer the bought tokens to.
         ///
         /// **Errors:**
-        ///   * `DeadlinePassed` – Specified `deadline` is lower than the current block number.
         ///   * `ExchangeNotFound` – There is no exchange for the given `sold_asset_id` or `bought_asset_id`.
         ///   * `TradeAmountIsZero` – Specified bought or sold token amount equals 0.
         ///   * `MinBoughtTokensTooHigh` – The amount of asset which could be bought in exchange for the specified
@@ -605,7 +587,6 @@ pub mod pallet {
             sold_asset_id: AssetIdOf<T>,
             bought_asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
-            deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
@@ -615,7 +596,6 @@ pub mod pallet {
                 sold_asset_id,
                 bought_asset_id,
                 amount,
-                deadline,
                 recipient,
             )
         }
@@ -681,10 +661,8 @@ pub mod pallet {
             currency_amount: BalanceOf<T>,
             min_liquidity: AssetBalanceOf<T>,
             max_tokens: AssetBalanceOf<T>,
-            deadline: BlockNumberFor<T>,
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
-            Self::check_deadline(&deadline)?;
             ensure!(
                 currency_amount > Zero::zero(),
                 Error::<T>::CurrencyAmountIsZero
@@ -729,9 +707,7 @@ pub mod pallet {
             liquidity_amount: AssetBalanceOf<T>,
             min_currency: BalanceOf<T>,
             min_tokens: AssetBalanceOf<T>,
-            deadline: BlockNumberFor<T>,
         ) -> DispatchResult {
-            Self::check_deadline(&deadline)?;
             ensure!(
                 liquidity_amount > Zero::zero(),
                 Error::<T>::LiquidityAmountIsZero
@@ -771,11 +747,9 @@ pub mod pallet {
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<BalanceOf<T>, AssetBalanceOf<T>>,
-            deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
             let recipient = recipient.unwrap_or_else(|| caller.clone());
-            Self::check_deadline(&deadline)?;
             Self::check_trade_amount(&amount)?;
             let exchange = Self::get_exchange(&asset_id)?;
 
@@ -798,11 +772,9 @@ pub mod pallet {
             caller: AccountIdOf<T>,
             asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, BalanceOf<T>>,
-            deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
             let recipient = recipient.unwrap_or_else(|| caller.clone());
-            Self::check_deadline(&deadline)?;
             Self::check_trade_amount(&amount)?;
             let exchange = Self::get_exchange(&asset_id)?;
 
@@ -826,11 +798,9 @@ pub mod pallet {
             sold_asset_id: AssetIdOf<T>,
             bought_asset_id: AssetIdOf<T>,
             amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
-            deadline: BlockNumberFor<T>,
             recipient: Option<AccountIdOf<T>>,
         ) -> DispatchResult {
             let recipient = recipient.unwrap_or_else(|| caller.clone());
-            Self::check_deadline(&deadline)?;
             Self::check_trade_amount(&amount)?;
             let sold_asset_exchange = Self::get_exchange(&sold_asset_id)?;
             let bought_asset_exchange = Self::get_exchange(&bought_asset_id)?;
@@ -860,14 +830,6 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         pub(crate) fn get_exchange(asset_id: &AssetIdOf<T>) -> Result<ExchangeOf<T>, Error<T>> {
             <Exchanges<T>>::get(asset_id.clone()).ok_or(Error::<T>::ExchangeNotFound)
-        }
-
-        fn check_deadline(deadline: &BlockNumberFor<T>) -> Result<(), Error<T>> {
-            ensure!(
-                deadline >= &<frame_system::Pallet<T>>::block_number(),
-                Error::DeadlinePassed
-            );
-            Ok(())
         }
 
         fn check_trade_amount<A: Zero, B: Zero>(
@@ -1316,7 +1278,6 @@ pub trait SwapInterface<T: Config> {
         currency_amount: BalanceOf<T>,
         min_liquidity: AssetBalanceOf<T>,
         max_tokens: AssetBalanceOf<T>,
-        deadline: BlockNumberFor<T>,
     ) -> DispatchResult;
 
     fn inner_asset_to_asset(
@@ -1324,7 +1285,6 @@ pub trait SwapInterface<T: Config> {
         sold_asset_id: AssetIdOf<T>,
         bought_asset_id: AssetIdOf<T>,
         amount: TradeAmount<AssetBalanceOf<T>, AssetBalanceOf<T>>,
-        deadline: BlockNumberFor<T>,
         recipient: Option<AccountIdOf<T>>,
     ) -> DispatchResult;
 
@@ -1332,7 +1292,6 @@ pub trait SwapInterface<T: Config> {
         caller: AccountIdOf<T>,
         asset_id: AssetIdOf<T>,
         amount: TradeAmount<AssetBalanceOf<T>, BalanceOf<T>>,
-        deadline: BlockNumberFor<T>,
         recipient: Option<AccountIdOf<T>>,
     ) -> DispatchResult;
 
@@ -1342,7 +1301,6 @@ pub trait SwapInterface<T: Config> {
         liquidity_amount: AssetBalanceOf<T>,
         min_currency: BalanceOf<T>,
         min_tokens: AssetBalanceOf<T>,
-        deadline: BlockNumberFor<T>,
     ) -> DispatchResult;
 
     fn inner_create_exchange(
@@ -1356,7 +1314,6 @@ pub trait SwapInterface<T: Config> {
         caller: AccountIdOf<T>,
         asset_id: AssetIdOf<T>,
         amount: TradeAmount<BalanceOf<T>, AssetBalanceOf<T>>,
-        deadline: BlockNumberFor<T>,
         recipient: Option<AccountIdOf<T>>,
     ) -> DispatchResult;
 }

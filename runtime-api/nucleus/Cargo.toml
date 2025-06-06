@@ -15,6 +15,8 @@ vrs-primitives = { path = "../../primitives", default-features = false }
 [features]
 default = ["std"]
 std = [
+    "codec/std",
+    "scale-info/std",
     "sp-runtime/std",
     "sp-api/std",
     "vrs-primitives/std",

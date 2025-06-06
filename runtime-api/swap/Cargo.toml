@@ -9,7 +9,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 codec = { workspace = true }
-pallet-swap = { default-features = false, path = "../../swap" }
+pallet-swap = { default-features = false, path = "../../pallets/swap" }
 sp-api = { workspace = true }
 sp-runtime = { workspace = true }
 

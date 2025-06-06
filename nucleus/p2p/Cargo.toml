@@ -24,7 +24,6 @@ sp-application-crypto = { workspace = true }
 sc-client-api = { version = "35.0.0" }
 scale-info.workspace = true
 sc-authority-discovery = { workspace = true }
-# parity-scale-codec.workspace = true
 
 libp2p = { version = "0.55", features = [
     "identify",

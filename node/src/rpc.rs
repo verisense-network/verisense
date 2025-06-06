@@ -9,16 +9,16 @@ use std::{path::PathBuf, sync::Arc};
 
 use jsonrpsee::RpcModule;
 use sc_consensus_babe::BabeWorkerHandle;
+use sc_consensus_babe_rpc::{Babe, BabeApiServer};
 use sc_network_types::PeerId;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use sp_consensus::SelectChain;
+use sp_keystore::KeystorePtr;
 use vrs_nucleus_cage::NucleusRpcChannel;
 use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce};
-use sc_consensus_babe_rpc::{Babe, BabeApiServer};
-use sp_keystore::KeystorePtr;
-use sp_consensus::SelectChain;
 
 pub use sc_rpc_api::DenyUnsafe;
 use sp_consensus_babe::BabeApi;
@@ -39,7 +39,7 @@ pub struct BabeDeps {
 }
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, SC,B> {
+pub struct FullDeps<C, P, SC, B> {
     /// The client instance to use.
     pub client: Arc<C>,
     pub select_chain: SC,
@@ -67,15 +67,14 @@ where
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce> + 'static,
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> + 'static,
     C::Api: vrs_nucleus_runtime_api::NucleusApi<Block> + 'static,
+    C::Api: vrs_swap_runtime_api::SwapApi<Block, AssetId, Balance, Balance> + 'static,
+    C::Api: BlockBuilder<Block> + 'static,
     C::Api: BabeApi<Block> + 'static,
     SC: SelectChain<Block> + 'static,
-    C::Api: vrs_swap_runtime_api::SwapApi<Block, AssetId, Balance, Balance> + 'static,
-  //  C::Api: vrs_restaking_runtime_api::VrsRestakingRuntimeApi<Block, AccountId>,
-    C::Api: BlockBuilder<Block> + 'static,
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     use substrate_frame_rpc_system::{System, SystemApiServer};
-    use vrs_nucleus_rpc_proxy::{NucleusEntry, NucleusRpcServer};
+    use vrs_nucleus_rpc::{NucleusEntry, NucleusRpcServer};
 
     // use beefy_gadget_rpc::{Beefy, BeefyApiServer};
     // use pallet_mmr_rpc::{Mmr, MmrApiServer};
@@ -106,7 +105,8 @@ where
             keystore,
             select_chain,
             deny_unsafe,
-        ).into_rpc(),
+        )
+        .into_rpc(),
     )?;
     module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
