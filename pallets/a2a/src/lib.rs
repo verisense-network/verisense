@@ -19,7 +19,6 @@ pub mod pallet {
     };
     use sp_std::prelude::*;
     use vrs_support::AgentRegistry;
-    // use vrs_primitives::{keys::NUCLEUS_VRF_KEY_TYPE, NucleusInfo};
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -29,8 +28,6 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type Weight: WeightInfo;
-
-        // type AuthorityId: Member + Parameter + RuntimeAppPublic + MaybeSerializeDeserialize;
 
         type AgentId: Parameter
             + Member
@@ -66,7 +63,6 @@ pub mod pallet {
     impl<T: Config> Pallet<T>
     where
         T::AgentId: From<[u8; 32]>,
-        // <T as frame_system::Config>::AccountId: From<<T as pallet::Config>::NucleusId>,
     {
         #[pallet::call_index(0)]
         #[pallet::weight(T::Weight::register())]

@@ -54,23 +54,23 @@ sp-blockchain = { workspace = true, default-features = true }
 sp-block-builder = { workspace = true, default-features = true }
 sp-authority-discovery = { workspace = true, default-features = true }
 sc-consensus-beefy = {workspace = true, default-features = true}
-sp-consensus = {workspace = true, default-features = true}
+sp-consensus = { workspace = true, default-features = true }
 sp-transaction-storage-proof = {workspace = true, default-features = true}
 frame-system = { workspace = true, default-features = true }
 substrate-frame-rpc-system = { workspace = true, default-features = true }
 pallet-transaction-payment = { workspace = true, default-features = true }
 pallet-transaction-payment-rpc = { workspace = true, default-features = true }
-pallet-im-online = {workspace = true, default-features = true}
+pallet-im-online = { workspace = true, default-features = true }
 pallet-restaking = { path = "../pallets/restaking" }
-sc-rpc = {workspace = true}
+sc-rpc = { workspace = true }
 vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
-vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api" }
-vrs-restaking-runtime-api = { path = "../pallets/restaking/runtime-api" }
-vrs-tss-runtime-api = { path = "../tss/runtime-api" }
-vrs-swap-runtime-api = {path = "../pallets/swap/runtime-api" }
-vrs-nucleus-rpc = { path = "../nucleus/rpc" }
-vrs-nucleus-rpc-server = { path = "../nucleus/rpc-server" }
+vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus" }
+vrs-restaking-runtime-api = { path = "../runtime-api/restaking" }
+vrs-tss-runtime-api = { path = "../runtime-api/tss" }
+vrs-swap-runtime-api = { path = "../runtime-api/swap" }
+vrs-nucleus-rpc = { path = "../rpc/nucleus" }
+vrs-rpc-server = { path = "../rpc/server" }
 vrs-nucleus-cage = { path = "../nucleus/cage" }
 vrs-tss = { path = "../tss" }
 vrs-nucleus-p2p = { path = "../nucleus/p2p" }

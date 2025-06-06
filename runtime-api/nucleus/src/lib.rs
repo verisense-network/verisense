@@ -20,10 +20,3 @@ sp_api::decl_runtime_apis! {
         fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>>;
     }
 }
-
-sp_api::decl_runtime_apis! {
-    #[api_version(1)]
-    pub trait ValidatorApi {
-        fn is_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId>;
-    }
-}

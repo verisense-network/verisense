@@ -1,0 +1,23 @@
+[package]
+name = "vrs-validator-runtime-api"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+sp-api = { workspace = true }
+sp-runtime = { workspace = true }
+codec = { workspace = true }
+scale-info = { workspace = true }
+sp-core = { workspace = true, default-features = false }
+vrs-primitives = { path = "../../primitives", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "codec/std",
+    "scale-info/std",
+    "sp-runtime/std",
+    "sp-api/std",
+    "vrs-primitives/std",
+]

@@ -12,7 +12,6 @@ pub mod weights;
 
 pub use weights::*;
 
-//type AssetId<T> = <T as pallet_assets::Config>::AssetId;
 type AssetId<T> = <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<
     <T as frame_system::Config>::AccountId,
 >>::AssetId;

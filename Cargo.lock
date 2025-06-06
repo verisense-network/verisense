@@ -13098,10 +13098,10 @@ dependencies = [
  "vrs-nucleus-cage",
  "vrs-nucleus-p2p",
  "vrs-nucleus-rpc",
- "vrs-nucleus-rpc-server",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "vrs-restaking-runtime-api",
+ "vrs-rpc-server",
  "vrs-runtime",
  "vrs-support",
  "vrs-swap-runtime-api",
@@ -13284,40 +13284,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "vrs-nucleus-rpc-server"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "bytes",
- "env_logger",
- "futures",
- "hex",
- "http 1.3.1",
- "jsonrpc-core",
- "log",
- "parity-scale-codec",
- "reqwest",
- "sc-network",
- "sc-network-types",
- "sc-transaction-pool-api",
- "serde",
- "serde_json",
- "sp-api 33.0.0",
- "sp-blockchain",
- "sp-core",
- "sp-runtime 38.0.1",
- "tokio",
- "tokio-stream",
- "tokio-tungstenite 0.18.0",
- "uuid",
- "vrs-nucleus-executor",
- "vrs-nucleus-runtime-api",
- "vrs-primitives",
- "warp",
-]
-
-[[package]]
 name = "vrs-nucleus-runtime-api"
 version = "0.0.1"
 dependencies = [
@@ -13354,6 +13320,40 @@ dependencies = [
  "sp-runtime 38.0.1",
  "sp-std",
  "vrs-primitives",
+]
+
+[[package]]
+name = "vrs-rpc-server"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bytes",
+ "env_logger",
+ "futures",
+ "hex",
+ "http 1.3.1",
+ "jsonrpc-core",
+ "log",
+ "parity-scale-codec",
+ "reqwest",
+ "sc-network",
+ "sc-network-types",
+ "sc-transaction-pool-api",
+ "serde",
+ "serde_json",
+ "sp-api 33.0.0",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime 38.0.1",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite 0.18.0",
+ "uuid",
+ "vrs-nucleus-executor",
+ "vrs-nucleus-runtime-api",
+ "vrs-primitives",
+ "warp",
 ]
 
 [[package]]
@@ -13408,6 +13408,7 @@ dependencies = [
  "vrs-support",
  "vrs-swap-runtime-api",
  "vrs-tss-runtime-api",
+ "vrs-validator-runtime-api",
 ]
 
 [[package]]
@@ -13460,6 +13461,18 @@ dependencies = [
 
 [[package]]
 name = "vrs-tss-runtime-api"
+version = "0.0.1"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api 33.0.0",
+ "sp-core",
+ "sp-runtime 38.0.1",
+ "vrs-primitives",
+]
+
+[[package]]
+name = "vrs-validator-runtime-api"
 version = "0.0.1"
 dependencies = [
  "parity-scale-codec",

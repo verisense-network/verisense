@@ -1,5 +1,5 @@
 [package]
-name = "vrs-nucleus-rpc-server"
+name = "vrs-nucleus-rpc"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -14,23 +14,14 @@ sc-transaction-pool-api = "35.0.0"
 sc-network = "0.42.0"
 sc-network-types = "0.12.1"
 
+jsonrpsee = { features = ["server", "macros"], version = "0.23" }
 futures = { features = ["thread-pool"], version = "0.3.30" }
-anyhow = "1"
 serde_json = { version = "1.0" }
 async-trait  = { version = "0.1.81" }
 tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.10"
 hex = "0.4"
-vrs-nucleus-executor = { path = "../executor" }
+vrs-nucleus-executor = { path = "../../nucleus/executor" }
 vrs-primitives = { path = "../../primitives" }
-vrs-nucleus-runtime-api = { path = "../runtime-api" }
-warp = "0.3"
-jsonrpc-core = "18.0"
-serde = { version = "1.0", features = ["derive"] }
-bytes = "1"
-http = "1.3"
-tokio-tungstenite = "0.18"
-reqwest = { version = "0.11", features = ["json"] }
-uuid = { version = "1.3", features = ["v4", "serde"] }
-tokio-stream = "0.1"
+vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
