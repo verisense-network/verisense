@@ -19,6 +19,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-std",
+ "vrs-primitives",
 ]
 
 [[package]]
@@ -13094,6 +13095,8 @@ dependencies = [
  "substrate-frame-rpc-system",
  "tokio",
  "tracing",
+ "vrs-a2a-rpc",
+ "vrs-a2a-runtime-api",
  "vrs-metadata",
  "vrs-nucleus-cage",
  "vrs-nucleus-p2p",
@@ -13138,24 +13141,26 @@ version = "0.0.1"
 dependencies = [
  "a2a-rs",
  "async-trait",
- "env_logger",
- "futures",
- "hex",
  "jsonrpsee",
  "log",
  "parity-scale-codec",
- "sc-network",
- "sc-network-types",
- "sc-transaction-pool-api",
  "serde",
  "serde_json",
  "sp-api 33.0.0",
  "sp-blockchain",
  "sp-core",
  "sp-runtime 38.0.1",
- "tokio",
- "vrs-nucleus-executor",
- "vrs-nucleus-runtime-api",
+ "vrs-a2a-runtime-api",
+ "vrs-primitives",
+]
+
+[[package]]
+name = "vrs-a2a-runtime-api"
+version = "0.0.1"
+dependencies = [
+ "a2a-rs",
+ "sp-api 33.0.0",
+ "sp-std",
  "vrs-primitives",
 ]
 
@@ -13388,6 +13393,7 @@ dependencies = [
 name = "vrs-runtime"
 version = "0.0.1"
 dependencies = [
+ "a2a-rs",
  "frame-executive",
  "frame-support 36.0.1",
  "frame-system 36.1.0",
@@ -13430,6 +13436,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version 36.0.0",
  "substrate-wasm-builder",
+ "vrs-a2a-runtime-api",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "vrs-restaking-runtime-api",

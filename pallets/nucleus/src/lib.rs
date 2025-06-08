@@ -61,7 +61,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_assets::Config {
+    pub trait Config: frame_system::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type Weight: WeightInfo;
@@ -280,7 +280,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let submitter = ensure_signed(origin)?;
             let raw = submitter.into();
-            let controller = T::Validators::is_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
+            let controller = T::Validators::lookup_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
                 .ok_or(Error::<T>::NotAuthorized)?;
             let public = Public::from_raw(raw);
             let challenge =
@@ -319,7 +319,7 @@ pub mod pallet {
             /*   use frame_support::traits::fungibles::approvals::Mutate;
             let submitter = ensure_signed(origin)?;
             let raw = submitter.into();
-            let _controller = T::Validators::is_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
+            let _controller = T::Validators::lookup_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
                 .ok_or(Error::<T>::NotAuthorized)?;
 
             //TODO do some check

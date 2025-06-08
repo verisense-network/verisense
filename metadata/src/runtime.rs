@@ -210,9 +210,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                216u8, 171u8, 170u8, 118u8, 142u8, 213u8, 49u8, 200u8, 61u8, 197u8, 198u8, 22u8,
-                215u8, 229u8, 88u8, 204u8, 44u8, 196u8, 164u8, 144u8, 50u8, 188u8, 255u8, 189u8,
-                1u8, 138u8, 87u8, 116u8, 199u8, 219u8, 68u8, 251u8,
+                238u8, 253u8, 23u8, 137u8, 123u8, 137u8, 199u8, 56u8, 204u8, 190u8, 157u8, 133u8,
+                243u8, 63u8, 152u8, 100u8, 251u8, 180u8, 84u8, 123u8, 2u8, 218u8, 84u8, 255u8,
+                99u8, 7u8, 74u8, 205u8, 105u8, 211u8, 130u8, 161u8,
             ]
     }
     pub mod system {
@@ -10973,10 +10973,8 @@ pub mod codegen {
                 use super::runtime_types;
                 pub mod agent_cards {
                     use super::runtime_types;
-                    pub type AgentCards = (
-                        ::subxt_core::utils::AccountId32,
-                        runtime_types::a2a_rs::AgentCard,
-                    );
+                    pub type AgentCards =
+                        runtime_types::a2a_rs::AgentInfo<::subxt_core::utils::AccountId32>;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
             }
@@ -10996,9 +10994,9 @@ pub mod codegen {
                         "AgentCards",
                         (),
                         [
-                            45u8, 156u8, 154u8, 46u8, 4u8, 247u8, 53u8, 55u8, 27u8, 141u8, 97u8,
-                            178u8, 195u8, 156u8, 121u8, 237u8, 154u8, 173u8, 80u8, 190u8, 158u8,
-                            7u8, 40u8, 58u8, 27u8, 127u8, 89u8, 9u8, 63u8, 186u8, 161u8, 85u8,
+                            117u8, 240u8, 146u8, 233u8, 213u8, 1u8, 122u8, 222u8, 104u8, 169u8,
+                            59u8, 166u8, 63u8, 2u8, 50u8, 247u8, 150u8, 62u8, 215u8, 13u8, 55u8,
+                            65u8, 56u8, 198u8, 127u8, 216u8, 20u8, 15u8, 243u8, 230u8, 48u8, 161u8,
                         ],
                     )
                 }
@@ -11017,9 +11015,9 @@ pub mod codegen {
                         "AgentCards",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            45u8, 156u8, 154u8, 46u8, 4u8, 247u8, 53u8, 55u8, 27u8, 141u8, 97u8,
-                            178u8, 195u8, 156u8, 121u8, 237u8, 154u8, 173u8, 80u8, 190u8, 158u8,
-                            7u8, 40u8, 58u8, 27u8, 127u8, 89u8, 9u8, 63u8, 186u8, 161u8, 85u8,
+                            117u8, 240u8, 146u8, 233u8, 213u8, 1u8, 122u8, 222u8, 104u8, 169u8,
+                            59u8, 166u8, 63u8, 2u8, 50u8, 247u8, 150u8, 62u8, 215u8, 13u8, 55u8,
+                            65u8, 56u8, 198u8, 127u8, 216u8, 20u8, 15u8, 243u8, 230u8, 48u8, 161u8,
                         ],
                     )
                 }
@@ -11091,6 +11089,21 @@ pub mod codegen {
                 pub skills: ::subxt_core::alloc::vec::Vec<runtime_types::a2a_rs::AgentSkill>,
                 pub supports_authenticated_extended_card:
                     ::core::option::Option<::core::primitive::bool>,
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct AgentInfo<_0> {
+                pub agent_id: _0,
+                pub owner_id: _0,
+                pub agent_card: runtime_types::a2a_rs::AgentCard,
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,

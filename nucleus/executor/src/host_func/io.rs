@@ -21,7 +21,7 @@ where
         .expect("can't read bytes from wasm");
     let s = <String as Decode>::decode(&mut bytes.as_slice()).expect("can't decode string");
     let stdout = caller.data_mut().stdout();
-    if let Err(e) = write!(stdout, "{}", s) {
+    if let Err(_) = write!(stdout, "{}", s) {
         log::error!("ℹ️failed to append to nucleus stdout: {}", s);
     }
     Ok(())
@@ -45,7 +45,7 @@ where
         .expect("can't read bytes from wasm");
     let s = <String as Decode>::decode(&mut bytes.as_slice()).expect("can't decode string");
     let stdout = caller.data_mut().stdout();
-    if let Err(e) = write!(stdout, "{}", s) {
+    if let Err(_) = write!(stdout, "{}", s) {
         log::error!("⚠️failed to append to nucleus stderr: {}", s);
     }
     Ok(())

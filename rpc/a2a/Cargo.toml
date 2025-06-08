@@ -10,19 +10,11 @@ sp-api = { workspace = true, default-features = true }
 sp-core = { workspace = true, default-features = true }
 sp-runtime = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
-sc-transaction-pool-api = "35.0.0"
-sc-network = "0.42.0"
-sc-network-types = "0.12.1"
 jsonrpsee = { features = ["server", "macros"], version = "0.23" }
-futures = { features = ["thread-pool"], version = "0.3.30" }
 async-trait  = { version = "0.1.81" }
-tokio = { version = "1", features = ["full"] }
 log = "0.4"
-env_logger = "0.10"
-hex = "0.4"
 a2a-rs = { path = "../../crates/a2a" }
-vrs-nucleus-executor = { path = "../../nucleus/executor" }
 vrs-primitives = { path = "../../primitives" }
-vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
+vrs-a2a-runtime-api = { path = "../../runtime-api/a2a" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

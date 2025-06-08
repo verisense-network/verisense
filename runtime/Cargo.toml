@@ -68,8 +68,10 @@ sp-genesis-builder = { workspace = true, default-features = false }
 frame-system-rpc-runtime-api = { workspace = true, default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true, default-features = false }
 
+a2a-rs = { path = "../crates/a2a", default-features = false }
 # runtime api
 vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus", default-features = false }
+vrs-a2a-runtime-api = { path = "../runtime-api/a2a", default-features = false }
 vrs-validator-runtime-api = { path = "../runtime-api/validator", default-features = false }
 vrs-restaking-runtime-api = { path = "../runtime-api/restaking", default-features = false }
 vrs-tss-runtime-api = { path = "../runtime-api/tss", default-features = false }
@@ -104,7 +106,9 @@ std = [
 	"pallet-swap/std",
 	"pallet-nucleus/std",
 	"vrs-primitives/std",
+	"a2a-rs/std",
 	"vrs-nucleus-runtime-api/std",
+	"vrs-a2a-runtime-api/std",
 	"vrs-restaking-runtime-api/std",
 	"vrs-validator-runtime-api/std",
 	"vrs-swap-runtime-api/std",

@@ -67,7 +67,7 @@ where
         <pallet_session::historical::Pallet<T>>::prune_up_to(up_to);
     }
 
-    fn is_active_validator(
+    fn lookup_active_validator(
         id: KeyTypeId,
         key_data: &[u8],
     ) -> Option<<T as frame_system::Config>::AccountId> {
@@ -86,7 +86,7 @@ pub trait SessionInterface<AccountId> {
     fn disable_validator(validator_index: u32) -> bool;
     fn validators() -> Vec<AccountId>;
     fn prune_historical_up_to(up_to: SessionIndex);
-    fn is_active_validator(id: KeyTypeId, key_data: &[u8]) -> Option<AccountId>;
+    fn lookup_active_validator(id: KeyTypeId, key_data: &[u8]) -> Option<AccountId>;
 }
 
 pub struct ExposureOf<T>(sp_std::marker::PhantomData<T>);

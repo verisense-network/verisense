@@ -9,14 +9,10 @@ use weights::WeightInfo;
 pub mod pallet {
     use super::*;
     use a2a_rs::*;
-    use codec::{Decode, Encode};
-    use frame_support::traits::fungibles;
-    use frame_support::{pallet_prelude::*, traits::OneSessionHandler};
+    use codec::Encode;
+    use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_runtime::{
-        traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup},
-        RuntimeAppPublic,
-    };
+    use sp_runtime::traits::Hash;
     use sp_std::prelude::*;
     use vrs_support::AgentRegistry;
 
@@ -28,28 +24,24 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type Weight: WeightInfo;
-
-        type AgentId: Parameter
-            + Member
-            + MaybeSerializeDeserialize
-            + core::fmt::Debug
-            + MaybeDisplay
-            + MaxEncodedLen;
     }
 
     #[pallet::storage]
     #[pallet::unbounded]
     pub type AgentCards<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
-        Key = T::AgentId,
-        Value = (T::AccountId, AgentCard),
+        Key = T::AccountId,
+        Value = AgentInfo<T::AccountId>,
         QueryKind = OptionQuery,
     >;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        AgentRegistered { id: T::AgentId, owner: T::AccountId },
+        AgentRegistered {
+            id: T::AccountId,
+            owner: T::AccountId,
+        },
     }
 
     #[pallet::error]
@@ -62,17 +54,24 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T>
     where
-        T::AgentId: From<[u8; 32]>,
+        T::AccountId: From<[u8; 32]>,
+        T::Hash: Into<[u8; 32]>,
     {
+        /// this is only for registering off-chain agents
         #[pallet::call_index(0)]
         #[pallet::weight(T::Weight::register())]
         pub fn register(origin: OriginFor<T>, agent_card: AgentCard) -> DispatchResult {
-            let manager = ensure_signed(origin)?;
-            let agent_id = Self::derive_agent_id(&manager, &agent_card);
-            Self::register_agent(manager.clone(), agent_id.clone(), agent_card)?;
+            let signer = ensure_signed(origin)?;
+            let agent_id = Self::derive_agent_id(&signer, &agent_card);
+            let agent = AgentInfo {
+                owner_id: signer.clone(),
+                agent_id: agent_id.clone(),
+                agent_card,
+            };
+            Self::register_agent(agent)?;
             Self::deposit_event(Event::AgentRegistered {
                 id: agent_id,
-                owner: manager,
+                owner: signer,
             });
             Ok(())
         }
@@ -80,9 +79,10 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T>
     where
-        T::AgentId: From<[u8; 32]>,
+        T::AccountId: From<[u8; 32]>,
+        T::Hash: Into<[u8; 32]>,
     {
-        pub fn derive_agent_id(owner: &T::AccountId, agent: &AgentCard) -> T::AgentId {
+        pub fn derive_agent_id(owner: &T::AccountId, agent: &AgentCard) -> T::AccountId {
             // Derive agent ID from owner and agent name
             let b1 = owner.encode();
             let bytes = b1
@@ -91,26 +91,32 @@ pub mod pallet {
                 .cloned()
                 .collect::<Vec<u8>>();
             let v = T::Hashing::hash(&bytes);
-            let bytes: [u8; 32] = bytes
-                .try_into()
-                .expect("Agent ID must be 32 bytes long; qed");
-            T::AgentId::from(bytes)
+            let bytes: [u8; 32] = v.into();
+            T::AccountId::from(bytes)
+        }
+
+        pub fn get_all_agents() -> Vec<AgentInfo<T::AccountId>> {
+            let mut agents = Vec::new();
+            for agent in AgentCards::<T>::iter() {
+                agents.push(agent.1);
+            }
+            agents
         }
     }
 
-    impl<T: Config> AgentRegistry<T::AccountId, T::AgentId> for Pallet<T> {
+    impl<T: Config> AgentRegistry<T::AccountId> for Pallet<T> {
         type Err = Error<T>;
 
-        fn register_agent(
-            owner: T::AccountId,
-            agent_id: T::AgentId,
-            agent_card: AgentCard,
-        ) -> Result<(), Self::Err> {
-            AgentCards::<T>::try_mutate(&agent_id, |maybe_card| {
-                if maybe_card.is_some() {
+        /// the transaction `register` invokes this to register an off-chain agent
+        /// while pallet-nucleus invokes this to register an on-chain agent
+        fn register_agent(agent_info: AgentInfo<T::AccountId>) -> Result<(), Self::Err> {
+            let agent_id = agent_info.agent_id.clone();
+            AgentCards::<T>::try_mutate(&agent_id, |maybe_agent| {
+                if maybe_agent.is_some() {
                     return Err(Error::<T>::AgentAlreadyExists);
                 }
-                *maybe_card = Some((owner.clone(), agent_card));
+                let owner = agent_info.owner_id.clone();
+                *maybe_agent = Some(agent_info);
                 Self::deposit_event(Event::AgentRegistered {
                     id: agent_id.clone(),
                     owner,
@@ -120,8 +126,8 @@ pub mod pallet {
             Ok(())
         }
 
-        fn find_agent(agent_id: &T::AgentId) -> Result<(T::AccountId, AgentCard), Self::Err> {
-            AgentCards::<T>::get(agent_id).ok_or(Error::<T>::AgentNotFound)
+        fn find_agent(agent_id: &T::AccountId) -> Option<AgentInfo<T::AccountId>> {
+            AgentCards::<T>::get(agent_id)
         }
     }
 }

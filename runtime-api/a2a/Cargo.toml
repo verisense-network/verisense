@@ -1,0 +1,20 @@
+[package]
+name = "vrs-a2a-runtime-api"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+sp-api = { workspace = true }
+a2a-rs = { path = "../../crates/a2a", default-features = false }
+vrs-primitives = { path = "../../primitives", default-features = false }
+sp-std = { workspace = true, default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "sp-api/std",
+    "a2a-rs/std",
+    "vrs-primitives/std",
+    "sp-std/std",
+]

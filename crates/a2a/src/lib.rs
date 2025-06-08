@@ -92,3 +92,10 @@ pub struct AgentCard {
     /// Defaults to false if not specified.
     pub supports_authenticated_extended_card: Option<bool>,
 }
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct AgentInfo<AccountId> {
+    pub agent_id: AccountId,
+    pub owner_id: AccountId,
+    pub agent_card: AgentCard,
+}

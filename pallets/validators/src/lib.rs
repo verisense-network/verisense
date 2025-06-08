@@ -160,8 +160,8 @@ pub mod pallet {
 }
 
 impl<T: Config> ValidatorsInterface<T::AccountId> for Pallet<T> {
-    fn is_active_validator(id: KeyTypeId, key_data: &[u8]) -> Option<T::AccountId> {
-        T::SessionInterface::is_active_validator(id, key_data)
+    fn lookup_active_validator(id: KeyTypeId, key_data: &[u8]) -> Option<T::AccountId> {
+        T::SessionInterface::lookup_active_validator(id, key_data)
     }
 
     fn validators() -> Vec<T::AccountId> {

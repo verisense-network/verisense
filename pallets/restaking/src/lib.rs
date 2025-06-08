@@ -35,12 +35,12 @@ pub type ValidatorSource = String;
 pub(crate) const LOG_TARGET: &'static str = "runtime::restaking";
 #[frame_support::pallet]
 pub mod pallet {
+    use super::*;
+    use crate::validator_data::ValidatorData;
     use frame_support::pallet_prelude::*;
     use frame_support::traits::{Currency, UnixTime};
     use frame_system::pallet_prelude::*;
     use sp_runtime::traits::CheckedConversion;
-    use super::*;
-    use crate::validator_data::ValidatorData;
     use vrs_support::consts::ORIGINAL_VALIDATOR_SOURCE;
     use vrs_support::{EraRewardPoints, RestakingInterface};
 
@@ -186,7 +186,7 @@ pub mod pallet {
             sequence: u32,
         },
         RewardsPerPointUpdated {
-            value: u128
+            value: u128,
         },
     }
 
@@ -351,7 +351,8 @@ pub mod pallet {
             _signature: T::Signature,
         ) -> DispatchResultWithPostInfo {
             ensure_none(origin)?;
-            let val_id = T::ValidatorsInterface::is_active_validator(KEY_TYPE, &payload.key_data);
+            let val_id =
+                T::ValidatorsInterface::lookup_active_validator(KEY_TYPE, &payload.key_data);
             if val_id.is_none() {
                 log!(
                     warn,
@@ -398,11 +399,14 @@ pub mod pallet {
 
         #[pallet::weight(1)]
         #[pallet::call_index(2)]
-        pub fn set_rewards_pre_point(origin: OriginFor<T>, value: u128) -> DispatchResultWithPostInfo {
+        pub fn set_rewards_pre_point(
+            origin: OriginFor<T>,
+            value: u128,
+        ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
             ensure!(value > 0, Error::<T>::InvalidRewardsPerPoint);
             RewardsAmountPerPoint::<T>::put(value);
-            Self::deposit_event(Event::RewardsPerPointUpdated {value});
+            Self::deposit_event(Event::RewardsPerPointUpdated { value });
             Ok(().into())
         }
     }
@@ -416,7 +420,7 @@ pub mod pallet {
             .into_iter()
             {
                 let key_data = key.to_raw_vec();
-                let val_id = T::ValidatorsInterface::is_active_validator(KEY_TYPE, &key_data);
+                let val_id = T::ValidatorsInterface::lookup_active_validator(KEY_TYPE, &key_data);
                 if val_id.is_none() {
                     continue;
                 }

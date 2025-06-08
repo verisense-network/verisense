@@ -30,7 +30,7 @@ use vrs_nucleus_executor::{
     Event, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
 };
 use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestContent, SendMessage};
-use vrs_nucleus_runtime_api::NucleusApi;
+use vrs_nucleus_runtime_api::NucleusRuntimeApi;
 use vrs_primitives::{keys, AccountId, Hash, NodeId, NucleusId, NucleusInfo};
 use vrs_validator_runtime_api::ValidatorApi;
 
@@ -69,7 +69,7 @@ where
     C::Api: Core<B> + 'static,
     C::Api: Metadata<B> + 'static,
     C::Api: ValidatorApi<B> + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusRuntimeApi<B> + 'static,
     C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
 {
     let CageParams {
@@ -121,7 +121,7 @@ where
         let hash = client.info().best_hash;
         let api = client.runtime_api();
         let controller = api
-            .try_find_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
+            .lookup_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
             .expect("couldn't load runtime api");
         if controller.is_none() {
             log::warn!("Our node is not a validator!");
@@ -412,7 +412,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusRuntimeApi<B> + 'static,
     T: vrs_metadata::Config,
 {
     let key = vrs_metadata::codegen::storage().system().events();
@@ -438,7 +438,7 @@ where
     C: BlockBackend<B> + StorageProvider<B, D> + ProvideRuntimeApi<B> + 'static,
     C::Api: Core<B> + 'static,
     C::Api: AccountNonceApi<B, AccountId, u32> + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusRuntimeApi<B> + 'static,
 {
     let (submitter, vrf) = crate::keystore::sign_to_participate(
         keystore.clone(),
@@ -508,7 +508,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusRuntimeApi<B> + 'static,
 {
     let api = client.runtime_api();
     let key = codegen::storage().nucleus().instances_iter();
@@ -558,7 +558,7 @@ where
         + BlockchainEvents<B>
         + ProvideRuntimeApi<B>
         + 'static,
-    C::Api: NucleusApi<B> + 'static,
+    C::Api: NucleusRuntimeApi<B> + 'static,
 {
     let x: &[u8; 32] = nucleus_id.as_ref();
     let n = vrs_metadata::utils::AccountId32::from(*x);

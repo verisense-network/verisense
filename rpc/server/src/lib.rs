@@ -15,7 +15,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{mpsc::Sender, oneshot};
 use vrs_nucleus_executor::Gluon;
-use vrs_nucleus_runtime_api::NucleusApi;
+use vrs_nucleus_runtime_api::NucleusRuntimeApi;
 use vrs_primitives::NucleusId;
 use warp::{Buf, Filter, Reply};
 
@@ -62,7 +62,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     let path = context
         .nucleus_home_dir
@@ -105,7 +105,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     let (tx, rx) = oneshot::channel();
     match call.method.as_str() {
@@ -236,7 +236,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     warp::any().map(move || args.clone())
 }
@@ -256,7 +256,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     let nucleus_id = NucleusId::from_str(&nucleus_id);
     match nucleus_id {
@@ -273,7 +273,7 @@ async fn ws_jsonrpc<P, C>(
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     let (mut ws_tx, mut ws_rx) = socket.split();
     tokio::spawn(async move {
@@ -368,7 +368,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     let nucleus_id = NucleusId::from_str(&nucleus_id);
     if nucleus_id.is_err() {
@@ -433,7 +433,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     let sys_proxy = warp::path::end()
         .and(warp::post())

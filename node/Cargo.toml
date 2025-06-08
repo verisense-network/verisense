@@ -67,9 +67,11 @@ vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
 vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus" }
 vrs-restaking-runtime-api = { path = "../runtime-api/restaking" }
+vrs-a2a-runtime-api = { path = "../runtime-api/a2a" }
 vrs-tss-runtime-api = { path = "../runtime-api/tss" }
 vrs-swap-runtime-api = { path = "../runtime-api/swap" }
 vrs-nucleus-rpc = { path = "../rpc/nucleus" }
+vrs-a2a-rpc = { path = "../rpc/a2a" }
 vrs-rpc-server = { path = "../rpc/server" }
 vrs-nucleus-cage = { path = "../nucleus/cage" }
 vrs-tss = { path = "../tss" }

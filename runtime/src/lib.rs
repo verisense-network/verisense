@@ -273,7 +273,6 @@ impl pallet_nucleus::Config for Runtime {
 impl pallet_a2a::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Weight = pallet_a2a::weights::SubstrateWeight<Runtime>;
-    type AgentId = AccountId;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -832,12 +831,12 @@ impl_runtime_apis! {
     }
 
     impl vrs_validator_runtime_api::ValidatorApi<Block> for Runtime {
-        fn try_find_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
-            <Validators as vrs_support::ValidatorsInterface<AccountId>>::is_active_validator(id, key_data.as_ref())
+        fn lookup_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
+            <Validators as vrs_support::ValidatorsInterface<AccountId>>::lookup_active_validator(id, key_data.as_ref())
         }
     }
 
-    impl vrs_nucleus_runtime_api::NucleusApi<Block> for Runtime {
+    impl vrs_nucleus_runtime_api::NucleusRuntimeApi<Block> for Runtime {
         fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
                 nucleus_id,
@@ -856,6 +855,18 @@ impl_runtime_apis! {
 
         fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>> {
             Nucleus::get_nucleus_info(&nucleus_id)
+        }
+    }
+
+    impl vrs_a2a_runtime_api::A2aRuntimeApi<Block> for Runtime {
+        fn find_agent(
+            agent_id: AccountId,
+        ) -> Option<a2a_rs::AgentInfo<AccountId>> {
+            <A2A as vrs_support::AgentRegistry<AccountId>>::find_agent(&agent_id)
+        }
+
+        fn get_all_agents() -> Vec<a2a_rs::AgentInfo<AccountId>> {
+            A2A::get_all_agents()
         }
     }
 
