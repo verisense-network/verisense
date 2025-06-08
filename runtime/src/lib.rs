@@ -5,11 +5,11 @@ mod constrants;
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::Encode;
 use pallet_grandpa::AuthorityId as GrandpaId;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use codec::{Encode};
 use pallet_session::historical as session_historical;
 use sp_api::impl_runtime_apis;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
@@ -23,6 +23,11 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
+use crate::constrants::time::{
+    EPOCH_DURATION_IN_BLOCKS, MILLISECS_PER_BLOCK, SESSION_IN_BLOCKS, SESSION_PER_ERA,
+    SLOT_DURATION,
+};
+use crate::constrants::PRIMARY_PROBABILITY;
 use frame_support::__private::log;
 use frame_support::traits::EnsureOriginWithArg;
 pub use frame_support::{
@@ -39,7 +44,11 @@ pub use frame_support::{
     },
     StorageValue,
 };
-use frame_support::{genesis_builder_helper::{build_state, get_preset}, traits::VariantCountOf, PalletId};
+use frame_support::{
+    genesis_builder_helper::{build_state, get_preset},
+    traits::VariantCountOf,
+    PalletId,
+};
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
@@ -51,8 +60,6 @@ use sp_runtime::traits::{ConvertInto, Extrinsic, OpaqueKeys};
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{app_crypto, BoundToRuntimeAppPublic, Perbill, Permill};
 pub use vrs_primitives::*;
-use crate::constrants::PRIMARY_PROBABILITY;
-use crate::constrants::time::{EPOCH_DURATION_IN_BLOCKS, MILLISECS_PER_BLOCK, SESSION_IN_BLOCKS, SESSION_PER_ERA, SLOT_DURATION};
 
 pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
     sp_consensus_babe::BabeEpochConfiguration {
@@ -100,7 +107,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 101,
+    spec_version: 102,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -167,7 +174,8 @@ impl pallet_babe::Config for Runtime {
     // session module is the trigger
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
     type EpochDuration = EpochDuration;
-    type EquivocationReportSystem = pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    type EquivocationReportSystem =
+        pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
     type ExpectedBlockTime = ExpectedBlockTime;
     type KeyOwnerProof = sp_session::MembershipProof;
     type MaxAuthorities = MaxAuthorities;
@@ -260,6 +268,11 @@ impl pallet_nucleus::Config for Runtime {
     type Assets = Assets;
     type FeeCollector = NucleusFeeCollector;
     type FeeAssetId = FeeAssetId;
+}
+
+impl pallet_a2a::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Weight = pallet_a2a::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -419,6 +432,7 @@ impl pallet_restaking::Config for Runtime {
     type MaxValidators = MaxAuthorities;
     type RestakingEnable = RestakingEnable;
     type ValidatorsInterface = Validators;
+    type Currency = Balances;
 }
 
 pub struct NoAssetCreators;
@@ -559,6 +573,9 @@ mod runtime {
 
     #[runtime::pallet_index(17)]
     pub type Swap = pallet_swap;
+
+    #[runtime::pallet_index(18)]
+    pub type A2A = pallet_a2a;
 }
 
 /// Block header type as expected by this runtime.
@@ -813,13 +830,13 @@ impl_runtime_apis! {
         }
     }
 
-    impl vrs_nucleus_runtime_api::ValidatorApi<Block> for Runtime {
-        fn is_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
-            <Validators as vrs_support::ValidatorsInterface<AccountId>>::is_active_validator(id, key_data.as_ref())
+    impl vrs_validator_runtime_api::ValidatorApi<Block> for Runtime {
+        fn lookup_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
+            <Validators as vrs_support::ValidatorsInterface<AccountId>>::lookup_active_validator(id, key_data.as_ref())
         }
     }
 
-    impl vrs_nucleus_runtime_api::NucleusApi<Block> for Runtime {
+    impl vrs_nucleus_runtime_api::NucleusRuntimeApi<Block> for Runtime {
         fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
                 nucleus_id,
@@ -838,6 +855,18 @@ impl_runtime_apis! {
 
         fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>> {
             Nucleus::get_nucleus_info(&nucleus_id)
+        }
+    }
+
+    impl vrs_a2a_runtime_api::A2aRuntimeApi<Block> for Runtime {
+        fn find_agent(
+            agent_id: AccountId,
+        ) -> Option<a2a_rs::AgentInfo<AccountId>> {
+            <A2A as vrs_support::AgentRegistry<AccountId>>::find_agent(&agent_id)
+        }
+
+        fn get_all_agents() -> Vec<a2a_rs::AgentInfo<AccountId>> {
+            A2A::get_all_agents()
         }
     }
 

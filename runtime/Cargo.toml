@@ -35,6 +35,7 @@ pallet-restaking = { path = "../pallets/restaking", default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validators = { path = "../pallets/validators", default-features = false }
 pallet-swap = { path = "../pallets/swap", default-features = false }
+pallet-a2a = { path = "../pallets/a2a", default-features = false }
 # primitives
 vrs-support = { path = "../support", default-features = false }
 vrs-primitives = { path = "../primitives", default-features = false }
@@ -66,10 +67,16 @@ sp-genesis-builder = { workspace = true, default-features = false }
 # RPC related
 frame-system-rpc-runtime-api = { workspace = true, default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true, default-features = false }
-vrs-nucleus-runtime-api = { path = "../nucleus/runtime-api", default-features = false }
-vrs-restaking-runtime-api = { path = "../pallets/restaking/runtime-api", default-features = false }
-vrs-tss-runtime-api = { path = "../tss/runtime-api", default-features = false }
-vrs-swap-runtime-api = {path = "../pallets/swap/runtime-api", default-features = false }
+
+a2a-rs = { path = "../crates/a2a", default-features = false }
+# runtime api
+vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus", default-features = false }
+vrs-a2a-runtime-api = { path = "../runtime-api/a2a", default-features = false }
+vrs-validator-runtime-api = { path = "../runtime-api/validator", default-features = false }
+vrs-restaking-runtime-api = { path = "../runtime-api/restaking", default-features = false }
+vrs-tss-runtime-api = { path = "../runtime-api/tss", default-features = false }
+vrs-swap-runtime-api = {path = "../runtime-api/swap", default-features = false }
+
 [build-dependencies]
 substrate-wasm-builder = { optional = true, version = "24.0.0" }
 
@@ -99,8 +106,11 @@ std = [
 	"pallet-swap/std",
 	"pallet-nucleus/std",
 	"vrs-primitives/std",
+	"a2a-rs/std",
 	"vrs-nucleus-runtime-api/std",
+	"vrs-a2a-runtime-api/std",
 	"vrs-restaking-runtime-api/std",
+	"vrs-validator-runtime-api/std",
 	"vrs-swap-runtime-api/std",
 	"vrs-tss-runtime-api/std",
 	"sp-api/std",

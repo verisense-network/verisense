@@ -12,10 +12,10 @@ pub mod weights;
 
 pub use weights::*;
 
-//type AssetId<T> = <T as pallet_assets::Config>::AssetId;
 type AssetId<T> = <<T as pallet::Config>::Assets as frame_support::traits::fungibles::Inspect<
     <T as frame_system::Config>::AccountId,
 >>::AssetId;
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -40,6 +40,7 @@ pub mod pallet {
     pub struct NucleusEquation<AccountId, Hash, NodeId> {
         pub name: Vec<u8>,
         pub manager: AccountId,
+        pub a2a_compatible: bool,
         pub wasm_hash: Hash,
         pub wasm_version: u32,
         pub wasm_location: Option<NodeId>,
@@ -60,7 +61,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_assets::Config {
+    pub trait Config: frame_system::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type Weight: WeightInfo;
@@ -191,6 +192,7 @@ pub mod pallet {
             name: Vec<u8>,
             energy: Option<u128>,
             capacity: u8,
+            a2a_compatible: bool,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
             ensure!(name.len() <= 80, "Name too long");
@@ -218,6 +220,7 @@ pub mod pallet {
                 NucleusEquation {
                     name: name.clone(),
                     manager: manager.clone(),
+                    a2a_compatible,
                     wasm_hash: Default::default(),
                     wasm_version: 0,
                     wasm_location: None,
@@ -277,7 +280,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let submitter = ensure_signed(origin)?;
             let raw = submitter.into();
-            let controller = T::Validators::is_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
+            let controller = T::Validators::lookup_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
                 .ok_or(Error::<T>::NotAuthorized)?;
             let public = Public::from_raw(raw);
             let challenge =
@@ -316,7 +319,7 @@ pub mod pallet {
             /*   use frame_support::traits::fungibles::approvals::Mutate;
             let submitter = ensure_signed(origin)?;
             let raw = submitter.into();
-            let _controller = T::Validators::is_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
+            let _controller = T::Validators::lookup_active_validator(NUCLEUS_VRF_KEY_TYPE, &raw)
                 .ok_or(Error::<T>::NotAuthorized)?;
 
             //TODO do some check

@@ -14,11 +14,11 @@ use tokio::sync::{
     oneshot::{self, Receiver},
 };
 use vrs_nucleus_executor::{Gluon, NucleusResponse};
-use vrs_nucleus_runtime_api::NucleusApi;
+use vrs_nucleus_runtime_api::NucleusRuntimeApi;
 use vrs_primitives::NucleusId;
 
 #[rpc(server)]
-pub trait NucleusRpc<Hash> {
+pub trait NucleusApi<Hash> {
     #[method(name = "nucleus_post")]
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String>;
 
@@ -29,7 +29,7 @@ pub trait NucleusRpc<Hash> {
     async fn deploy(&self, tx: Bytes, wasm: Bytes, abi: serde_json::Value) -> RpcResult<Hash>;
 }
 
-pub struct NucleusEntry<P, C> {
+pub struct Nucleus<P, C> {
     sender: Sender<(NucleusId, Gluon)>,
     client: Arc<C>,
     pool: Arc<P>,
@@ -37,7 +37,7 @@ pub struct NucleusEntry<P, C> {
     nucleus_home_dir: PathBuf,
 }
 
-impl<P, C> NucleusEntry<P, C> {
+impl<P, C> Nucleus<P, C> {
     pub fn new(
         sender: Sender<(NucleusId, Gluon)>,
         client: Arc<C>,
@@ -85,12 +85,12 @@ impl<P, C> NucleusEntry<P, C> {
 }
 
 #[async_trait]
-impl<P, C> NucleusRpcServer<BlockHash<P>> for NucleusEntry<P, C>
+impl<P, C> NucleusApiServer<BlockHash<P>> for Nucleus<P, C>
 where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    C::Api: NucleusApi<P::Block> + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
         let (tx, rx) = oneshot::channel();

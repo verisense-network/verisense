@@ -2,12 +2,13 @@
 
 pub mod consts;
 
+use a2a_rs::AgentInfo;
 use frame_support::__private::RuntimeDebug;
 use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
 use sp_runtime::KeyTypeId;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
 
-use sp_std::collections::btree_map::BTreeMap;
 #[macro_export]
 macro_rules! log {
     ($level:tt, $patter:expr $(, $values:expr)* $(,)?) => {
@@ -26,10 +27,18 @@ pub trait RestakingInterface<AccountId: Ord> {
 }
 
 pub trait ValidatorsInterface<AccountId> {
-    fn is_active_validator(id: KeyTypeId, key_data: &[u8]) -> Option<AccountId>;
+    fn lookup_active_validator(id: KeyTypeId, key_data: &[u8]) -> Option<AccountId>;
     fn validators() -> Vec<AccountId>;
     fn active_stake_of(who: &AccountId) -> u128;
     fn active_total_stake() -> Option<u128>;
+}
+
+pub trait AgentRegistry<AccountId> {
+    type Err;
+
+    fn register_agent(agent: AgentInfo<AccountId>) -> Result<(), Self::Err>;
+
+    fn find_agent(agent_id: &AccountId) -> Option<AgentInfo<AccountId>>;
 }
 
 pub type RewardPoint = u128;
@@ -40,7 +49,6 @@ pub struct EraRewardPoints<AccountId: Ord> {
     pub total: RewardPoint,
     pub individual: BTreeMap<AccountId, RewardPoint>,
 }
-
 
 impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
     fn default() -> Self {

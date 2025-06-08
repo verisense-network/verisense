@@ -69,7 +69,7 @@ pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), 
     let exports = module
         .exports()
         .filter_map(|e| {
-            if let ExternType::Func(func) = e.ty() {
+            if let ExternType::Func(_func) = e.ty() {
                 Some(e.name().to_string())
             } else {
                 None
