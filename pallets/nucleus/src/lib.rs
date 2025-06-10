@@ -193,7 +193,6 @@ pub mod pallet {
             energy: Option<u128>,
             capacity: u8,
             a2a_compatible: bool,
-            mcp_compatible: bool,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
             ensure!(name.len() <= 80, "Name too long");
