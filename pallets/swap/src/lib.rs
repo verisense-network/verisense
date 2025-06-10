@@ -6,7 +6,6 @@ pub mod weights;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Currency;
 use frame_support::PalletId;
-use frame_system::pallet_prelude::BlockNumberFor;
 use sp_std::prelude::*;
 use vrs_primitives::IntoLiquidityAssetId;
 
@@ -18,7 +17,7 @@ type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balan
 type AssetIdOf<T> = <T as Config>::AssetId;
 type AssetBalanceOf<T> = <T as Config>::AssetBalance;
 pub const PALLET_ID: PalletId = PalletId(*b"pal/swap");
-pub(crate) const LOG_TARGET: &'static str = "runtime::swap";
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -41,7 +40,6 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use sp_std::fmt::Debug;
-    use vrs_primitives::AssetId;
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
@@ -394,12 +392,7 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_create_exchange(
-                caller,
-                asset_id,
-                currency_amount,
-                token_amount,
-            )
+            Self::inner_create_exchange(caller, asset_id, currency_amount, token_amount)
         }
 
         /// Add liquidity to an existing exchange. The caller specifies an exact amount of currency
@@ -435,13 +428,7 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_add_liquidity(
-                caller,
-                asset_id,
-                currency_amount,
-                min_liquidity,
-                max_tokens,
-            )
+            Self::inner_add_liquidity(caller, asset_id, currency_amount, min_liquidity, max_tokens)
         }
 
         /// Remove liquidity from an exchange. The caller specifies the amount of liquidity tokens
@@ -591,13 +578,7 @@ pub mod pallet {
         ) -> DispatchResult {
             // -------------------------- Validation part --------------------------
             let caller = ensure_signed(origin)?;
-            Self::inner_asset_to_asset(
-                caller,
-                sold_asset_id,
-                bought_asset_id,
-                amount,
-                recipient,
-            )
+            Self::inner_asset_to_asset(caller, sold_asset_id, bought_asset_id, amount, recipient)
         }
     }
 

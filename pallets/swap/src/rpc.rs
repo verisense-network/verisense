@@ -1,6 +1,4 @@
-use crate::{
-    AccountIdOf, AssetBalanceOf, AssetIdOf, BalanceOf, Config, ConfigHelper, Error, Pallet,
-};
+use crate::{AssetBalanceOf, AssetIdOf, BalanceOf, Config, ConfigHelper, Error, Pallet};
 use codec::{Decode, Encode};
 use scale_info::prelude::format;
 use sp_std::fmt::Debug;

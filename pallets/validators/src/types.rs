@@ -1,9 +1,8 @@
 use crate::{Config, Pallet};
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::traits::Convert;
-use sp_runtime::KeyTypeId;
-use sp_runtime::RuntimeDebug;
+use sp_runtime::{KeyTypeId, RuntimeDebug};
 use sp_staking::{EraIndex, SessionIndex};
 use sp_std::vec::Vec;
 
