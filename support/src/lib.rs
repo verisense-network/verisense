@@ -3,9 +3,9 @@
 pub mod consts;
 
 use a2a_rs::AgentInfo;
-use frame_support::__private::RuntimeDebug;
-use frame_support::pallet_prelude::{Decode, Encode, TypeInfo};
-use sp_runtime::KeyTypeId;
+use codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_runtime::{KeyTypeId, RuntimeDebug};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
 

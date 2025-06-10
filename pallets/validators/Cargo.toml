@@ -9,9 +9,7 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-parity-scale-codec = { workspace =true, default-features = false, features = [
-    "derive",
-] }
+codec = { workspace =true, default-features = false, features = ["derive"] }
 vrs-support = { path = "../../support", default-features =  false }
 log = { workspace = true, default-features = false }
 pallet-session = { workspace = true,  default-features = false, features = ["historical"]}
@@ -28,7 +26,7 @@ sp-runtime = { workspace = true, default-features = false }
 [features]
 default = ["std"]
 std = [
-    "parity-scale-codec/std",
+    "codec/std",
     "frame-support/std",
     "vrs-support/std",
     "frame-system/std",

@@ -6,7 +6,7 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
-/// Weight functions for `pallet_dex`.
+/// Weight functions for `pallet_swap`.
 pub trait WeightInfo {
     fn create_exchange() -> Weight;
     fn add_liquidity() -> Weight;
