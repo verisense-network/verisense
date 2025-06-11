@@ -4,8 +4,8 @@
   "chainType": "Live",
   "bootNodes": [
     "/ip4/34.71.144.40/tcp/30333/p2p/12D3KooWFcGs16mdf3HuNd2KMx5WYNsDyyDVz9h6Udg6WWg3CCxh",
-    "/ip4/34.70.100.95/tcp/30333/p2p/12D3KooWG4RUtVmaFvxK76uh3pUTzS8aPNGjVmFPeaH6G7Rgq4sN",
-    "/ip4/34.174.109.4/tcp/30333/p2p/12D3KooWK1ER9oWpP4XNuMwgzowQVASFDBbC8bFxU1UsDauVv8oE",
+    "/ip4/34.70.100.95/tcp/30333/p2p/12D3KooWSRNQ7RxWNEk5cqipJ2rdFTejMoehw4qVBWg4TQBtQ7dZ",
+    "/ip4/34.174.109.4/tcp/30333/p2p/12D3KooWKYzpfLRxTHqtcCgSbBv4D3Lp4tzpVLgTc4Vfvbw3KKHB",
     "/ip4/34.53.61.158/tcp/30333/p2p/12D3KooWSmPkjV4eocjaLLmZ79yk61HJU2r2c8XVQRhhQnMfWSB2"
   ],
   "telemetryEndpoints": null,
@@ -106,7 +106,7 @@
               "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
               "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
               {
-                "babe": "5D9Y5EzsswCe7VPUeNoFTTx8SjfWcQcSgB9HhHx6kzPffgxu",
+                "babe": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
                 "grandpa": "5D9Y5EzsswCe7VPUeNoFTTx8SjfWcQcSgB9HhHx6kzPffgxu",
                 "im_online": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
                 "authority": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
@@ -118,7 +118,7 @@
               "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
               "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
               {
-                "babe": "5H5QcW6rNfnA5EsS4aeCSnUczeRnyzivRCdFVNhtvxp1Kicq",
+                "babe": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
                 "grandpa": "5H5QcW6rNfnA5EsS4aeCSnUczeRnyzivRCdFVNhtvxp1Kicq",
                 "im_online": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
                 "authority": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
@@ -130,7 +130,7 @@
               "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
               "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
               {
-                "babe": "5GDe4hdczHHiTAZwgmrNn1DGLdHcQ9HJsgL4v6xnuRrwJJa8",
+                "babe": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
                 "grandpa": "5GDe4hdczHHiTAZwgmrNn1DGLdHcQ9HJsgL4v6xnuRrwJJa8",
                 "im_online": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
                 "authority": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
@@ -142,7 +142,7 @@
               "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
               "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
               {
-                "babe": "5HWefj2DEs51nJucSPHS2TFPEja2kCgiei7tUeKYmVYUQ6yQ",
+                "babe": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
                 "grandpa": "5HWefj2DEs51nJucSPHS2TFPEja2kCgiei7tUeKYmVYUQ6yQ",
                 "im_online": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
                 "authority": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
