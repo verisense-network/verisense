@@ -13099,7 +13099,7 @@ dependencies = [
  "vrs-a2a-runtime-api",
  "vrs-metadata",
  "vrs-nucleus-cage",
- "vrs-nucleus-p2p",
+ "vrs-nucleus-network",
  "vrs-nucleus-rpc",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
@@ -13224,7 +13224,7 @@ dependencies = [
  "tokio",
  "vrs-metadata",
  "vrs-nucleus-executor",
- "vrs-nucleus-p2p",
+ "vrs-nucleus-network",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "vrs-runtime",
@@ -13268,7 +13268,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "vrs-nucleus-p2p"
+name = "vrs-nucleus-network"
 version = "0.0.1"
 dependencies = [
  "async-channel 1.9.0",

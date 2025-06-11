@@ -105,7 +105,6 @@
               "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
               "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
               {
-                "aura": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
                 "authority": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
                 "grandpa": "5D9Y5EzsswCe7VPUeNoFTTx8SjfWcQcSgB9HhHx6kzPffgxu",
                 "restaking": "5ESJcC7HTEBCYUdc6AFhS5HAu5zZkDtCSi3jqqk7cKt9mGRU",
@@ -116,7 +115,6 @@
               "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
               "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
               {
-                "aura": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
                 "authority": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
                 "grandpa": "5H5QcW6rNfnA5EsS4aeCSnUczeRnyzivRCdFVNhtvxp1Kicq",
                 "restaking": "5EqdjoEBhCWt8tVkkgGPwQnZnvAAWX2Mfvx5f4ZT3RQBtY6G",
@@ -127,7 +125,6 @@
               "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
               "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
               {
-                "aura": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
                 "authority": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
                 "grandpa": "5GDe4hdczHHiTAZwgmrNn1DGLdHcQ9HJsgL4v6xnuRrwJJa8",
                 "restaking": "5HWc1gyvZyARrNSdwB9oRssFCEMsFPR16ZBE1rbYxT3ERh2H",
@@ -138,7 +135,6 @@
               "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
               "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
               {
-                "aura": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
                 "authority": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",
                 "grandpa": "5HWefj2DEs51nJucSPHS2TFPEja2kCgiei7tUeKYmVYUQ6yQ",
                 "restaking": "5G95aafUcjkbui4vmW9j6Va11GLUpTq1RJYgvdtjV4Fj2ttH",

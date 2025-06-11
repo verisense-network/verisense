@@ -1,5 +1,5 @@
 [package]
-name = "vrs-nucleus-p2p"
+name = "vrs-nucleus-network"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

@@ -22,7 +22,7 @@ tokio = { version = "1", features = ["full"] }
 log = "0.4"
 env_logger = "0.10"
 hex = "0.4"
-vrs-nucleus-executor = { path = "../../nucleus/executor" }
+vrs-nucleus-executor = { path = "../../subnet/executor" }
 vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
 warp = "0.3"

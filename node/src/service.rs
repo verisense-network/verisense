@@ -515,7 +515,7 @@ pub fn new_full<
         let (p2p_cage_tx, p2p_cage_rx) = tokio::sync::mpsc::channel(10000);
 
         let (cage_p2p_tx, cage_p2p_rx) = tokio::sync::mpsc::channel(10000);
-        let params = vrs_nucleus_p2p::P2pParams {
+        let params = vrs_nucleus_network::P2pParams {
             keystore: keystore_container.keystore(),
             reqres_receiver,
             client: client.clone(),
@@ -532,7 +532,7 @@ pub fn new_full<
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-p2p",
             None,
-            vrs_nucleus_p2p::start_nucleus_p2p(params),
+            vrs_nucleus_network::start_nucleus_p2p(params),
         );
 
         // launch nucleus cage
