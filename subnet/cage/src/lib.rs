@@ -29,7 +29,7 @@ use vrs_nucleus_executor::{
     host_func::{self, HttpCallRegister, HttpResponseWithCallback, SchedulerAsync},
     Event, Gluon, Nucleus, NucleusResponse, Runtime, RuntimeParams, WasmInfo,
 };
-use vrs_nucleus_p2p::{Destination, PayloadWithSignature, RequestContent, SendMessage};
+use vrs_nucleus_network::{Destination, PayloadWithSignature, RequestContent, SendMessage};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
 use vrs_primitives::{keys, AccountId, Hash, NodeId, NucleusId, NucleusInfo};
 use vrs_validator_runtime_api::ValidatorApi;

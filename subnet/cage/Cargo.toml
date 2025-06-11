@@ -20,8 +20,8 @@ vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
 vrs-validator-runtime-api = { path = "../../runtime-api/validator" }
 vrs-nucleus-executor = { path = "../executor" }
+vrs-nucleus-network = { path = "../network" }
 vrs-tss = { path = "../../tss" }
-vrs-nucleus-p2p = { path = "../p2p" }
 
 codec = { workspace = true }
 wasmtime = { workspace = true }
@@ -39,17 +39,6 @@ sc-transaction-pool = { workspace = true }
 sc-authority-discovery = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
 sp-authority-discovery = { workspace = true }
-# chrono = { version = "0.4" }
-# hyper = { version = "1.3", features = ["full"] }
-# unicase = "2.6"
-# hyper-tls = "0.6.0"
-# hyper-util = { version ="0.1", features = ["full"] }
-# bytes = "1"
-# http-body-util = "0.1.0"
-# tokio-native-tls = "0.3"
-# pin-project-lite = "0.2.4"
-# xmt = { package = "sparse-merkle-tree", version = "0.6.1" }
-# blake2 = "0.10.6"
 
 [dev-dependencies]
 temp-dir = "0.1.13"

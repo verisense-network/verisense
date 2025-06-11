@@ -4,7 +4,7 @@ members = [
     "runtime",
     "metadata",
     "pallets/*",
-    "nucleus/*",
+    "subnet/*",
     "crates/*",
     "rpc/*",
     "runtime-api/*",
