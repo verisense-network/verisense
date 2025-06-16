@@ -39,6 +39,52 @@ impl From<a2a_rs::AgentProvider> for AgentProvider {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentExtension {
+    pub uri: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<serde_json::Value>,
+}
+
+impl Encode for AgentExtension {
+    fn encode(&self) -> Vec<u8> {
+        let de: a2a_rs::AgentExtension = self.clone().into();
+        de.encode()
+    }
+}
+
+impl Into<a2a_rs::AgentExtension> for AgentExtension {
+    fn into(self) -> a2a_rs::AgentExtension {
+        a2a_rs::AgentExtension {
+            uri: self.uri.as_bytes().to_vec(),
+            description: self.description.map(|d| d.as_bytes().to_vec()),
+            required: self.required,
+            params: self
+                .params
+                .map(|p| serde_json::to_vec(&p).expect("must be json")),
+        }
+    }
+}
+
+impl From<a2a_rs::AgentExtension> for AgentExtension {
+    fn from(ext: a2a_rs::AgentExtension) -> Self {
+        Self {
+            uri: String::from_utf8(ext.uri).unwrap_or_default(),
+            description: ext
+                .description
+                .map(|d| String::from_utf8(d).unwrap_or_default()),
+            required: ext.required,
+            params: ext
+                .params
+                .map(|p| serde_json::from_slice(&p).expect("must be json")),
+        }
+    }
+}
+
 /// Defines optional capabilities supported by an agent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentCapabilities {
@@ -51,6 +97,8 @@ pub struct AgentCapabilities {
     /// true if the agent exposes status change history for tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state_transition_history: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extensions: Option<Vec<AgentExtension>>,
 }
 
 impl Encode for AgentCapabilities {
@@ -66,6 +114,9 @@ impl Into<a2a_rs::AgentCapabilities> for AgentCapabilities {
             streaming: self.streaming,
             push_notifications: self.push_notifications,
             state_transition_history: self.state_transition_history,
+            extensions: self
+                .extensions
+                .map(|exts| exts.into_iter().map(|ext| ext.into()).collect()),
         }
     }
 }
@@ -76,6 +127,11 @@ impl From<a2a_rs::AgentCapabilities> for AgentCapabilities {
             streaming: capabilities.streaming,
             push_notifications: capabilities.push_notifications,
             state_transition_history: capabilities.state_transition_history,
+            extensions: capabilities.extensions.map(|exts| {
+                exts.into_iter()
+                    .map(|ext| AgentExtension::from(ext))
+                    .collect()
+            }),
         }
     }
 }
