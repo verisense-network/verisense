@@ -27,6 +27,16 @@ pub struct AgentCapabilities {
     pub push_notifications: Option<bool>,
     /// true if the agent exposes status change history for tasks.
     pub state_transition_history: Option<bool>,
+    /// extentions supported by the agent.
+    pub extensions: Option<Vec<AgentExtension>>,
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct AgentExtension {
+    pub uri: Text,
+    pub description: Option<Text>,
+    pub required: Option<bool>,
+    pub params: Option<Text>,
 }
 
 /// Represents a unit of capability that an agent can perform.
