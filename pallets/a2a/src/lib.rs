@@ -42,6 +42,13 @@ pub mod pallet {
             id: T::AccountId,
             owner: T::AccountId,
         },
+        AgentUpdated {
+            id: T::AccountId,
+            owner: T::AccountId,
+        },
+        AgentDeleted {
+            id: T::AccountId,
+        },
     }
 
     #[pallet::error]
@@ -49,6 +56,7 @@ pub mod pallet {
         NotAuthorized,
         AgentAlreadyExists,
         AgentNotFound,
+        AgentNameImmutable,
     }
 
     #[pallet::call]
@@ -69,10 +77,27 @@ pub mod pallet {
                 agent_card,
             };
             Self::register_agent(agent)?;
-            Self::deposit_event(Event::AgentRegistered {
-                id: agent_id,
-                owner: signer,
-            });
+            Ok(())
+        }
+       
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::Weight::update())]
+        pub fn update(origin: OriginFor<T>, agent_id: T::AccountId, agent_card: AgentCard) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
+            let mut agent = Self::find_agent(&agent_id).ok_or(Error::<T>::AgentNotFound)?;
+            ensure!(agent.owner_id == signer, Error::<T>::NotAuthorized);
+            ensure!(agent.agent_card.name == agent_card.name, Error::<T>::AgentNameImmutable);
+            agent.agent_card = agent_card;
+            Self::update_agent(agent)?;
+            Ok(())
+        }
+        
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::Weight::delete())]
+        pub fn delete(origin: OriginFor<T>, agent_id: T::AccountId) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
+            let mut agent = Self::find_agent(&agent_id).ok_or(Error::<T>::AgentNotFound)?;
+            ensure!(agent.owner_id == signer, Error::<T>::NotAuthorized);
             Ok(())
         }
     }
@@ -126,6 +151,26 @@ pub mod pallet {
             Ok(())
         }
 
+        fn update_agent(agent_info: AgentInfo<T::AccountId>) -> Result<(), Self::Err> {
+            let agent_id = agent_info.agent_id.clone();
+            AgentCards::<T>::try_mutate(&agent_id, |maybe_agent| {
+                let owner = agent_info.owner_id.clone();
+                *maybe_agent = Some(agent_info);
+                Self::deposit_event(Event::AgentUpdated {
+                    id: agent_id.clone(),
+                    owner,
+                });
+                Ok(())
+            })?;
+            Ok(())
+        }
+
+        fn delete_agent(agent_id: &T::AccountId) -> Result<(), Self::Err> {
+            AgentCards::<T>::remove(agent_id);
+            Self::deposit_event(Event::AgentDeleted {id: agent_id.clone()});
+            Ok(())
+            
+        }
         fn find_agent(agent_id: &T::AccountId) -> Option<AgentInfo<T::AccountId>> {
             AgentCards::<T>::get(agent_id)
         }
