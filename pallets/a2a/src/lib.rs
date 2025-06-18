@@ -81,7 +81,7 @@ pub mod pallet {
         }
        
         #[pallet::call_index(1)]
-        #[pallet::weight(10_000)]
+        #[pallet::weight(T::Weight::update())]
         pub fn update(origin: OriginFor<T>, agent_id: T::AccountId, agent_card: AgentCard) -> DispatchResult {
             let signer = ensure_signed(origin)?;
             let mut agent = Self::find_agent(&agent_id).ok_or(Error::<T>::AgentNotFound)?;
@@ -91,13 +91,13 @@ pub mod pallet {
             Self::update_agent(agent)?;
             Ok(())
         }
+        
         #[pallet::call_index(2)]
-        #[pallet::weight(10_000)]
+        #[pallet::weight(T::Weight::delete())]
         pub fn delete(origin: OriginFor<T>, agent_id: T::AccountId) -> DispatchResult {
             let signer = ensure_signed(origin)?;
             let mut agent = Self::find_agent(&agent_id).ok_or(Error::<T>::AgentNotFound)?;
             ensure!(agent.owner_id == signer, Error::<T>::NotAuthorized);
-            
             Ok(())
         }
     }
