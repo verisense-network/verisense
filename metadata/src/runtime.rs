@@ -210,9 +210,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                26u8, 140u8, 211u8, 124u8, 139u8, 63u8, 171u8, 21u8, 194u8, 0u8, 244u8, 46u8, 9u8,
-                97u8, 43u8, 79u8, 150u8, 0u8, 184u8, 96u8, 208u8, 154u8, 162u8, 65u8, 18u8, 147u8,
-                42u8, 23u8, 118u8, 202u8, 222u8, 220u8,
+                168u8, 183u8, 45u8, 68u8, 192u8, 224u8, 131u8, 28u8, 145u8, 56u8, 127u8, 191u8,
+                215u8, 17u8, 216u8, 213u8, 243u8, 177u8, 97u8, 125u8, 251u8, 160u8, 85u8, 53u8,
+                236u8, 40u8, 42u8, 90u8, 59u8, 69u8, 1u8, 30u8,
             ]
     }
     pub mod system {
@@ -1178,10 +1178,10 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            236u8, 89u8, 40u8, 36u8, 72u8, 64u8, 242u8, 20u8, 236u8, 201u8, 230u8,
-                            185u8, 214u8, 26u8, 173u8, 90u8, 55u8, 10u8, 237u8, 132u8, 120u8,
-                            221u8, 185u8, 248u8, 147u8, 152u8, 78u8, 150u8, 218u8, 242u8, 64u8,
-                            123u8,
+                            142u8, 219u8, 162u8, 151u8, 157u8, 26u8, 128u8, 187u8, 27u8, 236u8,
+                            65u8, 113u8, 46u8, 139u8, 41u8, 213u8, 57u8, 5u8, 217u8, 7u8, 125u8,
+                            124u8, 123u8, 99u8, 20u8, 177u8, 195u8, 192u8, 172u8, 28u8, 197u8,
+                            122u8,
                         ],
                     )
                 }
@@ -6840,10 +6840,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            214u8, 158u8, 224u8, 73u8, 135u8, 192u8, 201u8, 196u8, 241u8, 163u8,
-                            48u8, 253u8, 116u8, 82u8, 73u8, 134u8, 240u8, 100u8, 135u8, 240u8,
-                            183u8, 10u8, 176u8, 230u8, 145u8, 189u8, 160u8, 51u8, 82u8, 118u8,
-                            204u8, 216u8,
+                            197u8, 220u8, 164u8, 202u8, 42u8, 251u8, 215u8, 66u8, 138u8, 222u8,
+                            251u8, 39u8, 59u8, 71u8, 8u8, 198u8, 36u8, 107u8, 32u8, 132u8, 168u8,
+                            17u8, 66u8, 100u8, 11u8, 248u8, 21u8, 108u8, 75u8, 146u8, 183u8, 203u8,
                         ],
                     )
                 }
@@ -6861,9 +6860,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            209u8, 153u8, 250u8, 164u8, 161u8, 32u8, 133u8, 30u8, 182u8, 114u8,
-                            91u8, 206u8, 139u8, 0u8, 12u8, 13u8, 23u8, 23u8, 22u8, 115u8, 225u8,
-                            44u8, 13u8, 232u8, 81u8, 63u8, 28u8, 40u8, 195u8, 192u8, 245u8, 146u8,
+                            82u8, 127u8, 190u8, 193u8, 200u8, 124u8, 213u8, 90u8, 7u8, 137u8,
+                            232u8, 218u8, 178u8, 18u8, 109u8, 234u8, 238u8, 162u8, 198u8, 111u8,
+                            54u8, 94u8, 237u8, 109u8, 78u8, 98u8, 253u8, 227u8, 116u8, 235u8,
+                            216u8, 90u8,
                         ],
                     )
                 }
@@ -6895,9 +6895,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            116u8, 116u8, 161u8, 227u8, 119u8, 124u8, 136u8, 47u8, 12u8, 56u8,
-                            18u8, 96u8, 60u8, 112u8, 90u8, 236u8, 215u8, 52u8, 51u8, 3u8, 241u8,
-                            254u8, 48u8, 89u8, 44u8, 107u8, 146u8, 3u8, 231u8, 119u8, 107u8, 168u8,
+                            231u8, 49u8, 227u8, 76u8, 73u8, 154u8, 63u8, 249u8, 249u8, 158u8, 46u8,
+                            236u8, 124u8, 208u8, 35u8, 242u8, 114u8, 226u8, 131u8, 164u8, 247u8,
+                            7u8, 246u8, 184u8, 168u8, 27u8, 192u8, 39u8, 227u8, 7u8, 192u8, 21u8,
                         ],
                     )
                 }
@@ -10942,6 +10942,27 @@ pub mod codegen {
                     const PALLET: &'static str = "A2A";
                     const CALL: &'static str = "update";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct Delete {
+                    pub agent_id: delete::AgentId,
+                }
+                pub mod delete {
+                    use super::runtime_types;
+                    pub type AgentId = ::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for Delete {
+                    const PALLET: &'static str = "A2A";
+                    const CALL: &'static str = "delete";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -10977,6 +10998,22 @@ pub mod codegen {
                             60u8, 246u8, 153u8, 191u8, 6u8, 48u8, 18u8, 149u8, 147u8, 246u8, 71u8,
                             188u8, 116u8, 253u8, 251u8, 129u8, 57u8, 142u8, 80u8, 190u8, 157u8,
                             33u8,
+                        ],
+                    )
+                }
+                pub fn delete(
+                    &self,
+                    agent_id: types::delete::AgentId,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::Delete> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "A2A",
+                        "delete",
+                        types::Delete { agent_id },
+                        [
+                            100u8, 220u8, 116u8, 212u8, 20u8, 180u8, 3u8, 58u8, 157u8, 41u8, 222u8,
+                            150u8, 246u8, 181u8, 168u8, 247u8, 31u8, 230u8, 143u8, 87u8, 12u8,
+                            95u8, 167u8, 28u8, 112u8, 195u8, 106u8, 143u8, 140u8, 152u8, 171u8,
+                            81u8,
                         ],
                     )
                 }
@@ -11030,6 +11067,27 @@ pub mod codegen {
             impl ::subxt_core::events::StaticEvent for AgentUpdated {
                 const PALLET: &'static str = "A2A";
                 const EVENT: &'static str = "AgentUpdated";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct AgentDeleted {
+                pub id: agent_deleted::Id,
+            }
+            pub mod agent_deleted {
+                use super::runtime_types;
+                pub type Id = ::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt_core::events::StaticEvent for AgentDeleted {
+                const PALLET: &'static str = "A2A";
+                const EVENT: &'static str = "AgentDeleted";
             }
         }
         pub mod storage {
@@ -11806,6 +11864,10 @@ pub mod codegen {
                         agent_id: ::subxt_core::utils::AccountId32,
                         agent_card: runtime_types::a2a_rs::AgentCard,
                     },
+                    #[codec(index = 2)]
+                    delete {
+                        agent_id: ::subxt_core::utils::AccountId32,
+                    },
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -11847,6 +11909,10 @@ pub mod codegen {
                     AgentUpdated {
                         id: ::subxt_core::utils::AccountId32,
                         owner: ::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 2)]
+                    AgentDeleted {
+                        id: ::subxt_core::utils::AccountId32,
                     },
                 }
             }
