@@ -74,8 +74,7 @@ impl From<a2a_rs::AgentExtension> for AgentExtension {
     fn from(ext: a2a_rs::AgentExtension) -> Self {
         Self {
             uri: ext.uri,
-            description: ext
-                .description,
+            description: ext.description,
             required: ext.required,
             params: ext
                 .params
@@ -167,14 +166,10 @@ impl Into<a2a_rs::AgentSkill> for AgentSkill {
             id: self.id,
             name: self.name,
             description: self.description,
-            tags: self
-                .tags,
-            examples: self
-                .examples,
-            input_modes: self
-                .input_modes,
-            output_modes: self
-                .output_modes,
+            tags: self.tags,
+            examples: self.examples,
+            input_modes: self.input_modes,
+            output_modes: self.output_modes,
         }
     }
 }
@@ -185,8 +180,7 @@ impl From<a2a_rs::AgentSkill> for AgentSkill {
             id: skill.id,
             name: skill.name,
             description: skill.description,
-            tags: skill
-                .tags,
+            tags: skill.tags,
             examples: skill.examples,
             input_modes: skill.input_modes,
             output_modes: skill.output_modes,
@@ -254,33 +248,17 @@ impl Into<a2a_rs::AgentCard> for AgentCard {
             security_schemes: self.security_schemes.map(|schemes| {
                 schemes
                     .into_iter()
-                    .map(|(k, v)| {
-                        (
-                            k,
-                            serde_json::to_string(&v).expect("must be json"),
-                        )
-                    })
+                    .map(|(k, v)| (k, serde_json::to_string(&v).expect("must be json")))
                     .collect()
             }),
             security: self.security.map(|security| {
                 security
                     .into_iter()
-                    .map(|map| {
-                        map.into_iter()
-                            .map(|(k, v)| {
-                                (
-                                    k,
-                                    v,
-                                )
-                            })
-                            .collect()
-                    })
+                    .map(|map| map.into_iter().map(|(k, v)| (k, v)).collect())
                     .collect()
             }),
-            default_input_modes: self
-                .default_input_modes,
-            default_output_modes: self
-                .default_output_modes,
+            default_input_modes: self.default_input_modes,
+            default_output_modes: self.default_output_modes,
             skills: self.skills.into_iter().map(|s| s.into()).collect(),
             supports_authenticated_extended_card: self.supports_authenticated_extended_card,
         }
@@ -296,18 +274,12 @@ impl From<a2a_rs::AgentCard> for AgentCard {
             icon_url: card.icon_url,
             provider: card.provider.map(Into::into),
             version: card.version,
-            documentation_url: card
-                .documentation_url,
+            documentation_url: card.documentation_url,
             capabilities: card.capabilities.into(),
             security_schemes: card.security_schemes.map(|schemes| {
                 schemes
                     .into_iter()
-                    .map(|(k, v)| {
-                        (
-                            k,
-                            serde_json::from_str(&v).expect("must be json"),
-                        )
-                    })
+                    .map(|(k, v)| (k, serde_json::from_str(&v).expect("must be json")))
                     .collect()
             }),
             security: card.security.map(|security| {
@@ -315,25 +287,13 @@ impl From<a2a_rs::AgentCard> for AgentCard {
                     .into_iter()
                     .map(|map| {
                         map.into_iter()
-                            .map(|(k, v)| {
-                                (
-                                    k,
-                                    v.into_iter()
-                                        .collect(),
-                                )
-                            })
+                            .map(|(k, v)| (k, v.into_iter().collect()))
                             .collect()
                     })
                     .collect()
             }),
-            default_input_modes: card
-                .default_input_modes
-                .into_iter()
-                .collect(),
-            default_output_modes: card
-                .default_output_modes
-                .into_iter()
-                .collect(),
+            default_input_modes: card.default_input_modes.into_iter().collect(),
+            default_output_modes: card.default_output_modes.into_iter().collect(),
             skills: card.skills.into_iter().map(Into::into).collect(),
             supports_authenticated_extended_card: card.supports_authenticated_extended_card,
         }

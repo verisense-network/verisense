@@ -4,8 +4,8 @@ extern crate alloc;
 extern crate core;
 
 use alloc::string::String;
-use core::fmt::{Debug, Display, Formatter};
 use codec::{Decode, Encode};
+use core::fmt::{Debug, Display, Formatter};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_runtime::{
@@ -39,8 +39,7 @@ pub type NucleusId = AccountId32;
 
 pub type NodeId = sp_core::OpaquePeerId;
 
-
-#[derive(Decode, Encode, Debug, Clone,Serialize, Deserialize, Eq, PartialEq, TypeInfo)]
+#[derive(Decode, Encode, Debug, Clone, Serialize, Deserialize, Eq, PartialEq, TypeInfo)]
 pub struct AssetId(String);
 
 impl codec::MaxEncodedLen for AssetId {
@@ -53,9 +52,9 @@ impl TryFrom<String> for AssetId {
     type Error = String;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.ends_with("_LP"){
+        if value.ends_with("_LP") {
             use crate::alloc::string::ToString;
-            return Err("asset id can't end with '_LP'".to_string())
+            return Err("asset id can't end with '_LP'".to_string());
         }
         Ok(AssetId(value))
     }

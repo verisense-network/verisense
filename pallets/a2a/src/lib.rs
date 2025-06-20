@@ -79,19 +79,26 @@ pub mod pallet {
             Self::register_agent(agent)?;
             Ok(())
         }
-       
+
         #[pallet::call_index(1)]
         #[pallet::weight(T::Weight::update())]
-        pub fn update(origin: OriginFor<T>, agent_id: T::AccountId, agent_card: AgentCard) -> DispatchResult {
+        pub fn update(
+            origin: OriginFor<T>,
+            agent_id: T::AccountId,
+            agent_card: AgentCard,
+        ) -> DispatchResult {
             let signer = ensure_signed(origin)?;
             let mut agent = Self::find_agent(&agent_id).ok_or(Error::<T>::AgentNotFound)?;
             ensure!(agent.owner_id == signer, Error::<T>::NotAuthorized);
-            ensure!(agent.agent_card.name == agent_card.name, Error::<T>::AgentNameImmutable);
+            ensure!(
+                agent.agent_card.name == agent_card.name,
+                Error::<T>::AgentNameImmutable
+            );
             agent.agent_card = agent_card;
             Self::update_agent(agent)?;
             Ok(())
         }
-        
+
         #[pallet::call_index(2)]
         #[pallet::weight(T::Weight::delete())]
         pub fn delete(origin: OriginFor<T>, agent_id: T::AccountId) -> DispatchResult {
@@ -167,9 +174,10 @@ pub mod pallet {
 
         fn delete_agent(agent_id: &T::AccountId) -> Result<(), Self::Err> {
             AgentCards::<T>::remove(agent_id);
-            Self::deposit_event(Event::AgentDeleted {id: agent_id.clone()});
+            Self::deposit_event(Event::AgentDeleted {
+                id: agent_id.clone(),
+            });
             Ok(())
-            
         }
         fn find_agent(agent_id: &T::AccountId) -> Option<AgentInfo<T::AccountId>> {
             AgentCards::<T>::get(agent_id)

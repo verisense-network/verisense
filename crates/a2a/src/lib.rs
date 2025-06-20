@@ -2,11 +2,11 @@
 
 // A2A Rust types for no_std
 
+use alloc::string::String;
 use codec::{alloc, Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
-use alloc::string::String;
 type Text = String;
 
 /// Represents the service provider of an agent.
@@ -110,19 +110,93 @@ pub struct AgentInfo<AccountId> {
     pub agent_card: AgentCard,
 }
 
-
 #[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
 pub enum Role {
-    User, agent,
+    User,
+    agent,
 }
 
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct TextPart {
+    pub metadata: Vec<(Text, Text)>,
+    pub text: Text,
+}
 
 #[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
-pub struct PartBase {
-    
+pub struct DataPart {
+    pub metadata: Vec<(Text, Text)>,
+    pub data: Vec<(Text, Text)>,
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct FilePart {
+    pub metadata: Vec<(Text, Text)>,
+    pub name: Option<Text>,
+    pub mime_type: Option<Text>,
+    pub file_data: FileData,
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub enum FileData {
+    FileWithBytes(Text),
+    FileWithUri(Text),
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub enum Part {
+    Text(TextPart),
+    File(FilePart),
+    Data(DataPart),
 }
 
 #[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
 pub struct A2aMessage {
     pub role: Role,
+    pub parts: Vec<Part>,
+    pub metadata: Option<Vec<(Text, Text)>>,
+    pub extensions: Option<Vec<Text>>,
+    pub reference_task_ids: Option<Vec<Text>>,
+    pub message_id: Text,
+    pub task_id: Option<Text>,
+    pub context_id: Option<Text>,
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub enum TaskState {
+    Submitted,
+    Working,
+    InputRequired,
+    Completed,
+    Canceled,
+    Failed,
+    Rejected,
+    AuthRequired,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct TaskStatus {
+    pub state: TaskState,
+    pub message: Option<A2aMessage>,
+    pub timestamp: Option<Text>,
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct Artifact {
+    pub artifact_id: Text,
+    pub name: Option<Text>,
+    pub description: Option<Text>,
+    pub parts: Vec<Part>,
+    pub metadata: Option<Vec<(Text, Text)>>,
+    pub extensions: Option<Vec<Text>>,
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct A2aTask {
+    pub id: Text,
+    pub context_id: Text,
+    pub status: TaskStatus,
+    pub history: Option<Vec<A2aMessage>>,
+    pub artifacts: Option<Vec<Artifact>>,
+    pub metadata: Option<Vec<(Text, Text)>>,
 }
