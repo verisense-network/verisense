@@ -2,12 +2,12 @@
 
 // A2A Rust types for no_std
 
-use codec::{Decode, Encode};
+use codec::{alloc, Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
-
-type Text = Vec<u8>;
+use alloc::string::String;
+type Text = String;
 
 /// Represents the service provider of an agent.
 #[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
@@ -108,4 +108,21 @@ pub struct AgentInfo<AccountId> {
     pub agent_id: AccountId,
     pub owner_id: AccountId,
     pub agent_card: AgentCard,
+}
+
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub enum Role {
+    User, agent,
+}
+
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct PartBase {
+    
+}
+
+#[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
+pub struct A2aMessage {
+    pub role: Role,
 }

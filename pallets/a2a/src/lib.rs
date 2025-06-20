@@ -112,7 +112,7 @@ pub mod pallet {
             let b1 = owner.encode();
             let bytes = b1
                 .iter()
-                .chain(agent.name.iter())
+                .chain(agent.name.clone().into_bytes().iter())
                 .cloned()
                 .collect::<Vec<u8>>();
             let v = T::Hashing::hash(&bytes);
