@@ -27,9 +27,9 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
-        draft: true
-        prerelease: true
         with:
+          draft: true
+          prerelease: true
           files: |
             target/release/verisense
             target/release/wbuild/vrs-runtime/vrs_runtime.compact.compressed.wasm
