@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags: [ "*" ]
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-release:
+    name: Publish binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system deps
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
+
+      - name: Install Rust toochain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: false
+          target: wasm32-unknown-unknown
+          components: rustfmt, clippy, rust-src
+
+      - name: Build
+        run: cargo build --all-features --release --verbose
+
+
+      - name: Package
+        uses: montudor/action-zip@v1
+        with:
+          args: zip -j -r verisense.zip target/release/verisense target/release/wbuild/vrs-runtime/vrs_runtime.compact.compressed.wasm spec/ scripts/ README.md LICENSE
+
+      - name: Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: verisense.zip
+          tag: ${{ github.ref }}
+          overwrite: true
