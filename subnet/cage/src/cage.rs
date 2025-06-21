@@ -25,7 +25,7 @@ impl NucleusCage {
         self_account: &AccountId,
         token: &MonadringToken,
     ) -> MonadringVerifyResult {
-        let mut event_id = self.event_id;
+        let event_id = self.event_id;
         if token.ring.is_empty() {
             return AllGood;
         }

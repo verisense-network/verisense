@@ -8,6 +8,7 @@ use sp_blockchain::HeaderBackend;
 use sp_runtime::traits::Block;
 use std::collections::HashSet;
 use std::sync::Arc;
+use vrs_nucleus_executor::{NucleusError, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
 use vrs_primitives::{AccountId, NucleusId};
 
@@ -23,6 +24,9 @@ pub enum ForwardRequest {
         endpoint: String,
         payload: Vec<u8>,
     },
+    Abi {
+        nucleus_id: NucleusId,
+    },
 }
 
 impl ForwardRequest {
@@ -30,6 +34,7 @@ impl ForwardRequest {
         match self {
             ForwardRequest::Get { nucleus_id, .. } => nucleus_id,
             ForwardRequest::Post { nucleus_id, .. } => nucleus_id,
+            ForwardRequest::Abi { nucleus_id } => nucleus_id,
         }
     }
 }
@@ -61,23 +66,26 @@ where
     fn find_nucleus_validators(
         &self,
         nucleus_id: &NucleusId,
-    ) -> Result<Vec<AccountId>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<AccountId>, NucleusError> {
         let hash = self.client.info().best_hash;
         let api = self.client.runtime_api();
         let validators = api
-            .get_nucleus_info(hash, nucleus_id)?
+            .get_nucleus_info(hash, nucleus_id)
+            .inspect_err(|e| eprintln!("Failed to get nucleus info for {}: {:?}", nucleus_id, e))
+            .map_err(|_| {
+                NucleusError::node(
+                    "Unable to get nucleus information from node. Please check the node status.",
+                )
+            })?
             .map(|info| info.validators)
             .unwrap_or_default();
         Ok(validators)
     }
 
-    pub async fn forward_to(&self, req: ForwardRequest) -> Result<Vec<u8>, String> {
-        let validators = self
-            .find_nucleus_validators(req.nucleus_id())
-            .inspect_err(|e| eprintln!("{:?}", e))
-            .map_err(|_| "Unable to read runtime storage")?;
+    pub async fn forward_to(&self, req: ForwardRequest) -> NucleusResponse {
+        let validators = self.find_nucleus_validators(req.nucleus_id())?;
         if validators.is_empty() {
-            return Err("No validators found for the given nucleus ID".to_string());
+            return Err(NucleusError::nucleus_not_found());
         }
         let encoded = req.encode();
         for validator in validators.iter() {
@@ -100,12 +108,20 @@ where
                     )
                     .await;
                 match response {
-                    Ok(rsp) => return Ok(rsp.0),
+                    Ok(rsp) => match NucleusResponse::decode(&mut &rsp.0[..]) {
+                        Ok(r) => return r,
+                        Err(e) => {
+                            eprintln!("Failed to decode response from {}: {:?}", address, e);
+                            continue;
+                        }
+                    },
                     Err(e) => eprintln!("Failed to send request to {}: {:?}", address, e),
                 }
             }
         }
-        Err("No peers connected".to_string())
+        Err(NucleusError::node(
+            "No validators available for forwarding request. Please check the node status.",
+        ))
     }
 
     async fn lookup_address(&self, validator: &AccountId) -> HashSet<Multiaddr> {
