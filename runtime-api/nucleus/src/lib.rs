@@ -15,6 +15,11 @@ sp_api::decl_runtime_apis! {
     pub trait NucleusRuntimeApi {
         fn resolve_deploy_tx(uxt: Block::Extrinsic) -> Option<NucleusUpgradingTxInfo>;
 
-        fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>>;
+        fn get_nucleus_info(nucleus_id: &NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>>;
+
+        fn is_member_of(
+            nucleus_id: &NucleusId,
+            account_id: &AccountId,
+        ) -> bool;
     }
 }

@@ -29,7 +29,7 @@ pub mod pallet {
         Public,
     };
     use sp_runtime::{
-        traits::{Hash, LookupError, MaybeDisplay, One, StaticLookup},
+        traits::{Hash, MaybeDisplay, One},
         RuntimeAppPublic,
     };
     use sp_std::prelude::*;
@@ -80,8 +80,6 @@ pub mod pallet {
         type NodeId: Parameter + Member + core::fmt::Debug;
 
         type RegistryDuration: Get<BlockNumberFor<Self>>;
-
-        type ControllerLookup: StaticLookup<Source = Self::AccountId, Target = Self::NodeId>;
 
         type Assets: fungibles::approvals::Mutate<<Self as frame_system::Config>::AccountId>;
 
@@ -330,20 +328,6 @@ pub mod pallet {
         }
     }
 
-    // TODO
-    impl<T: Config> StaticLookup for Pallet<T> {
-        type Source = T::AccountId;
-        type Target = T::NodeId;
-
-        fn lookup(a: Self::Source) -> Result<Self::Target, LookupError> {
-            NodeControllers::<T>::get(&a).ok_or(LookupError)
-        }
-
-        fn unlookup(_n: Self::Target) -> Self::Source {
-            unimplemented!()
-        }
-    }
-
     impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
         type Public = T::AuthorityId;
     }
@@ -437,11 +421,7 @@ pub mod pallet {
             nucleus_id: &T::NucleusId,
         ) -> Option<NucleusInfo<T::AccountId, T::Hash, T::NodeId>> {
             let eqution = Nuclei::<T>::get(nucleus_id)?;
-            let peers = Instances::<T>::get(nucleus_id);
-            let peers = peers
-                .iter()
-                .filter_map(|p| T::ControllerLookup::lookup(p.clone()).ok())
-                .collect();
+            let validators = Instances::<T>::get(nucleus_id);
             Some(NucleusInfo {
                 name: eqution.name,
                 manager: eqution.manager,
@@ -451,8 +431,12 @@ pub mod pallet {
                 // energy: eqution.energy,
                 current_event: eqution.current_event,
                 root_state: eqution.root_state,
-                peers,
+                validators,
             })
+        }
+
+        pub fn get_members(nucleus_id: &T::NucleusId) -> Vec<T::AccountId> {
+            Instances::<T>::get(nucleus_id)
         }
     }
 }

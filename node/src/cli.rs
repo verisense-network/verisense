@@ -1,5 +1,8 @@
+use clap::ArgGroup;
 use clap::Parser;
+use libp2p::{Multiaddr, PeerId};
 use sc_cli::RunCmd;
+use sc_service::config::MultiaddrWithPeerId;
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -7,7 +10,8 @@ pub struct Cli {
     pub subcommand: Option<Subcommand>,
     #[clap(flatten)]
     pub tss: TssCmd,
-
+    #[clap(flatten)]
+    pub extra: ExtraConfig,
     #[clap(flatten)]
     pub run: RunCmd,
 }
@@ -43,10 +47,12 @@ pub enum Subcommand {
     /// Db meta columns information.
     ChainInfo(sc_cli::ChainInfoCmd),
 }
-use clap::ArgGroup;
-use libp2p::Multiaddr;
-use libp2p::PeerId;
-use sc_service::config::MultiaddrWithPeerId;
+
+#[derive(Debug, Clone, Parser)]
+pub struct ExtraConfig {
+    #[arg(long = "extra-rpc-port")]
+    pub extra_rpc_port: Option<u16>,
+}
 
 #[derive(Debug, Clone, Parser)]
 #[command(group = ArgGroup::new("tss").args(&["tss-coordinator", "tss-signer", "tss-node"]).required(false))]
@@ -83,6 +89,7 @@ impl TssCmd {
             None
         }
     }
+
     pub fn peer_id(&self) -> Option<PeerId> {
         if let Some(coordinator_addr) = self.signer.as_ref() {
             Some(coordinator_addr.peer_id.into())

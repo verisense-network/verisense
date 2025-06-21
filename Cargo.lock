@@ -7192,7 +7192,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-validators"
+name = "pallet-validator"
 version = "0.0.1"
 dependencies = [
  "frame-support 36.0.1",
@@ -13097,6 +13097,7 @@ dependencies = [
  "tracing",
  "vrs-a2a-rpc",
  "vrs-a2a-runtime-api",
+ "vrs-gluon-relayer",
  "vrs-metadata",
  "vrs-nucleus-cage",
  "vrs-nucleus-network",
@@ -13110,6 +13111,7 @@ dependencies = [
  "vrs-swap-runtime-api",
  "vrs-tss",
  "vrs-tss-runtime-api",
+ "vrs-validator-runtime-api",
 ]
 
 [[package]]
@@ -13184,6 +13186,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrs-gluon-relayer"
+version = "0.0.1"
+dependencies = [
+ "frame-system-rpc-runtime-api",
+ "futures",
+ "hex",
+ "parity-scale-codec",
+ "sc-authority-discovery",
+ "sc-client-api",
+ "sc-network",
+ "sc-network-types",
+ "serde",
+ "sp-api 33.0.0",
+ "sp-authority-discovery",
+ "sp-blockchain",
+ "sp-core",
+ "sp-io 37.0.0",
+ "sp-keystore",
+ "sp-runtime 38.0.1",
+ "thiserror 1.0.69",
+ "tokio",
+ "vrs-metadata",
+ "vrs-nucleus-executor",
+ "vrs-nucleus-network",
+ "vrs-nucleus-runtime-api",
+ "vrs-primitives",
+ "vrs-runtime",
+ "vrs-validator-runtime-api",
+]
+
+[[package]]
 name = "vrs-metadata"
 version = "0.0.1"
 dependencies = [
@@ -13199,6 +13232,7 @@ name = "vrs-nucleus-cage"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "async-channel 1.9.0",
  "env_logger",
  "frame-system-rpc-runtime-api",
  "futures",
@@ -13222,6 +13256,7 @@ dependencies = [
  "temp-dir",
  "thiserror 1.0.69",
  "tokio",
+ "vrs-gluon-relayer",
  "vrs-metadata",
  "vrs-nucleus-executor",
  "vrs-nucleus-network",
@@ -13311,6 +13346,7 @@ dependencies = [
  "sp-core",
  "sp-runtime 38.0.1",
  "tokio",
+ "vrs-gluon-relayer",
  "vrs-nucleus-executor",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
@@ -13416,7 +13452,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-validators",
+ "pallet-validator",
  "parity-scale-codec",
  "scale-info",
  "sp-api 33.0.0",

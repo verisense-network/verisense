@@ -1,19 +1,14 @@
 [package]
-name = "vrs-nucleus-cage"
+name = "vrs-gluon-relayer"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-rocksdb = "0.21.0"
-anyhow = "1"
-log = "0.4"
-env_logger = "0.10"
 futures = { features = ["thread-pool"], version = "0.3.30" }
 tokio = { version = "1", features = ["full"] }
 hex = { version = "0.4" }
 thiserror = "1"
-async-channel = "1.8.0"
 
 vrs-runtime = { path = "../../runtime" }
 vrs-metadata = { path = "../../metadata" }
@@ -22,11 +17,7 @@ vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
 vrs-validator-runtime-api = { path = "../../runtime-api/validator" }
 vrs-nucleus-executor = { path = "../executor" }
 vrs-nucleus-network = { path = "../network" }
-vrs-gluon-relayer = { path = "../relayer" }
-vrs-tss = { path = "../../tss" }
-
 codec = { workspace = true }
-wasmtime = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 sp-runtime = { workspace = true }
 sc-network = { workspace = true }
@@ -34,13 +25,9 @@ sp-io = { workspace = true }
 sp-core = { workspace = true }
 sp-api = { workspace = true }
 sp-blockchain = { workspace = true }
-sp-authority-discovery = { workspace = true }
 sp-keystore = { workspace = true }
 sc-client-api = { workspace = true }
-frame-system-rpc-runtime-api = { workspace = true, default-features = false }
-sc-transaction-pool = { workspace = true }
+frame-system-rpc-runtime-api = { workspace = true }
 sc-authority-discovery = { workspace = true }
-sc-transaction-pool-api = { workspace = true }
-
-[dev-dependencies]
-temp-dir = "0.1.13"
+sp-authority-discovery = { workspace = true }
+sc-network-types = { workspace = true }

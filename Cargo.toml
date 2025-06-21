@@ -19,6 +19,7 @@ resolver = "2"
 version = "0.0.1"
 authors = ["Verisense Team"]
 edition = "2021"
+description = "The Verisense node for running Nucleus."
 
 [workspace.dependencies]
 codec = { features = [

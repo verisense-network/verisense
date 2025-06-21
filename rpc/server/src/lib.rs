@@ -370,15 +370,13 @@ where
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
-    let nucleus_id = NucleusId::from_str(&nucleus_id);
-    if nucleus_id.is_err() {
+    let Ok(nucleus_id) = NucleusId::from_str(&nucleus_id) else {
         return warp::reply::json(&JsonRpcResponse::from(
             JsonRpcError::new(ErrorCode::InvalidParams),
             None,
         ))
         .into_response();
-    }
-    let nucleus_id = nucleus_id.unwrap();
+    };
     match deserialize_body(body) {
         Ok(body) => {
             let calls = match body {

@@ -33,7 +33,7 @@ pallet-authority-discovery = { workspace = true, default-features = false }
 pallet-assets = { workspace = true, default-features = false }
 pallet-restaking = { path = "../pallets/restaking", default-features = false }
 pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
-pallet-validators = { path = "../pallets/validators", default-features = false }
+pallet-validator = { path = "../pallets/validator", default-features = false }
 pallet-swap = { path = "../pallets/swap", default-features = false }
 pallet-a2a = { path = "../pallets/a2a", default-features = false }
 # primitives
@@ -101,7 +101,7 @@ std = [
 	"pallet-offences/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
-	"pallet-validators/std",
+	"pallet-validator/std",
 	"pallet-restaking/std",
 	"pallet-swap/std",
 	"pallet-nucleus/std",

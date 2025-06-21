@@ -24,3 +24,4 @@ hex = "0.4"
 vrs-nucleus-executor = { path = "../../subnet/executor" }
 vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
+vrs-gluon-relayer = { path = "../../subnet/relayer" }

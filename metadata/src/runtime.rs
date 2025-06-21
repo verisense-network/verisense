@@ -13,7 +13,7 @@ pub mod codegen {
         "Authorship",
         "Restaking",
         "AuthorityDiscovery",
-        "Validators",
+        "Validator",
         "Session",
         "Grandpa",
         "Historical",
@@ -74,8 +74,8 @@ pub mod codegen {
         pub fn restaking(&self) -> restaking::constants::ConstantsApi {
             restaking::constants::ConstantsApi
         }
-        pub fn validators(&self) -> validators::constants::ConstantsApi {
-            validators::constants::ConstantsApi
+        pub fn validator(&self) -> validator::constants::ConstantsApi {
+            validator::constants::ConstantsApi
         }
         pub fn grandpa(&self) -> grandpa::constants::ConstantsApi {
             grandpa::constants::ConstantsApi
@@ -119,8 +119,8 @@ pub mod codegen {
         pub fn authority_discovery(&self) -> authority_discovery::storage::StorageApi {
             authority_discovery::storage::StorageApi
         }
-        pub fn validators(&self) -> validators::storage::StorageApi {
-            validators::storage::StorageApi
+        pub fn validator(&self) -> validator::storage::StorageApi {
+            validator::storage::StorageApi
         }
         pub fn session(&self) -> session::storage::StorageApi {
             session::storage::StorageApi
@@ -210,9 +210,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                154u8, 154u8, 242u8, 12u8, 171u8, 32u8, 116u8, 196u8, 191u8, 115u8, 216u8, 201u8,
-                18u8, 37u8, 89u8, 145u8, 203u8, 247u8, 14u8, 178u8, 179u8, 74u8, 18u8, 108u8, 82u8,
-                111u8, 27u8, 86u8, 184u8, 48u8, 202u8, 225u8,
+                215u8, 34u8, 1u8, 190u8, 138u8, 42u8, 31u8, 223u8, 52u8, 0u8, 170u8, 172u8, 150u8,
+                244u8, 110u8, 120u8, 225u8, 25u8, 222u8, 43u8, 209u8, 62u8, 54u8, 35u8, 103u8,
+                38u8, 110u8, 101u8, 121u8, 172u8, 201u8, 121u8,
             ]
     }
     pub mod system {
@@ -1178,10 +1178,9 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            142u8, 219u8, 162u8, 151u8, 157u8, 26u8, 128u8, 187u8, 27u8, 236u8,
-                            65u8, 113u8, 46u8, 139u8, 41u8, 213u8, 57u8, 5u8, 217u8, 7u8, 125u8,
-                            124u8, 123u8, 99u8, 20u8, 177u8, 195u8, 192u8, 172u8, 28u8, 197u8,
-                            122u8,
+                            248u8, 227u8, 6u8, 96u8, 143u8, 154u8, 232u8, 63u8, 202u8, 227u8, 40u8,
+                            43u8, 166u8, 247u8, 203u8, 23u8, 249u8, 119u8, 28u8, 83u8, 25u8, 178u8,
+                            254u8, 176u8, 233u8, 4u8, 101u8, 155u8, 150u8, 123u8, 36u8, 250u8,
                         ],
                     )
                 }
@@ -3278,11 +3277,11 @@ pub mod codegen {
             }
         }
     }
-    pub mod validators {
+    pub mod validator {
         use super::root_mod;
         use super::runtime_types;
-        pub type Error = runtime_types::pallet_validators::pallet::Error;
-        pub type Event = runtime_types::pallet_validators::pallet::Event;
+        pub type Error = runtime_types::pallet_validator::pallet::Error;
+        pub type Event = runtime_types::pallet_validator::pallet::Event;
         pub mod events {
             use super::runtime_types;
             #[derive(
@@ -3300,10 +3299,10 @@ pub mod codegen {
             }
             pub mod force_era {
                 use super::runtime_types;
-                pub type Mode = runtime_types::pallet_validators::types::Forcing;
+                pub type Mode = runtime_types::pallet_validator::types::Forcing;
             }
             impl ::subxt_core::events::StaticEvent for ForceEra {
-                const PALLET: &'static str = "Validators";
+                const PALLET: &'static str = "Validator";
                 const EVENT: &'static str = "ForceEra";
             }
             #[derive(
@@ -3318,7 +3317,7 @@ pub mod codegen {
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
             pub struct TriggerNewEra;
             impl ::subxt_core::events::StaticEvent for TriggerNewEra {
-                const PALLET: &'static str = "Validators";
+                const PALLET: &'static str = "Validator";
                 const EVENT: &'static str = "TriggerNewEra";
             }
             #[derive(
@@ -3343,7 +3342,7 @@ pub mod codegen {
                 pub type StakerPayout = ::core::primitive::u128;
             }
             impl ::subxt_core::events::StaticEvent for EraPaid {
-                const PALLET: &'static str = "Validators";
+                const PALLET: &'static str = "Validator";
                 const EVENT: &'static str = "EraPaid";
             }
             #[derive(
@@ -3362,7 +3361,7 @@ pub mod codegen {
                 pub type Field0 = ::core::primitive::u32;
             }
             impl ::subxt_core::events::StaticEvent for EraStarted {
-                const PALLET: &'static str = "Validators";
+                const PALLET: &'static str = "Validator";
                 const EVENT: &'static str = "EraStarted";
             }
         }
@@ -3412,7 +3411,7 @@ pub mod codegen {
                 }
                 pub mod active_era {
                     use super::runtime_types;
-                    pub type ActiveEra = runtime_types::pallet_validators::types::ActiveEraInfo;
+                    pub type ActiveEra = runtime_types::pallet_validator::types::ActiveEraInfo;
                 }
                 pub mod eras_start_session_index {
                     use super::runtime_types;
@@ -3427,7 +3426,7 @@ pub mod codegen {
                 }
                 pub mod force_era {
                     use super::runtime_types;
-                    pub type ForceEra = runtime_types::pallet_validators::types::Forcing;
+                    pub type ForceEra = runtime_types::pallet_validator::types::Forcing;
                 }
                 pub mod current_session {
                     use super::runtime_types;
@@ -3445,6 +3444,11 @@ pub mod codegen {
                         ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
                     pub type Param0 = ::core::primitive::u32;
                 }
+                pub mod genesis_validators {
+                    use super::runtime_types;
+                    pub type GenesisValidators =
+                        ::subxt_core::alloc::vec::Vec<::subxt_core::utils::AccountId32>;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
@@ -3458,7 +3462,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasValidatorReward",
                         (),
                         [
@@ -3481,7 +3485,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasValidatorReward",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
@@ -3501,7 +3505,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "MaxStakedRewards",
                         (),
                         [
@@ -3521,7 +3525,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "EraPayout",
                         (),
                         [
@@ -3541,7 +3545,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "CurrentPlannedSession",
                         (),
                         [
@@ -3561,7 +3565,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "CurrentEra",
                         (),
                         [
@@ -3582,7 +3586,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasTotalStake",
                         (),
                         [
@@ -3606,7 +3610,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasTotalStake",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
@@ -3627,7 +3631,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasRewardPoints",
                         (),
                         [
@@ -3651,7 +3655,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasRewardPoints",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
@@ -3672,7 +3676,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "BondedEras",
                         (),
                         [
@@ -3693,7 +3697,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ActiveEra",
                         (),
                         [
@@ -3713,7 +3717,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasStartSessionIndex",
                         (),
                         [
@@ -3736,7 +3740,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasStartSessionIndex",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
@@ -3756,7 +3760,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasStakers",
                         (),
                         [
@@ -3777,7 +3781,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasStakers",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
@@ -3806,7 +3810,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ErasStakers",
                         (
                             ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
@@ -3829,7 +3833,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "ForceEra",
                         (),
                         [
@@ -3850,7 +3854,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "CurrentSession",
                         (),
                         [
@@ -3871,7 +3875,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "EraValidators",
                         (),
                         [
@@ -3892,7 +3896,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "EraValidators",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
@@ -3912,7 +3916,7 @@ pub mod codegen {
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "SessionOffenders",
                         (),
                         [
@@ -3936,7 +3940,7 @@ pub mod codegen {
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "SessionOffenders",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
@@ -3944,6 +3948,27 @@ pub mod codegen {
                             145u8, 22u8, 191u8, 168u8, 218u8, 237u8, 64u8, 142u8, 39u8, 176u8,
                             197u8, 150u8, 228u8, 72u8, 175u8, 205u8, 135u8, 213u8, 183u8, 48u8,
                             246u8,
+                        ],
+                    )
+                }
+                pub fn genesis_validators(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::genesis_validators::GenesisValidators,
+                    ::subxt_core::utils::Yes,
+                    ::subxt_core::utils::Yes,
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Validator",
+                        "GenesisValidators",
+                        (),
+                        [
+                            93u8, 121u8, 58u8, 106u8, 92u8, 137u8, 108u8, 130u8, 182u8, 208u8,
+                            154u8, 106u8, 220u8, 230u8, 12u8, 100u8, 128u8, 120u8, 7u8, 198u8,
+                            18u8, 86u8, 240u8, 21u8, 42u8, 142u8, 125u8, 99u8, 244u8, 120u8, 111u8,
+                            28u8,
                         ],
                     )
                 }
@@ -3958,7 +3983,7 @@ pub mod codegen {
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
                 {
                     ::subxt_core::constants::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "BondingDuration",
                         [
                             98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
@@ -3973,7 +3998,7 @@ pub mod codegen {
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
                 {
                     ::subxt_core::constants::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "SessionsPerEra",
                         [
                             98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
@@ -3988,7 +4013,7 @@ pub mod codegen {
                 ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u32>
                 {
                     ::subxt_core::constants::address::StaticAddress::new_static(
-                        "Validators",
+                        "Validator",
                         "HistoryDepth",
                         [
                             98u8, 252u8, 116u8, 72u8, 26u8, 180u8, 225u8, 83u8, 200u8, 157u8,
@@ -6840,9 +6865,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            12u8, 48u8, 63u8, 71u8, 33u8, 188u8, 14u8, 142u8, 236u8, 107u8, 141u8,
-                            249u8, 40u8, 61u8, 175u8, 157u8, 112u8, 105u8, 118u8, 68u8, 186u8,
-                            85u8, 112u8, 76u8, 216u8, 11u8, 251u8, 58u8, 54u8, 146u8, 94u8, 79u8,
+                            209u8, 202u8, 86u8, 148u8, 157u8, 137u8, 132u8, 28u8, 14u8, 140u8,
+                            87u8, 48u8, 39u8, 42u8, 251u8, 238u8, 2u8, 224u8, 145u8, 50u8, 213u8,
+                            139u8, 192u8, 208u8, 0u8, 121u8, 62u8, 231u8, 158u8, 143u8, 27u8, 55u8,
                         ],
                     )
                 }
@@ -6860,9 +6885,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            254u8, 79u8, 146u8, 79u8, 234u8, 87u8, 210u8, 128u8, 228u8, 190u8,
-                            35u8, 128u8, 91u8, 49u8, 108u8, 150u8, 224u8, 180u8, 13u8, 244u8, 31u8,
-                            170u8, 92u8, 59u8, 57u8, 33u8, 119u8, 59u8, 243u8, 51u8, 229u8, 137u8,
+                            87u8, 172u8, 95u8, 144u8, 54u8, 137u8, 218u8, 180u8, 69u8, 106u8,
+                            143u8, 126u8, 105u8, 137u8, 77u8, 156u8, 131u8, 56u8, 156u8, 246u8,
+                            19u8, 116u8, 233u8, 211u8, 57u8, 59u8, 46u8, 67u8, 212u8, 19u8, 173u8,
+                            127u8,
                         ],
                     )
                 }
@@ -6894,9 +6920,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            111u8, 17u8, 163u8, 26u8, 51u8, 56u8, 36u8, 68u8, 215u8, 44u8, 83u8,
-                            173u8, 7u8, 4u8, 188u8, 156u8, 39u8, 234u8, 151u8, 68u8, 23u8, 35u8,
-                            70u8, 65u8, 154u8, 195u8, 202u8, 220u8, 3u8, 197u8, 140u8, 163u8,
+                            111u8, 101u8, 42u8, 80u8, 233u8, 204u8, 109u8, 228u8, 154u8, 69u8,
+                            13u8, 229u8, 34u8, 211u8, 251u8, 220u8, 186u8, 13u8, 10u8, 221u8, 83u8,
+                            123u8, 147u8, 73u8, 223u8, 245u8, 49u8, 68u8, 45u8, 82u8, 143u8, 146u8,
                         ],
                     )
                 }
@@ -10951,16 +10977,16 @@ pub mod codegen {
                 # [codec (crate = :: subxt_core :: ext :: codec)]
                 #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-                pub struct Delete {
-                    pub agent_id: delete::AgentId,
+                pub struct Deregister {
+                    pub agent_id: deregister::AgentId,
                 }
-                pub mod delete {
+                pub mod deregister {
                     use super::runtime_types;
                     pub type AgentId = ::subxt_core::utils::AccountId32;
                 }
-                impl ::subxt_core::blocks::StaticExtrinsic for Delete {
+                impl ::subxt_core::blocks::StaticExtrinsic for Deregister {
                     const PALLET: &'static str = "A2A";
-                    const CALL: &'static str = "delete";
+                    const CALL: &'static str = "deregister";
                 }
             }
             pub struct TransactionApi;
@@ -10999,19 +11025,18 @@ pub mod codegen {
                         ],
                     )
                 }
-                pub fn delete(
+                pub fn deregister(
                     &self,
-                    agent_id: types::delete::AgentId,
-                ) -> ::subxt_core::tx::payload::StaticPayload<types::Delete> {
+                    agent_id: types::deregister::AgentId,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::Deregister> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "A2A",
-                        "delete",
-                        types::Delete { agent_id },
+                        "deregister",
+                        types::Deregister { agent_id },
                         [
-                            100u8, 220u8, 116u8, 212u8, 20u8, 180u8, 3u8, 58u8, 157u8, 41u8, 222u8,
-                            150u8, 246u8, 181u8, 168u8, 247u8, 31u8, 230u8, 143u8, 87u8, 12u8,
-                            95u8, 167u8, 28u8, 112u8, 195u8, 106u8, 143u8, 140u8, 152u8, 171u8,
-                            81u8,
+                            192u8, 211u8, 121u8, 60u8, 12u8, 188u8, 212u8, 37u8, 33u8, 176u8,
+                            147u8, 127u8, 10u8, 29u8, 134u8, 54u8, 60u8, 195u8, 5u8, 173u8, 169u8,
+                            235u8, 255u8, 233u8, 76u8, 129u8, 248u8, 27u8, 47u8, 76u8, 219u8, 52u8,
                         ],
                     )
                 }
@@ -11076,71 +11101,71 @@ pub mod codegen {
             # [codec (crate = :: subxt_core :: ext :: codec)]
             #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
             #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
-            pub struct AgentDeleted {
-                pub id: agent_deleted::Id,
+            pub struct AgentDeregistered {
+                pub id: agent_deregistered::Id,
             }
-            pub mod agent_deleted {
+            pub mod agent_deregistered {
                 use super::runtime_types;
                 pub type Id = ::subxt_core::utils::AccountId32;
             }
-            impl ::subxt_core::events::StaticEvent for AgentDeleted {
+            impl ::subxt_core::events::StaticEvent for AgentDeregistered {
                 const PALLET: &'static str = "A2A";
-                const EVENT: &'static str = "AgentDeleted";
+                const EVENT: &'static str = "AgentDeregistered";
             }
         }
         pub mod storage {
             use super::runtime_types;
             pub mod types {
                 use super::runtime_types;
-                pub mod agent_cards {
+                pub mod agents {
                     use super::runtime_types;
-                    pub type AgentCards =
+                    pub type Agents =
                         runtime_types::a2a_rs::AgentInfo<::subxt_core::utils::AccountId32>;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
             }
             pub struct StorageApi;
             impl StorageApi {
-                pub fn agent_cards_iter(
+                pub fn agents_iter(
                     &self,
                 ) -> ::subxt_core::storage::address::StaticAddress<
                     (),
-                    types::agent_cards::AgentCards,
+                    types::agents::Agents,
                     (),
                     (),
                     ::subxt_core::utils::Yes,
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
                         "A2A",
-                        "AgentCards",
+                        "Agents",
                         (),
                         [
-                            233u8, 47u8, 160u8, 228u8, 123u8, 115u8, 14u8, 249u8, 1u8, 89u8, 211u8,
-                            68u8, 76u8, 193u8, 237u8, 187u8, 57u8, 116u8, 114u8, 208u8, 72u8,
-                            152u8, 246u8, 150u8, 145u8, 140u8, 160u8, 104u8, 86u8, 204u8, 158u8,
-                            61u8,
+                            180u8, 48u8, 159u8, 226u8, 32u8, 112u8, 178u8, 134u8, 39u8, 185u8,
+                            222u8, 38u8, 112u8, 116u8, 197u8, 179u8, 67u8, 78u8, 189u8, 137u8,
+                            104u8, 145u8, 55u8, 84u8, 11u8, 96u8, 50u8, 64u8, 13u8, 41u8, 217u8,
+                            82u8,
                         ],
                     )
                 }
-                pub fn agent_cards(
+                pub fn agents(
                     &self,
-                    _0: impl ::core::borrow::Borrow<types::agent_cards::Param0>,
+                    _0: impl ::core::borrow::Borrow<types::agents::Param0>,
                 ) -> ::subxt_core::storage::address::StaticAddress<
-                    ::subxt_core::storage::address::StaticStorageKey<types::agent_cards::Param0>,
-                    types::agent_cards::AgentCards,
+                    ::subxt_core::storage::address::StaticStorageKey<types::agents::Param0>,
+                    types::agents::Agents,
                     ::subxt_core::utils::Yes,
                     (),
                     (),
                 > {
                     ::subxt_core::storage::address::StaticAddress::new_static(
                         "A2A",
-                        "AgentCards",
+                        "Agents",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            233u8, 47u8, 160u8, 228u8, 123u8, 115u8, 14u8, 249u8, 1u8, 89u8, 211u8,
-                            68u8, 76u8, 193u8, 237u8, 187u8, 57u8, 116u8, 114u8, 208u8, 72u8,
-                            152u8, 246u8, 150u8, 145u8, 140u8, 160u8, 104u8, 86u8, 204u8, 158u8,
-                            61u8,
+                            180u8, 48u8, 159u8, 226u8, 32u8, 112u8, 178u8, 134u8, 39u8, 185u8,
+                            222u8, 38u8, 112u8, 116u8, 197u8, 179u8, 67u8, 78u8, 189u8, 137u8,
+                            104u8, 145u8, 55u8, 84u8, 11u8, 96u8, 50u8, 64u8, 13u8, 41u8, 217u8,
+                            82u8,
                         ],
                     )
                 }
@@ -11847,7 +11872,7 @@ pub mod codegen {
                         agent_card: runtime_types::a2a_rs::AgentCard,
                     },
                     #[codec(index = 2)]
-                    delete {
+                    deregister {
                         agent_id: ::subxt_core::utils::AccountId32,
                     },
                 }
@@ -11893,7 +11918,7 @@ pub mod codegen {
                         owner: ::subxt_core::utils::AccountId32,
                     },
                     #[codec(index = 2)]
-                    AgentDeleted {
+                    AgentDeregistered {
                         id: ::subxt_core::utils::AccountId32,
                     },
                 }
@@ -14039,7 +14064,7 @@ pub mod codegen {
                 V2,
             }
         }
-        pub mod pallet_validators {
+        pub mod pallet_validator {
             use super::runtime_types;
             pub mod pallet {
                 use super::runtime_types;
@@ -14067,7 +14092,7 @@ pub mod codegen {
                 pub enum Event {
                     #[codec(index = 0)]
                     ForceEra {
-                        mode: runtime_types::pallet_validators::types::Forcing,
+                        mode: runtime_types::pallet_validator::types::Forcing,
                     },
                     #[codec(index = 1)]
                     TriggerNewEra,
@@ -15466,7 +15491,7 @@ pub mod codegen {
                 #[codec(index = 4)]
                 Restaking(runtime_types::pallet_restaking::pallet::Error),
                 #[codec(index = 6)]
-                Validators(runtime_types::pallet_validators::pallet::Error),
+                Validator(runtime_types::pallet_validator::pallet::Error),
                 #[codec(index = 7)]
                 Session(runtime_types::pallet_session::pallet::Error),
                 #[codec(index = 8)]
@@ -15502,7 +15527,7 @@ pub mod codegen {
                 #[codec(index = 4)]
                 Restaking(runtime_types::pallet_restaking::pallet::Event),
                 #[codec(index = 6)]
-                Validators(runtime_types::pallet_validators::pallet::Event),
+                Validator(runtime_types::pallet_validator::pallet::Event),
                 #[codec(index = 7)]
                 Session(runtime_types::pallet_session::pallet::Event),
                 #[codec(index = 8)]

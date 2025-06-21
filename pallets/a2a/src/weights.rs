@@ -36,7 +36,7 @@ use core::marker::PhantomData;
 pub trait WeightInfo {
 	fn register() -> Weight;
 	fn update() -> Weight;
-	fn delete() -> Weight;
+	fn deregister() -> Weight;
 }
 
 /// Weights for pallet_template using the Substrate node and recommended hardware.
@@ -64,7 +64,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 
-	fn delete() -> Weight {
+	fn deregister() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `32`
 		//  Estimated: `1489`
@@ -100,7 +100,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 
-	fn delete() -> Weight {
+	fn deregister() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `32`
 		//  Estimated: `1489`

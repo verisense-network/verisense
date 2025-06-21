@@ -28,7 +28,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::unbounded]
-    pub type AgentCards<T: Config> = StorageMap<
+    pub type Agents<T: Config> = StorageMap<
         Hasher = Blake2_128Concat,
         Key = T::AccountId,
         Value = AgentInfo<T::AccountId>,
@@ -46,7 +46,7 @@ pub mod pallet {
             id: T::AccountId,
             owner: T::AccountId,
         },
-        AgentDeleted {
+        AgentDeregistered {
             id: T::AccountId,
         },
     }
@@ -100,11 +100,23 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::Weight::delete())]
-        pub fn delete(origin: OriginFor<T>, agent_id: T::AccountId) -> DispatchResult {
+        #[pallet::weight(T::Weight::deregister())]
+        pub fn deregister(origin: OriginFor<T>, agent_id: T::AccountId) -> DispatchResult {
             let signer = ensure_signed(origin)?;
-            let mut agent = Self::find_agent(&agent_id).ok_or(Error::<T>::AgentNotFound)?;
-            ensure!(agent.owner_id == signer, Error::<T>::NotAuthorized);
+            Agents::<T>::try_mutate(&agent_id, |maybe_agent| {
+                if maybe_agent.is_none() {
+                    return Err(Error::<T>::AgentNotFound);
+                }
+                ensure!(
+                    maybe_agent.as_ref().map(|v| v.owner_id.clone()) == Some(signer),
+                    Error::<T>::NotAuthorized
+                );
+                *maybe_agent = None;
+                Ok(())
+            })?;
+            Self::deposit_event(Event::AgentDeregistered {
+                id: agent_id.clone(),
+            });
             Ok(())
         }
     }
@@ -119,7 +131,7 @@ pub mod pallet {
             let b1 = owner.encode();
             let bytes = b1
                 .iter()
-                .chain(agent.name.clone().into_bytes().iter())
+                .chain(agent.name.as_bytes().iter())
                 .cloned()
                 .collect::<Vec<u8>>();
             let v = T::Hashing::hash(&bytes);
@@ -129,7 +141,7 @@ pub mod pallet {
 
         pub fn get_all_agents() -> Vec<AgentInfo<T::AccountId>> {
             let mut agents = Vec::new();
-            for agent in AgentCards::<T>::iter() {
+            for agent in Agents::<T>::iter() {
                 agents.push(agent.1);
             }
             agents
@@ -143,7 +155,7 @@ pub mod pallet {
         /// while pallet-nucleus invokes this to register an on-chain agent
         fn register_agent(agent_info: AgentInfo<T::AccountId>) -> Result<(), Self::Err> {
             let agent_id = agent_info.agent_id.clone();
-            AgentCards::<T>::try_mutate(&agent_id, |maybe_agent| {
+            Agents::<T>::try_mutate(&agent_id, |maybe_agent| {
                 if maybe_agent.is_some() {
                     return Err(Error::<T>::AgentAlreadyExists);
                 }
@@ -160,7 +172,7 @@ pub mod pallet {
 
         fn update_agent(agent_info: AgentInfo<T::AccountId>) -> Result<(), Self::Err> {
             let agent_id = agent_info.agent_id.clone();
-            AgentCards::<T>::try_mutate(&agent_id, |maybe_agent| {
+            Agents::<T>::try_mutate(&agent_id, |maybe_agent| {
                 let owner = agent_info.owner_id.clone();
                 *maybe_agent = Some(agent_info);
                 Self::deposit_event(Event::AgentUpdated {
@@ -172,15 +184,16 @@ pub mod pallet {
             Ok(())
         }
 
-        fn delete_agent(agent_id: &T::AccountId) -> Result<(), Self::Err> {
-            AgentCards::<T>::remove(agent_id);
-            Self::deposit_event(Event::AgentDeleted {
+        fn deregister_agent(agent_id: &T::AccountId) -> Result<(), Self::Err> {
+            Agents::<T>::remove(agent_id);
+            Self::deposit_event(Event::AgentDeregistered {
                 id: agent_id.clone(),
             });
             Ok(())
         }
+
         fn find_agent(agent_id: &T::AccountId) -> Option<AgentInfo<T::AccountId>> {
-            AgentCards::<T>::get(agent_id)
+            Agents::<T>::get(agent_id)
         }
     }
 }

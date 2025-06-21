@@ -5,30 +5,32 @@
 
 #![warn(missing_docs)]
 
-use std::{path::PathBuf, sync::Arc};
-
 use jsonrpsee::RpcModule;
 use sc_consensus_babe::BabeWorkerHandle;
 use sc_consensus_babe_rpc::{Babe, BabeApiServer};
 use sc_network_types::PeerId;
+use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_consensus::SelectChain;
+use sp_consensus_babe::BabeApi;
 use sp_keystore::KeystorePtr;
+use std::{path::PathBuf, sync::Arc};
+use vrs_gluon_relayer::Relayer;
 use vrs_nucleus_cage::NucleusRpcChannel;
+use vrs_primitives::AssetId;
 use vrs_runtime::{opaque::Block, AccountId, Balance, Nonce};
 
-pub use sc_rpc_api::DenyUnsafe;
-use sp_consensus_babe::BabeApi;
-use vrs_primitives::AssetId;
-
 #[derive(Clone)]
-pub struct NucleusDeps {
+pub struct NucleusDeps<N> {
     pub rpc_channel: NucleusRpcChannel,
     pub node_id: PeerId,
     pub home_dir: PathBuf,
+    pub network: Arc<N>,
+    pub authority_discover: sc_authority_discovery::Service,
+    pub maybe_validator: Option<AccountId>,
 }
 
 pub struct BabeDeps {
@@ -39,7 +41,7 @@ pub struct BabeDeps {
 }
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, SC, B> {
+pub struct FullDeps<C, P, SC, B, N> {
     /// The client instance to use.
     pub client: Arc<C>,
     pub select_chain: SC,
@@ -47,19 +49,21 @@ pub struct FullDeps<C, P, SC, B> {
     pub pool: Arc<P>,
     /// blocks backend
     pub backend: Arc<B>,
+    /// Dependencies for the BABE RPC extension.
     pub babe: BabeDeps,
     /// Nucleus cage connector
-    pub nucleus: Option<NucleusDeps>,
+    pub nucleus: NucleusDeps<N>,
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<C, P, SC, B>(
+pub fn create_full<C, P, SC, B, N>(
     deny_unsafe: DenyUnsafe,
-    deps: FullDeps<C, P, SC, B>,
+    deps: FullDeps<C, P, SC, B, N>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
     P: TransactionPool<Block = Block, Hash = <Block as sp_runtime::traits::Block>::Hash> + 'static,
     B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+    N: sc_network::service::traits::NetworkService + Send + Sync + 'static,
     B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
@@ -114,14 +118,26 @@ where
     module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
     module.merge(A2a::new(client.clone()).into_rpc())?;
 
-    if let Some(nucleus) = nucleus {
-        let NucleusDeps {
+    let NucleusDeps {
+        rpc_channel,
+        node_id,
+        home_dir,
+        network,
+        authority_discover,
+        maybe_validator,
+    } = nucleus;
+    module.merge(
+        Nucleus::new(
             rpc_channel,
+            Relayer::new(client.clone(), network, authority_discover),
+            client,
+            pool,
             node_id,
+            maybe_validator,
             home_dir,
-        } = nucleus;
-        module.merge(Nucleus::new(rpc_channel, client, pool, node_id, home_dir).into_rpc())?;
-    }
+        )
+        .into_rpc(),
+    )?;
 
     // Extend this RPC with a custom API by using the following syntax.
     // `YourRpcStruct` should have a reference to a client, which is needed
