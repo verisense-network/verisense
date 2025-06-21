@@ -1,4 +1,3 @@
-
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchInfo;
 use frame_system::Config;
@@ -43,8 +42,8 @@ impl<T: Config> sp_std::fmt::Debug for CheckNonce<T> {
 }
 
 impl<T: Config> SignedExtension for CheckNonce<T>
-    where
-        T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
+where
+    T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
 {
     type AccountId = T::AccountId;
     type Call = T::RuntimeCall;
@@ -64,7 +63,7 @@ impl<T: Config> SignedExtension for CheckNonce<T>
         _len: usize,
     ) -> Result<(), TransactionValidityError> {
         let mut account = frame_system::Account::<T>::get(who);
-/*        if account.providers.is_zero() && account.sufficients.is_zero() {
+        /*        if account.providers.is_zero() && account.sufficients.is_zero() {
             // Nonce storage not paid for
             return Err(InvalidTransaction::Payment.into())
         }*/
@@ -74,7 +73,7 @@ impl<T: Config> SignedExtension for CheckNonce<T>
             } else {
                 InvalidTransaction::Future
             }
-                .into())
+            .into());
         }
         account.nonce += T::Nonce::one();
         frame_system::Account::<T>::insert(who, account);
@@ -89,12 +88,12 @@ impl<T: Config> SignedExtension for CheckNonce<T>
         _len: usize,
     ) -> TransactionValidity {
         let account = frame_system::Account::<T>::get(who);
-/*        if account.providers.is_zero() && account.sufficients.is_zero() {
+        /*        if account.providers.is_zero() && account.sufficients.is_zero() {
             // Nonce storage not paid for
             return InvalidTransaction::Payment.into()
         }*/
         if self.0 < account.nonce {
-            return InvalidTransaction::Stale.into()
+            return InvalidTransaction::Stale.into();
         }
 
         let provides = vec![Encode::encode(&(who, self.0))];

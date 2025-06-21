@@ -1,3 +1,4 @@
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_service::ChainType;
 use sp_authority_discovery::AuthorityId;
 use sp_consensus_babe::AuthorityId as BabeId;
@@ -5,7 +6,6 @@ use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use vrs_primitives::keys::{restaking::AuthorityId as RestakingId, vrf::AuthorityId as VrfId};
-use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use vrs_primitives::AssetId;
 use vrs_runtime::opaque::SessionKeys;
 use vrs_runtime::{AccountId, Signature, WASM_BINARY};
@@ -19,12 +19,12 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
     TPublic::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
-
 }
 
 pub fn get_from_phrase<TPublic: Public>(p: &str) -> <TPublic::Pair as Pair>::Public {
     TPublic::Pair::from_phrase(p, None)
-        .expect("static values are valid; qed").0
+        .expect("static values are valid; qed")
+        .0
         .public()
 }
 
@@ -104,7 +104,6 @@ pub fn development_config() -> Result<ChainSpec, String> {
     .with_genesis_config_patch(testnet_genesis(
         // Initial PoA authorities
         vec![authority_keys_from_seed("Alice")],
-
         vec![authority_keys_from_seed("Alice")],
         // Sudo account
         get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -133,106 +132,104 @@ pub fn development_config() -> Result<ChainSpec, String> {
     .build())
 }
 
-
 pub fn gamma_config() -> Result<ChainSpec, String> {
     Ok(ChainSpec::builder(
         WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
         None,
     )
-        .with_name("Gamma Testnet")
-        .with_id("gamma")
-        .with_protocol_id("vrs")
-        .with_properties(chain_spec_properties())
-        .with_chain_type(ChainType::Live)
-        .with_genesis_config_patch(testnet_genesis(
-            // Initial PoA authorities
-            vec![
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-            ],
-            vec![
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-            ],
-            // Sudo account
+    .with_name("Gamma Testnet")
+    .with_id("gamma")
+    .with_protocol_id("vrs")
+    .with_properties(chain_spec_properties())
+    .with_chain_type(ChainType::Live)
+    .with_genesis_config_patch(testnet_genesis(
+        // Initial PoA authorities
+        vec![
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+        ],
+        vec![
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+        ],
+        // Sudo account
+        get_account_id_from_phrase::<sr25519::Public>(""),
+        // Pre-funded accounts
+        vec![
             get_account_id_from_phrase::<sr25519::Public>(""),
-            // Pre-funded accounts
-            vec![
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-            ],
-            vec![(
-                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                false,
-                1,
-            )],
-            vec![(
-                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
-                "VRS".as_bytes().to_vec(),
-                "VRS".as_bytes().to_vec(),
-                18,
-            )],
-            vec![],
-            true,
-        ))
-        .build())
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            get_account_id_from_phrase::<sr25519::Public>(""),
+        ],
+        vec![(
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            false,
+            1,
+        )],
+        vec![(
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
+            "VRS".as_bytes().to_vec(),
+            "VRS".as_bytes().to_vec(),
+            18,
+        )],
+        vec![],
+        true,
+    ))
+    .build())
 }
-
 
 pub fn mainnet_config() -> Result<ChainSpec, String> {
     Ok(ChainSpec::builder(
         WASM_BINARY.ok_or_else(|| "Mainnet wasm not available".to_string())?,
         None,
     )
-        .with_name("aitonomy on eigenlayer")
-        .with_id("aitonomy")
-        .with_protocol_id("aitonomy")
-        .with_properties(chain_spec_properties())
-        .with_chain_type(ChainType::Live)
-        .with_genesis_config_patch(testnet_genesis(
-            // Initial PoA authorities
-            vec![
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-            ],
-            vec![
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-                authority_keys_from_phrase(""),
-            ],
-            // Sudo account
+    .with_name("aitonomy on eigenlayer")
+    .with_id("aitonomy")
+    .with_protocol_id("aitonomy")
+    .with_properties(chain_spec_properties())
+    .with_chain_type(ChainType::Live)
+    .with_genesis_config_patch(testnet_genesis(
+        // Initial PoA authorities
+        vec![
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+        ],
+        vec![
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+            authority_keys_from_phrase(""),
+        ],
+        // Sudo account
+        get_account_id_from_phrase::<sr25519::Public>(""),
+        // Pre-funded accounts
+        vec![
             get_account_id_from_phrase::<sr25519::Public>(""),
-            // Pre-funded accounts
-            vec![
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-            ],
-            vec![(
-                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
-                get_account_id_from_phrase::<sr25519::Public>(""),
-                false,
-                1,
-            )],
-            vec![(
-                AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
-                "VRS".as_bytes().to_vec(),
-                "VRS".as_bytes().to_vec(),
-                18,
-            )],
-            vec![],
-            true,
-        ))
-        .build())
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            get_account_id_from_phrase::<sr25519::Public>(""),
+        ],
+        vec![(
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
+            get_account_id_from_phrase::<sr25519::Public>(""),
+            false,
+            1,
+        )],
+        vec![(
+            AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
+            "VRS".as_bytes().to_vec(),
+            "VRS".as_bytes().to_vec(),
+            18,
+        )],
+        vec![],
+        true,
+    ))
+    .build())
 }
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
@@ -290,8 +287,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
         vec![(
             AssetId::try_from(FEE_ASSET_ID.to_string()).unwrap(),
             get_account_id_from_seed::<sr25519::Public>("Alice"),
-            100000000000000000000000000
-            )],
+            100000000000000000000000000,
+        )],
         true,
     ))
     .build())
@@ -308,7 +305,7 @@ fn testnet_genesis(
         VrfId,
         ImOnlineId,
     )>,
-    initial_session_keys:Vec<(
+    initial_session_keys: Vec<(
         AccountId,
         BabeId,
         GrandpaId,

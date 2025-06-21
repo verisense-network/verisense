@@ -24,8 +24,8 @@ impl Encode for AgentProvider {
 impl Into<a2a_rs::AgentProvider> for AgentProvider {
     fn into(self) -> a2a_rs::AgentProvider {
         a2a_rs::AgentProvider {
-            organization: self.organization.as_bytes().to_vec(),
-            url: self.url.as_bytes().to_vec(),
+            organization: self.organization,
+            url: self.url,
         }
     }
 }
@@ -33,8 +33,8 @@ impl Into<a2a_rs::AgentProvider> for AgentProvider {
 impl From<a2a_rs::AgentProvider> for AgentProvider {
     fn from(provider: a2a_rs::AgentProvider) -> Self {
         Self {
-            organization: String::from_utf8(provider.organization).unwrap_or_default(),
-            url: String::from_utf8(provider.url).unwrap_or_default(),
+            organization: provider.organization,
+            url: provider.url,
         }
     }
 }
@@ -60,12 +60,12 @@ impl Encode for AgentExtension {
 impl Into<a2a_rs::AgentExtension> for AgentExtension {
     fn into(self) -> a2a_rs::AgentExtension {
         a2a_rs::AgentExtension {
-            uri: self.uri.as_bytes().to_vec(),
-            description: self.description.map(|d| d.as_bytes().to_vec()),
+            uri: self.uri,
+            description: self.description,
             required: self.required,
             params: self
                 .params
-                .map(|p| serde_json::to_vec(&p).expect("must be json")),
+                .map(|p| serde_json::to_string(&p).expect("must be json")),
         }
     }
 }
@@ -73,14 +73,12 @@ impl Into<a2a_rs::AgentExtension> for AgentExtension {
 impl From<a2a_rs::AgentExtension> for AgentExtension {
     fn from(ext: a2a_rs::AgentExtension) -> Self {
         Self {
-            uri: String::from_utf8(ext.uri).unwrap_or_default(),
-            description: ext
-                .description
-                .map(|d| String::from_utf8(d).unwrap_or_default()),
+            uri: ext.uri,
+            description: ext.description,
             required: ext.required,
             params: ext
                 .params
-                .map(|p| serde_json::from_slice(&p).expect("must be json")),
+                .map(|p| serde_json::from_str(&p).expect("must be json")),
         }
     }
 }
@@ -165,23 +163,13 @@ pub struct AgentSkill {
 impl Into<a2a_rs::AgentSkill> for AgentSkill {
     fn into(self) -> a2a_rs::AgentSkill {
         a2a_rs::AgentSkill {
-            id: self.id.as_bytes().to_vec(),
-            name: self.name.as_bytes().to_vec(),
-            description: self.description.as_bytes().to_vec(),
-            tags: self
-                .tags
-                .into_iter()
-                .map(|s| s.as_bytes().to_vec())
-                .collect(),
-            examples: self
-                .examples
-                .map(|ex| ex.into_iter().map(|s| s.as_bytes().to_vec()).collect()),
-            input_modes: self
-                .input_modes
-                .map(|modes| modes.into_iter().map(|s| s.as_bytes().to_vec()).collect()),
-            output_modes: self
-                .output_modes
-                .map(|modes| modes.into_iter().map(|s| s.as_bytes().to_vec()).collect()),
+            id: self.id,
+            name: self.name,
+            description: self.description,
+            tags: self.tags,
+            examples: self.examples,
+            input_modes: self.input_modes,
+            output_modes: self.output_modes,
         }
     }
 }
@@ -189,31 +177,13 @@ impl Into<a2a_rs::AgentSkill> for AgentSkill {
 impl From<a2a_rs::AgentSkill> for AgentSkill {
     fn from(skill: a2a_rs::AgentSkill) -> Self {
         Self {
-            id: String::from_utf8(skill.id).unwrap_or_default(),
-            name: String::from_utf8(skill.name).unwrap_or_default(),
-            description: String::from_utf8(skill.description).unwrap_or_default(),
-            tags: skill
-                .tags
-                .into_iter()
-                .map(|s| String::from_utf8(s).unwrap_or_default())
-                .collect(),
-            examples: skill.examples.map(|ex| {
-                ex.into_iter()
-                    .map(|s| String::from_utf8(s).unwrap_or_default())
-                    .collect()
-            }),
-            input_modes: skill.input_modes.map(|modes| {
-                modes
-                    .into_iter()
-                    .map(|s| String::from_utf8(s).unwrap_or_default())
-                    .collect()
-            }),
-            output_modes: skill.output_modes.map(|modes| {
-                modes
-                    .into_iter()
-                    .map(|s| String::from_utf8(s).unwrap_or_default())
-                    .collect()
-            }),
+            id: skill.id,
+            name: skill.name,
+            description: skill.description,
+            tags: skill.tags,
+            examples: skill.examples,
+            input_modes: skill.input_modes,
+            output_modes: skill.output_modes,
         }
     }
 }
@@ -267,50 +237,28 @@ pub struct AgentCard {
 impl Into<a2a_rs::AgentCard> for AgentCard {
     fn into(self) -> a2a_rs::AgentCard {
         a2a_rs::AgentCard {
-            name: self.name.as_bytes().to_vec(),
-            description: self.description.as_bytes().to_vec(),
-            url: self.url.as_bytes().to_vec(),
-            icon_url: self.icon_url.map(|v| v.as_bytes().to_vec()),
+            name: self.name,
+            description: self.description,
+            url: self.url,
+            icon_url: self.icon_url,
             provider: self.provider.map(|p| p.into()),
-            version: self.version.as_bytes().to_vec(),
-            documentation_url: self.documentation_url.map(|v| v.as_bytes().to_vec()),
+            version: self.version,
+            documentation_url: self.documentation_url,
             capabilities: self.capabilities.into(),
             security_schemes: self.security_schemes.map(|schemes| {
                 schemes
                     .into_iter()
-                    .map(|(k, v)| {
-                        (
-                            k.as_bytes().to_vec(),
-                            serde_json::to_vec(&v).expect("must be json"),
-                        )
-                    })
+                    .map(|(k, v)| (k, serde_json::to_string(&v).expect("must be json")))
                     .collect()
             }),
             security: self.security.map(|security| {
                 security
                     .into_iter()
-                    .map(|map| {
-                        map.into_iter()
-                            .map(|(k, v)| {
-                                (
-                                    k.as_bytes().to_vec(),
-                                    v.into_iter().map(|s| s.as_bytes().to_vec()).collect(),
-                                )
-                            })
-                            .collect()
-                    })
+                    .map(|map| map.into_iter().map(|(k, v)| (k, v)).collect())
                     .collect()
             }),
-            default_input_modes: self
-                .default_input_modes
-                .into_iter()
-                .map(|s| s.as_bytes().to_vec())
-                .collect(),
-            default_output_modes: self
-                .default_output_modes
-                .into_iter()
-                .map(|s| s.as_bytes().to_vec())
-                .collect(),
+            default_input_modes: self.default_input_modes,
+            default_output_modes: self.default_output_modes,
             skills: self.skills.into_iter().map(|s| s.into()).collect(),
             supports_authenticated_extended_card: self.supports_authenticated_extended_card,
         }
@@ -320,27 +268,18 @@ impl Into<a2a_rs::AgentCard> for AgentCard {
 impl From<a2a_rs::AgentCard> for AgentCard {
     fn from(card: a2a_rs::AgentCard) -> Self {
         Self {
-            name: String::from_utf8(card.name).unwrap_or_default(),
-            description: String::from_utf8(card.description).unwrap_or_default(),
-            url: String::from_utf8(card.url).unwrap_or_default(),
-            icon_url: card
-                .icon_url
-                .map(|v| String::from_utf8(v).unwrap_or_default()),
+            name: card.name,
+            description: card.description,
+            url: card.url,
+            icon_url: card.icon_url,
             provider: card.provider.map(Into::into),
-            version: String::from_utf8(card.version).unwrap_or_default(),
-            documentation_url: card
-                .documentation_url
-                .map(|v| String::from_utf8(v).unwrap_or_default()),
+            version: card.version,
+            documentation_url: card.documentation_url,
             capabilities: card.capabilities.into(),
             security_schemes: card.security_schemes.map(|schemes| {
                 schemes
                     .into_iter()
-                    .map(|(k, v)| {
-                        (
-                            String::from_utf8(k).unwrap_or_default(),
-                            serde_json::from_slice(&v).expect("must be json"),
-                        )
-                    })
+                    .map(|(k, v)| (k, serde_json::from_str(&v).expect("must be json")))
                     .collect()
             }),
             security: card.security.map(|security| {
@@ -348,28 +287,13 @@ impl From<a2a_rs::AgentCard> for AgentCard {
                     .into_iter()
                     .map(|map| {
                         map.into_iter()
-                            .map(|(k, v)| {
-                                (
-                                    String::from_utf8(k).unwrap_or_default(),
-                                    v.into_iter()
-                                        .map(|s| String::from_utf8(s).unwrap_or_default())
-                                        .collect(),
-                                )
-                            })
+                            .map(|(k, v)| (k, v.into_iter().collect()))
                             .collect()
                     })
                     .collect()
             }),
-            default_input_modes: card
-                .default_input_modes
-                .into_iter()
-                .map(|s| String::from_utf8(s).unwrap_or_default())
-                .collect(),
-            default_output_modes: card
-                .default_output_modes
-                .into_iter()
-                .map(|s| String::from_utf8(s).unwrap_or_default())
-                .collect(),
+            default_input_modes: card.default_input_modes.into_iter().collect(),
+            default_output_modes: card.default_output_modes.into_iter().collect(),
             skills: card.skills.into_iter().map(Into::into).collect(),
             supports_authenticated_extended_card: card.supports_authenticated_extended_card,
         }
