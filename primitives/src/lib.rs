@@ -73,6 +73,7 @@ impl IntoLiquidityAssetId for AssetId {
 pub trait IntoLiquidityAssetId {
     fn into_liquidity_asset_id(&self) -> Self;
 }
+
 impl Display for AssetId {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(&self.0)
@@ -88,7 +89,7 @@ pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub wasm_location: Option<NodeId>,
     pub current_event: u64,
     pub root_state: Hash,
-    pub peers: alloc::vec::Vec<NodeId>,
+    pub validators: alloc::vec::Vec<AccountId>,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, Default, TypeInfo)]

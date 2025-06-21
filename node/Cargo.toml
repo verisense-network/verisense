@@ -2,6 +2,8 @@
 name = "verisense"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+description.workspace = true
 publish = false
 
 build = "build.rs"
@@ -67,6 +69,7 @@ vrs-runtime = { path = "../runtime" }
 vrs-primitives = { path = "../primitives" }
 vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus" }
 vrs-restaking-runtime-api = { path = "../runtime-api/restaking" }
+vrs-validator-runtime-api = { path = "../runtime-api/validator" }
 vrs-a2a-runtime-api = { path = "../runtime-api/a2a" }
 vrs-tss-runtime-api = { path = "../runtime-api/tss" }
 vrs-swap-runtime-api = { path = "../runtime-api/swap" }
@@ -78,6 +81,7 @@ vrs-nucleus-cage = { path = "../subnet/cage" }
 vrs-nucleus-network = { path = "../subnet/network" }
 vrs-support = {path = "../support"}
 vrs-metadata = { path = "../metadata" }
+vrs-gluon-relayer = { path = "../subnet/relayer" }
 
 [build-dependencies]
 substrate-build-script-utils = { version = "11.0.0" }

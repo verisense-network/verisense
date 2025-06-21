@@ -27,7 +27,7 @@ impl SubstrateCli for Cli {
     }
 
     fn support_url() -> String {
-        "support.anonymous.an".into()
+        "dev@verisense.network".into()
     }
 
     fn copyright_start_year() -> i32 {
@@ -140,12 +140,14 @@ pub fn run() -> sc_cli::Result<()> {
                                 vrs_runtime::opaque::Block,
                                 <vrs_runtime::opaque::Block as sp_runtime::traits::Block>::Hash,
                             >,
-                        >(config, cli.tss)
+                        >(config, cli.tss, cli.extra)
                         .map_err(sc_cli::Error::Service)
                     }
                     sc_network::config::NetworkBackendType::Litep2p => {
-                        service::new_full::<sc_network::Litep2pNetworkBackend>(config, cli.tss)
-                            .map_err(sc_cli::Error::Service)
+                        service::new_full::<sc_network::Litep2pNetworkBackend>(
+                            config, cli.tss, cli.extra,
+                        )
+                        .map_err(sc_cli::Error::Service)
                     }
                 }
             })

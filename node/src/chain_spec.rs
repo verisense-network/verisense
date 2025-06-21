@@ -334,6 +334,9 @@ fn testnet_genesis(
         "restaking": {
             "validators": initial_authorities.iter().cloned().map(|k| (k.0, 10000, "0x0000000000000000000000000000000000000000", ORIGINAL_VALIDATOR_SOURCE)).collect::<Vec<_>>(),
         },
+        "validator": {
+            "validators": initial_authorities.iter().cloned().map(|k| k.0).collect::<Vec<_>>(),
+        },
         "session":  {
             "keys": initial_session_keys
                 .iter()

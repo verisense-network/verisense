@@ -18,6 +18,7 @@ pub enum MonadringVerifyResult {
     AllGood,
     Failed,
 }
+
 impl NucleusCage {
     pub(crate) fn validate_token(
         &self,

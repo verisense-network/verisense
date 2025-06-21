@@ -1,3 +1,5 @@
+pub mod protocols;
+
 use codec::{Decode, Encode};
 use futures::channel::oneshot;
 use futures::prelude::*;
@@ -12,7 +14,6 @@ use sp_blockchain::HeaderBackend;
 use sp_core::{sr25519, ByteArray};
 use sp_keystore::KeystorePtr;
 use std::{str::FromStr, sync::Arc};
-use tokio::sync::Mutex;
 use vrs_primitives::AccountId;
 
 pub struct P2pParams<B, C, BN> {
@@ -28,7 +29,7 @@ pub struct P2pParams<B, C, BN> {
     )>,
     pub cage_p2p_rx: tokio::sync::mpsc::Receiver<(SendMessage, oneshot::Sender<Vec<u8>>)>,
     pub controller: AccountId,
-    pub authority_discovery: Arc<Mutex<AuthorityDiscovery>>,
+    pub authority_discovery: AuthorityDiscovery,
     pub authorities: Vec<AuthorityId>,
     pub _phantom: std::marker::PhantomData<(B, BN)>,
 }
@@ -77,11 +78,11 @@ where
         reqres_receiver,
         client,
         node_key_pair,
-        mut net_service,
+        net_service,
         p2p_cage_tx,
         mut cage_p2p_rx,
         controller,
-        mut authority_discovery,
+        authority_discovery,
         authorities,
         _phantom,
     } = params;
@@ -100,10 +101,11 @@ where
                 Some((send_payload, resp_sender)) = cage_p2p_rx.recv() => {
                     let peers = match send_payload.dest {
                         Destination::AuthorityId(a) => {
-                            let r = authority_discovery.clone().lock().await.get_addresses_by_authority_id(a).await;
+                            let mut discover = authority_discovery.clone();
+                            let r = discover.get_addresses_by_authority_id(a).await;
                             match r {
                                 None => vec![],
-                                Some(mut ma) => {
+                                Some(ma) => {
                                     let mut v = vec![];
                                     for m in ma  {
                                         let n = m.to_string().split("/").last().unwrap().to_string();

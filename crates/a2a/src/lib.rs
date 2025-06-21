@@ -7,6 +7,7 @@ use codec::{alloc, Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
+
 type Text = String;
 
 /// Represents the service provider of an agent.

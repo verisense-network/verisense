@@ -33,6 +33,7 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config + pallet_session::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
         type WeightInfo: WeightInfo;
 
         #[pallet::constant]
@@ -123,6 +124,11 @@ pub mod pallet {
     pub type SessionOffenders<T: Config> =
         StorageMap<_, Twox64Concat, SessionIndex, Vec<T::AccountId>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::unbounded]
+    #[pallet::getter(fn genesis_validators)]
+    pub type GenesisValidators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -155,6 +161,19 @@ pub mod pallet {
                     ActiveEra::<T>::put(active_era);
                 }
             }
+        }
+    }
+
+    #[pallet::genesis_config]
+    #[derive(frame_support::DefaultNoBound)]
+    pub struct GenesisConfig<T: Config> {
+        pub validators: Vec<T::AccountId>,
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+        fn build(&self) {
+            GenesisValidators::<T>::put(self.validators.clone());
         }
     }
 }
@@ -406,6 +425,7 @@ impl<T: Config> Pallet<T> {
             )
         }
     }
+
     pub fn store_stakers_info(
         validators: Vec<(T::AccountId, u128)>,
         new_planned_era: EraIndex,

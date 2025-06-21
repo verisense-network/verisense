@@ -107,7 +107,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 104,
+    spec_version: 105,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -184,13 +184,13 @@ impl pallet_babe::Config for Runtime {
 }
 
 impl pallet_grandpa::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+    type EquivocationReportSystem = ();
+    type KeyOwnerProof = sp_core::Void;
     type MaxAuthorities = ConstU32<32>;
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = ConstU64<0>;
-    type KeyOwnerProof = sp_core::Void;
-    type EquivocationReportSystem = ();
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
 }
 
 impl pallet_authority_discovery::Config for Runtime {
@@ -198,10 +198,10 @@ impl pallet_authority_discovery::Config for Runtime {
 }
 
 impl pallet_timestamp::Config for Runtime {
+    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
     type OnTimestampSet = Babe;
-    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
 
@@ -209,21 +209,21 @@ impl pallet_timestamp::Config for Runtime {
 pub const EXISTENTIAL_DEPOSIT: u128 = 600;
 
 impl pallet_balances::Config for Runtime {
-    /// The ubiquitous event type.
-    type RuntimeEvent = RuntimeEvent;
-    type RuntimeHoldReason = RuntimeHoldReason;
-    type RuntimeFreezeReason = RuntimeHoldReason;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type AccountStore = System;
     /// The type for recording an account's balance.
     type Balance = Balance;
     type DustRemoval = ();
     type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
-    type AccountStore = System;
-    type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = RuntimeFreezeReason;
+    type MaxFreezes = VariantCountOf<RuntimeFreezeReason>;
     type MaxLocks = ConstU32<50>;
     type MaxReserves = ();
-    type MaxFreezes = VariantCountOf<RuntimeFreezeReason>;
+    type ReserveIdentifier = [u8; 8];
+    /// The ubiquitous event type.
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeFreezeReason = RuntimeHoldReason;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -231,17 +231,17 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = FungibleAdapter<Balances, ()>;
-    type WeightToFee = IdentityFee<Balance>;
-    type LengthToFee = IdentityFee<Balance>;
     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type LengthToFee = IdentityFee<Balance>;
+    type OnChargeTransaction = FungibleAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightToFee = IdentityFee<Balance>;
 }
 
 impl pallet_sudo::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
@@ -257,17 +257,16 @@ parameter_types! {
 }
 
 impl pallet_nucleus::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Weight = pallet_nucleus::weights::SubstrateWeight<Runtime>;
-    type AuthorityId = vrs_primitives::keys::vrf::AuthorityId;
-    type NucleusId = NucleusId;
-    type NodeId = NodeId;
-    type ControllerLookup = Nucleus;
-    type RegistryDuration = RegistryDuration;
-    type Validators = Validators;
     type Assets = Assets;
-    type FeeCollector = NucleusFeeCollector;
+    type AuthorityId = vrs_primitives::keys::vrf::AuthorityId;
     type FeeAssetId = FeeAssetId;
+    type FeeCollector = NucleusFeeCollector;
+    type NodeId = NodeId;
+    type NucleusId = NucleusId;
+    type RegistryDuration = RegistryDuration;
+    type RuntimeEvent = RuntimeEvent;
+    type Validators = Validator;
+    type Weight = pallet_nucleus::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_a2a::Config for Runtime {
@@ -277,7 +276,7 @@ impl pallet_a2a::Config for Runtime {
 
 impl pallet_session::historical::Config for Runtime {
     type FullIdentification = u128;
-    type FullIdentificationOf = pallet_validators::types::ExposureOf<Runtime>;
+    type FullIdentificationOf = pallet_validator::types::ExposureOf<Runtime>;
 }
 
 pub struct ValidatorIdOf;
@@ -293,14 +292,14 @@ parameter_types! {
 }
 
 impl pallet_session::Config for Runtime {
+    type Keys = opaque::SessionKeys;
+    type NextSessionRotation = Babe;
     type RuntimeEvent = RuntimeEvent;
+    type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Validator>;
+    type ShouldEndSession = Babe;
     type ValidatorId = AccountId;
     type ValidatorIdOf = ConvertInto;
-    type ShouldEndSession = Babe;
-    type NextSessionRotation = Babe;
-    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Validators>;
-    type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-    type Keys = opaque::SessionKeys;
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
@@ -311,22 +310,22 @@ parameter_types! {
     pub const HistoryDepth: u32 = 100;
 }
 
-impl pallet_validators::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+impl pallet_validator::Config for Runtime {
     type BondingDuration = BondingDuration;
-    type UnixTime = Timestamp;
-    type SessionsPerEra = SessionsPerEra;
-    type SessionInterface = Self;
+    type FullIdentification = u128;
+    type FullIdentificationOf = pallet_validator::types::ExposureOf<Runtime>;
     type HistoryDepth = HistoryDepth;
     type RestakingInterface = Restaking;
-    type FullIdentification = u128;
-    type FullIdentificationOf = pallet_validators::types::ExposureOf<Runtime>;
+    type RuntimeEvent = RuntimeEvent;
+    type SessionInterface = Self;
+    type SessionsPerEra = SessionsPerEra;
+    type UnixTime = Timestamp;
+    type WeightInfo = ();
 }
 
 impl pallet_authorship::Config for Runtime {
+    type EventHandler = (Validator, ImOnline);
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
-    type EventHandler = (Validators, ImOnline);
 }
 
 pub struct VerisenseRestakingAppCrypto;
@@ -334,9 +333,9 @@ pub struct VerisenseRestakingAppCrypto;
 impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
     for VerisenseRestakingAppCrypto
 {
-    type RuntimeAppPublic = vrs_primitives::keys::restaking::AuthorityId;
     type GenericPublic = sp_core::sr25519::Public;
     type GenericSignature = sp_core::sr25519::Signature;
+    type RuntimeAppPublic = vrs_primitives::keys::restaking::AuthorityId;
 }
 
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
@@ -422,17 +421,17 @@ impl frame_system::offchain::SigningTypes for Runtime {
 }
 
 impl pallet_restaking::Config for Runtime {
-    type AuthorityId = vrs_primitives::keys::restaking::AuthorityId;
     type AppCrypto = VerisenseRestakingAppCrypto;
-    type RuntimeEvent = RuntimeEvent;
+    type AuthorityId = vrs_primitives::keys::restaking::AuthorityId;
+    type Currency = Balances;
+    type MaxValidators = MaxAuthorities;
+    type RequestEventLimit = RequestEventLimit;
+    type RestakingEnable = RestakingEnable;
     type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
     type UnixTime = Timestamp;
     type UnsignedPriority = RestakingUnsignedPriority;
-    type RequestEventLimit = RequestEventLimit;
-    type MaxValidators = MaxAuthorities;
-    type RestakingEnable = RestakingEnable;
-    type ValidatorsInterface = Validators;
-    type Currency = Balances;
+    type ValidatorsInterface = Validator;
 }
 
 pub struct NoAssetCreators;
@@ -448,32 +447,32 @@ impl pallet_im_online::Config for Runtime {
     type AuthorityId = pallet_im_online::sr25519::AuthorityId;
     type MaxKeys = MaxKeys;
     type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
-    type RuntimeEvent = RuntimeEvent;
-    type ValidatorSet = Historical;
     type NextSessionRotation = Babe;
     type ReportUnresponsiveness = Offences;
+    type RuntimeEvent = RuntimeEvent;
     type UnsignedPriority = ImOnlineUnsignedPriority;
+    type ValidatorSet = Historical;
     type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_assets::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Balance = Balance;
-    type RemoveItemsLimit = ConstU32<5>;
+    type ApprovalDeposit = ConstU128<0>;
+    type AssetAccountDeposit = ConstU128<0>;
+    type AssetDeposit = ConstU128<0>;
     type AssetId = AssetId;
     type AssetIdParameter = AssetId;
-    type Currency = Balances;
+    type Balance = Balance;
+    type CallbackHandle = ();
     type CreateOrigin = NoAssetCreators;
+    type Currency = Balances;
+    type Extra = ();
     type ForceOrigin = EnsureRoot<AccountId>;
-    type AssetDeposit = ConstU128<0>;
-    type AssetAccountDeposit = ConstU128<0>;
+    type Freezer = ();
     type MetadataDepositBase = ConstU128<0>;
     type MetadataDepositPerByte = ConstU128<0>;
-    type ApprovalDeposit = ConstU128<0>;
+    type RemoveItemsLimit = ConstU32<5>;
+    type RuntimeEvent = RuntimeEvent;
     type StringLimit = ConstU32<50>;
-    type Freezer = ();
-    type Extra = ();
-    type CallbackHandle = ();
     type WeightInfo = ();
 }
 
@@ -488,19 +487,19 @@ parameter_types! {
 
 }
 impl pallet_swap::Config for Runtime {
-    type PalletId = SwapPalletId;
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
     type AssetBalance = Balance;
-    type AssetToCurrencyBalance = ConvertInto;
-    type CurrencyToAssetBalance = ConvertInto;
     type AssetId = AssetId;
-    type Assets = Assets;
     type AssetRegistry = Assets;
-    type WeightInfo = ();
-    type ProviderFeeNumerator = ConstU128<1>;
-    type ProviderFeeDenominator = ConstU128<100>;
+    type AssetToCurrencyBalance = ConvertInto;
+    type Assets = Assets;
+    type Currency = Balances;
+    type CurrencyToAssetBalance = ConvertInto;
     type MinDeposit = ConstU128<1>;
+    type PalletId = SwapPalletId;
+    type ProviderFeeDenominator = ConstU128<100>;
+    type ProviderFeeNumerator = ConstU128<1>;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -539,7 +538,7 @@ mod runtime {
     pub type AuthorityDiscovery = pallet_authority_discovery;
 
     #[runtime::pallet_index(6)]
-    pub type Validators = pallet_validators;
+    pub type Validator = pallet_validator;
 
     #[runtime::pallet_index(7)]
     pub type Session = pallet_session;
@@ -830,9 +829,17 @@ impl_runtime_apis! {
         }
     }
 
-    impl vrs_validator_runtime_api::ValidatorApi<Block> for Runtime {
+    impl vrs_validator_runtime_api::ValidatorRuntimeApi<Block> for Runtime {
         fn lookup_active_validator(id: KeyTypeId, key_data: Vec<u8>) -> Option<AccountId> {
-            <Validators as vrs_support::ValidatorsInterface<AccountId>>::lookup_active_validator(id, key_data.as_ref())
+            <Validator as vrs_support::ValidatorsInterface<AccountId>>::lookup_active_validator(id, key_data.as_ref())
+        }
+
+        fn get_genesis_validators() -> Vec<AccountId> {
+            Validator::genesis_validators()
+        }
+
+        fn get_current_validators() -> Vec<AccountId> {
+            <Validator as vrs_support::ValidatorsInterface<AccountId>>::validators()
         }
     }
 
@@ -853,8 +860,15 @@ impl_runtime_apis! {
             }
         }
 
-        fn get_nucleus_info(nucleus_id: NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>> {
-            Nucleus::get_nucleus_info(&nucleus_id)
+        fn get_nucleus_info(nucleus_id: &NucleusId) -> Option<NucleusInfo<AccountId, Hash, NodeId>> {
+            Nucleus::get_nucleus_info(nucleus_id)
+        }
+
+        fn is_member_of(
+            nucleus_id: &NucleusId,
+            account_id: &AccountId,
+        ) -> bool {
+            Nucleus::get_members(nucleus_id).contains(account_id)
         }
     }
 

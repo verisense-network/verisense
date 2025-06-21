@@ -1,22 +1,21 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use crate::cli::TssCmd;
+use crate::cli::{ExtraConfig, TssCmd};
 use futures::{prelude::*, FutureExt};
-use sc_client_api::{Backend, BlockBackend};
+use sc_client_api::{Backend, BlockBackend, HeaderBackend};
 use sc_network::{event::Event, NetworkEventStream};
-use sc_rpc_api::DenyUnsafe;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sc_transaction_pool_api::OffchainTransactionPoolFactory;
-use sp_api::ApiExt;
+use sp_api::ProvideRuntimeApi;
 use sp_authority_discovery::AuthorityId;
 use sp_core::crypto::Ss58Codec;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
 use std::{collections::HashSet, sync::Arc, time::Duration};
-use tokio::sync::Mutex;
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
+use vrs_validator_runtime_api::ValidatorRuntimeApi;
 
 pub(crate) type FullClient = sc_service::TFullClient<
     Block,
@@ -148,6 +147,7 @@ pub fn new_full<
 >(
     config: Configuration,
     tss_config: TssCmd,
+    extra_config: ExtraConfig,
 ) -> Result<TaskManager, ServiceError> {
     let network_config = config.network.clone();
 
@@ -217,6 +217,17 @@ pub fn new_full<
     );
     net_config.add_request_response_protocol(nucleus_p2p_reqres_config);
 
+    let (gluon_relay_sender, gluon_relay_receiver) = async_channel::bounded(1024);
+    let gluon_relay_protocol = N::request_response_config(
+        sc_network::types::ProtocolName::Static("/gluon/1"),
+        vec![],
+        10 * 1024 * 1024,
+        16 * 1024 * 1024,
+        Duration::from_secs(20),
+        Some(gluon_relay_sender),
+    );
+    net_config.add_request_response_protocol(gluon_relay_protocol);
+
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
@@ -230,6 +241,42 @@ pub fn new_full<
             block_relay: None,
             metrics,
         })?;
+
+    // launch authority discovery worker
+    let discovery_mode = if config.role.is_authority() {
+        sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore())
+    } else {
+        sc_authority_discovery::Role::Discover
+    };
+
+    let dht_event_stream = network
+        .event_stream("authority-discovery")
+        .filter_map(|e| async move {
+            match e {
+                Event::Dht(e) => Some(e),
+                _ => None,
+            }
+        });
+    let (authority_discovery_worker, authority_discovery_service) =
+        sc_authority_discovery::new_worker_and_service_with_config(
+            sc_authority_discovery::WorkerConfig {
+                publish_non_global_ips: true,
+                max_publish_interval: Duration::from_secs(60),
+                max_query_interval: Duration::from_secs(60),
+                public_addresses: auth_disc_public_addresses,
+                ..Default::default()
+            },
+            client.clone(),
+            Arc::new(network.clone()),
+            Box::pin(dht_event_stream),
+            discovery_mode,
+            config.prometheus_registry().cloned(),
+        );
+    task_manager.spawn_handle().spawn(
+        "authority-discovery-worker",
+        Some("networking"),
+        authority_discovery_worker.run(),
+    );
 
     if config.offchain_worker.enabled {
         task_manager.spawn_handle().spawn(
@@ -253,15 +300,36 @@ pub fn new_full<
     }
 
     let role = config.role.clone();
+    let authority_discovery = authority_discovery_service.clone();
     let force_authoring = config.force_authoring;
     let backoff_authoring_blocks: Option<()> = None;
     let name = config.network.node_name.clone();
+    let sys_rpc_port = config.rpc_port;
     let enable_grandpa = !config.disable_grandpa;
     let prometheus_registry = config.prometheus_registry().cloned();
     let nucleus_home_dir = config.data_path.as_path().join("nucleus");
     let tss_path = config.base_path.path().join("veritss");
+    let author = keystore_container
+        .keystore()
+        .sr25519_public_keys(sp_core::crypto::key_types::BABE)
+        .first()
+        .copied();
+    let best_hash = client.info().best_hash;
+    let api = client.runtime_api();
+    let maybe_validator = author
+        .map(|author| {
+            api.lookup_active_validator(
+                best_hash,
+                sp_core::crypto::key_types::BABE,
+                author.to_vec(),
+            )
+            .expect("couldn't load runtime api")
+        })
+        .flatten();
+
     // TODO config the capacity of pending requests
     let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
+    let network_service = Arc::new(network.clone());
     let rpc_extensions_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
@@ -271,7 +339,6 @@ pub fn new_full<
         let nucleus_rpc_tx = nucleus_rpc_tx.clone();
         let node_id = node_id.clone();
         let nucleus_home_dir = nucleus_home_dir.clone();
-        let role = role.clone();
 
         move |deny_unsafe, _subscription_executor: sc_rpc::SubscriptionTaskExecutor| {
             let deps = crate::rpc::FullDeps {
@@ -283,18 +350,21 @@ pub fn new_full<
                     babe_worker_handle: babe_worker_handle.clone(),
                 },
                 backend: rpc_backend.clone(),
-                nucleus: role.is_authority().then(|| crate::rpc::NucleusDeps {
+                nucleus: crate::rpc::NucleusDeps {
                     rpc_channel: nucleus_rpc_tx.clone(),
                     node_id: node_id.clone(),
                     home_dir: nucleus_home_dir.clone(),
-                }),
+                    network: network_service.clone(),
+                    authority_discover: authority_discovery.clone(),
+                    maybe_validator: maybe_validator.clone(),
+                },
             };
             crate::rpc::create_full(deny_unsafe, deps).map_err(Into::into)
         }
     };
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-        network: Arc::new(network.clone()),
+        network: network.clone(),
         client: client.clone(),
         keystore: keystore_container.keystore(),
         task_manager: &mut task_manager,
@@ -308,17 +378,10 @@ pub fn new_full<
         telemetry: telemetry.as_mut(),
     })?;
     // tss by shiotoli
-    let genesis_block_hash = client
-        .block_hash(0)
-        .ok()
-        .flatten()
-        .expect("Genesis block exists; qed");
-
-    use sp_api::ProvideRuntimeApi;
-    use vrs_tss_runtime_api::VrsTssRuntimeApi;
+    let best_block_hash = client.info().best_hash;
     let validators = client
         .runtime_api()
-        .get_all_validators(genesis_block_hash)
+        .get_genesis_validators(best_block_hash)
         .map_err(|e| sc_service::Error::Other(format!("Failed to get all validators: {}", e)))?;
     let whitelisted_ids = validators
         .iter()
@@ -331,7 +394,6 @@ pub fn new_full<
             vrs_tss::TssKeystore::new(keystore_container.keystore(), AUTHORITY_DISCOVERY).map_err(
                 |e| sc_service::Error::Other(format!("Failed to initialize signer: {}", e)),
             )?;
-        // use aura key to initialize signer
         // if the node is an authority, it will run a signer service
         // since we cannot get the sudo account from the chain spec, we start the coordinator for all authorities
         let min_signers = whitelisted_ids.len() as u16 / 2 + 1;
@@ -452,42 +514,7 @@ pub fn new_full<
     };
     // tss finished
 
-    //
     if role.is_authority() {
-        // launch authority discovery worker
-        let discovery_mode =
-            sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
-        let dht_event_stream =
-            network
-                .event_stream("authority-discovery")
-                .filter_map(|e| async move {
-                    match e {
-                        Event::Dht(e) => Some(e),
-                        _ => None,
-                    }
-                });
-        let (authority_discovery_worker, authority_discovery_service) =
-            sc_authority_discovery::new_worker_and_service_with_config(
-                sc_authority_discovery::WorkerConfig {
-                    publish_non_global_ips: true,
-                    max_publish_interval: Duration::from_secs(60),
-                    max_query_interval: Duration::from_secs(60),
-                    public_addresses: auth_disc_public_addresses,
-                    ..Default::default()
-                },
-                client.clone(),
-                Arc::new(network.clone()),
-                Box::pin(dht_event_stream),
-                discovery_mode,
-                prometheus_registry.clone(),
-            );
-        task_manager.spawn_handle().spawn(
-            "authority-discovery-worker",
-            Some("networking"),
-            authority_discovery_worker.run(),
-        );
-        let authority_discovery = Arc::new(Mutex::new(authority_discovery_service));
-
         let node_key_pair = libp2p::identity::Keypair::ed25519_from_bytes(
             network_config
                 .node_key
@@ -498,14 +525,11 @@ pub fn new_full<
         )
         .unwrap();
 
-        let genesis_block_hash = client
-            .block_hash(0)
-            .ok()
-            .flatten()
-            .expect("Genesis block exists; qed");
+        // FIXME
+        let best_hash = client.info().best_hash;
         let validators = client
             .runtime_api()
-            .get_all_validators(genesis_block_hash)
+            .get_current_validators(best_hash)
             .unwrap();
         let validators: Vec<AuthorityId> = validators
             .into_iter()
@@ -525,7 +549,7 @@ pub fn new_full<
             cage_p2p_rx,
             controller: sp_keyring::AccountKeyring::Alice.to_account_id(),
             authorities: validators,
-            authority_discovery: authority_discovery.clone(),
+            authority_discovery: authority_discovery_service.clone(),
             _phantom: std::marker::PhantomData,
         };
 
@@ -540,9 +564,10 @@ pub fn new_full<
             client: client.clone(),
             keystore: keystore_container.keystore(),
             transaction_pool: transaction_pool.clone(),
-            authority_discovery: authority_discovery.clone(),
+            authority_discovery: authority_discovery_service.clone(),
             nucleus_signal: nucleus_rpc_rx,
             net_service: network.clone(),
+            gluon_relay_rx: gluon_relay_receiver,
             tss_node,
             nucleus_home_dir: nucleus_home_dir.clone(),
             p2p_cage_rx,
@@ -560,9 +585,8 @@ pub fn new_full<
             pool: transaction_pool.clone(),
             node_id: node_id.clone(),
             nucleus_home_dir: nucleus_home_dir.clone(),
-            // TODO config
-            sys_rpc_port: 9944,
-            entry_rpc_port: 9955,
+            sys_rpc_port,
+            entry_rpc_port: extra_config.extra_rpc_port.unwrap_or(9955),
         };
         task_manager.spawn_essential_handle().spawn_blocking(
             "nucleus-rpc-server",
@@ -624,44 +648,6 @@ pub fn new_full<
             Some("block-authoring"),
             babe,
         );
-        /*
-        let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
-
-        let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
-            StartAuraParams {
-                slot_duration,
-                client,
-                select_chain,
-                block_import,
-                proposer_factory,
-                create_inherent_data_providers: move |_, ()| async move {
-                    let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-
-                    let slot =
-                        sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-                            *timestamp,
-                            slot_duration,
-                        );
-
-                    Ok((slot, timestamp))
-                },
-                force_authoring,
-                backoff_authoring_blocks,
-                keystore: keystore_container.keystore(),
-                sync_oracle: sync_service.clone(),
-                justification_sync_link: sync_service.clone(),
-                block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
-                max_block_proposal_slot_portion: None,
-                telemetry: telemetry.as_ref().map(|x| x.handle()),
-                compatibility_mode: Default::default(),
-            },
-        )?;
-
-        // the AURA authoring task is considered essential, i.e. if it
-        // fails we take down the service with it.
-        task_manager
-            .spawn_essential_handle()
-            .spawn_blocking("aura", Some("block-authoring"), aura);*/
     }
 
     if enable_grandpa {
@@ -680,7 +666,7 @@ pub fn new_full<
             name: Some(name),
             observer_enabled: false,
             keystore,
-            local_role: role,
+            local_role: role.clone(),
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             protocol_name: grandpa_protocol_name,
         };

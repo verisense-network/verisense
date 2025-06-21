@@ -3,7 +3,6 @@ use codec::{Decode, Encode};
 use scale_info::prelude::format;
 use sp_std::fmt::Debug;
 use sp_std::vec::Vec;
-use vrs_support::log;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, scale_info::TypeInfo)]
 pub enum RpcError {

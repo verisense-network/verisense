@@ -1,5 +1,5 @@
 [package]
-name = "pallet-validators"
+name = "pallet-validator"
 description = "FRAME pallet for managing validators"
 version.workspace = true
 edition.workspace = true

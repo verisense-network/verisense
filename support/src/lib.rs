@@ -40,7 +40,7 @@ pub trait AgentRegistry<AccountId> {
 
     fn update_agent(agent_info: AgentInfo<AccountId>) -> Result<(), Self::Err>;
 
-    fn delete_agent(agent_info: &AccountId) -> Result<(), Self::Err>;
+    fn deregister_agent(agent_info: &AccountId) -> Result<(), Self::Err>;
 
     fn find_agent(agent_id: &AccountId) -> Option<AgentInfo<AccountId>>;
 }

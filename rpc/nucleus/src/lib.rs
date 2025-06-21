@@ -3,6 +3,7 @@ use codec::Decode;
 use constants::*;
 use futures::prelude::*;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::error::ErrorObjectOwned};
+use sc_network::service::traits::NetworkService;
 use sc_network_types::PeerId;
 use sc_transaction_pool_api::{BlockHash, TransactionPool, TransactionSource, TransactionStatus};
 use sp_api::ProvideRuntimeApi;
@@ -13,9 +14,10 @@ use tokio::sync::{
     mpsc::Sender,
     oneshot::{self, Receiver},
 };
+use vrs_gluon_relayer::{ForwardRequest, Relayer};
 use vrs_nucleus_executor::{Gluon, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
-use vrs_primitives::NucleusId;
+use vrs_primitives::{AccountId, NucleusId};
 
 #[rpc(server)]
 pub trait NucleusApi<Hash> {
@@ -29,28 +31,69 @@ pub trait NucleusApi<Hash> {
     async fn deploy(&self, tx: Bytes, wasm: Bytes, abi: serde_json::Value) -> RpcResult<Hash>;
 }
 
-pub struct Nucleus<P, C> {
+pub struct Nucleus<P, C, N, B> {
     sender: Sender<(NucleusId, Gluon)>,
+    relayer: Relayer<C, N, B>,
     client: Arc<C>,
     pool: Arc<P>,
     node_id: PeerId,
+    maybe_validator: Option<AccountId>,
     nucleus_home_dir: PathBuf,
 }
 
-impl<P, C> Nucleus<P, C> {
+impl<P, C, N> Nucleus<P, C, N, P::Block>
+where
+    P: TransactionPool + Sync + Send + 'static,
+    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
+    N: NetworkService + Send + Sync + 'static,
+{
     pub fn new(
         sender: Sender<(NucleusId, Gluon)>,
+        relayer: Relayer<C, N, P::Block>,
         client: Arc<C>,
         pool: Arc<P>,
         node_id: PeerId,
+        maybe_validator: Option<AccountId>,
         nucleus_home_dir: PathBuf,
     ) -> Self {
         Self {
             sender,
+            relayer,
             client,
             pool,
             node_id,
+            maybe_validator,
             nucleus_home_dir,
+        }
+    }
+
+    fn is_nucleus_member(&self, nucleus_id: &NucleusId) -> bool {
+        if self.maybe_validator.is_none() {
+            return false;
+        }
+        let best_block = self.client.info().best_hash;
+        let api = self.client.runtime_api();
+        api.is_member_of(
+            best_block,
+            &nucleus_id,
+            self.maybe_validator.as_ref().unwrap(),
+        )
+        .unwrap_or(false)
+    }
+
+    async fn forward(&self, req: ForwardRequest) -> RpcResult<String> {
+        tokio::select! {
+            res = self.relayer.forward_to(req) => {
+                match res {
+                    Ok(response) => Ok(hex::encode(response)),
+                    Err(e) => Err(ErrorObjectOwned::owned(FAIL_TO_FORWARD_REQUEST_CODE, e, None::<()>)),
+                }
+            }
+            _ = tokio::time::sleep(std::time::Duration::from_secs(30)) => {
+                Err(ErrorObjectOwned::owned(FAIL_TO_FORWARD_REQUEST_CODE, FAIL_TO_FORWARD_REQUEST_MSG, None::<()>))
+            }
         }
     }
 
@@ -85,14 +128,23 @@ impl<P, C> Nucleus<P, C> {
 }
 
 #[async_trait]
-impl<P, C> NucleusApiServer<BlockHash<P>> for Nucleus<P, C>
+impl<P, C, N> NucleusApiServer<BlockHash<P>> for Nucleus<P, C, N, P::Block>
 where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
+    N: NetworkService + Send + Sync + 'static,
 {
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
+        if !self.is_nucleus_member(&nucleus) {
+            let req = ForwardRequest::Post {
+                nucleus_id: nucleus,
+                endpoint: op,
+                payload: payload.0,
+            };
+            return self.forward(req).await;
+        }
         let (tx, rx) = oneshot::channel();
         let req = (
             nucleus,
@@ -106,6 +158,14 @@ where
     }
 
     async fn get(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
+        if !self.is_nucleus_member(&nucleus) {
+            let req = ForwardRequest::Get {
+                nucleus_id: nucleus,
+                endpoint: op,
+                payload: payload.0,
+            };
+            return self.forward(req).await;
+        }
         let (tx, rx) = oneshot::channel();
         let req = (
             nucleus,
@@ -156,7 +216,7 @@ where
             ))?;
 
         let nucleus_info = api
-            .get_nucleus_info(best_block_hash, wasm_info.nucleus_id.clone())
+            .get_nucleus_info(best_block_hash, &wasm_info.nucleus_id)
             .inspect_err(|e| {
                 log::error!(
                     "Couldn't get nucleus info while upgrading wasm, caused by {:?}",
@@ -275,4 +335,6 @@ mod constants {
     pub const NUCLEUS_ABI_NOT_MATCH_CODE: i32 = -40015;
     pub const INVALID_NUCLEUS_ABI_CODE: i32 = -40016;
     pub const INVALID_NUCLEUS_ABI_MSG: &str = "Invalid nucleus ABI.";
+    pub const FAIL_TO_FORWARD_REQUEST_CODE: i32 = -40017;
+    pub const FAIL_TO_FORWARD_REQUEST_MSG: &str = "Forwarding request to validators failed.";
 }
