@@ -13283,6 +13283,8 @@ dependencies = [
  "hyper 1.5.0",
  "hyper-tls 0.6.0",
  "hyper-util",
+ "jsonrpc-core",
+ "jsonrpsee",
  "log",
  "parity-scale-codec",
  "pin-project-lite",

@@ -32,6 +32,8 @@ blake2 = "0.10.6"
 vrs-tss = { path = "../../tss" }
 sha2 = "0.10"
 serde_json = "1"
+jsonrpsee = { version = "0.23" }
+jsonrpc-core = "18.0"
 
 [dev-dependencies]
 temp-dir = "0.1.13"

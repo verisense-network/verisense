@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{mpsc::Sender, oneshot};
-use vrs_nucleus_executor::Gluon;
+use vrs_nucleus_executor::{Gluon, NucleusError};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
 use vrs_primitives::NucleusId;
 use warp::{Buf, Filter, Reply};
@@ -161,71 +161,30 @@ where
         error: JsonRpcError::new(ErrorCode::MethodNotFound),
     }))?;
 
-    tokio::select! {
-        v = context.sender.send(req) => {
-            if v.is_err() {
-                return Err(Output::Failure(Failure {
-                    jsonrpc: Some(Version::V2),
-                    id: call.id.clone(),
-                    error: JsonRpcError {
-                        code: ErrorCode::ServerError(NUCLEUS_OFFLINE_CODE),
-                        message: NUCLEUS_OFFLINE_MSG.to_string(),
-                        data: None,
-                    },
-                }));
-            }
-        }
-        _ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {
-            return Err(Output::Failure(Failure {
-                    jsonrpc: Some(Version::V2),
-                    id: call.id.clone(),
-                    error: JsonRpcError {
-                        code: ErrorCode::ServerError(NUCLEUS_TIMEOUT_CODE),
-                        message: NUCLEUS_TIMEOUT_MSG.to_string(),
-                        data: None,
-                    },
-                }));
-        }
+    if let Err(_) = context.sender.send(req).await {
+        return Err(Output::Failure(Failure {
+            jsonrpc: Some(Version::V2),
+            id: call.id.clone(),
+            error: NucleusError::node(NUCLEUS_OFFLINE).into(),
+        }));
     }
-    tokio::select! {
-        reply = rx => {
-            match reply {
-                Ok(Ok(r)) => Ok(Output::Success(Success {
-                    jsonrpc: Some(Version::V2),
-                    id: call.id.clone(),
-                    result: serde_json::Value::String(hex::encode(r)),
-                })),
-                Ok(Err(e)) => Err(Output::Failure(Failure {
-                    jsonrpc: Some(Version::V2),
-                    id: call.id.clone(),
-                    error: JsonRpcError {
-                        code: ErrorCode::ServerError(e.0.into()),
-                        message: e.1,
-                        data: None,
-                    },
-                })),
-                Err(_) => Err(Output::Failure(Failure {
-                    jsonrpc: Some(Version::V2),
-                    id: call.id.clone(),
-                    error: JsonRpcError {
-                        code: ErrorCode::ServerError(NUCLEUS_OFFLINE_CODE),
-                        message: NUCLEUS_OFFLINE_MSG.to_string(),
-                        data: None,
-                    },
-                })),
-            }
-        }
-        _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
-            Err(Output::Failure(Failure {
-                    jsonrpc: Some(Version::V2),
-                    id: call.id.clone(),
-                    error: JsonRpcError {
-                        code: ErrorCode::ServerError(NUCLEUS_TIMEOUT_CODE),
-                        message: NUCLEUS_TIMEOUT_MSG.to_string(),
-                        data: None,
-                    },
-                }))
-        }
+
+    match rx.await {
+        Ok(Ok(r)) => Ok(Output::Success(Success {
+            jsonrpc: Some(Version::V2),
+            id: call.id.clone(),
+            result: serde_json::Value::String(hex::encode(r)),
+        })),
+        Ok(Err(e)) => Err(Output::Failure(Failure {
+            jsonrpc: Some(Version::V2),
+            id: call.id.clone(),
+            error: e.into(),
+        })),
+        Err(_) => Err(Output::Failure(Failure {
+            jsonrpc: Some(Version::V2),
+            id: call.id.clone(),
+            error: NucleusError::node(NUCLEUS_OFFLINE).into(),
+        })),
     }
 }
 
@@ -499,10 +458,10 @@ where
 
 // TODO
 mod constants {
-    pub const NUCLEUS_OFFLINE_CODE: i64 = -40001;
-    pub const NUCLEUS_OFFLINE_MSG: &str = "The nucleus is offline.";
-    pub const NUCLEUS_TIMEOUT_CODE: i64 = -40002;
-    pub const NUCLEUS_TIMEOUT_MSG: &str = "The nucleus is not responding.";
+    // pub const NUCLEUS_OFFLINE_CODE: i64 = -40001;
+    pub const NUCLEUS_OFFLINE: &str = "The nucleus is offline.";
+    // pub const NUCLEUS_TIMEOUT_CODE: i64 = -40002;
+    // pub const NUCLEUS_TIMEOUT_MSG: &str = "The nucleus is not responding.";
     // pub const TX_POOL_ERROR_CODE: i64 = -40010;
     // pub const NUCLEUS_UPGRADE_TX_ERR_CODE: i64 = -40011;
     // pub const NUCLEUS_UPGRADE_TX_ERR_MSG: &str = "The nucleus upgrading transaction is invalid.";

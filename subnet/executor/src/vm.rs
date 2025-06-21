@@ -1,6 +1,6 @@
 use crate::{
     runtime::{ContextAware, FuncRegister},
-    WasmInfo,
+    NucleusError, WasmInfo,
 };
 use codec::{Decode, Encode};
 use thiserror::Error;
@@ -39,33 +39,37 @@ pub enum WasmCallError {
 
 const PAGE_SIZE: usize = 65536;
 const MAX_PAGE_COUNT: usize = 1024;
-impl Into<(i32, String)> for WasmCallError {
-    fn into(self) -> (i32, String) {
-        (self.to_error_code() as i32, self.to_string())
+
+impl Into<NucleusError> for WasmCallError {
+    fn into(self) -> NucleusError {
+        NucleusError {
+            code: self.to_error_code(),
+            message: self.to_string(),
+        }
     }
 }
 
 impl WasmCallError {
     pub fn to_error_code(&self) -> i32 {
         match self {
-            WasmCallError::EndpointNotFound => -5000,
-            WasmCallError::NoMemoryExported => -5001,
-            WasmCallError::ArgumentsSizeExceeded => -5002,
-            WasmCallError::ResultSizeExceeded => -5003,
-            WasmCallError::ResultPointerError => -5004,
-            WasmCallError::MemoryError(_) => -5005,
-            WasmCallError::FunctionCallError(_) => -5006,
-            WasmCallError::DecodeError => -5007,
-            WasmCallError::WasmInternalError(_) => -5008,
-            WasmCallError::WasmNotInitialized => -5009,
+            WasmCallError::EndpointNotFound => -32070,
+            WasmCallError::NoMemoryExported => -32071,
+            WasmCallError::ArgumentsSizeExceeded => -32072,
+            WasmCallError::ResultSizeExceeded => -32073,
+            WasmCallError::ResultPointerError => -32074,
+            WasmCallError::MemoryError(_) => -32075,
+            WasmCallError::FunctionCallError(_) => -32076,
+            WasmCallError::DecodeError => -32077,
+            WasmCallError::WasmInternalError(_) => -32078,
+            WasmCallError::WasmNotInitialized => -32079,
         }
     }
 }
 
-pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), String> {
+pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), NucleusError> {
     let engine = Engine::default();
-    let module =
-        Module::from_binary(&engine, blob).map_err(|e| format!("Invalid WASM code blob: {}", e))?;
+    let module = Module::from_binary(&engine, blob)
+        .map_err(|e| NucleusError::abi(format!("Invalid WASM code blob: {}", e)))?;
     let exports = module
         .exports()
         .filter_map(|e| {
@@ -79,29 +83,36 @@ pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), 
         .collect::<std::collections::HashMap<String, ()>>();
     for item in spec {
         let func = item.as_object().ok_or({
-            format!(
+            NucleusError::abi(format!(
                 "Invalid ABI specification: expected an object, found {}",
                 item
-            )
+            ))
         })?;
-        if func.get("type").ok_or(format!(
-            "Invalid ABI specification: missing `type` field near {}",
-            item
-        ))? == "fn"
-        {
-            let export_name = format!(
-                "__nucleus_{}_{}",
-                func.get("method").and_then(|m| m.as_str()).ok_or(format!(
+        let ty = func.get("type").and_then(|t| t.as_str()).ok_or({
+            NucleusError::abi(format!(
+                "Invalid ABI specification: missing `type` field near {}",
+                item
+            ))
+        })?;
+        if ty == "fn" {
+            let method = func.get("method").and_then(|m| m.as_str()).ok_or({
+                NucleusError::abi(format!(
                     "Invalid ABI specification: missing `method` field near {}",
                     item
-                ))?,
-                func.get("name").and_then(|m| m.as_str()).ok_or(format!(
+                ))
+            })?;
+            let name = func.get("name").and_then(|m| m.as_str()).ok_or({
+                NucleusError::abi(format!(
                     "Invalid ABI specification: missing `name` field near {}",
                     item
-                ))?
-            );
+                ))
+            })?;
+            let export_name = format!("__nucleus_{}_{}", method, name);
             if !exports.contains_key(&export_name) {
-                return Err(format!("Missing export: {} in WASM code", export_name));
+                return Err(NucleusError::abi(format!(
+                    "Missing export: {} in WASM code",
+                    export_name
+                )));
             }
         }
     }
@@ -257,514 +268,3 @@ where
         Ok(result)
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use chrono::Duration;
-//     use codec::{Decode, Encode};
-//     use std::thread::sleep;
-//     use temp_dir::TempDir;
-//     #[test]
-//     pub fn load_wasm_should_work() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("1").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-//         let input = <(String, String) as codec::Encode>::encode(&(
-//             "aaaaaaaaaa".to_string(),
-//             "bbbbbbbbbb".to_string(),
-//         ));
-//         assert_eq!(
-//             input,
-//             vec![
-//                 40, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 40, 98, 98, 98, 98, 98, 98, 98, 98, 98,
-//                 98
-//             ]
-//         );
-//         let result = vm.call_post("cc", input, vec![]).unwrap();
-//         assert_eq!(
-//             result,
-//             vec![
-//                 0, 80, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97,
-//                 98
-//             ]
-//         );
-//         let result =
-//             <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-//         assert_eq!(result, Ok("abababababababababab".to_string()));
-
-//         let input = <String as codec::Encode>::encode(&"aaaaaaaaaa".to_string());
-//         //jsonrpc: {method: AVS_{AVSNAME}_{METHODNAME}, params: [], id: 1}
-//         let result = vm.call_post("cc", input, vec![]);
-//         assert_eq!(
-//             result,
-//             Err(WasmCallError::WasmInternalError(
-//                 "Failed to decode arguments tuple".to_owned()
-//             ))
-//         );
-
-//         let input = <(String, String) as codec::Encode>::encode(&(
-//             "aaaaaaaaaa".to_string(),
-//             "bbbbbbbbbb".to_string(),
-//         ));
-//         let result = vm.call_post("cc", input, vec![]).unwrap();
-//         assert_eq!(
-//             result,
-//             vec![
-//                 0, 80, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97, 98, 97,
-//                 98
-//             ]
-//         );
-//         let result =
-//             <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-//         assert_eq!(result, Ok("abababababababababab".to_string()));
-
-//         let result = vm.call_get("get", vec![]).unwrap();
-//         assert_eq!(result, vec![5, 0, 0, 0]);
-//         // assert_eq!(
-//         //     vec![0u8],
-//         //     vm.call_post("__nucleus_post_post", encoded_args).unwrap()
-//         // );
-//     }
-//     #[test]
-//     pub fn test_set_time_delay() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("1").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-
-//         let result = vm.call_post("test_set_timer", vec![], vec![]).unwrap();
-//         let result = vm
-//             .call_get(
-//                 "get_data",
-//                 <String as codec::Encode>::encode(&"delay".to_string()),
-//             )
-//             .unwrap();
-//         let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-//         assert_eq!(r.unwrap(), "init");
-//         while let Some(timer_entry) = vm.pop_pending_timer() {
-//             let mut now = chrono::Utc::now();
-//             if timer_entry.timestamp > now {
-//                 let duration: Duration = timer_entry.timestamp - now;
-//                 sleep(duration.to_std().unwrap());
-//             }
-//             let vm_result = vm
-//                 .call_post(&timer_entry.func_name, timer_entry.func_params, vec![])
-//                 .map_err(|e| {
-//                     log::error!(
-//                         "fail to call post endpoint: {} due to: {:?}",
-//                         &timer_entry.func_name,
-//                         e
-//                     );
-//                     (1000000 << 10 + e.to_error_code(), e.to_string())
-//                 });
-//             let result = vm
-//                 .call_get(
-//                     "get_data",
-//                     <String as codec::Encode>::encode(&"delay".to_string()),
-//                 )
-//                 .unwrap();
-//             let r =
-//                 <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-
-//             assert_eq!(r.unwrap(), "delay_complete abc 123");
-//         }
-//     }
-
-//     #[test]
-//     pub fn test_should_not_call_put() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("1").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-//         println!("__call_ptr={}", vm.__call_param_ptr);
-//         let result = vm.call_get("should_not_call_put", vec![]).unwrap();
-//         let result = <Result<(), String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-//         println!("{:?}", result);
-//         assert_eq!(
-//             result,
-//             Err("Operation not allowed in GET method".to_string())
-//         );
-//         let result = vm.call_post("should_call_put", vec![], vec![]).unwrap();
-//         let result = <Result<(), String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-//         assert_eq!(result, Ok(()));
-//     }
-
-//     #[test]
-//     pub fn test_encode() {
-//         let a = ();
-//         let b = ("123".to_string(),);
-//         let c = ("123".to_string(), 123.to_string());
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("2").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-
-//         let result = vm.call_post("i0o0", vec![], vec![]).unwrap();
-//         assert_eq!(result, a.encode());
-//         let result = vm.call_post("i1o0", b.encode(), vec![]).unwrap();
-//         assert_eq!(result, a.encode());
-//         let result = vm.call_post("i1o1", b.encode(), vec![]).unwrap();
-
-//         assert_eq!(result, b.encode());
-//     }
-
-//     #[test]
-//     pub fn call_post_should_work_for_general() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-
-//         let engine = Engine::default();
-//         let module = Module::from_file(&engine, wasm_path).unwrap();
-//         module.exports().for_each(|ty| match ty.ty() {
-//             ExternType::Func(func) => {
-//                 log::info!("export: {} {}", func.to_string(), ty.name());
-//             }
-//             _ => {}
-//         });
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("3").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut store = Store::new(&engine, context);
-//         let linker = Context::inject_host_funcs(&engine);
-//         let instance = linker.instantiate(&mut store, &module).unwrap();
-//         let memory = instance
-//             .get_memory(&mut store, "memory")
-//             .expect("Failed to get memory");
-
-//         let input = <(String, String) as codec::Encode>::encode(&(
-//             "aaaaaaaaaa".to_string(),
-//             "bbbbbbbbbb".to_string(),
-//         ));
-//         let input_len = input.len();
-//         let ptr = memory.data_size(&store) as i32;
-//         memory.grow(&mut store, 1).unwrap();
-//         memory.write(&mut store, ptr as usize, &input[..]).unwrap();
-
-//         let call_example: wasmtime::Func = instance
-//             .get_func(&mut store, "__nucleus_post_cc")
-//             .expect("function not found");
-//         let mut result = vec![Val::I32(0)];
-//         call_example
-//             .call(
-//                 &mut store,
-//                 &[Val::I32(ptr), Val::I32(input_len as i32)],
-//                 &mut result,
-//             )
-//             .unwrap();
-//         let result_ptr = result[0].unwrap_i32() as usize;
-//         let mut result_len = vec![0u8; 50];
-//         memory.read(&store, result_ptr, &mut result_len).unwrap();
-//         log::info!("result_len: {:?}", result_len);
-//         let mut result_len = vec![0u8; 4];
-//         memory.read(&store, result_ptr, &mut result_len).unwrap();
-//         log::info!("result_len: {:?}", result_len);
-//         //convert result_len to u32
-//         let result_len =
-//             u32::from_ne_bytes([result_len[0], result_len[1], result_len[2], result_len[3]]);
-//         log::info!("result_len: {}", result_len);
-//         let mut result = vec![0u8; result_len as usize];
-//         memory.read(&store, result_ptr + 4, &mut result).unwrap();
-//         log::info!("results: {:?}", result);
-//         let s = <Result<Vec<u8>, String> as codec::Decode>::decode(&mut result.as_slice())
-//             .unwrap()
-//             .unwrap();
-//         let result = <Result<String, String> as codec::Decode>::decode(&mut s.as_slice()).unwrap();
-//         assert_eq!(result, Ok("abababababababababab".to_string()));
-//     }
-
-//     #[test]
-//     pub fn call_post_should_fail_for_general() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-
-//         let engine = Engine::default();
-//         let module = Module::from_file(&engine, wasm_path).unwrap();
-//         module.exports().for_each(|ty| match ty.ty() {
-//             ExternType::Func(func) => {
-//                 log::info!("export: {} {}", func.to_string(), ty.name());
-//             }
-//             _ => {}
-//         });
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("4").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut store = Store::new(&engine, context);
-//         let linker = Context::inject_host_funcs(&engine);
-//         let instance = linker.instantiate(&mut store, &module).unwrap();
-//         let memory = instance
-//             .get_memory(&mut store, "memory")
-//             .expect("Failed to get memory");
-
-//         let input = <String as codec::Encode>::encode(&"aaaaaaaaaa".to_string());
-//         let input_len = input.len();
-//         let ptr = memory.data_size(&store) as i32;
-//         memory.grow(&mut store, 1).unwrap();
-//         memory.write(&mut store, ptr as usize, &input[..]).unwrap();
-
-//         let call_example: wasmtime::Func = instance
-//             .get_func(&mut store, "__nucleus_post_cc")
-//             .expect("function not found");
-//         let mut result = vec![Val::I32(0)];
-//         call_example
-//             .call(
-//                 &mut store,
-//                 &[Val::I32(ptr), Val::I32(input_len as i32)],
-//                 &mut result,
-//             )
-//             .unwrap();
-//         let result_ptr = result[0].unwrap_i32() as usize;
-//         let mut result_len = vec![0u8; 50];
-//         memory.read(&store, result_ptr, &mut result_len).unwrap();
-//         log::info!("result_len: {:?}", result_len);
-//         let mut result_len = vec![0u8; 4];
-//         memory.read(&store, result_ptr, &mut result_len).unwrap();
-//         log::info!("result_len: {:?}", result_len);
-//         //convert result_len to u32
-//         let result_len =
-//             u32::from_ne_bytes([result_len[0], result_len[1], result_len[2], result_len[3]]);
-//         log::info!("result_len: {}", result_len);
-//         let mut result = vec![0u8; result_len as usize];
-//         memory.read(&store, result_ptr + 4, &mut result).unwrap();
-//         log::info!("results: {:?}", result);
-//         let s = <Result<Vec<u8>, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-//         assert_eq!(s, Err("Failed to decode arguments tuple".to_string()));
-//     }
-//     #[test]
-//     pub fn test_not_found() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("2").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-//         let result = vm.call_post("test_get_not_found", vec![], vec![]).unwrap();
-//         let s = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
-//             .unwrap()
-//             .unwrap();
-//         assert_eq!(s, "");
-//     }
-//     #[test]
-//     pub fn test_multiple_set_time_delay() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("1").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-
-//         let result = vm
-//             .call_post("test_set_tree_mod_timer", vec![], vec![])
-//             .unwrap();
-//         let result = vm
-//             .call_get(
-//                 "get_data",
-//                 <String as codec::Encode>::encode(&"delay".to_string()),
-//             )
-//             .unwrap();
-//         let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-//         assert_eq!(r.unwrap(), "delay_complete init 0");
-//         let mut ord = 0;
-//         while let Some(timer_entry) = vm.pop_pending_timer() {
-//             ord += 1;
-//             // println!("{:?}", timer_entry);
-//             let mut now = chrono::Utc::now();
-//             if timer_entry.timestamp > now {
-//                 let duration: Duration = timer_entry.timestamp - now;
-//                 sleep(duration.to_std().unwrap());
-//             }
-//             let vm_result = vm
-//                 .call_post(&timer_entry.func_name, timer_entry.func_params, vec![])
-//                 .map_err(|e| {
-//                     log::error!(
-//                         "fail to call post endpoint: {} due to: {:?}",
-//                         &timer_entry.func_name,
-//                         e
-//                     );
-//                     (1000000 << 10 + e.to_error_code(), e.to_string())
-//                 });
-//             let result = vm
-//                 .call_get(
-//                     "get_data",
-//                     <String as codec::Encode>::encode(&"delay".to_string()),
-//                 )
-//                 .unwrap();
-//             let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
-//                 .unwrap()
-//                 .unwrap();
-//             assert_eq!(r, format!("delay_complete abc {}", ord));
-//         }
-//     }
-//     #[test]
-//     pub fn test_tree_set_time_delay() {
-//         let wasm_path = "../../nucleus-examples/vrs_nucleus_examples.wasm";
-//         let wasm = WasmInfo {
-//             account: AccountId::new([0u8; 32]),
-//             name: "avs-dev-demo".to_string(),
-//             version: 0,
-//             code: WasmCodeRef::File(wasm_path.to_string()),
-//         };
-
-//         let tmp_dir = TempDir::new().unwrap();
-//         let context = Context::init(ContextConfig {
-//             db_path: tmp_dir.child("1").into_boxed_path(),
-//         })
-//         .unwrap();
-//         let mut vm = Vm::new_instance(&wasm, context).unwrap();
-//         let input = <(i32, i32) as codec::Encode>::encode(&(1, 0));
-//         let result = vm
-//             .call_post(
-//                 "test_set_perfect_tree_mod_timer",
-//                 input,
-//                 vec![CallerInfo {
-//                     func: "test_tree_set_time_delay".to_string(),
-//                     thread_id: 0,
-//                     params: vec![],
-//                     caller_type: crate::CallerType::Entry,
-//                 }],
-//             )
-//             .unwrap();
-//         let result = vm
-//             .call_get(
-//                 "get_data",
-//                 <String as codec::Encode>::encode(&"delay".to_string()),
-//             )
-//             .unwrap();
-//         let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice()).unwrap();
-
-//         let mut s = format!("{}", r.unwrap());
-//         let mut ord = 0;
-//         while let Some(timer_entry) = vm.pop_pending_timer() {
-//             ord += 1;
-
-//             // println!("{:#?}", timer_entry);
-//             let mut now = chrono::Utc::now();
-//             if timer_entry.timestamp > now {
-//                 let duration: Duration = timer_entry.timestamp - now;
-//                 sleep(duration.to_std().unwrap());
-//             }
-
-//             let vm_result = vm
-//                 .call_post(
-//                     &timer_entry.func_name,
-//                     timer_entry.func_params,
-//                     timer_entry.caller_infos,
-//                 )
-//                 .map_err(|e| {
-//                     log::error!(
-//                         "fail to call post endpoint: {} due to: {:?}",
-//                         &timer_entry.func_name,
-//                         e
-//                     );
-//                     (1000000 << 10 + e.to_error_code(), e.to_string())
-//                 });
-
-//             let result = vm
-//                 .call_get(
-//                     "get_data",
-//                     <String as codec::Encode>::encode(&"delay".to_string()),
-//                 )
-//                 .unwrap();
-//             let r = <Result<String, String> as codec::Decode>::decode(&mut result.as_slice())
-//                 .unwrap()
-//                 .unwrap();
-//             s = s + &format!("\n{}", r);
-//         }
-//         let mut nodes: Vec<(u32, u32)> = vec![]; // Start with (1, 0) for "init"
-
-//         nodes.extend(
-//             s.lines() // Skip the "init" line
-//                 .filter_map(|line| {
-//                     let parts: Vec<&str> = line.split_whitespace().collect();
-//                     if parts.len() == 5 {
-//                         Some((parts[1].parse().ok()?, parts[4].parse().ok()?))
-//                     } else {
-//                         None
-//                     }
-//                 }),
-//         );
-//         let mut right = vec![0; 100];
-//         let mut last = 0;
-//         for data in nodes {
-//             assert!(data.1 >= last);
-//             last = data.1;
-//             right[data.0 as usize] = data.1
-//         }
-//         assert!(right[1] == 0);
-//         assert!(right[2] == 1);
-//         assert!(right[3] == 2);
-//         assert!(right[4] == 2);
-//         assert!(right[5] == 3);
-//         assert!(right[6] == 3);
-//         assert!(right[7] == 4);
-//         assert!(right[8] == 3);
-//         assert!(right[9] == 4);
-//         assert!(right[10] == 4);
-//         assert!(right[11] == 5);
-//         assert!(right[12] == 4);
-//         assert!(right[13] == 5);
-//         assert!(right[14] == 5);
-//         assert!(right[15] == 6);
-//     }
-// }
