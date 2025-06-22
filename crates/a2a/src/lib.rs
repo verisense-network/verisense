@@ -114,7 +114,7 @@ pub struct AgentInfo<AccountId> {
 #[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]
 pub enum Role {
     User,
-    agent,
+    Agent,
 }
 
 #[derive(Debug, Clone, Decode, Encode, TypeInfo, Eq, PartialEq)]

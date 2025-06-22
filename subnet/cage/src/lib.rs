@@ -19,6 +19,7 @@ use sp_blockchain::HeaderBackend;
 use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use vrs_gluon_relayer::ForwardRequest;
 use vrs_metadata::{
@@ -91,7 +92,6 @@ where
         let mut nuclei: HashMap<NucleusId, NucleusCage> = HashMap::new();
         let mut nucleus_signal = nucleus_signal;
         let nucleus_home_dir = nucleus_home_dir.into_boxed_path();
-        init_nucleus_home(&nucleus_home_dir);
         log::info!("📖 Nucleus storage root: {:?}", nucleus_home_dir);
         // TODO what if our node is far behind the best block?
         // TODO use the best block hash to get the metadata
@@ -186,8 +186,20 @@ where
                             }
                         },
                         ForwardRequest::Abi { nucleus_id  } => {
-                            // TODO we should return the abi of the nucleus
-                            // tx.send(NucleusResponse::Ok())
+                            let path = nucleus_home_dir
+                                .join(nucleus_id.to_string())
+                                .join("wasm/abi.json");
+                            if let Ok(mut file) = tokio::fs::File::open(path).await {
+                                let mut content = vec![];
+                                if let Ok(_) = file.read_to_end(&mut content).await {
+                                    let _ = tx.send(Ok(content));
+                                } else {
+                                    log::error!("fail to read abi file for nucleus {}", nucleus_id);
+                                    let _ = tx.send(Err(NucleusError::node("Unable to read ABI file.")));
+                                }
+                            } else {
+                                let _ = tx.send(Err(NucleusError::nucleus_not_found()));
+                            }
                         },
                     }
                 },
@@ -448,44 +460,6 @@ where
     list
 }
 
-fn get_nucleus_controllers<B, D, C>(
-    client: Arc<C>,
-    nucleus_id: NucleusId,
-    hash: B::Hash,
-) -> Vec<AccountId>
-where
-    B: sp_runtime::traits::Block,
-    D: Backend<B>,
-    C: BlockBackend<B>
-        + StorageProvider<B, D>
-        + BlockchainEvents<B>
-        + ProvideRuntimeApi<B>
-        + 'static,
-    C::Api: NucleusRuntimeApi<B> + 'static,
-{
-    let x: &[u8; 32] = nucleus_id.as_ref();
-    let n = vrs_metadata::utils::AccountId32::from(*x);
-    let key = codegen::storage().nucleus().instances(n);
-    let instance_key = sp_core::storage::StorageKey(key.to_root_bytes());
-    match client.storage(hash, &instance_key).ok() {
-        None => {
-            vec![]
-        }
-        Some(controllers_opt) => match controllers_opt {
-            None => {
-                vec![]
-            }
-            Some(sto) => <Vec<AccountId> as Decode>::decode(&mut &sto.0[..]).unwrap_or_default(),
-        },
-    }
-}
-
-fn storage_key(module: &[u8], storage: &[u8]) -> sp_core::storage::StorageKey {
-    let mut bytes = sp_core::twox_128(module).to_vec();
-    bytes.extend(&sp_core::twox_128(storage)[..]);
-    sp_core::storage::StorageKey(bytes)
-}
-
 fn upgrade_nucleus_wasm(
     id: NucleusId,
     digest: Hash,
@@ -507,20 +481,9 @@ fn try_load_wasm(
     version: u32,
 ) -> anyhow::Result<WasmInfo> {
     let wasm_path = nucleus_path.join(format!("wasm/{}.wasm", version));
-    // log::info!("wasm_path: {:?}", wasm_path);
     let code = std::fs::read(&wasm_path)?;
     log::info!("📦 Loaded wasm for nucleus {} version {}.", id, version);
     Ok(WasmInfo { id, version, code })
-}
-
-fn init_nucleus_home<P: AsRef<std::path::Path>>(dir: P) {
-    if !std::fs::exists(dir.as_ref()).expect(
-        "fail to check nucleus directory, make sure the you have access right on the directory.",
-    ) {
-        std::fs::create_dir_all(dir.as_ref())
-            .inspect_err(|e| log::error!("fail to create nucleus home, due to {:?}", e))
-            .expect("fail to create nucleus directory");
-    }
 }
 
 // TODO lookup wasm before starting nucleus
