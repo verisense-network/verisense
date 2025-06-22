@@ -326,7 +326,7 @@ pub fn new_full<
             .expect("couldn't load runtime api")
         })
         .flatten();
-
+    init_nucleus_home(&nucleus_home_dir);
     // TODO config the capacity of pending requests
     let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
     let network_service = Arc::new(network.clone());
@@ -339,6 +339,8 @@ pub fn new_full<
         let nucleus_rpc_tx = nucleus_rpc_tx.clone();
         let node_id = node_id.clone();
         let nucleus_home_dir = nucleus_home_dir.clone();
+        let network_service = network_service.clone();
+        let maybe_validator = maybe_validator.clone();
 
         move |deny_unsafe, _subscription_executor: sc_rpc::SubscriptionTaskExecutor| {
             let deps = crate::rpc::FullDeps {
@@ -362,6 +364,26 @@ pub fn new_full<
             crate::rpc::create_full(deny_unsafe, deps).map_err(Into::into)
         }
     };
+    let args = vrs_rpc_server::NucleusRpcServerArgs {
+        sender: nucleus_rpc_tx,
+        client: client.clone(),
+        relayer: vrs_gluon_relayer::Relayer::new(
+            client.clone(),
+            network_service.clone(),
+            authority_discovery_service.clone(),
+        ),
+        maybe_validator,
+        pool: transaction_pool.clone(),
+        node_id: node_id.clone(),
+        nucleus_home_dir: nucleus_home_dir.clone(),
+        sys_rpc_port,
+        entry_rpc_port: extra_config.extra_rpc_port.unwrap_or(9955),
+    };
+    task_manager.spawn_essential_handle().spawn_blocking(
+        "nucleus-rpc-server",
+        None,
+        vrs_rpc_server::start_nucleus_rpc(args),
+    );
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         network: network.clone(),
@@ -579,20 +601,6 @@ pub fn new_full<
             None,
             vrs_nucleus_cage::start_nucleus_cage(params),
         );
-        let args = vrs_rpc_server::NucleusRpcServerArgs {
-            sender: nucleus_rpc_tx,
-            client: client.clone(),
-            pool: transaction_pool.clone(),
-            node_id: node_id.clone(),
-            nucleus_home_dir: nucleus_home_dir.clone(),
-            sys_rpc_port,
-            entry_rpc_port: extra_config.extra_rpc_port.unwrap_or(9955),
-        };
-        task_manager.spawn_essential_handle().spawn_blocking(
-            "nucleus-rpc-server",
-            None,
-            vrs_rpc_server::start_nucleus_rpc(args),
-        );
     }
 
     if role.is_authority() {
@@ -700,4 +708,14 @@ pub fn new_full<
     }
     network_starter.start_network();
     Ok(task_manager)
+}
+
+fn init_nucleus_home<P: AsRef<std::path::Path>>(dir: P) {
+    if !std::fs::exists(dir.as_ref()).expect(
+        "fail to check nucleus directory, make sure the you have access right on the directory.",
+    ) {
+        std::fs::create_dir_all(dir.as_ref())
+            .inspect_err(|e| log::error!("fail to create nucleus home, due to {:?}", e))
+            .expect("fail to create nucleus directory");
+    }
 }

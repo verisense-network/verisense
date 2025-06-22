@@ -13421,6 +13421,7 @@ dependencies = [
  "tokio-stream",
  "tokio-tungstenite 0.18.0",
  "uuid",
+ "vrs-gluon-relayer",
  "vrs-nucleus-executor",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",

@@ -6,6 +6,7 @@ use jsonrpc_core::types::{
     Call, Error as JsonRpcError, ErrorCode, Failure, MethodCall, Output, Params,
     Request as JsonRpcRequest, Response as JsonRpcResponse, Success, Version,
 };
+use sc_network::service::traits::NetworkService;
 use sc_network_types::PeerId;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -14,32 +15,64 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{mpsc::Sender, oneshot};
-use vrs_nucleus_executor::{Gluon, NucleusError};
+use vrs_gluon_relayer::{ForwardRequest, Relayer};
+use vrs_nucleus_executor::{Gluon, NucleusError, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
-use vrs_primitives::NucleusId;
+use vrs_primitives::{AccountId, NucleusId};
 use warp::{Buf, Filter, Reply};
 
-pub struct NucleusRpcServerArgs<P, C> {
+pub struct NucleusRpcServerArgs<P, C, N, B> {
     pub sender: Sender<(NucleusId, Gluon)>,
+    pub relayer: Relayer<C, N, B>,
     pub client: Arc<C>,
     pub pool: Arc<P>,
     pub node_id: PeerId,
+    pub maybe_validator: Option<AccountId>,
     pub nucleus_home_dir: PathBuf,
     pub sys_rpc_port: u16,
     pub entry_rpc_port: u16,
 }
 
-impl<P, C> Clone for NucleusRpcServerArgs<P, C> {
+impl<P, C, N, B> Clone for NucleusRpcServerArgs<P, C, N, B> {
     fn clone(&self) -> Self {
         Self {
             sender: self.sender.clone(),
+            relayer: self.relayer.clone(),
             client: self.client.clone(),
             pool: self.pool.clone(),
             node_id: self.node_id,
+            maybe_validator: self.maybe_validator.clone(),
             nucleus_home_dir: self.nucleus_home_dir.clone(),
             sys_rpc_port: self.sys_rpc_port,
             entry_rpc_port: self.entry_rpc_port,
         }
+    }
+}
+
+impl<P, C, N> NucleusRpcServerArgs<P, C, N, P::Block>
+where
+    P: TransactionPool + Sync + Send + 'static,
+    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
+    N: NetworkService + Send + Sync + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
+{
+    fn is_nucleus_member(&self, nucleus_id: &NucleusId) -> bool {
+        if self.maybe_validator.is_none() {
+            return false;
+        }
+        let best_block = self.client.info().best_hash;
+        let api = self.client.runtime_api();
+        api.is_member_of(
+            best_block,
+            &nucleus_id,
+            self.maybe_validator.as_ref().unwrap(),
+        )
+        .unwrap_or(false)
+    }
+
+    async fn forward(&self, req: ForwardRequest) -> NucleusResponse {
+        self.relayer.forward_to(req).await
     }
 }
 
@@ -53,8 +86,8 @@ fn deserialize_text(text: &str) -> Result<JsonRpcRequest, JsonRpcError> {
         .map_err(|_| JsonRpcError::new(ErrorCode::ParseError))
 }
 
-async fn abi<P, C>(
-    context: NucleusRpcServerArgs<P, C>,
+async fn abi<P, C, N>(
+    context: NucleusRpcServerArgs<P, C, N, P::Block>,
     nucleus_id: NucleusId,
     call: MethodCall,
 ) -> Result<Output, Output>
@@ -62,6 +95,7 @@ where
     P: TransactionPool + Sync + Send + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
+    N: NetworkService + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
     let path = context
@@ -96,23 +130,51 @@ where
     }))
 }
 
-async fn make_call<P, C>(
-    context: NucleusRpcServerArgs<P, C>,
+async fn make_call<P, C, N>(
+    context: NucleusRpcServerArgs<P, C, N, P::Block>,
     nucleus_id: NucleusId,
     call: MethodCall,
 ) -> Result<Output, Output>
 where
     P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
-    let (tx, rx) = oneshot::channel();
     match call.method.as_str() {
-        // "deploy" => return deploy(call, context).await,
-        "abi" => return abi(context, nucleus_id, call).await,
+        "abi" => {
+            if context.is_nucleus_member(&nucleus_id) {
+                return abi(context, nucleus_id, call).await;
+            } else {
+                return context
+                    .forward(ForwardRequest::Abi { nucleus_id })
+                    .await
+                    .map(|r| -> Result<Output, Output> {
+                        Ok(Output::Success(Success {
+                            jsonrpc: Some(Version::V2),
+                            id: call.id.clone(),
+                            result: serde_json::from_slice(&r).map_err(|_| {
+                                Output::Failure(Failure {
+                                    jsonrpc: Some(Version::V2),
+                                    id: call.id.clone(),
+                                    error: NucleusError::abi("Invalid ABI file.").into(),
+                                })
+                            })?,
+                        }))
+                    })
+                    .map_err(|e| {
+                        Output::Failure(Failure {
+                            jsonrpc: Some(Version::V2),
+                            id: call.id.clone(),
+                            error: e.into(),
+                        })
+                    })?;
+            }
+        }
         _ => {}
     }
+    let (tx, rx) = oneshot::channel();
     let (ty, method) = call
         .method
         .as_str()
@@ -137,22 +199,72 @@ where
         error: JsonRpcError::new(ErrorCode::InvalidParams),
     }))?;
     let payload = match ty {
-        "post" => Some((
-            nucleus_id.clone(),
-            Gluon::PostRequest {
-                endpoint: method.to_string(),
-                payload: args,
-                reply_to: Some(tx),
-            },
-        )),
-        "get" => Some((
-            nucleus_id.clone(),
-            Gluon::PostRequest {
-                endpoint: method.to_string(),
-                payload: args,
-                reply_to: Some(tx),
-            },
-        )),
+        "post" => {
+            if !context.is_nucleus_member(&nucleus_id) {
+                return context
+                    .forward(ForwardRequest::Post {
+                        nucleus_id: nucleus_id.clone(),
+                        endpoint: method.to_string(),
+                        payload: args.clone(),
+                    })
+                    .await
+                    .map(|r| {
+                        Output::Success(Success {
+                            jsonrpc: Some(Version::V2),
+                            id: call.id.clone(),
+                            result: serde_json::Value::String(hex::encode(r)),
+                        })
+                    })
+                    .map_err(|e| {
+                        Output::Failure(Failure {
+                            jsonrpc: Some(Version::V2),
+                            id: call.id.clone(),
+                            error: e.into(),
+                        })
+                    });
+            }
+            Some((
+                nucleus_id.clone(),
+                Gluon::PostRequest {
+                    endpoint: method.to_string(),
+                    payload: args,
+                    reply_to: Some(tx),
+                },
+            ))
+        }
+        "get" => {
+            if !context.is_nucleus_member(&nucleus_id) {
+                return context
+                    .forward(ForwardRequest::Get {
+                        nucleus_id: nucleus_id.clone(),
+                        endpoint: method.to_string(),
+                        payload: args.clone(),
+                    })
+                    .await
+                    .map(|r| {
+                        Output::Success(Success {
+                            jsonrpc: Some(Version::V2),
+                            id: call.id.clone(),
+                            result: serde_json::Value::String(hex::encode(r)),
+                        })
+                    })
+                    .map_err(|e| {
+                        Output::Failure(Failure {
+                            jsonrpc: Some(Version::V2),
+                            id: call.id.clone(),
+                            error: e.into(),
+                        })
+                    });
+            }
+            Some((
+                nucleus_id.clone(),
+                Gluon::PostRequest {
+                    endpoint: method.to_string(),
+                    payload: args,
+                    reply_to: Some(tx),
+                },
+            ))
+        }
         _ => None,
     };
     let req = payload.ok_or(Output::Failure(Failure {
@@ -188,11 +300,15 @@ where
     }
 }
 
-fn with_context<P, C>(
-    args: NucleusRpcServerArgs<P, C>,
-) -> impl Filter<Extract = (NucleusRpcServerArgs<P, C>,), Error = std::convert::Infallible> + Clone
+fn with_context<P, C, N>(
+    args: NucleusRpcServerArgs<P, C, N, P::Block>,
+) -> impl Filter<
+    Extract = (NucleusRpcServerArgs<P, C, N, P::Block>,),
+    Error = std::convert::Infallible,
+> + Clone
 where
     P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
@@ -206,13 +322,14 @@ fn with_nucleus_path(
     warp::any().map(move || args.clone())
 }
 
-async fn ws_handshake<P, C>(
+async fn ws_handshake<P, C, N>(
     nucleus_id: String,
     ws: warp::ws::Ws,
-    context: NucleusRpcServerArgs<P, C>,
+    context: NucleusRpcServerArgs<P, C, N, P::Block>,
 ) -> Result<impl warp::reply::Reply, warp::reject::Rejection>
 where
     P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
@@ -224,12 +341,13 @@ where
     }
 }
 
-async fn ws_jsonrpc<P, C>(
+async fn ws_jsonrpc<P, C, N>(
     socket: warp::ws::WebSocket,
     nucleus_id: NucleusId,
-    context: NucleusRpcServerArgs<P, C>,
+    context: NucleusRpcServerArgs<P, C, N, P::Block>,
 ) where
     P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
@@ -318,13 +436,14 @@ async fn ws_jsonrpc<P, C>(
     });
 }
 
-async fn jsonrpc<P, C>(
+async fn jsonrpc<P, C, N>(
     nucleus_id: String,
     body: bytes::Bytes,
-    context: NucleusRpcServerArgs<P, C>,
+    context: NucleusRpcServerArgs<P, C, N, P::Block>,
 ) -> warp::reply::Response
 where
     P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
@@ -385,9 +504,10 @@ where
     }
 }
 
-pub async fn start_nucleus_rpc<P, C>(args: NucleusRpcServerArgs<P, C>)
+pub async fn start_nucleus_rpc<P, C, N>(args: NucleusRpcServerArgs<P, C, N, P::Block>)
 where
     P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
@@ -444,7 +564,6 @@ where
                 .map_err(|_| warp::reject::not_found())
         });
 
-    // TODO config the port and cors
     warp::serve(
         stdout
             .or(jsonrpc)
@@ -458,16 +577,5 @@ where
 
 // TODO
 mod constants {
-    // pub const NUCLEUS_OFFLINE_CODE: i64 = -40001;
     pub const NUCLEUS_OFFLINE: &str = "The nucleus is offline.";
-    // pub const NUCLEUS_TIMEOUT_CODE: i64 = -40002;
-    // pub const NUCLEUS_TIMEOUT_MSG: &str = "The nucleus is not responding.";
-    // pub const TX_POOL_ERROR_CODE: i64 = -40010;
-    // pub const NUCLEUS_UPGRADE_TX_ERR_CODE: i64 = -40011;
-    // pub const NUCLEUS_UPGRADE_TX_ERR_MSG: &str = "The nucleus upgrading transaction is invalid.";
-    // pub const INVALID_NODE_ADDRESS_CODE: i64 = -40012;
-    // pub const INVALID_NODE_ADDRESS_MSG: &str = "Invalid node address.";
-    // pub const NUCLEUS_NOT_EXISTS_CODE: i64 = -40014;
-    // pub const NUCLEUS_NOT_EXISTS_MSG: &str = "Nucleus not exists.";
-    // pub const OS_ERR_CODE: i64 = -42000;
 }

@@ -39,12 +39,22 @@ impl ForwardRequest {
     }
 }
 
-#[derive(Clone)]
 pub struct Relayer<C, N, B> {
     pub client: Arc<C>,
     pub network: Arc<N>,
     pub authority_discover: AuthorityDiscover,
     _phantom: std::marker::PhantomData<B>,
+}
+
+impl<C, N, B> Clone for Relayer<C, N, B> {
+    fn clone(&self) -> Self {
+        Self {
+            client: Arc::clone(&self.client),
+            network: Arc::clone(&self.network),
+            authority_discover: self.authority_discover.clone(),
+            _phantom: std::marker::PhantomData,
+        }
+    }
 }
 
 impl<C, N, B> Relayer<C, N, B>
