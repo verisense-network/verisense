@@ -76,14 +76,14 @@ where
     let P2pParams {
         keystore,
         reqres_receiver,
-        client,
-        node_key_pair,
+        client: _client,
+        node_key_pair: _node_key_pair,
         net_service,
         p2p_cage_tx,
         mut cage_p2p_rx,
         controller,
         authority_discovery,
-        authorities,
+        authorities: _authorities,
         _phantom,
     } = params;
 
@@ -193,18 +193,18 @@ pub fn get_public_from_keystore(
 }
 
 // 2. Sign with specific public key
-fn sign_with_public(
-    // keystore: &dyn Keystore,
-    keystore: KeystorePtr,
-    public: &sr25519::Public,
-    message: &[u8],
-) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
-    let signature = keystore
-        .sr25519_sign(AUTHORITY_DISCOVERY, public, message)?
-        .ok_or("Message signing failed")?;
+// fn sign_with_public(
+//     // keystore: &dyn Keystore,
+//     keystore: KeystorePtr,
+//     public: &sr25519::Public,
+//     message: &[u8],
+// ) -> Result<sr25519::Signature, Box<dyn std::error::Error>> {
+//     let signature = keystore
+//         .sr25519_sign(AUTHORITY_DISCOVERY, public, message)?
+//         .ok_or("Message signing failed")?;
 
-    Ok(signature)
-}
+//     Ok(signature)
+// }
 
 fn sign_message(
     // keystore: &dyn Keystore,

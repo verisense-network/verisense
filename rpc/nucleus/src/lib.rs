@@ -117,80 +117,76 @@ where
     N: NetworkService + Send + Sync + 'static,
 {
     async fn post(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
-        if !self.is_nucleus_member(&nucleus) {
-            let req = ForwardRequest::Post {
-                nucleus_id: nucleus,
-                endpoint: op,
-                payload: payload.0,
-            };
-            return self
-                .forward(req)
-                .await
-                .map(|res| hex::encode(res))
-                .map_err(|e| e.into());
+        if self.is_nucleus_member(&nucleus) {
+            let (tx, rx) = oneshot::channel();
+            let req = (
+                nucleus,
+                Gluon::PostRequest {
+                    endpoint: op,
+                    payload: payload.0,
+                    reply_to: Some(tx),
+                },
+            );
+            return self.reply(req, rx).await;
         }
-        let (tx, rx) = oneshot::channel();
-        let req = (
-            nucleus,
-            Gluon::PostRequest {
-                endpoint: op,
-                payload: payload.0,
-                reply_to: Some(tx),
-            },
-        );
-        self.reply(req, rx).await
+        let req = ForwardRequest::Post {
+            nucleus_id: nucleus,
+            endpoint: op,
+            payload: payload.0,
+        };
+        self.forward(req)
+            .await
+            .map(|res| hex::encode(res))
+            .map_err(|e| e.into())
     }
 
     async fn get(&self, nucleus: NucleusId, op: String, payload: Bytes) -> RpcResult<String> {
-        if !self.is_nucleus_member(&nucleus) {
-            let req = ForwardRequest::Get {
-                nucleus_id: nucleus,
-                endpoint: op,
-                payload: payload.0,
-            };
-            return self
-                .forward(req)
-                .await
-                .map(|res| hex::encode(res))
-                .map_err(|e| e.into());
+        if self.is_nucleus_member(&nucleus) {
+            let (tx, rx) = oneshot::channel();
+            let req = (
+                nucleus,
+                Gluon::GetRequest {
+                    endpoint: op,
+                    payload: payload.0,
+                    reply_to: Some(tx),
+                },
+            );
+            return self.reply(req, rx).await;
         }
-        let (tx, rx) = oneshot::channel();
-        let req = (
-            nucleus,
-            Gluon::GetRequest {
-                endpoint: op,
-                payload: payload.0,
-                reply_to: Some(tx),
-            },
-        );
-        self.reply(req, rx).await
+        let req = ForwardRequest::Get {
+            nucleus_id: nucleus,
+            endpoint: op,
+            payload: payload.0,
+        };
+        self.forward(req)
+            .await
+            .map(|res| hex::encode(res))
+            .map_err(|e| e.into())
     }
 
     async fn abi(&self, nucleus: NucleusId) -> RpcResult<serde_json::Value> {
-        if !self.is_nucleus_member(&nucleus) {
-            let req = ForwardRequest::Abi {
-                nucleus_id: nucleus,
-            };
-            return self
-                .forward(req)
+        if self.is_nucleus_member(&nucleus) {
+            let path = self
+                .nucleus_home_dir
+                .as_path()
+                .join(nucleus.to_string())
+                .join("wasm/abi.json");
+            let abi = tokio::fs::read_to_string(path)
                 .await
-                .map(|res| serde_json::from_slice(&res))
-                .map_err(|e| Into::<ErrorObjectOwned>::into(e))?
-                .map_err(|_| {
-                    Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file."))
-                });
+                .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::nucleus_not_found()))?;
+            let abi: serde_json::Value = serde_json::from_str(&abi).map_err(|_| {
+                Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file."))
+            })?;
+            return Ok(abi);
         }
-        let path = self
-            .nucleus_home_dir
-            .as_path()
-            .join(nucleus.to_string())
-            .join("wasm/abi.json");
-        let abi = tokio::fs::read_to_string(path)
+        let req = ForwardRequest::Abi {
+            nucleus_id: nucleus,
+        };
+        self.forward(req)
             .await
-            .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::nucleus_not_found()))?;
-        let abi: serde_json::Value = serde_json::from_str(&abi)
-            .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file.")))?;
-        Ok(abi)
+            .map(|res| serde_json::from_slice(&res))
+            .map_err(|e| Into::<ErrorObjectOwned>::into(e))?
+            .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file.")))
     }
 
     async fn deploy(

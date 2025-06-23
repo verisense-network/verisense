@@ -40,6 +40,7 @@ pub type NucleusSignal = Receiver<(NucleusId, Gluon)>;
 
 pub struct CageParams<P, B, C, BN> {
     pub client: Arc<C>,
+    pub authority_id: AccountId,
     pub keystore: KeystorePtr,
     pub transaction_pool: Arc<P>,
     pub authority_discovery: AuthorityDiscovery,
@@ -76,6 +77,7 @@ where
 {
     let CageParams {
         client,
+        authority_id,
         keystore,
         transaction_pool,
         authority_discovery,
@@ -114,23 +116,22 @@ where
             }
         });
         //////////////////////////////////////////////////////
-        let author = keystore
-            .sr25519_public_keys(sp_core::crypto::key_types::BABE)
-            .first()
-            .copied()
-            .expect("No essential session key found, please insert one");
-
+        // let author = keystore
+        //     .sr25519_public_keys(sp_core::crypto::key_types::BABE)
+        //     .first()
+        //     .copied()
+        //     .expect("No essential session key found, please insert one");
+        // let hash = client.info().best_hash;
+        // let api = client.runtime_api();
+        // let controller = api
+        //     .lookup_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
+        //     .expect("couldn't load runtime api");
+        // if controller.is_none() {
+        //     log::warn!("Our node is not a validator!");
+        //     return;
+        // }
         let hash = client.info().best_hash;
-        let api = client.runtime_api();
-        let controller = api
-            .lookup_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
-            .expect("couldn't load runtime api");
-        if controller.is_none() {
-            log::warn!("Our node is not a validator!");
-            return;
-        }
-        let self_controller = controller.unwrap();
-        let chosen = get_nuclei_for_node(client.clone(), self_controller.clone(), hash);
+        let chosen = get_nuclei_for_node(client.clone(), authority_id.clone(), hash);
         let (token_timeout_tx, token_timeout_rx) = tokio::sync::mpsc::channel(1000);
         for (id, info) in chosen {
             let nucleus_path = nucleus_home_dir.join(id.to_string());
@@ -146,7 +147,6 @@ where
             )
             .expect("fail to start nucleus");
         }
-        log::info!("🔌 Nucleus cage controller: {}", self_controller);
         loop {
             tokio::select! {
                 Ok(req) = gluon_relay_rx.recv() => {
@@ -219,6 +219,7 @@ where
                             let tx = gen_vrf_tx(client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash, metadata.clone())
                                 .inspect_err(|e| log::error!("fail to submit vrf: {:?}", e))
                                 .expect("fail to submit vrf");
+                            // TODO don't panic
                             transaction_pool.submit_one(hash, TransactionSource::External, tx).await.expect("fail to submit tx");
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
                             let nucleus_id = ev.id;
@@ -241,7 +242,7 @@ where
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let controller = ev.controller;
-                            if AccountId::from(controller.0) == self_controller {
+                            if AccountId::from(controller.0) == authority_id {
                                 let api = client.runtime_api();
                                 let info = api
                                     .get_nucleus_info(hash, &NucleusId::from(nucleus_id.0))

@@ -11,7 +11,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_authority_discovery::AuthorityId;
 use sp_core::crypto::Ss58Codec;
 use sp_runtime::key_types::AUTHORITY_DISCOVERY;
-use std::{collections::HashSet, sync::Arc, time::Duration};
+use std::{collections::HashSet, str::FromStr, sync::Arc, time::Duration};
 use vrs_runtime::{self, opaque::Block, RuntimeApi};
 use vrs_tss::TssIdentity;
 use vrs_tss::VrsTssValidatorIdentity;
@@ -150,7 +150,15 @@ pub fn new_full<
     extra_config: ExtraConfig,
 ) -> Result<TaskManager, ServiceError> {
     let network_config = config.network.clone();
-
+    let maybe_dev = config.dev_key_seed.as_ref().map(|seed| {
+        let name = seed.trim_start_matches("//").to_lowercase();
+        let key =
+            sp_keyring::AccountKeyring::from_str(&name).expect("Failed to parse dev key seed");
+        key.to_account_id()
+    });
+    let maybe_validator = extra_config.authority_identity.or(maybe_dev).inspect(|id| {
+        log::info!("Using authority identity: {}", id);
+    });
     let sc_service::PartialComponents {
         client,
         backend,
@@ -162,10 +170,12 @@ pub fn new_full<
         other:
             (
                 (block_import, grandpa_link, babe_link, babe_worker_handle),
-                shared_vote_state,
+                _shared_vote_state,
                 mut telemetry,
             ),
     } = new_partial(&config)?;
+
+    // TODO check session key in keystore as authority identity
 
     let mut net_config = sc_network::config::FullNetworkConfiguration::<
         Block,
@@ -309,23 +319,28 @@ pub fn new_full<
     let prometheus_registry = config.prometheus_registry().cloned();
     let nucleus_home_dir = config.data_path.as_path().join("nucleus");
     let tss_path = config.base_path.path().join("veritss");
-    let author = keystore_container
-        .keystore()
-        .sr25519_public_keys(sp_core::crypto::key_types::BABE)
-        .first()
-        .copied();
-    let best_hash = client.info().best_hash;
-    let api = client.runtime_api();
-    let maybe_validator = author
-        .map(|author| {
-            api.lookup_active_validator(
-                best_hash,
-                sp_core::crypto::key_types::BABE,
-                author.to_vec(),
-            )
-            .expect("couldn't load runtime api")
-        })
-        .flatten();
+    // let author = keystore_container
+    //     .keystore()
+    //     .sr25519_public_keys(sp_core::crypto::key_types::BABE)
+    //     .first()
+    //     .copied();
+    // println!("babe pubkey: {:?}", author);
+    // let best_hash = client.info().best_hash;
+    // let api = client.runtime_api();
+    // let maybe_validator = author
+    //     .map(|author| {
+    //         api.lookup_active_validator(
+    //             best_hash,
+    //             sp_core::crypto::key_types::BABE,
+    //             author.to_vec(),
+    //         )
+    //         .expect("couldn't load runtime api")
+    //     })
+    //     .flatten();
+    // println!("Out identity: {:?}", maybe_validator);
+    (!(role.is_authority() ^ maybe_validator.is_some()))
+        .then(|| ())
+        .expect("A node running in validator mode must indicates `--authority-identity`");
     init_nucleus_home(&nucleus_home_dir);
     // TODO config the capacity of pending requests
     let (nucleus_rpc_tx, nucleus_rpc_rx) = tokio::sync::mpsc::channel(10000);
@@ -372,7 +387,7 @@ pub fn new_full<
             network_service.clone(),
             authority_discovery_service.clone(),
         ),
-        maybe_validator,
+        maybe_validator: maybe_validator.clone(),
         pool: transaction_pool.clone(),
         node_id: node_id.clone(),
         nucleus_home_dir: nucleus_home_dir.clone(),
@@ -584,6 +599,8 @@ pub fn new_full<
         // launch nucleus cage
         let params = vrs_nucleus_cage::CageParams {
             client: client.clone(),
+            authority_id: maybe_validator
+                .expect("A node running in validator mode must indicates `--authority-identity`"),
             keystore: keystore_container.keystore(),
             transaction_pool: transaction_pool.clone(),
             authority_discovery: authority_discovery_service.clone(),

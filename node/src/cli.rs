@@ -3,6 +3,7 @@ use clap::Parser;
 use libp2p::{Multiaddr, PeerId};
 use sc_cli::RunCmd;
 use sc_service::config::MultiaddrWithPeerId;
+use sp_runtime::AccountId32;
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -52,6 +53,8 @@ pub enum Subcommand {
 pub struct ExtraConfig {
     #[arg(long = "extra-rpc-port")]
     pub extra_rpc_port: Option<u16>,
+    #[arg(long = "authority-identity")]
+    pub authority_identity: Option<AccountId32>,
 }
 
 #[derive(Debug, Clone, Parser)]
