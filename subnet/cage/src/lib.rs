@@ -240,24 +240,27 @@ where
                             }
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
                             let nucleus_id = ev.id;
-                            let api = client.runtime_api();
-                            let info = api
-                                .get_nucleus_info(hash, &NucleusId::from(nucleus_id.0))
-                                .inspect_err(|e| log::error!("fail to get nucleus info while receiving nucleus created event: {:?}", e))
-                                .ok()
-                                .flatten()
-                                .expect("fail to get nucleus info while receiving nucleus created event");
-                            let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
-                            start_nucleus(
-                                NucleusId::from(nucleus_id.0),
-                                info,
-                                nucleus_path,
-                                http_register.clone(),
-                                timer_scheduler.clone(),
-                                tss_node.clone(),
-                                &mut nuclei,
-                                token_timeout_tx.clone(),
-                            ).expect("fail to start nucleus");
+                            let controller = ev.controller;
+                            if AccountId::from(controller.0) == self_controller {
+                                let api = client.runtime_api();
+                                let info = api
+                                    .get_nucleus_info(hash, &NucleusId::from(nucleus_id.0))
+                                    .inspect_err(|e| log::error!("fail to get nucleus info while receiving nucleus created event: {:?}", e))
+                                    .ok()
+                                    .flatten()
+                                    .expect("fail to get nucleus info while receiving nucleus created event");
+                                let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
+                                start_nucleus(
+                                    NucleusId::from(nucleus_id.0),
+                                    info,
+                                    nucleus_path,
+                                    http_register.clone(),
+                                    timer_scheduler.clone(),
+                                    tss_node.clone(),
+                                    &mut nuclei,
+                                    token_timeout_tx.clone(),
+                                ).expect("fail to start nucleus");
+                            }
                         }
                     }
                 },

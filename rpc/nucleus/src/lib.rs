@@ -304,7 +304,6 @@ where
 
 mod constants {
     pub const NUCLEUS_OFFLINE: &str = "The nucleus is offline.";
-    pub const NUCLEUS_TIMEOUT: &str = "The nucleus is not responding.";
     pub const INVALID_UPGRADE_TX: &str = "The nucleus upgrading transaction is invalid.";
     pub const INVALID_NODE_ADDRESS: &str = "Invalid node address.";
     pub const INVALID_NUCLEUS_ABI: &str = "Invalid nucleus ABI.";
