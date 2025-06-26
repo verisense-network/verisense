@@ -66,56 +66,57 @@ impl WasmCallError {
     }
 }
 
+// deprecated, this function always returns Ok(())
 pub fn validate_wasm_abi(blob: &[u8], spec: &[serde_json::Value]) -> Result<(), NucleusError> {
-    let engine = Engine::default();
-    let module = Module::from_binary(&engine, blob)
-        .map_err(|e| NucleusError::abi(format!("Invalid WASM code blob: {}", e)))?;
-    let exports = module
-        .exports()
-        .filter_map(|e| {
-            if let ExternType::Func(_func) = e.ty() {
-                Some(e.name().to_string())
-            } else {
-                None
-            }
-        })
-        .map(|name| (name, ()))
-        .collect::<std::collections::HashMap<String, ()>>();
-    for item in spec {
-        let func = item.as_object().ok_or({
-            NucleusError::abi(format!(
-                "Invalid ABI specification: expected an object, found {}",
-                item
-            ))
-        })?;
-        let ty = func.get("type").and_then(|t| t.as_str()).ok_or({
-            NucleusError::abi(format!(
-                "Invalid ABI specification: missing `type` field near {}",
-                item
-            ))
-        })?;
-        if ty == "fn" {
-            let method = func.get("method").and_then(|m| m.as_str()).ok_or({
-                NucleusError::abi(format!(
-                    "Invalid ABI specification: missing `method` field near {}",
-                    item
-                ))
-            })?;
-            let name = func.get("name").and_then(|m| m.as_str()).ok_or({
-                NucleusError::abi(format!(
-                    "Invalid ABI specification: missing `name` field near {}",
-                    item
-                ))
-            })?;
-            let export_name = format!("__nucleus_{}_{}", method, name);
-            if !exports.contains_key(&export_name) {
-                return Err(NucleusError::abi(format!(
-                    "Missing export: {} in WASM code",
-                    export_name
-                )));
-            }
-        }
-    }
+    // let engine = Engine::default();
+    // let module = Module::from_binary(&engine, blob)
+    //     .map_err(|e| NucleusError::abi(format!("Invalid WASM code blob: {}", e)))?;
+    // let exports = module
+    //     .exports()
+    //     .filter_map(|e| {
+    //         if let ExternType::Func(_func) = e.ty() {
+    //             Some(e.name().to_string())
+    //         } else {
+    //             None
+    //         }
+    //     })
+    //     .map(|name| (name, ()))
+    //     .collect::<std::collections::HashMap<String, ()>>();
+    // for item in spec {
+    //     let func = item.as_object().ok_or({
+    //         NucleusError::abi(format!(
+    //             "Invalid ABI specification: expected an object, found {}",
+    //             item
+    //         ))
+    //     })?;
+    //     let ty = func.get("type").and_then(|t| t.as_str()).ok_or({
+    //         NucleusError::abi(format!(
+    //             "Invalid ABI specification: missing `type` field near {}",
+    //             item
+    //         ))
+    //     })?;
+    //     if ty == "fn" {
+    //         let method = func.get("method").and_then(|m| m.as_str()).ok_or({
+    //             NucleusError::abi(format!(
+    //                 "Invalid ABI specification: missing `method` field near {}",
+    //                 item
+    //             ))
+    //         })?;
+    //         let name = func.get("name").and_then(|m| m.as_str()).ok_or({
+    //             NucleusError::abi(format!(
+    //                 "Invalid ABI specification: missing `name` field near {}",
+    //                 item
+    //             ))
+    //         })?;
+    //         let export_name = format!("__nucleus_{}_{}", method, name);
+    //         if !exports.contains_key(&export_name) {
+    //             return Err(NucleusError::abi(format!(
+    //                 "Missing export: {} in WASM code",
+    //                 export_name
+    //             )));
+    //         }
+    //     }
+    // }
     Ok(())
 }
 
@@ -174,6 +175,12 @@ where
         Ok(())
     }
 
+    pub fn call_abi(&mut self) -> Result<Vec<u8>, WasmCallError> {
+        self.space.data_mut().set_read_only(true);
+        let result = self.call("__nucleus_abi", Vec::new())?;
+        Ok(result)
+    }
+
     pub fn call_init(&mut self) {
         log::info!(
             "call init for nucleus id: {:?}, version: {:?}",
@@ -222,28 +229,28 @@ where
             .instance
             .get_memory(&mut self.space, "memory")
             .ok_or(WasmCallError::NoMemoryExported)?;
-
         // TODO move this check on RPC
         if args.len() > PAGE_SIZE * MAX_PAGE_COUNT {
             return Err(WasmCallError::ArgumentsSizeExceeded);
         }
-
         // Write args to memory
-        memory
-            .write(&mut self.space, self.__call_param_ptr as usize, &args)
-            .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
-
-        let mut result = vec![Val::I32(0)];
-        // Call the function
-        func.call(
-            &mut self.space,
-            &[
+        if !args.is_empty() {
+            memory
+                .write(&mut self.space, self.__call_param_ptr as usize, &args)
+                .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+        }
+        let params = if args.is_empty() {
+            vec![]
+        } else {
+            vec![
                 Val::I32(self.__call_param_ptr as i32),
                 Val::I32(args.len() as i32),
-            ],
-            &mut result,
-        )
-        .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
+            ]
+        };
+        let mut result = vec![Val::I32(0)];
+        // Call the function
+        func.call(&mut self.space, &params, &mut result)
+            .map_err(|e| WasmCallError::FunctionCallError(e.to_string()))?;
 
         let result_ptr = result[0].i32().ok_or(WasmCallError::ResultPointerError)? as usize;
 

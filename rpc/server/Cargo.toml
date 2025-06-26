@@ -25,6 +25,7 @@ vrs-nucleus-executor = { path = "../../subnet/executor" }
 vrs-gluon-relayer = { path = "../../subnet/relayer" }
 vrs-primitives = { path = "../../primitives" }
 vrs-nucleus-runtime-api = { path = "../../runtime-api/nucleus" }
+vrs-core-sdk = { workspace = true }
 warp = "0.3"
 jsonrpc-core = "18.0"
 serde = { version = "1.0", features = ["derive"] }

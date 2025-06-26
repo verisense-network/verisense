@@ -10,6 +10,7 @@ sp-api = { workspace = true, default-features = true }
 sp-core = { workspace = true, default-features = true }
 sp-runtime = { workspace = true, default-features = true }
 sp-blockchain = { workspace = true, default-features = true }
+vrs-core-sdk = { workspace = true }
 sc-transaction-pool-api = "35.0.0"
 sc-network = "0.42.0"
 sc-network-types = "0.12.1"

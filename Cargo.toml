@@ -24,17 +24,16 @@ description = "The Verisense node for running Nucleus."
 [workspace.dependencies]
 codec = { features = [
     "derive",
-], package = "parity-scale-codec", version = "3.6.12", default-features = false }
-parity-scale-codec-derive = "3.6.12"
+], package = "parity-scale-codec", version = "3.6", default-features = false }
+parity-scale-codec-derive = "3.6"
 scale-info = { features = [
     "derive",
     "serde",
-], version = "2.11.1", default-features = false }
+], version = "2.11", default-features = false }
 serde = { version = "1", default-features = false }
 hex-literal = { version = "0.3.4", default-features = false }
 log = { version = "0.4", default-features = false }
-
-vrs-core-sdk = { git = "https://github.com/verisense-network/vrs-core-sdk.git", branch = "master" }
+vrs-core-sdk = { git = "https://github.com/verisense-network/vrs-core-sdk.git", branch = "feature/auto-abi", features = ["std"] }
 # frame
 frame-executive = { version = "36.0.0", default-features = false }
 frame-support = { version = "36.0.0", default-features = false }
