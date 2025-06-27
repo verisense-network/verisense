@@ -237,32 +237,19 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(
                 NucleusError::nucleus_not_found(),
             ))?;
-        // TODO
-        // let abi_vec = abi
-        //     .as_array()
-        //     .ok_or(Into::<ErrorObjectOwned>::into(NucleusError::abi(
-        //         INVALID_NUCLEUS_ABI,
-        //     )))?;
-        // vrs_nucleus_executor::vm::validate_wasm_abi(&wasm.0, &abi_vec)
-        //     .map_err(|e| Into::<ErrorObjectOwned>::into(e))?;
-
-        // let path = self
-        //     .nucleus_home_dir
-        //     .as_path()
-        //     .join(wasm_info.nucleus_id.to_string())
-        //     .join("wasm/");
-        // let exists = std::fs::exists(&path)
-        //     .expect("make sure the you have right permissions to access the nucleus directory.");
-        // if !exists {
-        //     std::fs::create_dir_all(&path).expect("Failed to create nucleus directory.");
-        // }
-        // std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version + 1)))
-        //     .and_then(|mut f| f.write_all(&wasm.0))
-        //     .expect("make sure the you have right permissions to access the nucleus directory.");
-        // let abi = serde_json::to_vec(&abi).expect("abi should be serializable");
-        // std::fs::File::create(path.join("abi.json"))
-        //     .and_then(|mut f| f.write_all(&abi))
-        //     .expect("make sure the you have right permissions to access the nucleus directory.");
+        let path = self
+            .nucleus_home_dir
+            .as_path()
+            .join(wasm_info.nucleus_id.to_string())
+            .join("wasm/");
+        let exists = std::fs::exists(&path)
+            .expect("make sure the you have right permissions to access the nucleus directory.");
+        if !exists {
+            std::fs::create_dir_all(&path).expect("Failed to create nucleus directory.");
+        }
+        std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version + 1)))
+            .and_then(|mut f| f.write_all(&wasm.0))
+            .expect("make sure the you have right permissions to access the nucleus directory.");
         let mut submit = self
             .pool
             .submit_and_watch(best_block_hash, TransactionSource::External, xt)
