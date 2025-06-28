@@ -185,22 +185,31 @@ where
                                 None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
                             }
                         },
-                        ForwardRequest::Abi { nucleus_id  } => {
-                            let path = nucleus_home_dir
-                                .join(nucleus_id.to_string())
-                                .join("wasm/abi.json");
-                            if let Ok(mut file) = tokio::fs::File::open(path).await {
-                                let mut content = vec![];
-                                if let Ok(_) = file.read_to_end(&mut content).await {
-                                    let _ = tx.send(Ok(content));
-                                } else {
-                                    log::error!("fail to read abi file for nucleus {}", nucleus_id);
-                                    let _ = tx.send(Err(NucleusError::node("Unable to read ABI file.")));
-                                }
-                            } else {
-                                let _ = tx.send(Err(NucleusError::nucleus_not_found()));
+                        ForwardRequest::Abi { nucleus_id } => {
+                            let gluon = Gluon::AbiRequest {
+                                reply_to: Some(tx),
+                            };
+                            match nuclei.get_mut(&nucleus_id) {
+                                Some(nucleus) => nucleus.forward(gluon),
+                                None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
                             }
                         },
+                        // ForwardRequest::Abi { nucleus_id  } => {
+                        //     let path = nucleus_home_dir
+                        //         .join(nucleus_id.to_string())
+                        //         .join("wasm/abi.json");
+                        //     if let Ok(mut file) = tokio::fs::File::open(path).await {
+                        //         let mut content = vec![];
+                        //         if let Ok(_) = file.read_to_end(&mut content).await {
+                        //             let _ = tx.send(Ok(content));
+                        //         } else {
+                        //             log::error!("fail to read abi file for nucleus {}", nucleus_id);
+                        //             let _ = tx.send(Err(NucleusError::node("Unable to read ABI file.")));
+                        //         }
+                        //     } else {
+                        //         let _ = tx.send(Err(NucleusError::nucleus_not_found()));
+                        //     }
+                        // },
                     }
                 },
                 // handle hostnet events

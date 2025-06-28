@@ -3,7 +3,7 @@ mod proxy;
 use constants::*;
 use futures::prelude::*;
 use jsonrpc_core::types::{
-    Call, Error as JsonRpcError, ErrorCode, Failure, MethodCall, Output, Params,
+    Call, Error as JsonRpcError, ErrorCode, Failure, Id, MethodCall, Output, Params,
     Request as JsonRpcRequest, Response as JsonRpcResponse, Success, Version,
 };
 use sc_network::service::traits::NetworkService;
@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{mpsc::Sender, oneshot};
+use vrs_core_sdk::abi::JsonAbi;
 use vrs_gluon_relayer::{ForwardRequest, Relayer};
 use vrs_nucleus_executor::{Gluon, NucleusError, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
@@ -86,54 +87,272 @@ fn deserialize_text(text: &str) -> Result<JsonRpcRequest, JsonRpcError> {
         .map_err(|_| JsonRpcError::new(ErrorCode::ParseError))
 }
 
-async fn abi<P, C, N>(
+// async fn abi<P, C, N>(
+//     context: NucleusRpcServerArgs<P, C, N, P::Block>,
+//     nucleus_id: NucleusId,
+//     call: MethodCall,
+// ) -> Result<Output, Output>
+// where
+//     P: TransactionPool + Sync + Send + 'static,
+//     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+//     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
+//     N: NetworkService + Send + Sync + 'static,
+//     C::Api: NucleusRuntimeApi<P::Block> + 'static,
+// {
+//     let path = context
+//         .nucleus_home_dir
+//         .as_path()
+//         .join(nucleus_id.to_string())
+//         .join("wasm/abi.json");
+//     let abi = tokio::fs::read_to_string(path).await.map_err(|e| {
+//         Output::Failure(Failure {
+//             jsonrpc: Some(Version::V2),
+//             id: rpc_id.clone(),
+//             error: JsonRpcError::invalid_params(format!(
+//                 "Couldn't read the abi file, caused by {:?}",
+//                 e
+//             )),
+//         })
+//     })?;
+//     let abi: serde_json::Value = serde_json::from_str(&abi).map_err(|e| {
+//         Output::Failure(Failure {
+//             jsonrpc: Some(Version::V2),
+//             id: rpc_id.clone(),
+//             error: JsonRpcError::invalid_params(format!(
+//                 "Couldn't parse the abi file, caused by {:?}",
+//                 e
+//             )),
+//         })
+//     })?;
+//     Ok(Output::Success(Success {
+//         jsonrpc: Some(Version::V2),
+//         id: rpc_id.clone(),
+//         result: abi,
+//     }))
+// }
+
+enum NucleusCall {
+    Abi,
+    Post { method: String, payload: Vec<u8> },
+    Get { method: String, payload: Vec<u8> },
+}
+
+fn resolve_call(call: &MethodCall) -> Result<NucleusCall, Output> {
+    match call.method.as_ref() {
+        "abi" => Ok(NucleusCall::Abi),
+        _ => {
+            let (ty, method) =
+                call.method
+                    .as_str()
+                    .split_once("_")
+                    .ok_or(Output::Failure(Failure {
+                        jsonrpc: Some(Version::V2),
+                        id: call.id.clone(),
+                        error: JsonRpcError::new(ErrorCode::MethodNotFound),
+                    }))?;
+            let args = match call.params.clone() {
+                Params::None | Params::Map(_) => None,
+                Params::Array(vec) => vec
+                    .clone()
+                    .first()
+                    .map(|v| v.as_str())
+                    .flatten()
+                    .map(|s| s.trim_start_matches("0x"))
+                    .and_then(|s| hex::decode(s).ok()),
+            };
+            let args = args.ok_or(Output::Failure(Failure {
+                jsonrpc: Some(Version::V2),
+                id: call.id.clone(),
+                error: JsonRpcError::new(ErrorCode::InvalidParams),
+            }))?;
+            match ty {
+                "post" => Ok(NucleusCall::Post {
+                    method: method.to_string(),
+                    payload: args,
+                }),
+                "get" => Ok(NucleusCall::Get {
+                    method: method.to_string(),
+                    payload: args,
+                }),
+                _ => Err(Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: call.id.clone(),
+                    error: JsonRpcError::new(ErrorCode::MethodNotFound),
+                })),
+            }
+        }
+    }
+}
+
+async fn forward_call<P, C, N>(
     context: NucleusRpcServerArgs<P, C, N, P::Block>,
     nucleus_id: NucleusId,
-    call: MethodCall,
+    call: NucleusCall,
+    rpc_id: Id,
 ) -> Result<Output, Output>
 where
     P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-    N: NetworkService + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
-    let path = context
-        .nucleus_home_dir
-        .as_path()
-        .join(nucleus_id.to_string())
-        .join("wasm/abi.json");
-    let abi = tokio::fs::read_to_string(path).await.map_err(|e| {
-        Output::Failure(Failure {
-            jsonrpc: Some(Version::V2),
-            id: call.id.clone(),
-            error: JsonRpcError::invalid_params(format!(
-                "Couldn't read the abi file, caused by {:?}",
-                e
-            )),
-        })
-    })?;
-    let abi: serde_json::Value = serde_json::from_str(&abi).map_err(|e| {
-        Output::Failure(Failure {
-            jsonrpc: Some(Version::V2),
-            id: call.id.clone(),
-            error: JsonRpcError::invalid_params(format!(
-                "Couldn't parse the abi file, caused by {:?}",
-                e
-            )),
-        })
-    })?;
-    Ok(Output::Success(Success {
-        jsonrpc: Some(Version::V2),
-        id: call.id.clone(),
-        result: abi,
-    }))
+    match call {
+        NucleusCall::Abi => context
+            .forward(ForwardRequest::Abi { nucleus_id })
+            .await
+            .map(|r| -> Result<Output, Output> {
+                Ok(Output::Success(Success {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    // TODO
+                    result: serde_json::from_slice(&r).map_err(|_| {
+                        Output::Failure(Failure {
+                            jsonrpc: Some(Version::V2),
+                            id: rpc_id.clone(),
+                            error: NucleusError::abi("Invalid ABI file.").into(),
+                        })
+                    })?,
+                }))
+            })
+            .map_err(|e| {
+                Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    error: e.into(),
+                })
+            })?,
+        _ => {
+            let req = match call {
+                NucleusCall::Post { method, payload } => ForwardRequest::Post {
+                    nucleus_id,
+                    endpoint: method,
+                    payload,
+                },
+                NucleusCall::Get { method, payload } => ForwardRequest::Get {
+                    nucleus_id,
+                    endpoint: method,
+                    payload,
+                },
+                _ => unreachable!(),
+            };
+            context
+                .forward(req)
+                .await
+                .map_err(|e| {
+                    Output::Failure(Failure {
+                        jsonrpc: Some(Version::V2),
+                        id: rpc_id.clone(),
+                        error: e.into(),
+                    })
+                })
+                .map(|r| {
+                    Output::Success(Success {
+                        jsonrpc: Some(Version::V2),
+                        id: rpc_id.clone(),
+                        result: serde_json::Value::String(hex::encode(r)),
+                    })
+                })
+        }
+    }
+}
+
+async fn local_call<P, C, N>(
+    context: NucleusRpcServerArgs<P, C, N, P::Block>,
+    nucleus_id: NucleusId,
+    call: NucleusCall,
+    rpc_id: Id,
+) -> Result<Output, Output>
+where
+    P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
+    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
+{
+    let (tx, rx) = oneshot::channel();
+    match call {
+        NucleusCall::Abi => {
+            let gl = Gluon::AbiRequest { reply_to: Some(tx) };
+            if let Err(_) = context.sender.send((nucleus_id, gl)).await {
+                return Err(Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    error: NucleusError::node(NUCLEUS_OFFLINE).into(),
+                }));
+            }
+            match rx.await {
+                Ok(Ok(r)) => Ok(Output::Success(Success {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    result: <JsonAbi as codec::Decode>::decode(&mut &r[..])
+                        .map_err(|_| {
+                            Output::Failure(Failure {
+                                jsonrpc: Some(Version::V2),
+                                id: rpc_id.clone(),
+                                error: NucleusError::abi("Invalid ABI file.").into(),
+                            })
+                        })?
+                        .to_json(),
+                })),
+                Ok(Err(e)) => Err(Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    error: e.into(),
+                })),
+                Err(_) => Err(Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    error: NucleusError::node(NUCLEUS_OFFLINE).into(),
+                })),
+            }
+        }
+        _ => {
+            let gl = match call {
+                NucleusCall::Post { method, payload } => Gluon::PostRequest {
+                    endpoint: method,
+                    payload,
+                    reply_to: Some(tx),
+                },
+                NucleusCall::Get { method, payload } => Gluon::GetRequest {
+                    endpoint: method,
+                    payload,
+                    reply_to: Some(tx),
+                },
+                _ => unreachable!(),
+            };
+            if let Err(_) = context.sender.send((nucleus_id, gl)).await {
+                return Err(Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    error: NucleusError::node(NUCLEUS_OFFLINE).into(),
+                }));
+            }
+            match rx.await {
+                Ok(Ok(r)) => Ok(Output::Success(Success {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    result: serde_json::Value::String(hex::encode(r)),
+                })),
+                Ok(Err(e)) => Err(Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    error: e.into(),
+                })),
+                Err(_) => Err(Output::Failure(Failure {
+                    jsonrpc: Some(Version::V2),
+                    id: rpc_id.clone(),
+                    error: NucleusError::node(NUCLEUS_OFFLINE).into(),
+                })),
+            }
+        }
+    }
 }
 
 async fn make_call<P, C, N>(
     context: NucleusRpcServerArgs<P, C, N, P::Block>,
     nucleus_id: NucleusId,
-    call: MethodCall,
+    rpc_call: MethodCall,
 ) -> Result<Output, Output>
 where
     P: TransactionPool + Sync + Send + 'static,
@@ -142,161 +361,11 @@ where
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
 {
-    match call.method.as_str() {
-        "abi" => {
-            if context.is_nucleus_member(&nucleus_id) {
-                return abi(context, nucleus_id, call).await;
-            } else {
-                return context
-                    .forward(ForwardRequest::Abi { nucleus_id })
-                    .await
-                    .map(|r| -> Result<Output, Output> {
-                        Ok(Output::Success(Success {
-                            jsonrpc: Some(Version::V2),
-                            id: call.id.clone(),
-                            result: serde_json::from_slice(&r).map_err(|_| {
-                                Output::Failure(Failure {
-                                    jsonrpc: Some(Version::V2),
-                                    id: call.id.clone(),
-                                    error: NucleusError::abi("Invalid ABI file.").into(),
-                                })
-                            })?,
-                        }))
-                    })
-                    .map_err(|e| {
-                        Output::Failure(Failure {
-                            jsonrpc: Some(Version::V2),
-                            id: call.id.clone(),
-                            error: e.into(),
-                        })
-                    })?;
-            }
-        }
-        _ => {}
-    }
-    let (tx, rx) = oneshot::channel();
-    let (ty, method) = call
-        .method
-        .as_str()
-        .split_once("_")
-        .ok_or(Output::Failure(Failure {
-            jsonrpc: Some(Version::V2),
-            id: call.id.clone(),
-            error: JsonRpcError::new(ErrorCode::MethodNotFound),
-        }))?;
-    let args = match call.params {
-        Params::None | Params::Map(_) => None,
-        Params::Array(vec) => vec
-            .first()
-            .map(|v| v.as_str())
-            .flatten()
-            .map(|s| s.trim_start_matches("0x"))
-            .and_then(|s| hex::decode(s).ok()),
-    };
-    let args = args.ok_or(Output::Failure(Failure {
-        jsonrpc: Some(Version::V2),
-        id: call.id.clone(),
-        error: JsonRpcError::new(ErrorCode::InvalidParams),
-    }))?;
-    let payload = match ty {
-        "post" => {
-            if !context.is_nucleus_member(&nucleus_id) {
-                return context
-                    .forward(ForwardRequest::Post {
-                        nucleus_id: nucleus_id.clone(),
-                        endpoint: method.to_string(),
-                        payload: args.clone(),
-                    })
-                    .await
-                    .map(|r| {
-                        Output::Success(Success {
-                            jsonrpc: Some(Version::V2),
-                            id: call.id.clone(),
-                            result: serde_json::Value::String(hex::encode(r)),
-                        })
-                    })
-                    .map_err(|e| {
-                        Output::Failure(Failure {
-                            jsonrpc: Some(Version::V2),
-                            id: call.id.clone(),
-                            error: e.into(),
-                        })
-                    });
-            }
-            Some((
-                nucleus_id.clone(),
-                Gluon::PostRequest {
-                    endpoint: method.to_string(),
-                    payload: args,
-                    reply_to: Some(tx),
-                },
-            ))
-        }
-        "get" => {
-            if !context.is_nucleus_member(&nucleus_id) {
-                return context
-                    .forward(ForwardRequest::Get {
-                        nucleus_id: nucleus_id.clone(),
-                        endpoint: method.to_string(),
-                        payload: args.clone(),
-                    })
-                    .await
-                    .map(|r| {
-                        Output::Success(Success {
-                            jsonrpc: Some(Version::V2),
-                            id: call.id.clone(),
-                            result: serde_json::Value::String(hex::encode(r)),
-                        })
-                    })
-                    .map_err(|e| {
-                        Output::Failure(Failure {
-                            jsonrpc: Some(Version::V2),
-                            id: call.id.clone(),
-                            error: e.into(),
-                        })
-                    });
-            }
-            Some((
-                nucleus_id.clone(),
-                Gluon::PostRequest {
-                    endpoint: method.to_string(),
-                    payload: args,
-                    reply_to: Some(tx),
-                },
-            ))
-        }
-        _ => None,
-    };
-    let req = payload.ok_or(Output::Failure(Failure {
-        jsonrpc: Some(Version::V2),
-        id: call.id.clone(),
-        error: JsonRpcError::new(ErrorCode::MethodNotFound),
-    }))?;
-
-    if let Err(_) = context.sender.send(req).await {
-        return Err(Output::Failure(Failure {
-            jsonrpc: Some(Version::V2),
-            id: call.id.clone(),
-            error: NucleusError::node(NUCLEUS_OFFLINE).into(),
-        }));
-    }
-
-    match rx.await {
-        Ok(Ok(r)) => Ok(Output::Success(Success {
-            jsonrpc: Some(Version::V2),
-            id: call.id.clone(),
-            result: serde_json::Value::String(hex::encode(r)),
-        })),
-        Ok(Err(e)) => Err(Output::Failure(Failure {
-            jsonrpc: Some(Version::V2),
-            id: call.id.clone(),
-            error: e.into(),
-        })),
-        Err(_) => Err(Output::Failure(Failure {
-            jsonrpc: Some(Version::V2),
-            id: call.id.clone(),
-            error: NucleusError::node(NUCLEUS_OFFLINE).into(),
-        })),
+    let call = resolve_call(&rpc_call)?;
+    if context.is_nucleus_member(&nucleus_id) {
+        local_call(context, nucleus_id, call, rpc_call.id.clone()).await
+    } else {
+        forward_call(context, nucleus_id, call, rpc_call.id.clone()).await
     }
 }
 

@@ -14,6 +14,7 @@ use tokio::sync::{
     mpsc::Sender,
     oneshot::{self, Receiver},
 };
+use vrs_core_sdk::abi::JsonAbi;
 use vrs_gluon_relayer::{ForwardRequest, Relayer};
 use vrs_nucleus_executor::{Gluon, NucleusError, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
@@ -94,13 +95,13 @@ where
         &self,
         req: (NucleusId, Gluon),
         rx: Receiver<NucleusResponse>,
-    ) -> RpcResult<String> {
+    ) -> RpcResult<Vec<u8>> {
         if let Err(e) = self.sender.send(req).await {
             log::error!("Failed to send nucleus request: {:?}", e);
             return Err(NucleusError::node(NUCLEUS_OFFLINE).into());
         }
         match rx.await {
-            Ok(Ok(r)) => Ok(hex::encode(r)),
+            Ok(Ok(r)) => Ok(r),
             Ok(Err(e)) => Err(e.into()),
             Err(_) => Err(NucleusError::node(NUCLEUS_OFFLINE).into()),
         }
@@ -127,7 +128,7 @@ where
                     reply_to: Some(tx),
                 },
             );
-            return self.reply(req, rx).await;
+            return self.reply(req, rx).await.map(|res| hex::encode(res));
         }
         let req = ForwardRequest::Post {
             nucleus_id: nucleus,
@@ -151,7 +152,7 @@ where
                     reply_to: Some(tx),
                 },
             );
-            return self.reply(req, rx).await;
+            return self.reply(req, rx).await.map(|res| hex::encode(res));
         }
         let req = ForwardRequest::Get {
             nucleus_id: nucleus,
@@ -166,25 +167,29 @@ where
 
     async fn abi(&self, nucleus: NucleusId) -> RpcResult<serde_json::Value> {
         if self.is_nucleus_member(&nucleus) {
-            let path = self
-                .nucleus_home_dir
-                .as_path()
-                .join(nucleus.to_string())
-                .join("wasm/abi.json");
-            let abi = tokio::fs::read_to_string(path)
+            let (tx, rx) = oneshot::channel();
+            let req = (nucleus, Gluon::AbiRequest { reply_to: Some(tx) });
+            return self
+                .reply(req, rx)
                 .await
-                .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::nucleus_not_found()))?;
-            let abi: serde_json::Value = serde_json::from_str(&abi).map_err(|_| {
-                Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file."))
-            })?;
-            return Ok(abi);
+                .map(|res| -> RpcResult<serde_json::Value> {
+                    let abi = <JsonAbi as codec::Decode>::decode(&mut &res[..]).map_err(|_| {
+                        Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file."))
+                    })?;
+                    Ok(abi.to_json())
+                })?;
         }
         let req = ForwardRequest::Abi {
             nucleus_id: nucleus,
         };
         self.forward(req)
             .await
-            .map(|res| serde_json::from_slice(&res))
+            .map(
+                |res| -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+                    let abi = <JsonAbi as codec::Decode>::decode(&mut &res[..])?;
+                    Ok(abi.to_json())
+                },
+            )
             .map_err(|e| Into::<ErrorObjectOwned>::into(e))?
             .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file.")))
     }
@@ -232,15 +237,6 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(
                 NucleusError::nucleus_not_found(),
             ))?;
-        // TODO
-        let abi_vec = abi
-            .as_array()
-            .ok_or(Into::<ErrorObjectOwned>::into(NucleusError::abi(
-                INVALID_NUCLEUS_ABI,
-            )))?;
-        vrs_nucleus_executor::vm::validate_wasm_abi(&wasm.0, &abi_vec)
-            .map_err(|e| Into::<ErrorObjectOwned>::into(e))?;
-
         let path = self
             .nucleus_home_dir
             .as_path()
@@ -253,10 +249,6 @@ where
         }
         std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version + 1)))
             .and_then(|mut f| f.write_all(&wasm.0))
-            .expect("make sure the you have right permissions to access the nucleus directory.");
-        let abi = serde_json::to_vec(&abi).expect("abi should be serializable");
-        std::fs::File::create(path.join("abi.json"))
-            .and_then(|mut f| f.write_all(&abi))
             .expect("make sure the you have right permissions to access the nucleus directory.");
         let mut submit = self
             .pool

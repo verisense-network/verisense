@@ -10134,6 +10134,7 @@ dependencies = [
  "derive_more 1.0.0",
  "parity-scale-codec",
  "scale-info-derive",
+ "schemars 0.8.22",
  "serde",
 ]
 
@@ -10196,6 +10197,42 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01227be5826fa0690321a2ba6c5cd57a19cf3f6a09e76973b58e61de6ab9d1c1"
 dependencies = [
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "schemars"
+version = "0.8.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
+dependencies = [
+ "dyn-clone",
+ "schemars_derive",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe8c9d1c68d67dd9f97ecbc6f932b60eb289c5dbddd8aa1405484a8fd2fcd984"
+dependencies = [
+ "dyn-clone",
+ "ref-cast",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "0.8.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32e265784ad618884abaea0600a9adf15393368d840e0222d101a072f3f7534d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -10409,6 +10446,17 @@ name = "serde_derive"
 version = "1.0.215"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad1e866f866923f252f05c889987993144fb74e722403468a4ebd70c3cd756c0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "serde_derive_internals"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -13168,8 +13216,8 @@ dependencies = [
 
 [[package]]
 name = "vrs-core-macros"
-version = "0.0.4"
-source = "git+https://github.com/verisense-network/vrs-core-sdk.git?branch=master#2f3324d501be6f13439b139a9ca4b5e4a54eb2b5"
+version = "0.1.0"
+source = "git+https://github.com/verisense-network/vrs-core-sdk.git?branch=feature%2Fauto-abi#c21b7ec0cb9f319b4b18440edcae9eab913b9d08"
 dependencies = [
  "quote",
  "syn 2.0.87",
@@ -13177,10 +13225,15 @@ dependencies = [
 
 [[package]]
 name = "vrs-core-sdk"
-version = "0.0.4"
-source = "git+https://github.com/verisense-network/vrs-core-sdk.git?branch=master#2f3324d501be6f13439b139a9ca4b5e4a54eb2b5"
+version = "0.1.0"
+source = "git+https://github.com/verisense-network/vrs-core-sdk.git?branch=feature%2Fauto-abi#c21b7ec0cb9f319b4b18440edcae9eab913b9d08"
 dependencies = [
+ "lazy_static",
  "parity-scale-codec",
+ "scale-info",
+ "schemars 1.0.1",
+ "serde",
+ "serde_json",
  "sp-core",
  "vrs-core-macros",
 ]
@@ -13348,6 +13401,7 @@ dependencies = [
  "sp-core",
  "sp-runtime 38.0.1",
  "tokio",
+ "vrs-core-sdk",
  "vrs-gluon-relayer",
  "vrs-nucleus-executor",
  "vrs-nucleus-runtime-api",
@@ -13421,6 +13475,7 @@ dependencies = [
  "tokio-stream",
  "tokio-tungstenite 0.18.0",
  "uuid",
+ "vrs-core-sdk",
  "vrs-gluon-relayer",
  "vrs-nucleus-executor",
  "vrs-nucleus-runtime-api",
