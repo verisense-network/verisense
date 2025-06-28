@@ -194,12 +194,7 @@ where
             .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file.")))
     }
 
-    async fn deploy(
-        &self,
-        tx: Bytes,
-        wasm: Bytes,
-        abi: serde_json::Value,
-    ) -> RpcResult<BlockHash<P>> {
+    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<BlockHash<P>> {
         let api = self.client.runtime_api();
         let xt: <P::Block as sp_runtime::traits::Block>::Extrinsic =
             match Decode::decode(&mut &tx[..]) {
