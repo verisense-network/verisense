@@ -257,6 +257,7 @@ parameter_types! {
 }
 
 impl pallet_nucleus::Config for Runtime {
+    type AgentRegistry = A2A;
     type Assets = Assets;
     type AuthorityId = vrs_primitives::keys::vrf::AuthorityId;
     type FeeAssetId = FeeAssetId;
@@ -843,17 +844,20 @@ impl_runtime_apis! {
         }
     }
 
+    #[api_version(2)]
     impl vrs_nucleus_runtime_api::NucleusRuntimeApi<Block> for Runtime {
         fn resolve_deploy_tx(uxt: <Block as BlockT>::Extrinsic) -> Option<vrs_nucleus_runtime_api::NucleusUpgradingTxInfo> {
             if let RuntimeCall::Nucleus(pallet_nucleus::Call::upload_nucleus_wasm {
                 nucleus_id,
                 to,
                 hash,
+                agent_card,
             }) = uxt.function {
                 Some(vrs_nucleus_runtime_api::NucleusUpgradingTxInfo {
                     nucleus_id,
                     wasm_hash: hash,
                     node_id: to,
+                    agent_card,
                 })
             } else {
                 None

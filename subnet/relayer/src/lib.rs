@@ -27,6 +27,11 @@ pub enum ForwardRequest {
     Abi {
         nucleus_id: NucleusId,
     },
+    Install {
+        nucleus_id: NucleusId,
+        version: u32,
+        payload: Vec<u8>,
+    },
 }
 
 impl ForwardRequest {
@@ -35,6 +40,7 @@ impl ForwardRequest {
             ForwardRequest::Get { nucleus_id, .. } => nucleus_id,
             ForwardRequest::Post { nucleus_id, .. } => nucleus_id,
             ForwardRequest::Abi { nucleus_id } => nucleus_id,
+            ForwardRequest::Install { nucleus_id, .. } => nucleus_id,
         }
     }
 }

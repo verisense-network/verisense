@@ -87,50 +87,6 @@ fn deserialize_text(text: &str) -> Result<JsonRpcRequest, JsonRpcError> {
         .map_err(|_| JsonRpcError::new(ErrorCode::ParseError))
 }
 
-// async fn abi<P, C, N>(
-//     context: NucleusRpcServerArgs<P, C, N, P::Block>,
-//     nucleus_id: NucleusId,
-//     call: MethodCall,
-// ) -> Result<Output, Output>
-// where
-//     P: TransactionPool + Sync + Send + 'static,
-//     P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
-//     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
-//     N: NetworkService + Send + Sync + 'static,
-//     C::Api: NucleusRuntimeApi<P::Block> + 'static,
-// {
-//     let path = context
-//         .nucleus_home_dir
-//         .as_path()
-//         .join(nucleus_id.to_string())
-//         .join("wasm/abi.json");
-//     let abi = tokio::fs::read_to_string(path).await.map_err(|e| {
-//         Output::Failure(Failure {
-//             jsonrpc: Some(Version::V2),
-//             id: rpc_id.clone(),
-//             error: JsonRpcError::invalid_params(format!(
-//                 "Couldn't read the abi file, caused by {:?}",
-//                 e
-//             )),
-//         })
-//     })?;
-//     let abi: serde_json::Value = serde_json::from_str(&abi).map_err(|e| {
-//         Output::Failure(Failure {
-//             jsonrpc: Some(Version::V2),
-//             id: rpc_id.clone(),
-//             error: JsonRpcError::invalid_params(format!(
-//                 "Couldn't parse the abi file, caused by {:?}",
-//                 e
-//             )),
-//         })
-//     })?;
-//     Ok(Output::Success(Success {
-//         jsonrpc: Some(Version::V2),
-//         id: rpc_id.clone(),
-//         result: abi,
-//     }))
-// }
-
 enum NucleusCall {
     Abi,
     Post { method: String, payload: Vec<u8> },
@@ -174,6 +130,7 @@ fn resolve_call(call: &MethodCall) -> Result<NucleusCall, Output> {
                     method: method.to_string(),
                     payload: args,
                 }),
+                // TODO check if this is an agent
                 _ => Err(Output::Failure(Failure {
                     jsonrpc: Some(Version::V2),
                     id: call.id.clone(),

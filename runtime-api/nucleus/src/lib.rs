@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+use a2a_rs::AgentCard;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use vrs_primitives::*;
@@ -8,10 +9,11 @@ pub struct NucleusUpgradingTxInfo {
     pub nucleus_id: NucleusId,
     pub wasm_hash: Hash,
     pub node_id: NodeId,
+    pub agent_card: Option<AgentCard>,
 }
 
 sp_api::decl_runtime_apis! {
-    #[api_version(1)]
+    #[api_version(2)]
     pub trait NucleusRuntimeApi {
         fn resolve_deploy_tx(uxt: Block::Extrinsic) -> Option<NucleusUpgradingTxInfo>;
 

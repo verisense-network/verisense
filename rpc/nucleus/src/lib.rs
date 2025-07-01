@@ -32,7 +32,7 @@ pub trait NucleusApi<Hash> {
     async fn abi(&self, nucleus: NucleusId) -> RpcResult<serde_json::Value>;
 
     #[method(name = "nucleus_deploy")]
-    async fn deploy(&self, tx: Bytes, wasm: Bytes, abi: serde_json::Value) -> RpcResult<Hash>;
+    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
 }
 
 pub struct Nucleus<P, C, N, B> {
@@ -218,12 +218,7 @@ where
 
         let nucleus_info = api
             .get_nucleus_info(best_block_hash, &wasm_info.nucleus_id)
-            .inspect_err(|e| {
-                log::error!(
-                    "Unable to get nucleus info while upgrading wasm, caused by {:?}",
-                    e
-                )
-            })
+            .inspect_err(|e| log::error!("Unable to get nucleus info, caused by {:?}", e))
             .map_err(|_| {
                 Into::<ErrorObjectOwned>::into(NucleusError::node(
                     "Unable to get nucleus information from node. Please check the node status.",
@@ -232,19 +227,33 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(
                 NucleusError::nucleus_not_found(),
             ))?;
-        let path = self
-            .nucleus_home_dir
-            .as_path()
-            .join(wasm_info.nucleus_id.to_string())
-            .join("wasm/");
-        let exists = std::fs::exists(&path)
-            .expect("make sure the you have right permissions to access the nucleus directory.");
-        if !exists {
-            std::fs::create_dir_all(&path).expect("Failed to create nucleus directory.");
+        if self.is_nucleus_member(&wasm_info.nucleus_id) {
+            let path = self
+                .nucleus_home_dir
+                .as_path()
+                .join(wasm_info.nucleus_id.to_string())
+                .join("wasm/");
+            let exists = std::fs::exists(&path).expect(
+                "make sure the you have right permissions to access the nucleus directory.",
+            );
+            if !exists {
+                std::fs::create_dir_all(&path).expect("Failed to create nucleus directory.");
+            }
+            std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version + 1)))
+                .and_then(|mut f| f.write_all(&wasm.0))
+                .expect(
+                    "make sure the you have right permissions to access the nucleus directory.",
+                );
+        } else {
+            let req = ForwardRequest::Install {
+                nucleus_id: wasm_info.nucleus_id.clone(),
+                version: nucleus_info.wasm_version + 1,
+                payload: wasm.0,
+            };
+            self.forward(req)
+                .await
+                .map_err(|e| Into::<ErrorObjectOwned>::into(e))?;
         }
-        std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version + 1)))
-            .and_then(|mut f| f.write_all(&wasm.0))
-            .expect("make sure the you have right permissions to access the nucleus directory.");
         let mut submit = self
             .pool
             .submit_and_watch(best_block_hash, TransactionSource::External, xt)
@@ -269,7 +278,7 @@ where
                 | TransactionStatus::Usurped(_)
                 | TransactionStatus::Invalid
                 | TransactionStatus::Dropped => {
-                    break Err(Into::<ErrorObjectOwned>::into(NucleusError::node(
+                    return Err(Into::<ErrorObjectOwned>::into(NucleusError::node(
                         "Tx pool rejected.",
                     )));
                 }
@@ -289,5 +298,4 @@ mod constants {
     pub const NUCLEUS_OFFLINE: &str = "The nucleus is offline.";
     pub const INVALID_UPGRADE_TX: &str = "The nucleus upgrading transaction is invalid.";
     pub const INVALID_NODE_ADDRESS: &str = "Invalid node address.";
-    pub const INVALID_NUCLEUS_ABI: &str = "Invalid nucleus ABI.";
 }

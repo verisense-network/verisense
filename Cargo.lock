@@ -7009,6 +7009,7 @@ dependencies = [
 name = "pallet-nucleus"
 version = "0.0.1"
 dependencies = [
+ "a2a-rs",
  "frame-support 36.0.1",
  "frame-system 36.1.0",
  "pallet-assets",
@@ -13414,6 +13415,7 @@ dependencies = [
 name = "vrs-nucleus-runtime-api"
 version = "0.0.1"
 dependencies = [
+ "a2a-rs",
  "parity-scale-codec",
  "scale-info",
  "sp-api 33.0.0",

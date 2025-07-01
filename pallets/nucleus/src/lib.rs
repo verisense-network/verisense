@@ -34,7 +34,7 @@ pub mod pallet {
     };
     use sp_std::prelude::*;
     use vrs_primitives::{keys::NUCLEUS_VRF_KEY_TYPE, NucleusInfo};
-    use vrs_support::ValidatorsInterface;
+    use vrs_support::{AgentRegistry, ValidatorsInterface};
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NucleusEquation<AccountId, Hash, NodeId> {
@@ -76,6 +76,8 @@ pub mod pallet {
             + MaxEncodedLen;
 
         type Validators: ValidatorsInterface<Self::AccountId>;
+
+        type AgentRegistry: AgentRegistry<Self::AccountId>;
 
         type NodeId: Parameter + Member + core::fmt::Debug;
 
@@ -171,6 +173,7 @@ pub mod pallet {
         NucleusNotFound,
         NotAuthorized,
         InvalidVrfProof,
+        UnsupportedOperation,
     }
 
     #[pallet::call]
@@ -246,6 +249,7 @@ pub mod pallet {
             nucleus_id: T::NucleusId,
             to: T::NodeId,
             hash: T::Hash,
+            agent_card: Option<a2a_rs::AgentCard>,
         ) -> DispatchResult {
             let manager = ensure_signed(origin)?;
             let id = nucleus_id.clone();
@@ -258,6 +262,17 @@ pub mod pallet {
                 }
                 mutate.wasm_location = Some(to.clone());
                 nucleus.replace(mutate.clone());
+                if mutate.a2a_compatible {
+                    if let Some(agent_card) = agent_card {
+                        let agent_info = a2a_rs::AgentInfo {
+                            agent_id: T::AccountId::from(nucleus_id.clone()),
+                            owner_id: manager.clone(),
+                            agent_card,
+                        };
+                        T::AgentRegistry::update_agent(agent_info)
+                            .map_err(|_| Error::<T>::UnsupportedOperation)?;
+                    }
+                }
                 Self::deposit_event(Event::NucleusUpgraded {
                     id,
                     wasm_hash: hash,

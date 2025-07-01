@@ -19,7 +19,8 @@ use sp_blockchain::HeaderBackend;
 use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::io::AsyncReadExt;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use vrs_gluon_relayer::ForwardRequest;
 use vrs_metadata::{
@@ -115,27 +116,12 @@ where
                 }
             }
         });
-        //////////////////////////////////////////////////////
-        // let author = keystore
-        //     .sr25519_public_keys(sp_core::crypto::key_types::BABE)
-        //     .first()
-        //     .copied()
-        //     .expect("No essential session key found, please insert one");
-        // let hash = client.info().best_hash;
-        // let api = client.runtime_api();
-        // let controller = api
-        //     .lookup_active_validator(hash, sp_core::crypto::key_types::BABE, author.to_vec())
-        //     .expect("couldn't load runtime api");
-        // if controller.is_none() {
-        //     log::warn!("Our node is not a validator!");
-        //     return;
-        // }
         let hash = client.info().best_hash;
         let chosen = get_nuclei_for_node(client.clone(), authority_id.clone(), hash);
         let (token_timeout_tx, token_timeout_rx) = tokio::sync::mpsc::channel(1000);
         for (id, info) in chosen {
             let nucleus_path = nucleus_home_dir.join(id.to_string());
-            start_nucleus(
+            if let Err(e) = start_nucleus(
                 id.clone(),
                 info,
                 nucleus_path,
@@ -144,72 +130,28 @@ where
                 tss_node.clone(),
                 &mut nuclei,
                 token_timeout_tx.clone(),
-            )
-            .expect("fail to start nucleus");
+            ) {
+                log::error!("Failed to start nucleus {}: {:?}", id, e);
+            }
         }
         loop {
             tokio::select! {
                 Ok(req) = gluon_relay_rx.recv() => {
-                    let Ok(fwd) = <ForwardRequest as Decode>::decode(&mut &req.payload[..]) else { continue };
                     let (tx, rx) = tokio::sync::oneshot::channel::<NucleusResponse>();
                     tokio::spawn(async move {
                         // rsp is encoded as NucleusResponse
                         let Ok(rsp) = rx.await else { return };
-                        let _ = req.pending_response
-                            .send(OutgoingResponse {
-                                result: Ok(rsp.encode()),
-                                reputation_changes: vec![],
-                                sent_feedback: None,
-                            });
+                        let _ = req.pending_response.send(OutgoingResponse {
+                            result: Ok(rsp.encode()),
+                            reputation_changes: vec![],
+                            sent_feedback: None,
+                        });
                     });
-                    match fwd {
-                        ForwardRequest::Get { nucleus_id, endpoint, payload } => {
-                            let gluon = Gluon::GetRequest {
-                                endpoint,
-                                payload,
-                                reply_to: Some(tx),
-                            };
-                            match nuclei.get_mut(&nucleus_id) {
-                                Some(nucleus) => nucleus.forward(gluon),
-                                None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
-                            }
-                        },
-                        ForwardRequest::Post { nucleus_id, endpoint, payload } => {
-                            let gluon = Gluon::PostRequest {
-                                endpoint,
-                                payload,
-                                reply_to: Some(tx),
-                            };
-                            match nuclei.get_mut(&nucleus_id) {
-                                Some(nucleus) => nucleus.forward(gluon),
-                                None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
-                            }
-                        },
-                        ForwardRequest::Abi { nucleus_id } => {
-                            let gluon = Gluon::AbiRequest {
-                                reply_to: Some(tx),
-                            };
-                            match nuclei.get_mut(&nucleus_id) {
-                                Some(nucleus) => nucleus.forward(gluon),
-                                None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
-                            }
-                        },
-                        // ForwardRequest::Abi { nucleus_id  } => {
-                        //     let path = nucleus_home_dir
-                        //         .join(nucleus_id.to_string())
-                        //         .join("wasm/abi.json");
-                        //     if let Ok(mut file) = tokio::fs::File::open(path).await {
-                        //         let mut content = vec![];
-                        //         if let Ok(_) = file.read_to_end(&mut content).await {
-                        //             let _ = tx.send(Ok(content));
-                        //         } else {
-                        //             log::error!("fail to read abi file for nucleus {}", nucleus_id);
-                        //             let _ = tx.send(Err(NucleusError::node("Unable to read ABI file.")));
-                        //         }
-                        //     } else {
-                        //         let _ = tx.send(Err(NucleusError::nucleus_not_found()));
-                        //     }
-                        // },
+                    match ForwardRequest::decode(&mut &req.payload[..]) {
+                        Ok(fwd) => handle_relayer_message(&mut nuclei, nucleus_home_dir.clone(), fwd, tx).await,
+                        Err(_) => {
+                            let _ = tx.send(Err(NucleusError::params("unable to decode ForwardReq")));
+                        }
                     }
                 },
                 // handle hostnet events
@@ -228,8 +170,9 @@ where
                             let tx = gen_vrf_tx(client.clone(), NucleusId::from(nucleus_id.0), keystore.clone(), public_input.as_ref(), hash, metadata.clone())
                                 .inspect_err(|e| log::error!("fail to submit vrf: {:?}", e))
                                 .expect("fail to submit vrf");
-                            // TODO don't panic
-                            transaction_pool.submit_one(hash, TransactionSource::External, tx).await.expect("fail to submit tx");
+                            if let Err(e) = transaction_pool.submit_one(hash, TransactionSource::External, tx).await {
+                                log::error!("fail to submit vrf transaction: {:?}", e);
+                            }
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::NucleusUpgraded>().ok().flatten()) {
                             let nucleus_id = ev.id;
                             let digest = ev.wasm_hash;
@@ -245,7 +188,6 @@ where
                                     &mut nuclei,
                                 ) {
                                     log::error!("Upgrading nucleus {} wasm failed: {:?}", nucleus_id, e);
-                                    // panic!("fail to upgrade nucleus wasm, there is nothing we can do.");
                                 }
                             }
                         } else if let Ok(Some(ev)) = event.as_ref().map(|ev| ev.as_event::<codegen::nucleus::events::InstanceRegistered>().ok().flatten()) {
@@ -319,9 +261,10 @@ where
 
 fn reply_directly(gluon: Gluon, msg: NucleusResponse) {
     match gluon {
-        Gluon::PostRequest { reply_to, .. } | Gluon::GetRequest { reply_to, .. } => {
-            // TODO not sure the code upgrade will be handled here in the future
-            let _ = reply_to.expect("").send(msg);
+        Gluon::PostRequest { reply_to, .. }
+        | Gluon::GetRequest { reply_to, .. }
+        | Gluon::AbiRequest { reply_to } => {
+            reply_to.and_then(|tx| tx.send(msg).ok());
         }
         _ => {}
     }
@@ -557,5 +500,80 @@ pub fn create_outgoing(bs: Vec<u8>) -> OutgoingResponse {
         result: Ok(bs),
         reputation_changes: vec![],
         sent_feedback: None,
+    }
+}
+
+async fn handle_relayer_message(
+    nuclei: &mut HashMap<NucleusId, NucleusCage>,
+    nucleus_home_dir: Box<std::path::Path>,
+    fwd: ForwardRequest,
+    tx: tokio::sync::oneshot::Sender<NucleusResponse>,
+) {
+    match fwd {
+        ForwardRequest::Get {
+            nucleus_id,
+            endpoint,
+            payload,
+        } => {
+            let gluon = Gluon::GetRequest {
+                endpoint,
+                payload,
+                reply_to: Some(tx),
+            };
+            match nuclei.get_mut(&nucleus_id) {
+                Some(nucleus) => nucleus.forward(gluon),
+                None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
+            }
+        }
+        ForwardRequest::Post {
+            nucleus_id,
+            endpoint,
+            payload,
+        } => {
+            let gluon = Gluon::PostRequest {
+                endpoint,
+                payload,
+                reply_to: Some(tx),
+            };
+            match nuclei.get_mut(&nucleus_id) {
+                Some(nucleus) => nucleus.forward(gluon),
+                None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
+            }
+        }
+        ForwardRequest::Abi { nucleus_id } => {
+            let gluon = Gluon::AbiRequest { reply_to: Some(tx) };
+            match nuclei.get_mut(&nucleus_id) {
+                Some(nucleus) => nucleus.forward(gluon),
+                None => reply_directly(gluon, Err(NucleusError::nucleus_not_found())),
+            }
+        }
+        ForwardRequest::Install {
+            nucleus_id,
+            version,
+            payload,
+        } => {
+            let path = nucleus_home_dir
+                .join(nucleus_id.to_string())
+                .join(format!("wasm/{}.wasm", version));
+            match File::create(&path).await {
+                Ok(mut file) => {
+                    if let Err(e) = file.write_all(&payload).await {
+                        log::error!("Failed to write wasm file: {:?}", e);
+                        let _ = tx.send(Err(NucleusError::node(
+                            "The validator rejected the wasm file.",
+                        )));
+                        return;
+                    }
+                    log::info!("Wasm file {}:{} written to {:?}", nucleus_id, version, path);
+                    let _ = tx.send(Ok(vec![]));
+                }
+                Err(e) => {
+                    log::error!("Failed to create wasm file: {:?}", e);
+                    let _ = tx.send(Err(NucleusError::node(
+                        "The validator rejected the wasm file.",
+                    )));
+                }
+            }
+        }
     }
 }
