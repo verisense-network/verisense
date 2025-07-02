@@ -552,9 +552,27 @@ async fn handle_relayer_message(
             version,
             payload,
         } => {
-            let path = nucleus_home_dir
-                .join(nucleus_id.to_string())
-                .join(format!("wasm/{}.wasm", version));
+            let mut path = nucleus_home_dir.join(nucleus_id.to_string()).join("wasm");
+            match tokio::fs::try_exists(&path).await {
+                Ok(true) => {}
+                Ok(false) => {
+                    if let Err(e) = tokio::fs::create_dir_all(&path).await {
+                        log::error!("Failed to create nucleus directory: {:?}", e);
+                        let _ = tx.send(Err(NucleusError::node(
+                            "The validator rejected the wasm file.",
+                        )));
+                        return;
+                    }
+                }
+                Err(_) => {
+                    log::error!("Failed to check if nucleus path exists: {:?}", path);
+                    let _ = tx.send(Err(NucleusError::node(
+                        "The validator rejected the wasm file.",
+                    )));
+                    return;
+                }
+            }
+            path.push(format!("{}.wasm", version));
             match File::create(&path).await {
                 Ok(mut file) => {
                     if let Err(e) = file.write_all(&payload).await {
