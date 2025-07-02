@@ -150,7 +150,7 @@ where
 
     pub fn call_http_callback<T: Encode>(&mut self, args: T) -> Result<(), WasmCallError> {
         self.space.data_mut().set_read_only(false);
-        self.call("__nucleus_http_callback", args.encode())
+        self.call("__nucleus_http_callback", Some(args.encode()))
             .inspect_err(|e| {
                 log::warn!("fail to invoke inner method, {:?}", e);
                 self.space.data().rollback_all_pending_timer();
@@ -164,7 +164,7 @@ where
     pub fn call_timer_trigger(&mut self, func: &str, args: Vec<u8>) -> Result<(), WasmCallError> {
         self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_timer_{}", func);
-        self.call(&func, args)
+        self.call(&func, Some(args))
             .inspect(|_| {
                 self.space.data().enqueue_all_pending_timer();
             })
@@ -177,7 +177,7 @@ where
 
     pub fn call_abi(&mut self) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(true);
-        let result = self.call("__nucleus_abi", Vec::new())?;
+        let result = self.call("__nucleus_abi", None)?;
         Ok(result)
     }
 
@@ -189,7 +189,7 @@ where
         );
         self.space.data_mut().set_read_only(false);
         let _ = self
-            .call("__nucleus_init", ().encode())
+            .call("__nucleus_init", Some(().encode()))
             .inspect(|_| {
                 self.space.data().enqueue_all_pending_timer();
             })
@@ -203,14 +203,14 @@ where
     pub fn call_get(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(true);
         let func = format!("__nucleus_get_{}", func);
-        let result = self.call(&func, args);
+        let result = self.call(&func, Some(args));
         result
     }
 
     pub fn call_post(&mut self, func: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
         self.space.data_mut().set_read_only(false);
         let func = format!("__nucleus_post_{}", func);
-        self.call(&func, args)
+        self.call(&func, Some(args))
             .inspect(|_| {
                 self.space.data().enqueue_all_pending_timer();
             })
@@ -220,7 +220,7 @@ where
             })
     }
 
-    fn call(&mut self, func_name: &str, args: Vec<u8>) -> Result<Vec<u8>, WasmCallError> {
+    fn call(&mut self, func_name: &str, args: Option<Vec<u8>>) -> Result<Vec<u8>, WasmCallError> {
         let func = self
             .instance
             .get_func(&mut self.space, &func_name)
@@ -229,23 +229,28 @@ where
             .instance
             .get_memory(&mut self.space, "memory")
             .ok_or(WasmCallError::NoMemoryExported)?;
-        // TODO move this check on RPC
-        if args.len() > PAGE_SIZE * MAX_PAGE_COUNT {
+        let args_len = args.as_ref().map_or(0, |a| a.len());
+        if args_len > PAGE_SIZE * MAX_PAGE_COUNT {
             return Err(WasmCallError::ArgumentsSizeExceeded);
         }
+        log::info!(
+            "call function: {}, args: {:?}, args_len: {}",
+            func_name,
+            args.as_ref().map(|a| hex::encode(a)),
+            args_len
+        );
         // Write args to memory
-        if !args.is_empty() {
-            memory
-                .write(&mut self.space, self.__call_param_ptr as usize, &args)
-                .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
-        }
-        let params = if args.is_empty() {
-            vec![]
-        } else {
-            vec![
-                Val::I32(self.__call_param_ptr as i32),
-                Val::I32(args.len() as i32),
-            ]
+        let params = match args {
+            Some(args) => {
+                memory
+                    .write(&mut self.space, self.__call_param_ptr as usize, &args)
+                    .map_err(|e| WasmCallError::MemoryError(e.to_string()))?;
+                vec![
+                    Val::I32(self.__call_param_ptr as i32),
+                    Val::I32(args.len() as i32),
+                ]
+            }
+            None => vec![],
         };
         let mut result = vec![Val::I32(0)];
         // Call the function

@@ -227,6 +227,11 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(
                 NucleusError::nucleus_not_found(),
             ))?;
+        if wasm_info.wasm_hash == nucleus_info.wasm_hash {
+            return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
+                "The wasm hash is the same as the current one.",
+            )));
+        }
         if self.is_nucleus_member(&wasm_info.nucleus_id) {
             let path = self
                 .nucleus_home_dir

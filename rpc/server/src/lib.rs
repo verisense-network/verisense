@@ -159,17 +159,17 @@ where
             .forward(ForwardRequest::Abi { nucleus_id })
             .await
             .map(|r| -> Result<Output, Output> {
+                let abi = <JsonAbi as codec::Decode>::decode(&mut &r[..]).map_err(|_| {
+                    Output::Failure(Failure {
+                        jsonrpc: Some(Version::V2),
+                        id: rpc_id.clone(),
+                        error: NucleusError::abi("Invalid abi file").into(),
+                    })
+                })?;
                 Ok(Output::Success(Success {
                     jsonrpc: Some(Version::V2),
                     id: rpc_id.clone(),
-                    // TODO
-                    result: serde_json::from_slice(&r).map_err(|_| {
-                        Output::Failure(Failure {
-                            jsonrpc: Some(Version::V2),
-                            id: rpc_id.clone(),
-                            error: NucleusError::abi("Invalid ABI file.").into(),
-                        })
-                    })?,
+                    result: abi.to_json(),
                 }))
             })
             .map_err(|e| {

@@ -202,7 +202,7 @@ where
                                     .flatten()
                                     .expect("fail to get nucleus info while receiving nucleus created event");
                                 let nucleus_path = nucleus_home_dir.join(nucleus_id.to_string());
-                                start_nucleus(
+                                if let Err(e) = start_nucleus(
                                     NucleusId::from(nucleus_id.0),
                                     info,
                                     nucleus_path,
@@ -211,7 +211,9 @@ where
                                     tss_node.clone(),
                                     &mut nuclei,
                                     token_timeout_tx.clone(),
-                                ).expect("fail to start nucleus");
+                                ) {
+                                    log::error!("Failed to start nucleus {}: {:?}", nucleus_id, e);
+                                }
                             }
                         }
                     }
