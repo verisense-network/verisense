@@ -227,6 +227,11 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(
                 NucleusError::nucleus_not_found(),
             ))?;
+        if nucleus_info.manager != wasm_info.manager {
+            return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
+                "The manager of the wasm is different from the current one.",
+            )));
+        }
         if wasm_info.wasm_hash == nucleus_info.wasm_hash {
             return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
                 "The wasm hash is the same as the current one.",
@@ -237,7 +242,7 @@ where
                 .nucleus_home_dir
                 .as_path()
                 .join(wasm_info.nucleus_id.to_string())
-                .join("wasm/");
+                .join("wasm");
             let exists = std::fs::exists(&path).expect(
                 "make sure the you have right permissions to access the nucleus directory.",
             );
