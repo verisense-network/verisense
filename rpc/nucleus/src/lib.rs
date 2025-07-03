@@ -9,6 +9,7 @@ use sc_transaction_pool_api::{BlockHash, TransactionPool, TransactionSource, Tra
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::Bytes;
+use sp_runtime::traits::{Block as BlockT, Extrinsic};
 use std::{io::Write, path::PathBuf, sync::Arc};
 use tokio::sync::{
     mpsc::Sender,
@@ -48,7 +49,7 @@ pub struct Nucleus<P, C, N, B> {
 impl<P, C, N> Nucleus<P, C, N, P::Block>
 where
     P: TransactionPool + Sync + Send + 'static,
-    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    P::Block: BlockT + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
     N: NetworkService + Send + Sync + 'static,
@@ -112,7 +113,7 @@ where
 impl<P, C, N> NucleusApiServer<BlockHash<P>> for Nucleus<P, C, N, P::Block>
 where
     P: TransactionPool + Sync + Send + 'static,
-    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    P::Block: BlockT + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
     N: NetworkService + Send + Sync + 'static,
@@ -196,11 +197,15 @@ where
 
     async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<BlockHash<P>> {
         let api = self.client.runtime_api();
-        let xt: <P::Block as sp_runtime::traits::Block>::Extrinsic =
-            match Decode::decode(&mut &tx[..]) {
-                Ok(xt) => xt,
-                Err(_) => return Err(NucleusError::params(INVALID_UPGRADE_TX).into()),
-            };
+        let xt: <P::Block as BlockT>::Extrinsic = match Decode::decode(&mut &tx[..]) {
+            Ok(xt) => xt,
+            Err(_) => return Err(NucleusError::params(INVALID_UPGRADE_TX).into()),
+        };
+        if !xt.is_signed().unwrap_or(false) {
+            return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
+                "The transaction is unsigned yet.",
+            )));
+        }
         let best_block_hash = self.client.info().best_hash;
         let wasm_info = api
             .resolve_deploy_tx(best_block_hash, xt.clone())
@@ -215,7 +220,6 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(NucleusError::params(
                 INVALID_NODE_ADDRESS,
             )))?;
-
         let nucleus_info = api
             .get_nucleus_info(best_block_hash, &wasm_info.nucleus_id)
             .inspect_err(|e| log::error!("Unable to get nucleus info, caused by {:?}", e))
@@ -227,11 +231,6 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(
                 NucleusError::nucleus_not_found(),
             ))?;
-        if nucleus_info.manager != wasm_info.manager {
-            return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
-                "The manager of the wasm is different from the current one.",
-            )));
-        }
         if wasm_info.wasm_hash == nucleus_info.wasm_hash {
             return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
                 "The wasm hash is the same as the current one.",
