@@ -210,9 +210,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                215u8, 34u8, 1u8, 190u8, 138u8, 42u8, 31u8, 223u8, 52u8, 0u8, 170u8, 172u8, 150u8,
-                244u8, 110u8, 120u8, 225u8, 25u8, 222u8, 43u8, 209u8, 62u8, 54u8, 35u8, 103u8,
-                38u8, 110u8, 101u8, 121u8, 172u8, 201u8, 121u8,
+                17u8, 200u8, 24u8, 130u8, 181u8, 99u8, 78u8, 114u8, 252u8, 7u8, 240u8, 165u8,
+                116u8, 106u8, 96u8, 131u8, 36u8, 220u8, 245u8, 236u8, 81u8, 11u8, 137u8, 111u8,
+                9u8, 210u8, 205u8, 219u8, 205u8, 101u8, 63u8, 243u8,
             ]
     }
     pub mod system {
@@ -6865,9 +6865,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            209u8, 202u8, 86u8, 148u8, 157u8, 137u8, 132u8, 28u8, 14u8, 140u8,
-                            87u8, 48u8, 39u8, 42u8, 251u8, 238u8, 2u8, 224u8, 145u8, 50u8, 213u8,
-                            139u8, 192u8, 208u8, 0u8, 121u8, 62u8, 231u8, 158u8, 143u8, 27u8, 55u8,
+                            147u8, 123u8, 174u8, 196u8, 103u8, 184u8, 106u8, 4u8, 179u8, 21u8,
+                            214u8, 106u8, 174u8, 175u8, 38u8, 0u8, 53u8, 208u8, 108u8, 1u8, 164u8,
+                            170u8, 162u8, 130u8, 236u8, 119u8, 72u8, 92u8, 15u8, 165u8, 193u8,
+                            201u8,
                         ],
                     )
                 }
@@ -6885,10 +6886,9 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            87u8, 172u8, 95u8, 144u8, 54u8, 137u8, 218u8, 180u8, 69u8, 106u8,
-                            143u8, 126u8, 105u8, 137u8, 77u8, 156u8, 131u8, 56u8, 156u8, 246u8,
-                            19u8, 116u8, 233u8, 211u8, 57u8, 59u8, 46u8, 67u8, 212u8, 19u8, 173u8,
-                            127u8,
+                            102u8, 17u8, 99u8, 220u8, 248u8, 84u8, 108u8, 40u8, 47u8, 99u8, 48u8,
+                            60u8, 82u8, 99u8, 72u8, 248u8, 107u8, 90u8, 60u8, 103u8, 179u8, 118u8,
+                            41u8, 41u8, 170u8, 239u8, 84u8, 169u8, 216u8, 65u8, 47u8, 128u8,
                         ],
                     )
                 }
@@ -6920,9 +6920,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            111u8, 101u8, 42u8, 80u8, 233u8, 204u8, 109u8, 228u8, 154u8, 69u8,
-                            13u8, 229u8, 34u8, 211u8, 251u8, 220u8, 186u8, 13u8, 10u8, 221u8, 83u8,
-                            123u8, 147u8, 73u8, 223u8, 245u8, 49u8, 68u8, 45u8, 82u8, 143u8, 146u8,
+                            86u8, 165u8, 25u8, 244u8, 119u8, 144u8, 214u8, 122u8, 52u8, 1u8, 225u8,
+                            9u8, 41u8, 161u8, 9u8, 229u8, 24u8, 251u8, 23u8, 109u8, 202u8, 212u8,
+                            233u8, 131u8, 155u8, 55u8, 8u8, 159u8, 202u8, 59u8, 105u8, 55u8,
                         ],
                     )
                 }
@@ -7289,12 +7289,14 @@ pub mod codegen {
                     pub nucleus_id: upload_nucleus_wasm::NucleusId,
                     pub to: upload_nucleus_wasm::To,
                     pub hash: upload_nucleus_wasm::Hash,
+                    pub agent_card: upload_nucleus_wasm::AgentCard,
                 }
                 pub mod upload_nucleus_wasm {
                     use super::runtime_types;
                     pub type NucleusId = ::subxt_core::utils::AccountId32;
                     pub type To = runtime_types::sp_core::OpaquePeerId;
                     pub type Hash = ::subxt_core::utils::H256;
+                    pub type AgentCard = ::core::option::Option<runtime_types::a2a_rs::AgentCard>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for UploadNucleusWasm {
                     const PALLET: &'static str = "Nucleus";
@@ -7377,6 +7379,7 @@ pub mod codegen {
                     nucleus_id: types::upload_nucleus_wasm::NucleusId,
                     to: types::upload_nucleus_wasm::To,
                     hash: types::upload_nucleus_wasm::Hash,
+                    agent_card: types::upload_nucleus_wasm::AgentCard,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::UploadNucleusWasm>
                 {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
@@ -7386,11 +7389,12 @@ pub mod codegen {
                             nucleus_id,
                             to,
                             hash,
+                            agent_card,
                         },
                         [
-                            73u8, 141u8, 151u8, 40u8, 193u8, 230u8, 42u8, 117u8, 82u8, 17u8, 254u8,
-                            147u8, 14u8, 125u8, 56u8, 135u8, 136u8, 193u8, 7u8, 58u8, 54u8, 198u8,
-                            120u8, 166u8, 254u8, 98u8, 111u8, 18u8, 105u8, 165u8, 175u8, 61u8,
+                            222u8, 68u8, 248u8, 171u8, 216u8, 53u8, 41u8, 166u8, 121u8, 229u8,
+                            129u8, 111u8, 188u8, 19u8, 7u8, 92u8, 235u8, 205u8, 20u8, 240u8, 68u8,
+                            51u8, 5u8, 151u8, 117u8, 130u8, 181u8, 223u8, 242u8, 183u8, 59u8, 1u8,
                         ],
                     )
                 }
@@ -13173,6 +13177,7 @@ pub mod codegen {
                         nucleus_id: ::subxt_core::utils::AccountId32,
                         to: runtime_types::sp_core::OpaquePeerId,
                         hash: ::subxt_core::utils::H256,
+                        agent_card: ::core::option::Option<runtime_types::a2a_rs::AgentCard>,
                     },
                     #[codec(index = 2)]
                     register {
@@ -13203,6 +13208,8 @@ pub mod codegen {
                     NotAuthorized,
                     #[codec(index = 3)]
                     InvalidVrfProof,
+                    #[codec(index = 4)]
+                    UnsupportedOperation,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,

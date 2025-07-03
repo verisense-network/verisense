@@ -7009,6 +7009,7 @@ dependencies = [
 name = "pallet-nucleus"
 version = "0.0.1"
 dependencies = [
+ "a2a-rs",
  "frame-support 36.0.1",
  "frame-system 36.1.0",
  "pallet-assets",
@@ -13216,8 +13217,9 @@ dependencies = [
 
 [[package]]
 name = "vrs-core-macros"
-version = "0.1.0"
-source = "git+https://github.com/verisense-network/vrs-core-sdk.git?branch=feature%2Fauto-abi#c21b7ec0cb9f319b4b18440edcae9eab913b9d08"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b94e58c73ec6a70305a4957942622ffdcb3baa2ce7b168e11d5edc9ed62ddfc7"
 dependencies = [
  "quote",
  "syn 2.0.87",
@@ -13225,8 +13227,9 @@ dependencies = [
 
 [[package]]
 name = "vrs-core-sdk"
-version = "0.1.0"
-source = "git+https://github.com/verisense-network/vrs-core-sdk.git?branch=feature%2Fauto-abi#c21b7ec0cb9f319b4b18440edcae9eab913b9d08"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9356895fbb00d5e182c244f20b78fb45a3d86c4eb24fdd1742493eee352b6adc"
 dependencies = [
  "lazy_static",
  "parity-scale-codec",
@@ -13412,6 +13415,7 @@ dependencies = [
 name = "vrs-nucleus-runtime-api"
 version = "0.0.1"
 dependencies = [
+ "a2a-rs",
  "parity-scale-codec",
  "scale-info",
  "sp-api 33.0.0",

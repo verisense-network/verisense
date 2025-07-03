@@ -9,6 +9,7 @@ use sc_transaction_pool_api::{BlockHash, TransactionPool, TransactionSource, Tra
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::Bytes;
+use sp_runtime::traits::{Block as BlockT, Extrinsic};
 use std::{io::Write, path::PathBuf, sync::Arc};
 use tokio::sync::{
     mpsc::Sender,
@@ -32,7 +33,7 @@ pub trait NucleusApi<Hash> {
     async fn abi(&self, nucleus: NucleusId) -> RpcResult<serde_json::Value>;
 
     #[method(name = "nucleus_deploy")]
-    async fn deploy(&self, tx: Bytes, wasm: Bytes, abi: serde_json::Value) -> RpcResult<Hash>;
+    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
 }
 
 pub struct Nucleus<P, C, N, B> {
@@ -48,7 +49,7 @@ pub struct Nucleus<P, C, N, B> {
 impl<P, C, N> Nucleus<P, C, N, P::Block>
 where
     P: TransactionPool + Sync + Send + 'static,
-    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    P::Block: BlockT + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
     N: NetworkService + Send + Sync + 'static,
@@ -112,7 +113,7 @@ where
 impl<P, C, N> NucleusApiServer<BlockHash<P>> for Nucleus<P, C, N, P::Block>
 where
     P: TransactionPool + Sync + Send + 'static,
-    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    P::Block: BlockT + Send + Sync + 'static,
     C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
     C::Api: NucleusRuntimeApi<P::Block> + 'static,
     N: NetworkService + Send + Sync + 'static,
@@ -194,18 +195,17 @@ where
             .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file.")))
     }
 
-    async fn deploy(
-        &self,
-        tx: Bytes,
-        wasm: Bytes,
-        abi: serde_json::Value,
-    ) -> RpcResult<BlockHash<P>> {
+    async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<BlockHash<P>> {
         let api = self.client.runtime_api();
-        let xt: <P::Block as sp_runtime::traits::Block>::Extrinsic =
-            match Decode::decode(&mut &tx[..]) {
-                Ok(xt) => xt,
-                Err(_) => return Err(NucleusError::params(INVALID_UPGRADE_TX).into()),
-            };
+        let xt: <P::Block as BlockT>::Extrinsic = match Decode::decode(&mut &tx[..]) {
+            Ok(xt) => xt,
+            Err(_) => return Err(NucleusError::params(INVALID_UPGRADE_TX).into()),
+        };
+        if !xt.is_signed().unwrap_or(false) {
+            return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
+                "The transaction is unsigned yet.",
+            )));
+        }
         let best_block_hash = self.client.info().best_hash;
         let wasm_info = api
             .resolve_deploy_tx(best_block_hash, xt.clone())
@@ -220,15 +220,9 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(NucleusError::params(
                 INVALID_NODE_ADDRESS,
             )))?;
-
         let nucleus_info = api
             .get_nucleus_info(best_block_hash, &wasm_info.nucleus_id)
-            .inspect_err(|e| {
-                log::error!(
-                    "Unable to get nucleus info while upgrading wasm, caused by {:?}",
-                    e
-                )
-            })
+            .inspect_err(|e| log::error!("Unable to get nucleus info, caused by {:?}", e))
             .map_err(|_| {
                 Into::<ErrorObjectOwned>::into(NucleusError::node(
                     "Unable to get nucleus information from node. Please check the node status.",
@@ -237,19 +231,38 @@ where
             .ok_or(Into::<ErrorObjectOwned>::into(
                 NucleusError::nucleus_not_found(),
             ))?;
-        let path = self
-            .nucleus_home_dir
-            .as_path()
-            .join(wasm_info.nucleus_id.to_string())
-            .join("wasm/");
-        let exists = std::fs::exists(&path)
-            .expect("make sure the you have right permissions to access the nucleus directory.");
-        if !exists {
-            std::fs::create_dir_all(&path).expect("Failed to create nucleus directory.");
+        if wasm_info.wasm_hash == nucleus_info.wasm_hash {
+            return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
+                "The wasm hash is the same as the current one.",
+            )));
         }
-        std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version + 1)))
-            .and_then(|mut f| f.write_all(&wasm.0))
-            .expect("make sure the you have right permissions to access the nucleus directory.");
+        if self.is_nucleus_member(&wasm_info.nucleus_id) {
+            let path = self
+                .nucleus_home_dir
+                .as_path()
+                .join(wasm_info.nucleus_id.to_string())
+                .join("wasm");
+            let exists = std::fs::exists(&path).expect(
+                "make sure the you have right permissions to access the nucleus directory.",
+            );
+            if !exists {
+                std::fs::create_dir_all(&path).expect("Failed to create nucleus directory.");
+            }
+            std::fs::File::create(path.join(format!("{}.wasm", nucleus_info.wasm_version + 1)))
+                .and_then(|mut f| f.write_all(&wasm.0))
+                .expect(
+                    "make sure the you have right permissions to access the nucleus directory.",
+                );
+        } else {
+            let req = ForwardRequest::Install {
+                nucleus_id: wasm_info.nucleus_id.clone(),
+                version: nucleus_info.wasm_version + 1,
+                payload: wasm.0,
+            };
+            self.forward(req)
+                .await
+                .map_err(|e| Into::<ErrorObjectOwned>::into(e))?;
+        }
         let mut submit = self
             .pool
             .submit_and_watch(best_block_hash, TransactionSource::External, xt)
@@ -274,7 +287,7 @@ where
                 | TransactionStatus::Usurped(_)
                 | TransactionStatus::Invalid
                 | TransactionStatus::Dropped => {
-                    break Err(Into::<ErrorObjectOwned>::into(NucleusError::node(
+                    return Err(Into::<ErrorObjectOwned>::into(NucleusError::node(
                         "Tx pool rejected.",
                     )));
                 }
@@ -294,5 +307,4 @@ mod constants {
     pub const NUCLEUS_OFFLINE: &str = "The nucleus is offline.";
     pub const INVALID_UPGRADE_TX: &str = "The nucleus upgrading transaction is invalid.";
     pub const INVALID_NODE_ADDRESS: &str = "Invalid node address.";
-    pub const INVALID_NUCLEUS_ABI: &str = "Invalid nucleus ABI.";
 }

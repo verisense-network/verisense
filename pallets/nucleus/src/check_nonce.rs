@@ -3,7 +3,7 @@ use frame_support::dispatch::DispatchInfo;
 use frame_system::Config;
 use scale_info::TypeInfo;
 use sp_runtime::{
-    traits::{DispatchInfoOf, Dispatchable, One, SignedExtension, Zero},
+    traits::{DispatchInfoOf, Dispatchable, One, SignedExtension},
     transaction_validity::{
         InvalidTransaction, TransactionLongevity, TransactionValidity, TransactionValidityError,
         ValidTransaction,
@@ -46,9 +46,10 @@ where
     T::RuntimeCall: Dispatchable<Info = DispatchInfo>,
 {
     type AccountId = T::AccountId;
-    type Call = T::RuntimeCall;
     type AdditionalSigned = ();
+    type Call = T::RuntimeCall;
     type Pre = ();
+
     const IDENTIFIER: &'static str = "CheckNonce";
 
     fn additional_signed(&self) -> sp_std::result::Result<(), TransactionValidityError> {
