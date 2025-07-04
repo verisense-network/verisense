@@ -17,7 +17,7 @@ sp-core = { features = ["serde"], workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 sc-network-types = { workspace = true, optional = true }
 sp-application-crypto = {workspace = true, default-features = false}
-serde = { workspace = true, features = ["derive"],default-features = false }
+serde = { workspace = true, features = ["derive"], default-features = false }
 
 [dev-dependencies]
 hex = { version = "0.4.3" }

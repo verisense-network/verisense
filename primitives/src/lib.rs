@@ -80,6 +80,7 @@ impl Display for AssetId {
     }
 }
 
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
 pub struct NucleusInfo<AccountId, Hash, NodeId> {
     pub name: alloc::vec::Vec<u8>,
