@@ -20,7 +20,7 @@ use sp_keystore::KeystorePtr;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt, SeekFrom};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use vrs_gluon_relayer::ForwardRequest;
 use vrs_metadata::{
@@ -595,5 +595,89 @@ async fn handle_relayer_message(
                 }
             }
         }
+        ForwardRequest::Logs { nucleus_id } => {
+            let file_path = nucleus_home_dir
+                .join(nucleus_id.to_string())
+                .join("stdout.log");
+            match read_logs(file_path).await {
+                Ok(logs) => {
+                    let _ = tx.send(Ok(logs));
+                }
+                Err(e) => {
+                    log::error!("Failed to read logs for nucleus {}: {:?}", nucleus_id, e);
+                    let _ = tx.send(Err(NucleusError::node("Failed to read logs.")));
+                }
+            }
+        }
     }
+}
+
+const MAX_SIZE: usize = 1024 * 1024; // 1MB
+const BUFFER_SIZE: usize = 4096;
+const MAX_LINES: usize = 100;
+
+async fn read_logs<P: AsRef<std::path::Path>>(file_path: P) -> anyhow::Result<Vec<u8>> {
+    let mut file = File::open(file_path).await?;
+    let file_size = file.metadata().await?.len();
+
+    if file_size == 0 {
+        return Ok(Vec::new());
+    }
+
+    let mut pos = file_size;
+    let mut total_size = 0;
+    let mut line_count = 0;
+    let mut last_line_end = file_size;
+    let mut start_pos = file_size;
+    let mut buffer = [0u8; BUFFER_SIZE];
+
+    while pos > 0 && line_count < MAX_LINES && total_size <= MAX_SIZE {
+        let read_start = pos.saturating_sub(BUFFER_SIZE as u64);
+        let read_size = (pos - read_start) as usize;
+
+        file.seek(SeekFrom::Start(read_start)).await?;
+        file.read_exact(&mut buffer[..read_size]).await?;
+        pos = read_start;
+
+        for i in (0..read_size).rev() {
+            if buffer[i] == b'\n' {
+                let line_pos = read_start + i as u64;
+
+                let line_size = last_line_end.saturating_sub(line_pos);
+                total_size += line_size as usize;
+
+                if total_size > MAX_SIZE {
+                    return Ok(Vec::new());
+                }
+
+                line_count += 1;
+                last_line_end = line_pos;
+                if line_count == MAX_LINES {
+                    start_pos = line_pos + 1;
+                    break;
+                }
+            }
+        }
+
+        if pos == 0 && line_count < MAX_LINES {
+            let line_size = last_line_end as usize;
+            total_size += line_size;
+            if total_size > MAX_SIZE {
+                return Ok(Vec::new());
+            }
+            line_count += 1;
+            start_pos = 0;
+        }
+    }
+
+    let read_size = (file_size - start_pos) as usize;
+    if read_size > MAX_SIZE {
+        return Ok(Vec::new());
+    }
+
+    file.seek(SeekFrom::Start(start_pos)).await?;
+    let mut result = vec![0u8; read_size];
+    file.read_exact(&mut result).await?;
+
+    Ok(result)
 }
