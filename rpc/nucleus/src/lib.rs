@@ -19,7 +19,7 @@ use vrs_core_sdk::abi::JsonAbi;
 use vrs_gluon_relayer::{ForwardRequest, Relayer};
 use vrs_nucleus_executor::{Gluon, NucleusError, NucleusResponse};
 use vrs_nucleus_runtime_api::NucleusRuntimeApi;
-use vrs_primitives::{AccountId, NucleusId};
+use vrs_primitives::{AccountId, Hash as WasmHash, NodeId, NucleusId, NucleusInfo};
 
 #[rpc(server)]
 pub trait NucleusApi<Hash> {
@@ -34,6 +34,10 @@ pub trait NucleusApi<Hash> {
 
     #[method(name = "nucleus_deploy")]
     async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<Hash>;
+
+    #[method(name = "nucleus_info")]
+    async fn info(&self, nucleus: NucleusId)
+        -> RpcResult<NucleusInfo<NucleusId, WasmHash, NodeId>>;
 }
 
 pub struct Nucleus<P, C, N, B> {
@@ -193,6 +197,23 @@ where
             )
             .map_err(|e| Into::<ErrorObjectOwned>::into(e))?
             .map_err(|_| Into::<ErrorObjectOwned>::into(NucleusError::abi("Invalid ABI file.")))
+    }
+
+    async fn info(
+        &self,
+        nucleus: NucleusId,
+    ) -> RpcResult<NucleusInfo<AccountId, WasmHash, NodeId>> {
+        let best_block = self.client.info().best_hash;
+        let api = self.client.runtime_api();
+        api.get_nucleus_info(best_block, &nucleus)
+            .map_err(|_| {
+                Into::<ErrorObjectOwned>::into(NucleusError::node(
+                    "Unable to get nucleus information from node. Please check the node status.",
+                ))
+            })?
+            .ok_or(Into::<ErrorObjectOwned>::into(
+                NucleusError::nucleus_not_found(),
+            ))
     }
 
     async fn deploy(&self, tx: Bytes, wasm: Bytes) -> RpcResult<BlockHash<P>> {
