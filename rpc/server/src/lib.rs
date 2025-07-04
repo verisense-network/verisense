@@ -342,10 +342,34 @@ where
     warp::any().map(move || args.clone())
 }
 
-fn with_nucleus_path(
-    args: PathBuf,
-) -> impl Filter<Extract = (PathBuf,), Error = std::convert::Infallible> + Clone {
-    warp::any().map(move || args.clone())
+async fn logs<P, C, N>(
+    nucleus_id: String,
+    context: NucleusRpcServerArgs<P, C, N, P::Block>,
+) -> Result<String, warp::reject::Rejection>
+where
+    P: TransactionPool + Sync + Send + 'static,
+    N: NetworkService + Send + Sync + 'static,
+    P::Block: sp_runtime::traits::Block + Send + Sync + 'static,
+    C: HeaderBackend<P::Block> + ProvideRuntimeApi<P::Block> + Send + Sync + 'static,
+    C::Api: NucleusRuntimeApi<P::Block> + 'static,
+{
+    let nucleus_id = NucleusId::from_str(&nucleus_id).map_err(|_| warp::reject::not_found())?;
+    if context.is_nucleus_member(&nucleus_id) {
+        let path = context
+            .nucleus_home_dir
+            .as_path()
+            .join(nucleus_id.to_string())
+            .join("stdout.log");
+        tokio::fs::read_to_string(&path)
+            .await
+            .map_err(|_| warp::reject::not_found())
+    } else {
+        context
+            .forward(ForwardRequest::Logs { nucleus_id })
+            .await
+            .map(|v| String::from_utf8(v).unwrap_or_default())
+            .map_err(|_| warp::reject::not_found())
+    }
 }
 
 async fn ws_handshake<P, C, N>(
@@ -577,18 +601,8 @@ where
     let stdout = warp::path!(String / "logs")
         .and(warp::get())
         .and(warp::path::end())
-        .and(with_nucleus_path(args.nucleus_home_dir.clone()))
-        .and_then(|nucleus_id: String, home: PathBuf| async move {
-            let nucleus_id =
-                NucleusId::from_str(&nucleus_id).map_err(|_| warp::reject::not_found())?;
-            let path = home
-                .as_path()
-                .join(nucleus_id.to_string())
-                .join("stdout.log");
-            tokio::fs::read_to_string(&path)
-                .await
-                .map_err(|_| warp::reject::not_found())
-        });
+        .and(with_context(args.clone()))
+        .and_then(logs);
 
     warp::serve(
         stdout
