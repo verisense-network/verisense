@@ -222,7 +222,7 @@ where
             Ok(xt) => xt,
             Err(_) => return Err(NucleusError::params(INVALID_UPGRADE_TX).into()),
         };
-        if !xt.is_signed().unwrap_or(false) {
+        if xt.is_signed() == Some(false) {
             return Err(Into::<ErrorObjectOwned>::into(NucleusError::params(
                 "The transaction is unsigned yet.",
             )));
