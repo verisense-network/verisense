@@ -17,7 +17,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: false
+          override: true
           target: wasm32-unknown-unknown
           components: rustfmt, clippy, rust-src
       
