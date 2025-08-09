@@ -36,6 +36,8 @@ pallet-nucleus = { path = "../pallets/nucleus", default-features = false }
 pallet-validator = { path = "../pallets/validator", default-features = false }
 pallet-swap = { path = "../pallets/swap", default-features = false }
 pallet-a2a = { path = "../pallets/a2a", default-features = false }
+pallet-mcp = { path = "../pallets/mcp", default-features = false }
+
 # primitives
 vrs-support = { path = "../support", default-features = false }
 vrs-primitives = { path = "../primitives", default-features = false }
@@ -72,6 +74,7 @@ a2a-rs = { path = "../crates/a2a", default-features = false }
 # runtime api
 vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus", default-features = false }
 vrs-a2a-runtime-api = { path = "../runtime-api/a2a", default-features = false }
+vrs-mcp-runtime-api = { path = "../runtime-api/mcp", default-features = false }
 vrs-validator-runtime-api = { path = "../runtime-api/validator", default-features = false }
 vrs-restaking-runtime-api = { path = "../runtime-api/restaking", default-features = false }
 vrs-tss-runtime-api = { path = "../runtime-api/tss", default-features = false }
@@ -95,6 +98,7 @@ std = [
 	"pallet-grandpa/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-mcp/std",
 	"pallet-authority-discovery/std",
 	"pallet-assets/std",
 	"pallet-im-online/std",
@@ -109,6 +113,7 @@ std = [
 	"a2a-rs/std",
 	"vrs-nucleus-runtime-api/std",
 	"vrs-a2a-runtime-api/std",
+	"vrs-mcp-runtime-api/std",
 	"vrs-restaking-runtime-api/std",
 	"vrs-validator-runtime-api/std",
 	"vrs-swap-runtime-api/std",

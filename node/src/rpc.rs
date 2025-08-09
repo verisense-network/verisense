@@ -72,6 +72,7 @@ where
     C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> + 'static,
     C::Api: vrs_nucleus_runtime_api::NucleusRuntimeApi<Block> + 'static,
     C::Api: vrs_a2a_runtime_api::A2aRuntimeApi<Block> + 'static,
+    C::Api: vrs_mcp_runtime_api::McpRuntimeApi<Block> + 'static,
     C::Api: vrs_swap_runtime_api::SwapApi<Block, AssetId, Balance, Balance> + 'static,
     C::Api: BlockBuilder<Block> + 'static,
     C::Api: BabeApi<Block> + 'static,
@@ -80,6 +81,7 @@ where
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
     use substrate_frame_rpc_system::{System, SystemApiServer};
     use vrs_a2a_rpc::{A2a, A2aApiServer};
+    use vrs_mcp_rpc::{Mcp, McpApiServer};
     use vrs_nucleus_rpc::{Nucleus, NucleusApiServer};
 
     // use beefy_gadget_rpc::{Beefy, BeefyApiServer};
@@ -117,6 +119,7 @@ where
     module.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
     module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
     module.merge(A2a::new(client.clone()).into_rpc())?;
+    module.merge(Mcp::new(client.clone()).into_rpc())?;
 
     let NucleusDeps {
         rpc_channel,

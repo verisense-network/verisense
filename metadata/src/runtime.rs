@@ -6,7 +6,7 @@ pub mod codegen {
     mod root_mod {
         pub use super::*;
     }
-    pub static PALLETS: [&str; 19usize] = [
+    pub static PALLETS: [&str; 20usize] = [
         "System",
         "Timestamp",
         "Babe",
@@ -26,6 +26,7 @@ pub mod codegen {
         "Assets",
         "Swap",
         "A2A",
+        "Mcp",
     ];
     pub static RUNTIME_APIS: [&str; 0usize] = [];
     #[doc = r" The error type returned when there is a runtime issue."]
@@ -158,6 +159,9 @@ pub mod codegen {
         pub fn a2a(&self) -> a2a::storage::StorageApi {
             a2a::storage::StorageApi
         }
+        pub fn mcp(&self) -> mcp::storage::StorageApi {
+            mcp::storage::StorageApi
+        }
     }
     pub struct TransactionApi;
     impl TransactionApi {
@@ -200,6 +204,9 @@ pub mod codegen {
         pub fn a2a(&self) -> a2a::calls::TransactionApi {
             a2a::calls::TransactionApi
         }
+        pub fn mcp(&self) -> mcp::calls::TransactionApi {
+            mcp::calls::TransactionApi
+        }
     }
     #[doc = r" check whether the metadata provided is aligned with this statically generated code."]
     pub fn is_codegen_valid_for(metadata: &::subxt_core::Metadata) -> bool {
@@ -210,9 +217,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                17u8, 200u8, 24u8, 130u8, 181u8, 99u8, 78u8, 114u8, 252u8, 7u8, 240u8, 165u8,
-                116u8, 106u8, 96u8, 131u8, 36u8, 220u8, 245u8, 236u8, 81u8, 11u8, 137u8, 111u8,
-                9u8, 210u8, 205u8, 219u8, 205u8, 101u8, 63u8, 243u8,
+                127u8, 79u8, 26u8, 182u8, 40u8, 107u8, 190u8, 144u8, 109u8, 250u8, 86u8, 206u8,
+                159u8, 99u8, 15u8, 215u8, 219u8, 246u8, 113u8, 96u8, 198u8, 243u8, 228u8, 192u8,
+                87u8, 143u8, 8u8, 237u8, 224u8, 36u8, 230u8, 2u8,
             ]
     }
     pub mod system {
@@ -1178,9 +1185,10 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            248u8, 227u8, 6u8, 96u8, 143u8, 154u8, 232u8, 63u8, 202u8, 227u8, 40u8,
-                            43u8, 166u8, 247u8, 203u8, 23u8, 249u8, 119u8, 28u8, 83u8, 25u8, 178u8,
-                            254u8, 176u8, 233u8, 4u8, 101u8, 155u8, 150u8, 123u8, 36u8, 250u8,
+                            176u8, 28u8, 47u8, 236u8, 18u8, 121u8, 183u8, 245u8, 162u8, 196u8,
+                            128u8, 80u8, 143u8, 27u8, 195u8, 201u8, 191u8, 222u8, 153u8, 44u8,
+                            10u8, 252u8, 99u8, 55u8, 168u8, 57u8, 215u8, 171u8, 213u8, 104u8, 55u8,
+                            192u8,
                         ],
                     )
                 }
@@ -6865,10 +6873,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            147u8, 123u8, 174u8, 196u8, 103u8, 184u8, 106u8, 4u8, 179u8, 21u8,
-                            214u8, 106u8, 174u8, 175u8, 38u8, 0u8, 53u8, 208u8, 108u8, 1u8, 164u8,
-                            170u8, 162u8, 130u8, 236u8, 119u8, 72u8, 92u8, 15u8, 165u8, 193u8,
-                            201u8,
+                            166u8, 130u8, 60u8, 28u8, 16u8, 242u8, 206u8, 252u8, 44u8, 190u8, 75u8,
+                            73u8, 238u8, 187u8, 44u8, 156u8, 158u8, 216u8, 219u8, 149u8, 68u8,
+                            99u8, 195u8, 59u8, 56u8, 186u8, 103u8, 151u8, 206u8, 105u8, 12u8,
+                            197u8,
                         ],
                     )
                 }
@@ -6886,9 +6894,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            102u8, 17u8, 99u8, 220u8, 248u8, 84u8, 108u8, 40u8, 47u8, 99u8, 48u8,
-                            60u8, 82u8, 99u8, 72u8, 248u8, 107u8, 90u8, 60u8, 103u8, 179u8, 118u8,
-                            41u8, 41u8, 170u8, 239u8, 84u8, 169u8, 216u8, 65u8, 47u8, 128u8,
+                            238u8, 138u8, 182u8, 99u8, 86u8, 48u8, 174u8, 2u8, 137u8, 42u8, 34u8,
+                            67u8, 29u8, 188u8, 125u8, 94u8, 142u8, 230u8, 89u8, 212u8, 215u8,
+                            233u8, 206u8, 201u8, 195u8, 63u8, 215u8, 152u8, 15u8, 77u8, 110u8,
+                            147u8,
                         ],
                     )
                 }
@@ -6920,9 +6929,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            86u8, 165u8, 25u8, 244u8, 119u8, 144u8, 214u8, 122u8, 52u8, 1u8, 225u8,
-                            9u8, 41u8, 161u8, 9u8, 229u8, 24u8, 251u8, 23u8, 109u8, 202u8, 212u8,
-                            233u8, 131u8, 155u8, 55u8, 8u8, 159u8, 202u8, 59u8, 105u8, 55u8,
+                            170u8, 111u8, 41u8, 234u8, 119u8, 59u8, 249u8, 6u8, 102u8, 8u8, 54u8,
+                            184u8, 105u8, 200u8, 203u8, 146u8, 204u8, 116u8, 42u8, 91u8, 195u8,
+                            225u8, 164u8, 67u8, 40u8, 217u8, 215u8, 30u8, 250u8, 228u8, 151u8,
+                            178u8,
                         ],
                     )
                 }
@@ -11176,6 +11186,214 @@ pub mod codegen {
             }
         }
     }
+    pub mod mcp {
+        use super::root_mod;
+        use super::runtime_types;
+        pub type Error = runtime_types::pallet_mcp::pallet::Error;
+        pub type Call = runtime_types::pallet_mcp::pallet::Call;
+        pub mod calls {
+            use super::root_mod;
+            use super::runtime_types;
+            type DispatchError = runtime_types::sp_runtime::DispatchError;
+            pub mod types {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct Register {
+                    pub name: register::Name,
+                    pub description: register::Description,
+                    pub url: register::Url,
+                }
+                pub mod register {
+                    use super::runtime_types;
+                    pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
+                    pub type Description = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
+                    pub type Url = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for Register {
+                    const PALLET: &'static str = "Mcp";
+                    const CALL: &'static str = "register";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct Deregister {
+                    pub server_id: deregister::ServerId,
+                }
+                pub mod deregister {
+                    use super::runtime_types;
+                    pub type ServerId = ::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for Deregister {
+                    const PALLET: &'static str = "Mcp";
+                    const CALL: &'static str = "deregister";
+                }
+            }
+            pub struct TransactionApi;
+            impl TransactionApi {
+                pub fn register(
+                    &self,
+                    name: types::register::Name,
+                    description: types::register::Description,
+                    url: types::register::Url,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::Register> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Mcp",
+                        "register",
+                        types::Register {
+                            name,
+                            description,
+                            url,
+                        },
+                        [
+                            82u8, 250u8, 182u8, 116u8, 240u8, 243u8, 116u8, 82u8, 241u8, 20u8,
+                            244u8, 213u8, 231u8, 81u8, 39u8, 144u8, 40u8, 208u8, 72u8, 138u8,
+                            101u8, 84u8, 250u8, 6u8, 126u8, 152u8, 134u8, 65u8, 81u8, 239u8, 56u8,
+                            166u8,
+                        ],
+                    )
+                }
+                pub fn deregister(
+                    &self,
+                    server_id: types::deregister::ServerId,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::Deregister> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Mcp",
+                        "deregister",
+                        types::Deregister { server_id },
+                        [
+                            69u8, 214u8, 140u8, 12u8, 224u8, 60u8, 250u8, 44u8, 156u8, 234u8, 71u8,
+                            161u8, 141u8, 179u8, 245u8, 48u8, 241u8, 208u8, 74u8, 71u8, 139u8,
+                            162u8, 166u8, 244u8, 234u8, 224u8, 90u8, 157u8, 191u8, 108u8, 189u8,
+                            107u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub type Event = runtime_types::pallet_mcp::pallet::Event;
+        pub mod events {
+            use super::runtime_types;
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct McpServerRegistered {
+                pub id: mcp_server_registered::Id,
+                pub provider: mcp_server_registered::Provider,
+            }
+            pub mod mcp_server_registered {
+                use super::runtime_types;
+                pub type Id = ::subxt_core::utils::AccountId32;
+                pub type Provider = ::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt_core::events::StaticEvent for McpServerRegistered {
+                const PALLET: &'static str = "Mcp";
+                const EVENT: &'static str = "McpServerRegistered";
+            }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct McpServerDeregistered {
+                pub id: mcp_server_deregistered::Id,
+            }
+            pub mod mcp_server_deregistered {
+                use super::runtime_types;
+                pub type Id = ::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt_core::events::StaticEvent for McpServerDeregistered {
+                const PALLET: &'static str = "Mcp";
+                const EVENT: &'static str = "McpServerDeregistered";
+            }
+        }
+        pub mod storage {
+            use super::runtime_types;
+            pub mod types {
+                use super::runtime_types;
+                pub mod servers {
+                    use super::runtime_types;
+                    pub type Servers = runtime_types::pallet_mcp::pallet::McpServerInfo<
+                        ::subxt_core::utils::AccountId32,
+                    >;
+                    pub type Param0 = ::subxt_core::utils::AccountId32;
+                }
+            }
+            pub struct StorageApi;
+            impl StorageApi {
+                pub fn servers_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::servers::Servers,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Mcp",
+                        "Servers",
+                        (),
+                        [
+                            177u8, 133u8, 252u8, 30u8, 156u8, 250u8, 211u8, 47u8, 173u8, 100u8,
+                            194u8, 152u8, 150u8, 207u8, 244u8, 137u8, 131u8, 151u8, 30u8, 11u8,
+                            64u8, 186u8, 39u8, 212u8, 223u8, 194u8, 132u8, 178u8, 158u8, 204u8,
+                            0u8, 53u8,
+                        ],
+                    )
+                }
+                pub fn servers(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::servers::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<types::servers::Param0>,
+                    types::servers::Servers,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Mcp",
+                        "Servers",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            177u8, 133u8, 252u8, 30u8, 156u8, 250u8, 211u8, 47u8, 173u8, 100u8,
+                            194u8, 152u8, 150u8, 207u8, 244u8, 137u8, 131u8, 151u8, 30u8, 11u8,
+                            64u8, 186u8, 39u8, 212u8, 223u8, 194u8, 132u8, 178u8, 158u8, 204u8,
+                            0u8, 53u8,
+                        ],
+                    )
+                }
+            }
+        }
+    }
     pub mod runtime_types {
         use super::runtime_types;
         pub mod a2a_rs {
@@ -13134,6 +13352,89 @@ pub mod codegen {
                 pub session_index: ::core::primitive::u32,
                 pub authority_index: ::core::primitive::u32,
                 pub validators_len: ::core::primitive::u32,
+            }
+        }
+        pub mod pallet_mcp {
+            use super::runtime_types;
+            pub mod pallet {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Call {
+                    #[codec(index = 0)]
+                    register {
+                        name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                        description: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                        url: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    },
+                    #[codec(index = 1)]
+                    deregister {
+                        server_id: ::subxt_core::utils::AccountId32,
+                    },
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Error {
+                    #[codec(index = 0)]
+                    NotAuthorized,
+                    #[codec(index = 1)]
+                    McpServerAlreadyExists,
+                    #[codec(index = 2)]
+                    McpServerNotFound,
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub enum Event {
+                    #[codec(index = 0)]
+                    McpServerRegistered {
+                        id: ::subxt_core::utils::AccountId32,
+                        provider: ::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 1)]
+                    McpServerDeregistered {
+                        id: ::subxt_core::utils::AccountId32,
+                    },
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct McpServerInfo<_0> {
+                    pub name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub description: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub url: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub provider: _0,
+                }
             }
         }
         pub mod pallet_nucleus {
@@ -15479,6 +15780,8 @@ pub mod codegen {
                 Swap(runtime_types::pallet_swap::pallet::Call),
                 #[codec(index = 18)]
                 A2A(runtime_types::pallet_a2a::pallet::Call),
+                #[codec(index = 19)]
+                Mcp(runtime_types::pallet_mcp::pallet::Call),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -15517,6 +15820,8 @@ pub mod codegen {
                 Swap(runtime_types::pallet_swap::pallet::Error),
                 #[codec(index = 18)]
                 A2A(runtime_types::pallet_a2a::pallet::Error),
+                #[codec(index = 19)]
+                Mcp(runtime_types::pallet_mcp::pallet::Error),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,
@@ -15557,6 +15862,8 @@ pub mod codegen {
                 Swap(runtime_types::pallet_swap::pallet::Event),
                 #[codec(index = 18)]
                 A2A(runtime_types::pallet_a2a::pallet::Event),
+                #[codec(index = 19)]
+                Mcp(runtime_types::pallet_mcp::pallet::Event),
             }
             #[derive(
                 :: subxt_core :: ext :: codec :: Decode,

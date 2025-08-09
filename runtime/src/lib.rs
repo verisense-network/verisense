@@ -107,7 +107,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 106,
+    spec_version: 108,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -273,6 +273,11 @@ impl pallet_nucleus::Config for Runtime {
 impl pallet_a2a::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Weight = pallet_a2a::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_mcp::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Weight = pallet_mcp::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -576,6 +581,9 @@ mod runtime {
 
     #[runtime::pallet_index(18)]
     pub type A2A = pallet_a2a;
+
+    #[runtime::pallet_index(19)]
+    pub type Mcp = pallet_mcp;
 }
 
 /// Block header type as expected by this runtime.
@@ -885,6 +893,16 @@ impl_runtime_apis! {
 
         fn get_all_agents() -> Vec<a2a_rs::AgentInfo<AccountId>> {
             A2A::get_all_agents()
+        }
+    }
+
+    impl vrs_mcp_runtime_api::McpRuntimeApi<Block> for Runtime {
+        fn find_mcp_server(mcp_id: &AccountId) -> Option<pallet_mcp::McpServerInfo<AccountId>> {
+            Mcp::find_mcp_server(mcp_id)
+        }
+
+        fn get_all_mcp_servers() -> Vec<(AccountId, pallet_mcp::McpServerInfo<AccountId>)> {
+            Mcp::get_all_mcp_servers()
         }
     }
 

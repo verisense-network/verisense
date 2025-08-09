@@ -7006,6 +7006,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-mcp"
+version = "0.0.1"
+dependencies = [
+ "frame-support 36.0.1",
+ "frame-system 36.1.0",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime 38.0.1",
+ "sp-std",
+ "vrs-primitives",
+ "vrs-support",
+]
+
+[[package]]
 name = "pallet-nucleus"
 version = "0.0.1"
 dependencies = [
@@ -13147,6 +13161,8 @@ dependencies = [
  "vrs-a2a-rpc",
  "vrs-a2a-runtime-api",
  "vrs-gluon-relayer",
+ "vrs-mcp-rpc",
+ "vrs-mcp-runtime-api",
  "vrs-metadata",
  "vrs-nucleus-cage",
  "vrs-nucleus-network",
@@ -13270,6 +13286,35 @@ dependencies = [
  "vrs-primitives",
  "vrs-runtime",
  "vrs-validator-runtime-api",
+]
+
+[[package]]
+name = "vrs-mcp-rpc"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "jsonrpsee",
+ "log",
+ "pallet-mcp",
+ "parity-scale-codec",
+ "serde",
+ "serde_json",
+ "sp-api 33.0.0",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime 38.0.1",
+ "vrs-mcp-runtime-api",
+ "vrs-primitives",
+]
+
+[[package]]
+name = "vrs-mcp-runtime-api"
+version = "0.0.1"
+dependencies = [
+ "pallet-mcp",
+ "sp-api 33.0.0",
+ "sp-std",
+ "vrs-primitives",
 ]
 
 [[package]]
@@ -13505,6 +13550,7 @@ dependencies = [
  "pallet-balances",
  "pallet-grandpa",
  "pallet-im-online",
+ "pallet-mcp",
  "pallet-nucleus",
  "pallet-offences",
  "pallet-restaking",
@@ -13535,6 +13581,7 @@ dependencies = [
  "sp-version 36.0.0",
  "substrate-wasm-builder",
  "vrs-a2a-runtime-api",
+ "vrs-mcp-runtime-api",
  "vrs-nucleus-runtime-api",
  "vrs-primitives",
  "vrs-restaking-runtime-api",
