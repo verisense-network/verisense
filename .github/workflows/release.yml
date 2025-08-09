@@ -16,7 +16,8 @@ jobs:
       - name: Install Rust toochain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.87.0
+          default: true
           override: true
           target: wasm32-unknown-unknown
           components: rustfmt, clippy, rust-src
