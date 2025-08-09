@@ -71,10 +71,12 @@ vrs-nucleus-runtime-api = { path = "../runtime-api/nucleus" }
 vrs-restaking-runtime-api = { path = "../runtime-api/restaking" }
 vrs-validator-runtime-api = { path = "../runtime-api/validator" }
 vrs-a2a-runtime-api = { path = "../runtime-api/a2a" }
+vrs-mcp-runtime-api = { path = "../runtime-api/mcp" }
 vrs-tss-runtime-api = { path = "../runtime-api/tss" }
 vrs-swap-runtime-api = { path = "../runtime-api/swap" }
 vrs-nucleus-rpc = { path = "../rpc/nucleus" }
 vrs-a2a-rpc = { path = "../rpc/a2a" }
+vrs-mcp-rpc = { path = "../rpc/mcp" }
 vrs-rpc-server = { path = "../rpc/server" }
 vrs-tss = { path = "../tss" }
 vrs-nucleus-cage = { path = "../subnet/cage" }

@@ -1,0 +1,20 @@
+[package]
+name = "vrs-mcp-rpc"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+codec = { workspace = true, default-features = true }
+sp-api = { workspace = true, default-features = true }
+sp-core = { workspace = true, default-features = true }
+sp-runtime = { workspace = true, default-features = true }
+sp-blockchain = { workspace = true, default-features = true }
+jsonrpsee = { features = ["server", "macros"], version = "0.23" }
+async-trait  = { version = "0.1.81" }
+log = "0.4"
+vrs-primitives = { path = "../../primitives" }
+vrs-mcp-runtime-api = { path = "../../runtime-api/mcp" }
+pallet-mcp = { path = "../../pallets/mcp" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
