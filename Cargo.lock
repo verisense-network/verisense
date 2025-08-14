@@ -13293,6 +13293,7 @@ name = "vrs-mcp-rpc"
 version = "0.0.1"
 dependencies = [
  "async-trait",
+ "hex",
  "jsonrpsee",
  "log",
  "pallet-mcp",
