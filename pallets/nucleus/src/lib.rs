@@ -267,6 +267,7 @@ pub mod pallet {
                         let agent_info = a2a_rs::AgentInfo {
                             agent_id: T::AccountId::from(nucleus_id.clone()),
                             owner_id: manager.clone(),
+                            url_verified: false,
                             agent_card,
                         };
                         T::AgentRegistry::update_agent(agent_info)

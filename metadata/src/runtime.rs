@@ -217,9 +217,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                127u8, 79u8, 26u8, 182u8, 40u8, 107u8, 190u8, 144u8, 109u8, 250u8, 86u8, 206u8,
-                159u8, 99u8, 15u8, 215u8, 219u8, 246u8, 113u8, 96u8, 198u8, 243u8, 228u8, 192u8,
-                87u8, 143u8, 8u8, 237u8, 224u8, 36u8, 230u8, 2u8,
+                182u8, 45u8, 191u8, 231u8, 223u8, 126u8, 113u8, 199u8, 248u8, 37u8, 18u8, 38u8,
+                9u8, 199u8, 162u8, 232u8, 62u8, 99u8, 112u8, 80u8, 187u8, 8u8, 199u8, 57u8, 147u8,
+                202u8, 86u8, 15u8, 175u8, 18u8, 42u8, 95u8,
             ]
     }
     pub mod system {
@@ -11154,10 +11154,10 @@ pub mod codegen {
                         "Agents",
                         (),
                         [
-                            180u8, 48u8, 159u8, 226u8, 32u8, 112u8, 178u8, 134u8, 39u8, 185u8,
-                            222u8, 38u8, 112u8, 116u8, 197u8, 179u8, 67u8, 78u8, 189u8, 137u8,
-                            104u8, 145u8, 55u8, 84u8, 11u8, 96u8, 50u8, 64u8, 13u8, 41u8, 217u8,
-                            82u8,
+                            221u8, 226u8, 184u8, 103u8, 226u8, 12u8, 66u8, 227u8, 87u8, 203u8,
+                            141u8, 123u8, 237u8, 193u8, 165u8, 58u8, 51u8, 18u8, 212u8, 25u8,
+                            144u8, 198u8, 57u8, 137u8, 116u8, 41u8, 16u8, 96u8, 75u8, 12u8, 237u8,
+                            217u8,
                         ],
                     )
                 }
@@ -11176,10 +11176,10 @@ pub mod codegen {
                         "Agents",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            180u8, 48u8, 159u8, 226u8, 32u8, 112u8, 178u8, 134u8, 39u8, 185u8,
-                            222u8, 38u8, 112u8, 116u8, 197u8, 179u8, 67u8, 78u8, 189u8, 137u8,
-                            104u8, 145u8, 55u8, 84u8, 11u8, 96u8, 50u8, 64u8, 13u8, 41u8, 217u8,
-                            82u8,
+                            221u8, 226u8, 184u8, 103u8, 226u8, 12u8, 66u8, 227u8, 87u8, 203u8,
+                            141u8, 123u8, 237u8, 193u8, 165u8, 58u8, 51u8, 18u8, 212u8, 25u8,
+                            144u8, 198u8, 57u8, 137u8, 116u8, 41u8, 16u8, 96u8, 75u8, 12u8, 237u8,
+                            217u8,
                         ],
                     )
                 }
@@ -11345,6 +11345,13 @@ pub mod codegen {
                     >;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
+                pub mod unverified_servers {
+                    use super::runtime_types;
+                    pub type UnverifiedServers = runtime_types::pallet_mcp::pallet::McpServerInfo<
+                        ::subxt_core::utils::AccountId32,
+                    >;
+                    pub type Param0 = ::subxt_core::utils::AccountId32;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
@@ -11362,10 +11369,9 @@ pub mod codegen {
                         "Servers",
                         (),
                         [
-                            177u8, 133u8, 252u8, 30u8, 156u8, 250u8, 211u8, 47u8, 173u8, 100u8,
-                            194u8, 152u8, 150u8, 207u8, 244u8, 137u8, 131u8, 151u8, 30u8, 11u8,
-                            64u8, 186u8, 39u8, 212u8, 223u8, 194u8, 132u8, 178u8, 158u8, 204u8,
-                            0u8, 53u8,
+                            60u8, 82u8, 202u8, 47u8, 220u8, 109u8, 103u8, 167u8, 26u8, 54u8, 100u8,
+                            19u8, 20u8, 142u8, 164u8, 148u8, 12u8, 26u8, 98u8, 18u8, 85u8, 172u8,
+                            76u8, 186u8, 60u8, 117u8, 149u8, 141u8, 39u8, 110u8, 50u8, 13u8,
                         ],
                     )
                 }
@@ -11384,10 +11390,54 @@ pub mod codegen {
                         "Servers",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            177u8, 133u8, 252u8, 30u8, 156u8, 250u8, 211u8, 47u8, 173u8, 100u8,
-                            194u8, 152u8, 150u8, 207u8, 244u8, 137u8, 131u8, 151u8, 30u8, 11u8,
-                            64u8, 186u8, 39u8, 212u8, 223u8, 194u8, 132u8, 178u8, 158u8, 204u8,
-                            0u8, 53u8,
+                            60u8, 82u8, 202u8, 47u8, 220u8, 109u8, 103u8, 167u8, 26u8, 54u8, 100u8,
+                            19u8, 20u8, 142u8, 164u8, 148u8, 12u8, 26u8, 98u8, 18u8, 85u8, 172u8,
+                            76u8, 186u8, 60u8, 117u8, 149u8, 141u8, 39u8, 110u8, 50u8, 13u8,
+                        ],
+                    )
+                }
+                pub fn unverified_servers_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::unverified_servers::UnverifiedServers,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Mcp",
+                        "UnverifiedServers",
+                        (),
+                        [
+                            246u8, 115u8, 229u8, 12u8, 238u8, 24u8, 163u8, 86u8, 107u8, 205u8,
+                            228u8, 207u8, 91u8, 97u8, 30u8, 109u8, 170u8, 221u8, 61u8, 201u8,
+                            173u8, 102u8, 143u8, 240u8, 33u8, 186u8, 80u8, 252u8, 97u8, 84u8, 79u8,
+                            59u8,
+                        ],
+                    )
+                }
+                pub fn unverified_servers(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::unverified_servers::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::unverified_servers::Param0,
+                    >,
+                    types::unverified_servers::UnverifiedServers,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Mcp",
+                        "UnverifiedServers",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            246u8, 115u8, 229u8, 12u8, 238u8, 24u8, 163u8, 86u8, 107u8, 205u8,
+                            228u8, 207u8, 91u8, 97u8, 30u8, 109u8, 170u8, 221u8, 61u8, 201u8,
+                            173u8, 102u8, 143u8, 240u8, 33u8, 186u8, 80u8, 252u8, 97u8, 84u8, 79u8,
+                            59u8,
                         ],
                     )
                 }
@@ -11486,6 +11536,7 @@ pub mod codegen {
             pub struct AgentInfo<_0> {
                 pub agent_id: _0,
                 pub owner_id: _0,
+                pub url_verified: ::core::primitive::bool,
                 pub agent_card: runtime_types::a2a_rs::AgentCard,
             }
             #[derive(
@@ -13433,6 +13484,7 @@ pub mod codegen {
                     pub name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                     pub description: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                     pub url: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub url_verified: ::core::primitive::bool,
                     pub provider: _0,
                 }
             }

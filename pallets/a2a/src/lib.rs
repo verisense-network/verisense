@@ -74,6 +74,7 @@ pub mod pallet {
             let agent = AgentInfo {
                 owner_id: signer.clone(),
                 agent_id: agent_id.clone(),
+                url_verified: false,
                 agent_card,
             };
             Self::register_agent(agent)?;
@@ -194,6 +195,13 @@ pub mod pallet {
 
         fn find_agent(agent_id: &T::AccountId) -> Option<AgentInfo<T::AccountId>> {
             Agents::<T>::get(agent_id)
+        }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(block_number: BlockNumberFor<T>) {
+            
         }
     }
 }

@@ -12,9 +12,15 @@ scale-info = { features = ["derive"], workspace = true, default-features = false
 frame-support = { workspace = true, default-features = false }
 frame-system = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
+sp-core = {workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
 vrs-support = { path = "../../support", default-features = false }
+log = { workspace = true, default-features = false }
+url = { version = "2.5.3", default-features = false }
+sp-io = { workspace = true, default-features = false }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+serde = { workspace = true, features = ["derive"], default-features = false }
 
 [features]
 default = ["std"]
@@ -27,4 +33,6 @@ std = [
     "sp-runtime/std",
     "vrs-primitives/std",
     "vrs-support/std",
+    "url/std",
+    "sp-io/std"
 ]

@@ -2347,6 +2347,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "domain-verifier"
+version = "0.0.1"
+dependencies = [
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "sp-core",
+ "sp-io 37.0.0",
+ "sp-runtime 38.0.1",
+ "sp-std",
+]
+
+[[package]]
 name = "downcast"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7011,10 +7027,16 @@ version = "0.0.1"
 dependencies = [
  "frame-support 36.0.1",
  "frame-system 36.1.0",
+ "log",
  "parity-scale-codec",
  "scale-info",
+ "serde",
+ "serde_json",
+ "sp-core",
+ "sp-io 37.0.0",
  "sp-runtime 38.0.1",
  "sp-std",
+ "url",
  "vrs-primitives",
  "vrs-support",
 ]
