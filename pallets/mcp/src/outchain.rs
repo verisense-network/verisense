@@ -1,21 +1,18 @@
+use crate::{Config, Pallet};
+use alloc::string::String;
+use alloc::string::ToString;
 use frame_support::{Deserialize, Serialize};
 use log::{info, warn};
-use crate::{Config, Pallet};
 use sp_core::bounded::alloc;
 use sp_core::offchain::Duration;
 use sp_runtime::offchain::http;
 use sp_runtime::offchain::http::Request;
 use sp_std::vec::Vec;
-use alloc::string::ToString;
-use alloc::string::String;
 use url::Url;
 
 impl<T: Config> Pallet<T> {
-
-    pub fn verify_domain(
-        domain_name: &str,
-    ) -> Result<bool, http::Error> {
-       /* use alloc::format;
+    pub fn verify_domain(domain_name: &str) -> Result<bool, http::Error> {
+        /* use alloc::format;
         let rpc_url = format!("https://dns.google/resolve?name=www.baidu.com&type=txt");
         info!("query: {}", rpc_url);
         let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(20_000));
@@ -65,16 +62,16 @@ impl<T: Config> Pallet<T> {
         }*/
 
         let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(5_000));
-        let pending = http::Request::get("https://www.dns.google/resolve?nn=www.baidu.com&type=txt").send().unwrap();
-        let repsonse= pending.try_wait(deadline).unwrap().unwrap();
+        let pending =
+            http::Request::get("https://www.dns.google/resolve?nn=www.baidu.com&type=txt")
+                .send()
+                .unwrap();
+        let repsonse = pending.try_wait(deadline).unwrap().unwrap();
         log::info!("repsonse: {:?}", repsonse.code);
-        
+
         Ok(false)
     }
 }
-
-
-
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct DoHResponse {
@@ -82,7 +79,6 @@ pub struct DoHResponse {
     pub status: i32,
     #[serde(rename = "Answer")]
     pub answer: Option<Vec<Answer>>,
-
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]

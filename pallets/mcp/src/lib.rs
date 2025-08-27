@@ -1,14 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-pub mod weights;
 pub mod outchain;
+pub mod weights;
 
 use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use sp_std::str::FromStr;
     use super::*;
     use codec::{alloc, Encode};
     use frame_support::pallet_prelude::*;
@@ -17,6 +16,7 @@ pub mod pallet {
     use sp_core::crypto::{Ss58AddressFormat, Ss58Codec};
     use sp_runtime::traits::Hash;
     use sp_std::prelude::*;
+    use sp_std::str::FromStr;
     use url::Url;
 
     #[derive(Clone, Encode, Decode, TypeInfo, Debug, PartialEq, Eq)]
@@ -124,7 +124,8 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
-        where <T as frame_system::Config>::AccountId: Ss58Codec
+    where
+        <T as frame_system::Config>::AccountId: Ss58Codec,
     {
         fn offchain_worker(block_number: BlockNumberFor<T>) {
             use alloc::string::String;
@@ -141,13 +142,13 @@ pub mod pallet {
                     if v.len() > 1 {
                         let id = s.0.to_ss58check_with_version(Ss58AddressFormat::custom(137));
                         v[0] =  id.as_str();
-                        
+
                         info!("------ {}", v.join("."));
                         let check_result = Self::verify_domain(v.join(".").as_str());
                         info!("DomainVerified: {:?}", check_result);
                     }
                 }
-                
+
             }*/
             let check_result = Self::verify_domain("www.baidu.com");
             info!("DomainVerified: {:?}", check_result);
