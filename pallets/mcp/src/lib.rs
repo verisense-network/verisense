@@ -146,7 +146,7 @@ pub mod pallet {
             price_rate: Option<u16>,
             logo: Option<String>,
             provider_website: Option<String>,
-            provider_name: Option<String>
+            provider_name: Option<String>,
         ) -> DispatchResult {
             let signer = ensure_signed(origin)?;
             let server_id = Self::derive_server_id(&signer, &name);

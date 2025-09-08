@@ -13,7 +13,12 @@ pub struct McpServer<T> {
     pub name: String,
     pub description: String,
     pub url: String,
+    pub url_verified: bool,
     pub provider: T,
+    pub price_rate: u16,
+    pub logo: Option<String>,
+    pub provider_website: Option<String>,
+    pub provider_name: Option<String>,
 }
 
 fn bytes_to_string(bytes: &[u8]) -> String {
@@ -38,7 +43,12 @@ impl<T> From<(T, pallet_mcp::McpServerInfo<T>)> for McpServer<T> {
             name: String::from_utf8_lossy(&server.name).into_owned(),
             description: bytes_to_string(&server.description),
             url: String::from_utf8_lossy(&server.url).into_owned(),
+            url_verified: server.url_verified,
             provider: server.provider,
+            price_rate: server.price_rate,
+            logo: server.logo,
+            provider_website: server.provider_website,
+            provider_name: server.provider_name,
         }
     }
 }
@@ -47,6 +57,10 @@ impl<T> From<(T, pallet_mcp::McpServerInfo<T>)> for McpServer<T> {
 pub trait McpApi<Hash> {
     #[method(name = "mcp_list")]
     async fn list(&self) -> RpcResult<Vec<McpServer<AccountId>>>;
+
+    #[method(name = "mcp_list_by_provider")]
+    async fn list_by_provider(&self, account_id: AccountId)
+        -> RpcResult<Vec<McpServer<AccountId>>>;
 
     #[method(name = "mcp_find")]
     async fn find(&self, id: AccountId) -> RpcResult<Option<McpServer<AccountId>>>;
@@ -81,6 +95,24 @@ where
             .expect("Failed to invoke runtime api");
         let servers = servers
             .into_iter()
+            .filter(|m| m.1.url_verified)
+            .map(|info| McpServer::from(info))
+            .collect();
+        Ok(servers)
+    }
+
+    async fn list_by_provider(
+        &self,
+        account_id: AccountId,
+    ) -> RpcResult<Vec<McpServer<AccountId>>> {
+        let hash = self.client.info().best_hash;
+        let api = self.client.runtime_api();
+        let servers = api
+            .get_all_mcp_servers(hash)
+            .expect("Failed to invoke runtime api");
+        let servers = servers
+            .into_iter()
+            .filter(|m| m.1.provider == account_id)
             .map(|info| McpServer::from(info))
             .collect();
         Ok(servers)
