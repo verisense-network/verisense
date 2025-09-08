@@ -108,6 +108,8 @@ pub struct AgentCard {
 pub struct AgentInfo<AccountId> {
     pub agent_id: AccountId,
     pub owner_id: AccountId,
+    pub url_verified: bool,
+    pub price_rate: u16,
     pub agent_card: AgentCard,
 }
 
