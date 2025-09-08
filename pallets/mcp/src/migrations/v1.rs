@@ -13,7 +13,7 @@ impl<T: crate::Config> UncheckedOnRuntimeUpgrade for InnerMigrateV0ToV1<T> {
                 name: x.1.name,
                 description: x.1.description,
                 url: x.1.url,
-                url_verified: false,
+                url_verified: true,
                 provider: x.1.provider,
                 price_rate: 100,
                 logo: None,
