@@ -158,7 +158,7 @@ pub mod pallet {
                 url::Url::parse(url_str.unwrap().as_str()).map_err(|_| Error::<T>::InvalidUrl)?;
             ensure!(url_obj.scheme() == "https", Error::<T>::InvalidUrl);
             ensure!(price_rate <= 1000, Error::<T>::InvalidPriceRate);
-            let mut mcp = McpServerInfo {
+            let mcp = McpServerInfo {
                 name,
                 description,
                 url,

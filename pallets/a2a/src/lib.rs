@@ -14,7 +14,6 @@ pub mod pallet {
     use super::*;
     use crate::migrations::v1::MigrateV0ToV1;
     use crate::offchain::VerifiedA2aPayload;
-    use crate::Error::InvalidUrl;
     use a2a_rs::*;
     use codec::Encode;
     use frame_support::dispatch::{GetDispatchInfo, PostDispatchInfo};

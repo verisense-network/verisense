@@ -8,7 +8,6 @@ pub struct InnerMigrateV0ToV1<T: crate::Config>(core::marker::PhantomData<T>);
 impl<T: crate::Config> UncheckedOnRuntimeUpgrade for InnerMigrateV0ToV1<T> {
     fn on_runtime_upgrade() -> frame_support::weights::Weight {
         let mut times = 1;
-        let now = frame_system::Pallet::<T>::block_number().into().as_u32();
         for x in v0::Agents::<T>::iter() {
             let new_agent_info = AgentInfo {
                 agent_id: x.1.agent_id,
