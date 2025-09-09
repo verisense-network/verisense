@@ -1,10 +1,10 @@
 // A2A Rust types
 // Strictly corresponds to TypeScript definitions in a2a.ts
 
+use a2a_rs::AgentInfo;
 use codec::Encode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use a2a_rs::AgentInfo;
 
 /// Represents the service provider of an agent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -233,9 +233,9 @@ pub struct AgentCard {
     /// Defaults to false if not specified.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub supports_authenticated_extended_card: Option<bool>,
-    
+
     pub price_rate: u16,
-    
+
     pub verified: bool,
 }
 
