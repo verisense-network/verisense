@@ -162,7 +162,7 @@ pub mod pallet {
                 name,
                 description,
                 url,
-                url_verified: true,
+                url_verified: false,
                 provider: signer,
                 price_rate,
                 logo,
