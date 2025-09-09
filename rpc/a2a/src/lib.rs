@@ -53,7 +53,7 @@ where
         let agents = agents
             .into_iter()
             .filter(|a| a.url_verified)
-            .map(|agent_info| (agent_info.agent_id.clone(), agent_info.agent_card.into()))
+            .map(|agent_info| (agent_info.agent_id.clone(), agent_info.into()))
             .collect();
         Ok(agents)
     }
@@ -64,7 +64,7 @@ where
         let agent = api
             .find_agent(hash, id)
             .expect("Failed to invoke runtime api")
-            .map(|agent_info| agent_info.agent_card.into());
+            .map(|agent_info| agent_info.into());
         Ok(agent)
     }
 
@@ -80,7 +80,7 @@ where
         let agents = agents
             .into_iter()
             .filter(|a| a.owner_id == account_id)
-            .map(|agent_info| (agent_info.agent_id.clone(), agent_info.agent_card.into()))
+            .map(|agent_info| (agent_info.agent_id.clone(), agent_info.into()))
             .collect();
         Ok(agents)
     }
