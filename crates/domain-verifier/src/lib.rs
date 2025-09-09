@@ -9,7 +9,7 @@ use sp_core::offchain::Duration;
 use sp_runtime::offchain::http;
 use sp_runtime::offchain::http::Request;
 use sp_std::prelude::*;
-pub fn verify_domain(domain_name: &str) -> Result<bool, http::Error> {
+pub fn verify_domain(domain_name: &str, txt_content: &str) -> Result<bool, http::Error> {
     use alloc::format;
     let rpc_url = format!("https://dns.google/resolve?name={}&type=txt", domain_name);
     info!("query: {}", rpc_url);
@@ -45,7 +45,7 @@ pub fn verify_domain(domain_name: &str) -> Result<bool, http::Error> {
             if r.status == 0 && r.answer.is_some() {
                 let answers = r.answer.unwrap();
                 for a in answers {
-                    if domain_name.starts_with(a.data.as_str()) {
+                    if txt_content == a.data.as_str() {
                         return Ok(true);
                     }
                 }

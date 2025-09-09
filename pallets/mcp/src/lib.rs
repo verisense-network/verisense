@@ -261,8 +261,10 @@ pub mod pallet {
                             let id = s.0.to_ss58check_with_version(Ss58AddressFormat::custom(
                                 T::SS58Prefix::get(),
                             ));
+                            let id = hex::encode(s.0.as_ref()[0..16].to_vec());
                             v[0] = id.as_str();
-                            let check_result = domain_verifier::verify_domain(v.join(".").as_str());
+                            let check_result =
+                                domain_verifier::verify_domain(v.join(".").as_str(), "");
                             if let Ok(true) = check_result {
                                 verified_mcps.push(s.0);
                             }

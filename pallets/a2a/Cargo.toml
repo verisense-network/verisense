@@ -20,7 +20,7 @@ log = { workspace = true, default-features = false}
 url = { version = "2.5.3", default-features = false }
 domain-verifier = { path = "../../crates/domain-verifier", default-features = false}
 sp-core = {workspace = true, default-features = false}
-
+hex = {version = "0.4.3", default-features = false, features = ["alloc"]}
 [dev-dependencies]
 sp-io = { workspace = true, default-features = true }
 
@@ -35,6 +35,7 @@ std = [
     "vrs-primitives/std",
     "vrs-support/std",
     "a2a-rs/std",
+    "hex/std",
     "sp-core/std",
     "domain-verifier/std"
 ]
