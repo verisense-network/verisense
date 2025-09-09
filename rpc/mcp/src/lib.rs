@@ -8,6 +8,7 @@ use vrs_mcp_runtime_api::McpRuntimeApi;
 use vrs_primitives::AccountId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct McpServer<T> {
     pub id: T,
     pub name: String,
