@@ -187,6 +187,7 @@ pub mod pallet {
                 *maybe_agent = None;
                 Ok(())
             })?;
+            UnverifiedAgents::<T>::remove(&agent_id);
             Self::deposit_event(Event::AgentDeregistered {
                 id: agent_id.clone(),
             });
@@ -213,17 +214,20 @@ pub mod pallet {
             }
             let verified_agents = payload.observations;
             for verified_agent in verified_agents {
-                UnverifiedAgents::<T>::remove(&verified_agent);
-                let _ = Agents::<T>::try_mutate(&verified_agent.clone(), |maybe_server| {
+                if let Ok(_) = Agents::<T>::try_mutate(&verified_agent, |maybe_server| {
                     if maybe_server.is_none() {
                         return Err(Error::<T>::AgentNotFound);
                     }
                     let mut server = maybe_server.clone().unwrap();
                     server.url_verified = true;
                     *maybe_server = Some(server);
-                    Self::deposit_event(Event::AgentVerified { id: verified_agent });
+                    Self::deposit_event(Event::AgentVerified {
+                        id: verified_agent.clone(),
+                    });
                     Ok(())
-                });
+                }) {
+                    UnverifiedAgents::<T>::remove(&verified_agent);
+                }
             }
             Ok(().into())
         }

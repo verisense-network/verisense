@@ -212,8 +212,7 @@ pub mod pallet {
             }
             let verified_mcps = payload.observations;
             for verified_mcp in verified_mcps {
-                UnverifiedServers::<T>::remove(&verified_mcp);
-                let _ = Servers::<T>::try_mutate(&verified_mcp, |maybe_server| {
+                if let Ok(_) = Servers::<T>::try_mutate(&verified_mcp, |maybe_server| {
                     if maybe_server.is_none() {
                         return Err(Error::<T>::McpServerNotFound);
                     }
@@ -221,7 +220,9 @@ pub mod pallet {
                     server.url_verified = true;
                     *maybe_server = Some(server);
                     Ok(())
-                });
+                }) {
+                    UnverifiedServers::<T>::remove(&verified_mcp);
+                }
             }
             Ok(().into())
         }
