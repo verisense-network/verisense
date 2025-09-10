@@ -15,7 +15,11 @@ sp-std = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
 vrs-support = { path = "../../support", default-features = false }
-
+log = { workspace = true, default-features = false }
+url = { version = "2.5.3", default-features = false }
+sp-core = { workspace = true, default-features = false }
+domain-verifier = {path = "../../crates/domain-verifier", default-features = false }
+hex = {version = "0.4.3", default-features = false, features = ["alloc"]}
 [features]
 default = ["std"]
 std = [
@@ -24,6 +28,9 @@ std = [
     "frame-system/std",
     "scale-info/std",
     "sp-std/std",
+    "hex/std",
+    "domain-verifier/std",
+    "sp-core/std",
     "sp-runtime/std",
     "vrs-primitives/std",
     "vrs-support/std",

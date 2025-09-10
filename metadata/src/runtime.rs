@@ -99,6 +99,12 @@ pub mod codegen {
         pub fn swap(&self) -> swap::constants::ConstantsApi {
             swap::constants::ConstantsApi
         }
+        pub fn a2a(&self) -> a2a::constants::ConstantsApi {
+            a2a::constants::ConstantsApi
+        }
+        pub fn mcp(&self) -> mcp::constants::ConstantsApi {
+            mcp::constants::ConstantsApi
+        }
     }
     pub struct StorageApi;
     impl StorageApi {
@@ -217,9 +223,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                127u8, 79u8, 26u8, 182u8, 40u8, 107u8, 190u8, 144u8, 109u8, 250u8, 86u8, 206u8,
-                159u8, 99u8, 15u8, 215u8, 219u8, 246u8, 113u8, 96u8, 198u8, 243u8, 228u8, 192u8,
-                87u8, 143u8, 8u8, 237u8, 224u8, 36u8, 230u8, 2u8,
+                87u8, 189u8, 84u8, 218u8, 142u8, 183u8, 57u8, 232u8, 166u8, 96u8, 122u8, 65u8,
+                111u8, 30u8, 49u8, 200u8, 110u8, 236u8, 167u8, 223u8, 226u8, 150u8, 45u8, 210u8,
+                254u8, 71u8, 107u8, 209u8, 54u8, 100u8, 144u8, 235u8,
             ]
     }
     pub mod system {
@@ -1185,10 +1191,9 @@ pub mod codegen {
                         "Events",
                         (),
                         [
-                            176u8, 28u8, 47u8, 236u8, 18u8, 121u8, 183u8, 245u8, 162u8, 196u8,
-                            128u8, 80u8, 143u8, 27u8, 195u8, 201u8, 191u8, 222u8, 153u8, 44u8,
-                            10u8, 252u8, 99u8, 55u8, 168u8, 57u8, 215u8, 171u8, 213u8, 104u8, 55u8,
-                            192u8,
+                            150u8, 238u8, 205u8, 8u8, 138u8, 40u8, 238u8, 76u8, 48u8, 84u8, 143u8,
+                            184u8, 56u8, 42u8, 53u8, 125u8, 7u8, 209u8, 101u8, 225u8, 163u8, 152u8,
+                            59u8, 108u8, 239u8, 239u8, 3u8, 213u8, 48u8, 51u8, 66u8, 5u8,
                         ],
                     )
                 }
@@ -6873,10 +6878,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            166u8, 130u8, 60u8, 28u8, 16u8, 242u8, 206u8, 252u8, 44u8, 190u8, 75u8,
-                            73u8, 238u8, 187u8, 44u8, 156u8, 158u8, 216u8, 219u8, 149u8, 68u8,
-                            99u8, 195u8, 59u8, 56u8, 186u8, 103u8, 151u8, 206u8, 105u8, 12u8,
-                            197u8,
+                            147u8, 105u8, 56u8, 48u8, 126u8, 84u8, 101u8, 210u8, 71u8, 225u8, 93u8,
+                            137u8, 0u8, 205u8, 246u8, 217u8, 196u8, 117u8, 43u8, 195u8, 208u8, 7u8,
+                            11u8, 97u8, 241u8, 97u8, 250u8, 108u8, 186u8, 140u8, 134u8, 147u8,
                         ],
                     )
                 }
@@ -6894,10 +6898,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            238u8, 138u8, 182u8, 99u8, 86u8, 48u8, 174u8, 2u8, 137u8, 42u8, 34u8,
-                            67u8, 29u8, 188u8, 125u8, 94u8, 142u8, 230u8, 89u8, 212u8, 215u8,
-                            233u8, 206u8, 201u8, 195u8, 63u8, 215u8, 152u8, 15u8, 77u8, 110u8,
-                            147u8,
+                            250u8, 136u8, 151u8, 79u8, 53u8, 92u8, 134u8, 177u8, 246u8, 140u8,
+                            129u8, 4u8, 2u8, 224u8, 221u8, 30u8, 227u8, 254u8, 255u8, 42u8, 242u8,
+                            29u8, 13u8, 255u8, 147u8, 236u8, 244u8, 166u8, 172u8, 225u8, 227u8,
+                            139u8,
                         ],
                     )
                 }
@@ -6929,10 +6933,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            170u8, 111u8, 41u8, 234u8, 119u8, 59u8, 249u8, 6u8, 102u8, 8u8, 54u8,
-                            184u8, 105u8, 200u8, 203u8, 146u8, 204u8, 116u8, 42u8, 91u8, 195u8,
-                            225u8, 164u8, 67u8, 40u8, 217u8, 215u8, 30u8, 250u8, 228u8, 151u8,
-                            178u8,
+                            250u8, 179u8, 188u8, 56u8, 147u8, 79u8, 169u8, 12u8, 211u8, 133u8,
+                            172u8, 185u8, 244u8, 239u8, 212u8, 39u8, 10u8, 32u8, 54u8, 26u8, 79u8,
+                            128u8, 168u8, 34u8, 39u8, 69u8, 72u8, 104u8, 82u8, 155u8, 245u8, 203u8,
                         ],
                     )
                 }
@@ -10949,10 +10952,12 @@ pub mod codegen {
                 #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
                 pub struct Register {
                     pub agent_card: register::AgentCard,
+                    pub price_rate: register::PriceRate,
                 }
                 pub mod register {
                     use super::runtime_types;
                     pub type AgentCard = runtime_types::a2a_rs::AgentCard;
+                    pub type PriceRate = ::core::option::Option<::core::primitive::u16>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Register {
                     const PALLET: &'static str = "A2A";
@@ -10971,11 +10976,13 @@ pub mod codegen {
                 pub struct Update {
                     pub agent_id: update::AgentId,
                     pub agent_card: update::AgentCard,
+                    pub price_rate: update::PriceRate,
                 }
                 pub mod update {
                     use super::runtime_types;
                     pub type AgentId = ::subxt_core::utils::AccountId32;
                     pub type AgentCard = runtime_types::a2a_rs::AgentCard;
+                    pub type PriceRate = ::core::option::Option<::core::primitive::u16>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Update {
                     const PALLET: &'static str = "A2A";
@@ -11002,21 +11009,53 @@ pub mod codegen {
                     const PALLET: &'static str = "A2A";
                     const CALL: &'static str = "deregister";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AfterDnsVerify {
+                    pub payload: after_dns_verify::Payload,
+                    pub signature: after_dns_verify::Signature,
+                }
+                pub mod after_dns_verify {
+                    use super::runtime_types;
+                    pub type Payload = runtime_types::pallet_a2a::offchain::VerifiedA2aPayload<
+                        runtime_types::sp_runtime::MultiSigner,
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u32,
+                    >;
+                    pub type Signature = runtime_types::sp_runtime::MultiSignature;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AfterDnsVerify {
+                    const PALLET: &'static str = "A2A";
+                    const CALL: &'static str = "after_dns_verify";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
                 pub fn register(
                     &self,
                     agent_card: types::register::AgentCard,
+                    price_rate: types::register::PriceRate,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::Register> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "A2A",
                         "register",
-                        types::Register { agent_card },
+                        types::Register {
+                            agent_card,
+                            price_rate,
+                        },
                         [
-                            122u8, 81u8, 52u8, 49u8, 231u8, 255u8, 189u8, 2u8, 121u8, 119u8, 98u8,
-                            175u8, 66u8, 241u8, 251u8, 165u8, 156u8, 147u8, 46u8, 81u8, 103u8,
-                            166u8, 176u8, 173u8, 214u8, 99u8, 123u8, 0u8, 120u8, 6u8, 51u8, 39u8,
+                            124u8, 170u8, 172u8, 239u8, 110u8, 124u8, 24u8, 90u8, 72u8, 84u8, 52u8,
+                            193u8, 56u8, 200u8, 74u8, 11u8, 215u8, 234u8, 206u8, 125u8, 238u8,
+                            18u8, 145u8, 173u8, 105u8, 122u8, 229u8, 89u8, 41u8, 158u8, 107u8,
+                            126u8,
                         ],
                     )
                 }
@@ -11024,6 +11063,7 @@ pub mod codegen {
                     &self,
                     agent_id: types::update::AgentId,
                     agent_card: types::update::AgentCard,
+                    price_rate: types::update::PriceRate,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::Update> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "A2A",
@@ -11031,11 +11071,12 @@ pub mod codegen {
                         types::Update {
                             agent_id,
                             agent_card,
+                            price_rate,
                         },
                         [
-                            119u8, 101u8, 207u8, 105u8, 192u8, 228u8, 60u8, 102u8, 89u8, 185u8,
-                            75u8, 27u8, 179u8, 125u8, 96u8, 72u8, 44u8, 175u8, 165u8, 108u8, 150u8,
-                            226u8, 108u8, 205u8, 39u8, 63u8, 128u8, 117u8, 8u8, 112u8, 207u8, 68u8,
+                            10u8, 134u8, 64u8, 26u8, 123u8, 16u8, 103u8, 145u8, 214u8, 188u8,
+                            131u8, 111u8, 169u8, 235u8, 37u8, 46u8, 125u8, 14u8, 34u8, 37u8, 18u8,
+                            133u8, 243u8, 78u8, 249u8, 5u8, 102u8, 37u8, 141u8, 82u8, 242u8, 50u8,
                         ],
                     )
                 }
@@ -11051,6 +11092,24 @@ pub mod codegen {
                             192u8, 211u8, 121u8, 60u8, 12u8, 188u8, 212u8, 37u8, 33u8, 176u8,
                             147u8, 127u8, 10u8, 29u8, 134u8, 54u8, 60u8, 195u8, 5u8, 173u8, 169u8,
                             235u8, 255u8, 233u8, 76u8, 129u8, 248u8, 27u8, 47u8, 76u8, 219u8, 52u8,
+                        ],
+                    )
+                }
+                pub fn after_dns_verify(
+                    &self,
+                    payload: types::after_dns_verify::Payload,
+                    signature: types::after_dns_verify::Signature,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AfterDnsVerify>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "A2A",
+                        "after_dns_verify",
+                        types::AfterDnsVerify { payload, signature },
+                        [
+                            134u8, 170u8, 253u8, 133u8, 178u8, 36u8, 254u8, 201u8, 168u8, 35u8,
+                            212u8, 23u8, 210u8, 178u8, 142u8, 129u8, 252u8, 95u8, 152u8, 242u8,
+                            218u8, 0u8, 166u8, 20u8, 4u8, 9u8, 120u8, 106u8, 93u8, 193u8, 133u8,
+                            72u8,
                         ],
                     )
                 }
@@ -11126,6 +11185,27 @@ pub mod codegen {
                 const PALLET: &'static str = "A2A";
                 const EVENT: &'static str = "AgentDeregistered";
             }
+            #[derive(
+                :: subxt_core :: ext :: codec :: Decode,
+                :: subxt_core :: ext :: codec :: Encode,
+                :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                Debug,
+            )]
+            # [codec (crate = :: subxt_core :: ext :: codec)]
+            #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+            #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+            pub struct AgentVerified {
+                pub id: agent_verified::Id,
+            }
+            pub mod agent_verified {
+                use super::runtime_types;
+                pub type Id = ::subxt_core::utils::AccountId32;
+            }
+            impl ::subxt_core::events::StaticEvent for AgentVerified {
+                const PALLET: &'static str = "A2A";
+                const EVENT: &'static str = "AgentVerified";
+            }
         }
         pub mod storage {
             use super::runtime_types;
@@ -11135,6 +11215,14 @@ pub mod codegen {
                     use super::runtime_types;
                     pub type Agents =
                         runtime_types::a2a_rs::AgentInfo<::subxt_core::utils::AccountId32>;
+                    pub type Param0 = ::subxt_core::utils::AccountId32;
+                }
+                pub mod unverified_agents {
+                    use super::runtime_types;
+                    pub type UnverifiedAgents = (
+                        runtime_types::a2a_rs::AgentInfo<::subxt_core::utils::AccountId32>,
+                        ::core::primitive::u32,
+                    );
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
             }
@@ -11154,10 +11242,10 @@ pub mod codegen {
                         "Agents",
                         (),
                         [
-                            180u8, 48u8, 159u8, 226u8, 32u8, 112u8, 178u8, 134u8, 39u8, 185u8,
-                            222u8, 38u8, 112u8, 116u8, 197u8, 179u8, 67u8, 78u8, 189u8, 137u8,
-                            104u8, 145u8, 55u8, 84u8, 11u8, 96u8, 50u8, 64u8, 13u8, 41u8, 217u8,
-                            82u8,
+                            94u8, 36u8, 167u8, 41u8, 183u8, 143u8, 211u8, 237u8, 237u8, 156u8,
+                            71u8, 132u8, 173u8, 122u8, 19u8, 109u8, 109u8, 85u8, 193u8, 137u8,
+                            66u8, 103u8, 47u8, 171u8, 100u8, 151u8, 247u8, 54u8, 74u8, 99u8, 10u8,
+                            133u8,
                         ],
                     )
                 }
@@ -11176,10 +11264,76 @@ pub mod codegen {
                         "Agents",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            180u8, 48u8, 159u8, 226u8, 32u8, 112u8, 178u8, 134u8, 39u8, 185u8,
-                            222u8, 38u8, 112u8, 116u8, 197u8, 179u8, 67u8, 78u8, 189u8, 137u8,
-                            104u8, 145u8, 55u8, 84u8, 11u8, 96u8, 50u8, 64u8, 13u8, 41u8, 217u8,
-                            82u8,
+                            94u8, 36u8, 167u8, 41u8, 183u8, 143u8, 211u8, 237u8, 237u8, 156u8,
+                            71u8, 132u8, 173u8, 122u8, 19u8, 109u8, 109u8, 85u8, 193u8, 137u8,
+                            66u8, 103u8, 47u8, 171u8, 100u8, 151u8, 247u8, 54u8, 74u8, 99u8, 10u8,
+                            133u8,
+                        ],
+                    )
+                }
+                pub fn unverified_agents_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::unverified_agents::UnverifiedAgents,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "A2A",
+                        "UnverifiedAgents",
+                        (),
+                        [
+                            207u8, 183u8, 126u8, 80u8, 17u8, 35u8, 39u8, 9u8, 43u8, 158u8, 52u8,
+                            167u8, 6u8, 141u8, 128u8, 126u8, 177u8, 58u8, 180u8, 114u8, 101u8,
+                            216u8, 174u8, 79u8, 107u8, 181u8, 102u8, 139u8, 129u8, 20u8, 166u8,
+                            98u8,
+                        ],
+                    )
+                }
+                pub fn unverified_agents(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::unverified_agents::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::unverified_agents::Param0,
+                    >,
+                    types::unverified_agents::UnverifiedAgents,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "A2A",
+                        "UnverifiedAgents",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            207u8, 183u8, 126u8, 80u8, 17u8, 35u8, 39u8, 9u8, 43u8, 158u8, 52u8,
+                            167u8, 6u8, 141u8, 128u8, 126u8, 177u8, 58u8, 180u8, 114u8, 101u8,
+                            216u8, 174u8, 79u8, 107u8, 181u8, 102u8, 139u8, 129u8, 20u8, 166u8,
+                            98u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub mod constants {
+            use super::runtime_types;
+            pub struct ConstantsApi;
+            impl ConstantsApi {
+                pub fn unsigned_priority(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u64>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "A2A",
+                        "UnsignedPriority",
+                        [
+                            128u8, 214u8, 205u8, 242u8, 181u8, 142u8, 124u8, 231u8, 190u8, 146u8,
+                            59u8, 226u8, 157u8, 101u8, 103u8, 117u8, 249u8, 65u8, 18u8, 191u8,
+                            103u8, 119u8, 53u8, 85u8, 81u8, 96u8, 220u8, 42u8, 184u8, 239u8, 42u8,
+                            246u8,
                         ],
                     )
                 }
@@ -11211,12 +11365,22 @@ pub mod codegen {
                     pub name: register::Name,
                     pub description: register::Description,
                     pub url: register::Url,
+                    pub price_rate: register::PriceRate,
+                    pub logo: register::Logo,
+                    pub provider_website: register::ProviderWebsite,
+                    pub provider_name: register::ProviderName,
                 }
                 pub mod register {
                     use super::runtime_types;
                     pub type Name = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                     pub type Description = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
                     pub type Url = ::subxt_core::alloc::vec::Vec<::core::primitive::u8>;
+                    pub type PriceRate = ::core::option::Option<::core::primitive::u16>;
+                    pub type Logo = ::core::option::Option<::subxt_core::alloc::string::String>;
+                    pub type ProviderWebsite =
+                        ::core::option::Option<::subxt_core::alloc::string::String>;
+                    pub type ProviderName =
+                        ::core::option::Option<::subxt_core::alloc::string::String>;
                 }
                 impl ::subxt_core::blocks::StaticExtrinsic for Register {
                     const PALLET: &'static str = "Mcp";
@@ -11243,6 +11407,33 @@ pub mod codegen {
                     const PALLET: &'static str = "Mcp";
                     const CALL: &'static str = "deregister";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct AfterDnsVerify {
+                    pub payload: after_dns_verify::Payload,
+                    pub signature: after_dns_verify::Signature,
+                }
+                pub mod after_dns_verify {
+                    use super::runtime_types;
+                    pub type Payload = runtime_types::pallet_mcp::offchain::VerifiedMCPPayload<
+                        runtime_types::sp_runtime::MultiSigner,
+                        ::subxt_core::utils::AccountId32,
+                        ::core::primitive::u32,
+                    >;
+                    pub type Signature = runtime_types::sp_runtime::MultiSignature;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for AfterDnsVerify {
+                    const PALLET: &'static str = "Mcp";
+                    const CALL: &'static str = "after_dns_verify";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -11251,6 +11442,10 @@ pub mod codegen {
                     name: types::register::Name,
                     description: types::register::Description,
                     url: types::register::Url,
+                    price_rate: types::register::PriceRate,
+                    logo: types::register::Logo,
+                    provider_website: types::register::ProviderWebsite,
+                    provider_name: types::register::ProviderName,
                 ) -> ::subxt_core::tx::payload::StaticPayload<types::Register> {
                     ::subxt_core::tx::payload::StaticPayload::new_static(
                         "Mcp",
@@ -11259,12 +11454,15 @@ pub mod codegen {
                             name,
                             description,
                             url,
+                            price_rate,
+                            logo,
+                            provider_website,
+                            provider_name,
                         },
                         [
-                            82u8, 250u8, 182u8, 116u8, 240u8, 243u8, 116u8, 82u8, 241u8, 20u8,
-                            244u8, 213u8, 231u8, 81u8, 39u8, 144u8, 40u8, 208u8, 72u8, 138u8,
-                            101u8, 84u8, 250u8, 6u8, 126u8, 152u8, 134u8, 65u8, 81u8, 239u8, 56u8,
-                            166u8,
+                            50u8, 158u8, 108u8, 237u8, 31u8, 91u8, 71u8, 53u8, 116u8, 102u8, 38u8,
+                            56u8, 130u8, 202u8, 143u8, 114u8, 68u8, 32u8, 233u8, 138u8, 122u8,
+                            90u8, 119u8, 251u8, 61u8, 43u8, 50u8, 0u8, 135u8, 92u8, 135u8, 196u8,
                         ],
                     )
                 }
@@ -11281,6 +11479,24 @@ pub mod codegen {
                             161u8, 141u8, 179u8, 245u8, 48u8, 241u8, 208u8, 74u8, 71u8, 139u8,
                             162u8, 166u8, 244u8, 234u8, 224u8, 90u8, 157u8, 191u8, 108u8, 189u8,
                             107u8,
+                        ],
+                    )
+                }
+                pub fn after_dns_verify(
+                    &self,
+                    payload: types::after_dns_verify::Payload,
+                    signature: types::after_dns_verify::Signature,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::AfterDnsVerify>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Mcp",
+                        "after_dns_verify",
+                        types::AfterDnsVerify { payload, signature },
+                        [
+                            134u8, 170u8, 253u8, 133u8, 178u8, 36u8, 254u8, 201u8, 168u8, 35u8,
+                            212u8, 23u8, 210u8, 178u8, 142u8, 129u8, 252u8, 95u8, 152u8, 242u8,
+                            218u8, 0u8, 166u8, 20u8, 4u8, 9u8, 120u8, 106u8, 93u8, 193u8, 133u8,
+                            72u8,
                         ],
                     )
                 }
@@ -11345,6 +11561,16 @@ pub mod codegen {
                     >;
                     pub type Param0 = ::subxt_core::utils::AccountId32;
                 }
+                pub mod unverified_servers {
+                    use super::runtime_types;
+                    pub type UnverifiedServers = (
+                        runtime_types::pallet_mcp::pallet::McpServerInfo<
+                            ::subxt_core::utils::AccountId32,
+                        >,
+                        ::core::primitive::u32,
+                    );
+                    pub type Param0 = ::subxt_core::utils::AccountId32;
+                }
             }
             pub struct StorageApi;
             impl StorageApi {
@@ -11362,10 +11588,10 @@ pub mod codegen {
                         "Servers",
                         (),
                         [
-                            177u8, 133u8, 252u8, 30u8, 156u8, 250u8, 211u8, 47u8, 173u8, 100u8,
-                            194u8, 152u8, 150u8, 207u8, 244u8, 137u8, 131u8, 151u8, 30u8, 11u8,
-                            64u8, 186u8, 39u8, 212u8, 223u8, 194u8, 132u8, 178u8, 158u8, 204u8,
-                            0u8, 53u8,
+                            137u8, 126u8, 189u8, 134u8, 144u8, 141u8, 100u8, 135u8, 75u8, 106u8,
+                            215u8, 253u8, 239u8, 202u8, 195u8, 43u8, 181u8, 52u8, 148u8, 122u8,
+                            81u8, 88u8, 109u8, 77u8, 57u8, 85u8, 186u8, 98u8, 148u8, 203u8, 237u8,
+                            66u8,
                         ],
                     )
                 }
@@ -11384,10 +11610,74 @@ pub mod codegen {
                         "Servers",
                         ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
                         [
-                            177u8, 133u8, 252u8, 30u8, 156u8, 250u8, 211u8, 47u8, 173u8, 100u8,
-                            194u8, 152u8, 150u8, 207u8, 244u8, 137u8, 131u8, 151u8, 30u8, 11u8,
-                            64u8, 186u8, 39u8, 212u8, 223u8, 194u8, 132u8, 178u8, 158u8, 204u8,
-                            0u8, 53u8,
+                            137u8, 126u8, 189u8, 134u8, 144u8, 141u8, 100u8, 135u8, 75u8, 106u8,
+                            215u8, 253u8, 239u8, 202u8, 195u8, 43u8, 181u8, 52u8, 148u8, 122u8,
+                            81u8, 88u8, 109u8, 77u8, 57u8, 85u8, 186u8, 98u8, 148u8, 203u8, 237u8,
+                            66u8,
+                        ],
+                    )
+                }
+                pub fn unverified_servers_iter(
+                    &self,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    (),
+                    types::unverified_servers::UnverifiedServers,
+                    (),
+                    (),
+                    ::subxt_core::utils::Yes,
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Mcp",
+                        "UnverifiedServers",
+                        (),
+                        [
+                            78u8, 243u8, 172u8, 133u8, 211u8, 221u8, 65u8, 172u8, 6u8, 245u8, 63u8,
+                            244u8, 59u8, 61u8, 110u8, 74u8, 12u8, 114u8, 232u8, 122u8, 91u8, 234u8,
+                            14u8, 44u8, 87u8, 18u8, 232u8, 31u8, 155u8, 111u8, 197u8, 94u8,
+                        ],
+                    )
+                }
+                pub fn unverified_servers(
+                    &self,
+                    _0: impl ::core::borrow::Borrow<types::unverified_servers::Param0>,
+                ) -> ::subxt_core::storage::address::StaticAddress<
+                    ::subxt_core::storage::address::StaticStorageKey<
+                        types::unverified_servers::Param0,
+                    >,
+                    types::unverified_servers::UnverifiedServers,
+                    ::subxt_core::utils::Yes,
+                    (),
+                    (),
+                > {
+                    ::subxt_core::storage::address::StaticAddress::new_static(
+                        "Mcp",
+                        "UnverifiedServers",
+                        ::subxt_core::storage::address::StaticStorageKey::new(_0.borrow()),
+                        [
+                            78u8, 243u8, 172u8, 133u8, 211u8, 221u8, 65u8, 172u8, 6u8, 245u8, 63u8,
+                            244u8, 59u8, 61u8, 110u8, 74u8, 12u8, 114u8, 232u8, 122u8, 91u8, 234u8,
+                            14u8, 44u8, 87u8, 18u8, 232u8, 31u8, 155u8, 111u8, 197u8, 94u8,
+                        ],
+                    )
+                }
+            }
+        }
+        pub mod constants {
+            use super::runtime_types;
+            pub struct ConstantsApi;
+            impl ConstantsApi {
+                pub fn unsigned_priority(
+                    &self,
+                ) -> ::subxt_core::constants::address::StaticAddress<::core::primitive::u64>
+                {
+                    ::subxt_core::constants::address::StaticAddress::new_static(
+                        "Mcp",
+                        "UnsignedPriority",
+                        [
+                            128u8, 214u8, 205u8, 242u8, 181u8, 142u8, 124u8, 231u8, 190u8, 146u8,
+                            59u8, 226u8, 157u8, 101u8, 103u8, 117u8, 249u8, 65u8, 18u8, 191u8,
+                            103u8, 119u8, 53u8, 85u8, 81u8, 96u8, 220u8, 42u8, 184u8, 239u8, 42u8,
+                            246u8,
                         ],
                     )
                 }
@@ -11486,6 +11776,8 @@ pub mod codegen {
             pub struct AgentInfo<_0> {
                 pub agent_id: _0,
                 pub owner_id: _0,
+                pub url_verified: ::core::primitive::bool,
+                pub price_rate: ::core::primitive::u16,
                 pub agent_card: runtime_types::a2a_rs::AgentCard,
             }
             #[derive(
@@ -12071,6 +12363,25 @@ pub mod codegen {
         }
         pub mod pallet_a2a {
             use super::runtime_types;
+            pub mod offchain {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct VerifiedA2aPayload<_0, _1, _2> {
+                    pub public: _0,
+                    pub key_data: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub block_number: _2,
+                    pub observations: ::subxt_core::alloc::vec::Vec<_1>,
+                }
+            }
             pub mod pallet {
                 use super::runtime_types;
                 #[derive(
@@ -12087,15 +12398,26 @@ pub mod codegen {
                     #[codec(index = 0)]
                     register {
                         agent_card: runtime_types::a2a_rs::AgentCard,
+                        price_rate: ::core::option::Option<::core::primitive::u16>,
                     },
                     #[codec(index = 1)]
                     update {
                         agent_id: ::subxt_core::utils::AccountId32,
                         agent_card: runtime_types::a2a_rs::AgentCard,
+                        price_rate: ::core::option::Option<::core::primitive::u16>,
                     },
                     #[codec(index = 2)]
                     deregister {
                         agent_id: ::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 3)]
+                    after_dns_verify {
+                        payload: runtime_types::pallet_a2a::offchain::VerifiedA2aPayload<
+                            runtime_types::sp_runtime::MultiSigner,
+                            ::subxt_core::utils::AccountId32,
+                            ::core::primitive::u32,
+                        >,
+                        signature: runtime_types::sp_runtime::MultiSignature,
                     },
                 }
                 #[derive(
@@ -12117,6 +12439,12 @@ pub mod codegen {
                     AgentNotFound,
                     #[codec(index = 3)]
                     AgentNameImmutable,
+                    #[codec(index = 4)]
+                    NotValidator,
+                    #[codec(index = 5)]
+                    InvalidPriceRate,
+                    #[codec(index = 6)]
+                    InvalidUrl,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -12141,6 +12469,10 @@ pub mod codegen {
                     },
                     #[codec(index = 2)]
                     AgentDeregistered {
+                        id: ::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 3)]
+                    AgentVerified {
                         id: ::subxt_core::utils::AccountId32,
                     },
                 }
@@ -13356,6 +13688,25 @@ pub mod codegen {
         }
         pub mod pallet_mcp {
             use super::runtime_types;
+            pub mod offchain {
+                use super::runtime_types;
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct VerifiedMCPPayload<_0, _1, _2> {
+                    pub public: _0,
+                    pub key_data: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub block_number: _2,
+                    pub observations: ::subxt_core::alloc::vec::Vec<_1>,
+                }
+            }
             pub mod pallet {
                 use super::runtime_types;
                 #[derive(
@@ -13374,10 +13725,24 @@ pub mod codegen {
                         name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         description: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                         url: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                        price_rate: ::core::option::Option<::core::primitive::u16>,
+                        logo: ::core::option::Option<::subxt_core::alloc::string::String>,
+                        provider_website:
+                            ::core::option::Option<::subxt_core::alloc::string::String>,
+                        provider_name: ::core::option::Option<::subxt_core::alloc::string::String>,
                     },
                     #[codec(index = 1)]
                     deregister {
                         server_id: ::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 2)]
+                    after_dns_verify {
+                        payload: runtime_types::pallet_mcp::offchain::VerifiedMCPPayload<
+                            runtime_types::sp_runtime::MultiSigner,
+                            ::subxt_core::utils::AccountId32,
+                            ::core::primitive::u32,
+                        >,
+                        signature: runtime_types::sp_runtime::MultiSignature,
                     },
                 }
                 #[derive(
@@ -13397,6 +13762,12 @@ pub mod codegen {
                     McpServerAlreadyExists,
                     #[codec(index = 2)]
                     McpServerNotFound,
+                    #[codec(index = 3)]
+                    NotValidator,
+                    #[codec(index = 4)]
+                    InvalidPriceRate,
+                    #[codec(index = 5)]
+                    InvalidUrl,
                 }
                 #[derive(
                     :: subxt_core :: ext :: codec :: Decode,
@@ -13433,7 +13804,13 @@ pub mod codegen {
                     pub name: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                     pub description: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
                     pub url: ::subxt_core::alloc::vec::Vec<::core::primitive::u8>,
+                    pub url_verified: ::core::primitive::bool,
                     pub provider: _0,
+                    pub price_rate: ::core::primitive::u16,
+                    pub logo: ::core::option::Option<::subxt_core::alloc::string::String>,
+                    pub provider_website:
+                        ::core::option::Option<::subxt_core::alloc::string::String>,
+                    pub provider_name: ::core::option::Option<::subxt_core::alloc::string::String>,
                 }
             }
         }

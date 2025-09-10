@@ -239,7 +239,8 @@ pub mod pallet {
                     validator: source,
                     amount: rewds,
                 });
-                T::Currency::deposit_creating(&acc, rewds.checked_into().unwrap_or_default());
+                let _ =
+                    T::Currency::deposit_creating(&acc, rewds.checked_into().unwrap_or_default());
             }
             EraRewardsDetail::<T>::insert(era_idx, rewards);
             LatestClosedEra::<T>::put(era_idx);

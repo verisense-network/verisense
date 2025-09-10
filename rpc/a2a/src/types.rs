@@ -1,6 +1,7 @@
 // A2A Rust types
 // Strictly corresponds to TypeScript definitions in a2a.ts
 
+use a2a_rs::AgentInfo;
 use codec::Encode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -232,6 +233,10 @@ pub struct AgentCard {
     /// Defaults to false if not specified.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub supports_authenticated_extended_card: Option<bool>,
+
+    pub price_rate: u16,
+
+    pub verified: bool,
 }
 
 impl Into<a2a_rs::AgentCard> for AgentCard {
@@ -265,8 +270,9 @@ impl Into<a2a_rs::AgentCard> for AgentCard {
     }
 }
 
-impl From<a2a_rs::AgentCard> for AgentCard {
-    fn from(card: a2a_rs::AgentCard) -> Self {
+impl<T> From<AgentInfo<T>> for AgentCard {
+    fn from(agent_info: AgentInfo<T>) -> Self {
+        let card = agent_info.agent_card.clone();
         Self {
             name: card.name,
             description: card.description,
@@ -296,6 +302,8 @@ impl From<a2a_rs::AgentCard> for AgentCard {
             default_output_modes: card.default_output_modes.into_iter().collect(),
             skills: card.skills.into_iter().map(Into::into).collect(),
             supports_authenticated_extended_card: card.supports_authenticated_extended_card,
+            price_rate: agent_info.price_rate,
+            verified: agent_info.url_verified,
         }
     }
 }

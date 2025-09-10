@@ -107,7 +107,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 109,
+    spec_version: 110,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -273,9 +273,19 @@ impl pallet_nucleus::Config for Runtime {
 impl pallet_a2a::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Weight = pallet_a2a::weights::SubstrateWeight<Runtime>;
+    type AuthorityId = vrs_primitives::keys::vrf::AuthorityId;
+    type AppCrypto = VerisenseOffchainWorkerAppCrypto;
+    type RuntimeCall = RuntimeCall;
+    type UnsignedPriority = A2aUnsignedPriority;
+    type ValidatorsInterface = Validator;
 }
 
 impl pallet_mcp::Config for Runtime {
+    type AuthorityId = vrs_primitives::keys::vrf::AuthorityId;
+    type AppCrypto = VerisenseOffchainWorkerAppCrypto;
+    type RuntimeCall = RuntimeCall;
+    type UnsignedPriority = McpUnsignedPriority;
+    type ValidatorsInterface = Validator;
     type RuntimeEvent = RuntimeEvent;
     type Weight = pallet_mcp::weights::SubstrateWeight<Runtime>;
 }
@@ -344,6 +354,16 @@ impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
     type RuntimeAppPublic = vrs_primitives::keys::restaking::AuthorityId;
 }
 
+pub struct VerisenseOffchainWorkerAppCrypto;
+
+impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
+    for VerisenseOffchainWorkerAppCrypto
+{
+    type GenericPublic = sp_core::sr25519::Public;
+    type GenericSignature = sp_core::sr25519::Signature;
+    type RuntimeAppPublic = vrs_primitives::keys::vrf::AuthorityId;
+}
+
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
     RuntimeCall: From<C>,
@@ -407,6 +427,8 @@ parameter_types! {
     pub const MaxPeerDataEncodingSize: u32 = 1_000;
     pub const RequestEventLimit: u32 = 10;
     pub const RestakingUnsignedPriority: u64 = 1 << 21;
+    pub const McpUnsignedPriority: u64 = 1 << 21;
+    pub const A2aUnsignedPriority: u64 = 1 << 21;
 
     pub const ImOnlineUnsignedPriority: u64 = 1 << 22;
     pub const RestakingEnable: bool = true;

@@ -9,6 +9,7 @@ codec = { features = ["derive"], workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 scale-info = { features = ["derive"], workspace = true, default-features = false }
 vrs-primitives = { path = "../../primitives", default-features = false }
+url = { version = "2.5.3", default-features = false }
 
 [features]
 std = [
