@@ -223,9 +223,9 @@ pub mod codegen {
             .hash();
         runtime_metadata_hash
             == [
-                87u8, 189u8, 84u8, 218u8, 142u8, 183u8, 57u8, 232u8, 166u8, 96u8, 122u8, 65u8,
-                111u8, 30u8, 49u8, 200u8, 110u8, 236u8, 167u8, 223u8, 226u8, 150u8, 45u8, 210u8,
-                254u8, 71u8, 107u8, 209u8, 54u8, 100u8, 144u8, 235u8,
+                237u8, 221u8, 253u8, 114u8, 89u8, 159u8, 154u8, 210u8, 152u8, 110u8, 26u8, 227u8,
+                6u8, 215u8, 63u8, 52u8, 21u8, 255u8, 16u8, 157u8, 14u8, 57u8, 38u8, 183u8, 9u8,
+                67u8, 201u8, 71u8, 27u8, 127u8, 172u8, 99u8,
             ]
     }
     pub mod system {
@@ -6878,9 +6878,9 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            147u8, 105u8, 56u8, 48u8, 126u8, 84u8, 101u8, 210u8, 71u8, 225u8, 93u8,
-                            137u8, 0u8, 205u8, 246u8, 217u8, 196u8, 117u8, 43u8, 195u8, 208u8, 7u8,
-                            11u8, 97u8, 241u8, 97u8, 250u8, 108u8, 186u8, 140u8, 134u8, 147u8,
+                            39u8, 247u8, 247u8, 218u8, 125u8, 103u8, 35u8, 150u8, 63u8, 53u8, 65u8,
+                            243u8, 93u8, 241u8, 154u8, 81u8, 144u8, 150u8, 18u8, 62u8, 38u8, 223u8,
+                            103u8, 8u8, 70u8, 109u8, 133u8, 89u8, 237u8, 91u8, 77u8, 72u8,
                         ],
                     )
                 }
@@ -6898,10 +6898,10 @@ pub mod codegen {
                             weight,
                         },
                         [
-                            250u8, 136u8, 151u8, 79u8, 53u8, 92u8, 134u8, 177u8, 246u8, 140u8,
-                            129u8, 4u8, 2u8, 224u8, 221u8, 30u8, 227u8, 254u8, 255u8, 42u8, 242u8,
-                            29u8, 13u8, 255u8, 147u8, 236u8, 244u8, 166u8, 172u8, 225u8, 227u8,
-                            139u8,
+                            157u8, 221u8, 154u8, 89u8, 3u8, 68u8, 6u8, 44u8, 1u8, 17u8, 220u8,
+                            254u8, 202u8, 152u8, 156u8, 141u8, 254u8, 255u8, 81u8, 52u8, 157u8,
+                            19u8, 171u8, 44u8, 102u8, 163u8, 35u8, 208u8, 84u8, 237u8, 192u8,
+                            110u8,
                         ],
                     )
                 }
@@ -6933,9 +6933,10 @@ pub mod codegen {
                             call: ::subxt_core::alloc::boxed::Box::new(call),
                         },
                         [
-                            250u8, 179u8, 188u8, 56u8, 147u8, 79u8, 169u8, 12u8, 211u8, 133u8,
-                            172u8, 185u8, 244u8, 239u8, 212u8, 39u8, 10u8, 32u8, 54u8, 26u8, 79u8,
-                            128u8, 168u8, 34u8, 39u8, 69u8, 72u8, 104u8, 82u8, 155u8, 245u8, 203u8,
+                            124u8, 62u8, 31u8, 11u8, 135u8, 198u8, 249u8, 127u8, 123u8, 116u8,
+                            13u8, 172u8, 152u8, 245u8, 76u8, 199u8, 231u8, 199u8, 233u8, 116u8,
+                            53u8, 153u8, 156u8, 59u8, 85u8, 133u8, 127u8, 71u8, 102u8, 17u8, 80u8,
+                            58u8,
                         ],
                     )
                 }
@@ -11036,6 +11037,48 @@ pub mod codegen {
                     const PALLET: &'static str = "A2A";
                     const CALL: &'static str = "after_dns_verify";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct ForceDeregister {
+                    pub agent_id: force_deregister::AgentId,
+                }
+                pub mod force_deregister {
+                    use super::runtime_types;
+                    pub type AgentId = ::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for ForceDeregister {
+                    const PALLET: &'static str = "A2A";
+                    const CALL: &'static str = "force_deregister";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct ForceVerify {
+                    pub verified_agent: force_verify::VerifiedAgent,
+                }
+                pub mod force_verify {
+                    use super::runtime_types;
+                    pub type VerifiedAgent = ::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for ForceVerify {
+                    const PALLET: &'static str = "A2A";
+                    const CALL: &'static str = "force_verify";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -11110,6 +11153,37 @@ pub mod codegen {
                             212u8, 23u8, 210u8, 178u8, 142u8, 129u8, 252u8, 95u8, 152u8, 242u8,
                             218u8, 0u8, 166u8, 20u8, 4u8, 9u8, 120u8, 106u8, 93u8, 193u8, 133u8,
                             72u8,
+                        ],
+                    )
+                }
+                pub fn force_deregister(
+                    &self,
+                    agent_id: types::force_deregister::AgentId,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::ForceDeregister>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "A2A",
+                        "force_deregister",
+                        types::ForceDeregister { agent_id },
+                        [
+                            192u8, 191u8, 61u8, 0u8, 19u8, 165u8, 206u8, 136u8, 224u8, 162u8, 60u8,
+                            57u8, 5u8, 132u8, 110u8, 179u8, 90u8, 160u8, 39u8, 50u8, 42u8, 221u8,
+                            163u8, 21u8, 129u8, 116u8, 41u8, 114u8, 105u8, 117u8, 1u8, 156u8,
+                        ],
+                    )
+                }
+                pub fn force_verify(
+                    &self,
+                    verified_agent: types::force_verify::VerifiedAgent,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::ForceVerify> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "A2A",
+                        "force_verify",
+                        types::ForceVerify { verified_agent },
+                        [
+                            117u8, 41u8, 22u8, 207u8, 197u8, 47u8, 29u8, 54u8, 175u8, 79u8, 210u8,
+                            237u8, 183u8, 189u8, 144u8, 254u8, 111u8, 157u8, 168u8, 211u8, 160u8,
+                            83u8, 73u8, 8u8, 197u8, 88u8, 8u8, 84u8, 45u8, 251u8, 31u8, 82u8,
                         ],
                     )
                 }
@@ -11434,6 +11508,48 @@ pub mod codegen {
                     const PALLET: &'static str = "Mcp";
                     const CALL: &'static str = "after_dns_verify";
                 }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct ForceVerify {
+                    pub server_id: force_verify::ServerId,
+                }
+                pub mod force_verify {
+                    use super::runtime_types;
+                    pub type ServerId = ::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for ForceVerify {
+                    const PALLET: &'static str = "Mcp";
+                    const CALL: &'static str = "force_verify";
+                }
+                #[derive(
+                    :: subxt_core :: ext :: codec :: Decode,
+                    :: subxt_core :: ext :: codec :: Encode,
+                    :: subxt_core :: ext :: scale_decode :: DecodeAsType,
+                    :: subxt_core :: ext :: scale_encode :: EncodeAsType,
+                    Debug,
+                )]
+                # [codec (crate = :: subxt_core :: ext :: codec)]
+                #[decode_as_type(crate_path = ":: subxt_core :: ext :: scale_decode")]
+                #[encode_as_type(crate_path = ":: subxt_core :: ext :: scale_encode")]
+                pub struct ForceDeregister {
+                    pub server_id: force_deregister::ServerId,
+                }
+                pub mod force_deregister {
+                    use super::runtime_types;
+                    pub type ServerId = ::subxt_core::utils::AccountId32;
+                }
+                impl ::subxt_core::blocks::StaticExtrinsic for ForceDeregister {
+                    const PALLET: &'static str = "Mcp";
+                    const CALL: &'static str = "force_deregister";
+                }
             }
             pub struct TransactionApi;
             impl TransactionApi {
@@ -11497,6 +11613,38 @@ pub mod codegen {
                             212u8, 23u8, 210u8, 178u8, 142u8, 129u8, 252u8, 95u8, 152u8, 242u8,
                             218u8, 0u8, 166u8, 20u8, 4u8, 9u8, 120u8, 106u8, 93u8, 193u8, 133u8,
                             72u8,
+                        ],
+                    )
+                }
+                pub fn force_verify(
+                    &self,
+                    server_id: types::force_verify::ServerId,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::ForceVerify> {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Mcp",
+                        "force_verify",
+                        types::ForceVerify { server_id },
+                        [
+                            131u8, 54u8, 203u8, 138u8, 166u8, 48u8, 206u8, 59u8, 127u8, 48u8, 43u8,
+                            12u8, 148u8, 151u8, 157u8, 24u8, 45u8, 111u8, 16u8, 180u8, 176u8,
+                            103u8, 56u8, 126u8, 48u8, 149u8, 207u8, 248u8, 46u8, 7u8, 34u8, 5u8,
+                        ],
+                    )
+                }
+                pub fn force_deregister(
+                    &self,
+                    server_id: types::force_deregister::ServerId,
+                ) -> ::subxt_core::tx::payload::StaticPayload<types::ForceDeregister>
+                {
+                    ::subxt_core::tx::payload::StaticPayload::new_static(
+                        "Mcp",
+                        "force_deregister",
+                        types::ForceDeregister { server_id },
+                        [
+                            248u8, 113u8, 218u8, 28u8, 114u8, 5u8, 76u8, 233u8, 120u8, 51u8, 226u8,
+                            81u8, 228u8, 114u8, 16u8, 186u8, 135u8, 166u8, 68u8, 96u8, 219u8,
+                            116u8, 53u8, 113u8, 77u8, 103u8, 125u8, 182u8, 236u8, 231u8, 225u8,
+                            172u8,
                         ],
                     )
                 }
@@ -12418,6 +12566,14 @@ pub mod codegen {
                             ::core::primitive::u32,
                         >,
                         signature: runtime_types::sp_runtime::MultiSignature,
+                    },
+                    #[codec(index = 4)]
+                    force_deregister {
+                        agent_id: ::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 5)]
+                    force_verify {
+                        verified_agent: ::subxt_core::utils::AccountId32,
                     },
                 }
                 #[derive(
@@ -13743,6 +13899,14 @@ pub mod codegen {
                             ::core::primitive::u32,
                         >,
                         signature: runtime_types::sp_runtime::MultiSignature,
+                    },
+                    #[codec(index = 3)]
+                    force_verify {
+                        server_id: ::subxt_core::utils::AccountId32,
+                    },
+                    #[codec(index = 4)]
+                    force_deregister {
+                        server_id: ::subxt_core::utils::AccountId32,
                     },
                 }
                 #[derive(

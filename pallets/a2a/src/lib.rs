@@ -214,22 +214,37 @@ pub mod pallet {
             }
             let verified_agents = payload.observations;
             for verified_agent in verified_agents {
-                if let Ok(_) = Agents::<T>::try_mutate(&verified_agent, |maybe_server| {
-                    if maybe_server.is_none() {
-                        return Err(Error::<T>::AgentNotFound);
-                    }
-                    let mut server = maybe_server.clone().unwrap();
-                    server.url_verified = true;
-                    *maybe_server = Some(server);
-                    Self::deposit_event(Event::AgentVerified {
-                        id: verified_agent.clone(),
-                    });
-                    Ok(())
-                }) {
-                    UnverifiedAgents::<T>::remove(&verified_agent);
-                }
+                let _ = Self::agent_verified(&verified_agent);
             }
             Ok(().into())
+        }
+
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::Weight::deregister())]
+        pub fn force_deregister(origin: OriginFor<T>, agent_id: T::AccountId) -> DispatchResult {
+            ensure_root(origin)?;
+            Agents::<T>::try_mutate(&agent_id, |maybe_agent| {
+                if maybe_agent.is_none() {
+                    return Err(Error::<T>::AgentNotFound);
+                }
+                *maybe_agent = None;
+                Ok(())
+            })?;
+            UnverifiedAgents::<T>::remove(&agent_id);
+            Self::deposit_event(Event::AgentDeregistered {
+                id: agent_id.clone(),
+            });
+            Ok(())
+        }
+
+        #[pallet::weight(1)]
+        #[pallet::call_index(5)]
+        pub fn force_verify(
+            origin: OriginFor<T>,
+            verified_agent: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+            Self::agent_verified(&verified_agent)
         }
     }
 
@@ -282,6 +297,23 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn agent_verified(verified_agent: &T::AccountId) -> DispatchResultWithPostInfo {
+            Agents::<T>::try_mutate(&verified_agent, |maybe_server| {
+                if maybe_server.is_none() {
+                    return Err(Error::<T>::AgentNotFound);
+                }
+                let mut server = maybe_server.clone().unwrap();
+                server.url_verified = true;
+                *maybe_server = Some(server);
+                Self::deposit_event(Event::AgentVerified {
+                    id: verified_agent.clone(),
+                });
+                Ok(().into())
+            })?;
+            UnverifiedAgents::<T>::remove(&verified_agent);
+            Ok(().into())
+        }
+
         pub fn derive_agent_id(owner: &T::AccountId, agent: &AgentCard) -> T::AccountId {
             // Derive agent ID from owner and agent name
             let b1 = owner.encode();
