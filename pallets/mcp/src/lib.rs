@@ -26,7 +26,6 @@ pub mod pallet {
     use sp_runtime::RuntimeAppPublic;
     use sp_std::prelude::*;
     use sp_std::str::FromStr;
-    use url::quirks::origin;
     use url::Url;
     use vrs_primitives::keys::NUCLEUS_VRF_KEY_TYPE as KEY_TYPE;
     use vrs_support::ValidatorsInterface;
@@ -219,14 +218,14 @@ pub mod pallet {
         }
 
         #[pallet::call_index(3)]
-        #[pallet::weight(T::Weight::deregister())]
+        #[pallet::weight(T::Weight::force_verify())]
         pub fn force_verify(origin: OriginFor<T>, server_id: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
             Self::mcp_server_verified(&server_id)
         }
 
         #[pallet::call_index(4)]
-        #[pallet::weight(T::Weight::deregister())]
+        #[pallet::weight(T::Weight::force_deregister())]
         pub fn force_deregister(origin: OriginFor<T>, server_id: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
             Servers::<T>::try_mutate(&server_id, |maybe_server| {

@@ -220,7 +220,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(4)]
-        #[pallet::weight(T::Weight::deregister())]
+        #[pallet::weight(T::Weight::force_deregister())]
         pub fn force_deregister(origin: OriginFor<T>, agent_id: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
             Agents::<T>::try_mutate(&agent_id, |maybe_agent| {
@@ -237,7 +237,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1)]
+        #[pallet::weight(T::Weight::force_verify())]
         #[pallet::call_index(5)]
         pub fn force_verify(
             origin: OriginFor<T>,
