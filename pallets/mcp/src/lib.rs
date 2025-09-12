@@ -212,19 +212,32 @@ pub mod pallet {
             }
             let verified_mcps = payload.observations;
             for verified_mcp in verified_mcps {
-                if let Ok(_) = Servers::<T>::try_mutate(&verified_mcp, |maybe_server| {
-                    if maybe_server.is_none() {
-                        return Err(Error::<T>::McpServerNotFound);
-                    }
-                    let mut server = maybe_server.clone().unwrap();
-                    server.url_verified = true;
-                    *maybe_server = Some(server);
-                    Ok(())
-                }) {
-                    UnverifiedServers::<T>::remove(&verified_mcp);
-                }
+                let _ = Self::mcp_server_verified(&verified_mcp);
             }
             Ok(().into())
+        }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::Weight::force_verify())]
+        pub fn force_verify(origin: OriginFor<T>, server_id: T::AccountId) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::mcp_server_verified(&server_id)
+        }
+
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::Weight::force_deregister())]
+        pub fn force_deregister(origin: OriginFor<T>, server_id: T::AccountId) -> DispatchResult {
+            ensure_root(origin)?;
+            Servers::<T>::try_mutate(&server_id, |maybe_server| {
+                if maybe_server.is_none() {
+                    return Err(Error::<T>::McpServerNotFound);
+                }
+                *maybe_server = None;
+                Ok(())
+            })?;
+            UnverifiedServers::<T>::remove(&server_id);
+            Self::deposit_event(Event::McpServerDeregistered { id: server_id });
+            Ok(())
         }
     }
 
@@ -289,6 +302,20 @@ pub mod pallet {
             let bytes = b1.iter().chain(name.iter()).cloned().collect::<Vec<u8>>();
             let v = T::Hashing::hash(&bytes).encode();
             T::AccountId::decode(&mut &v[..]).expect("neq")
+        }
+
+        pub fn mcp_server_verified(server_id: &T::AccountId) -> DispatchResult {
+            Servers::<T>::try_mutate(server_id, |maybe_server| {
+                if maybe_server.is_none() {
+                    return Err(Error::<T>::McpServerNotFound);
+                }
+                let mut server = maybe_server.clone().unwrap();
+                server.url_verified = true;
+                *maybe_server = Some(server);
+                Ok(())
+            })?;
+            UnverifiedServers::<T>::remove(server_id);
+            Ok(())
         }
 
         fn register_mcp_server(
