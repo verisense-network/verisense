@@ -1,10 +1,10 @@
 // A2A Rust types
 // Strictly corresponds to TypeScript definitions in a2a.ts
 
-use a2a_rs::AgentInfo;
 use codec::Encode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use vrs_primitives::{AccountId, NucleusId};
 
 /// Represents the service provider of an agent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -189,6 +189,15 @@ impl From<a2a_rs::AgentSkill> for AgentSkill {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentInfo {
+    pub agent_id: NucleusId,
+    pub owner_id: AccountId,
+    pub url_verified: bool,
+    pub price_rate: u16,
+    pub agent_card: AgentCard,
+}
+
 /// An AgentCard conveys key information:
 /// - Overall details (version, name, description, uses)
 /// - Skills: A set of capabilities the agent can perform
@@ -233,10 +242,6 @@ pub struct AgentCard {
     /// Defaults to false if not specified.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub supports_authenticated_extended_card: Option<bool>,
-
-    pub price_rate: u16,
-
-    pub verified: bool,
 }
 
 impl Into<a2a_rs::AgentCard> for AgentCard {
@@ -270,40 +275,52 @@ impl Into<a2a_rs::AgentCard> for AgentCard {
     }
 }
 
-impl<T> From<AgentInfo<T>> for AgentCard {
-    fn from(agent_info: AgentInfo<T>) -> Self {
-        let card = agent_info.agent_card.clone();
-        Self {
-            name: card.name,
-            description: card.description,
-            url: card.url,
-            icon_url: card.icon_url,
-            provider: card.provider.map(Into::into),
-            version: card.version,
-            documentation_url: card.documentation_url,
-            capabilities: card.capabilities.into(),
-            security_schemes: card.security_schemes.map(|schemes| {
+impl From<a2a_rs::AgentCard> for AgentCard {
+    fn from(agent_card: a2a_rs::AgentCard) -> AgentCard {
+        AgentCard {
+            name: agent_card.name,
+            description: agent_card.description,
+            url: agent_card.url,
+            icon_url: agent_card.icon_url,
+            provider: agent_card.provider.map(|p| p.into()),
+            version: agent_card.version,
+            documentation_url: agent_card.documentation_url,
+            capabilities: agent_card.capabilities.into(),
+            security_schemes: agent_card.security_schemes.map(|schemes| {
                 schemes
                     .into_iter()
                     .map(|(k, v)| (k, serde_json::from_str(&v).expect("must be json")))
                     .collect()
             }),
-            security: card.security.map(|security| {
+            security: agent_card.security.map(|security| {
                 security
                     .into_iter()
-                    .map(|map| {
-                        map.into_iter()
-                            .map(|(k, v)| (k, v.into_iter().collect()))
-                            .collect()
-                    })
+                    .map(|map| map.into_iter().map(|(k, v)| (k, v)).collect())
                     .collect()
             }),
-            default_input_modes: card.default_input_modes.into_iter().collect(),
-            default_output_modes: card.default_output_modes.into_iter().collect(),
-            skills: card.skills.into_iter().map(Into::into).collect(),
-            supports_authenticated_extended_card: card.supports_authenticated_extended_card,
-            price_rate: agent_info.price_rate,
-            verified: agent_info.url_verified,
+            default_input_modes: agent_card.default_input_modes,
+            default_output_modes: agent_card.default_output_modes,
+            skills: agent_card.skills.into_iter().map(|s| s.into()).collect(),
+            supports_authenticated_extended_card: agent_card.supports_authenticated_extended_card,
+        }
+    }
+}
+
+impl From<a2a_rs::AgentInfo<AccountId>> for AgentInfo {
+    fn from(agent_info: a2a_rs::AgentInfo<AccountId>) -> Self {
+        let a2a_rs::AgentInfo {
+            agent_id,
+            owner_id,
+            url_verified,
+            price_rate,
+            agent_card,
+        } = agent_info;
+        Self {
+            agent_id,
+            owner_id,
+            url_verified,
+            price_rate,
+            agent_card: agent_card.into(),
         }
     }
 }
