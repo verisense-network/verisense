@@ -21,6 +21,15 @@ pub trait A2aApi<Hash> {
         &self,
         account_id: AccountId,
     ) -> RpcResult<Vec<(NucleusId, types::AgentCard)>>;
+
+    #[method(name = "a2a_list_v2")]
+    async fn list_v2(&self) -> RpcResult<Vec<types::AgentInfo>>;
+
+    #[method(name = "a2a_find_v2")]
+    async fn find_v2(&self, id: NucleusId) -> RpcResult<Option<types::AgentInfo>>;
+
+    #[method(name = "a2a_list_by_owner_v2")]
+    async fn list_by_owner_v2(&self, account_id: AccountId) -> RpcResult<Vec<types::AgentInfo>>;
 }
 
 pub struct A2a<B, C> {
@@ -53,7 +62,7 @@ where
         let agents = agents
             .into_iter()
             .filter(|a| a.url_verified)
-            .map(|agent_info| (agent_info.agent_id.clone(), agent_info.into()))
+            .map(|agent_info| (agent_info.agent_id.clone(), agent_info.agent_card.into()))
             .collect();
         Ok(agents)
     }
@@ -64,7 +73,7 @@ where
         let agent = api
             .find_agent(hash, id)
             .expect("Failed to invoke runtime api")
-            .map(|agent_info| agent_info.into());
+            .map(|agent_info| agent_info.agent_card.into());
         Ok(agent)
     }
 
@@ -80,7 +89,45 @@ where
         let agents = agents
             .into_iter()
             .filter(|a| a.owner_id == account_id)
-            .map(|agent_info| (agent_info.agent_id.clone(), agent_info.into()))
+            .map(|agent_info| (agent_info.agent_id, agent_info.agent_card.into()))
+            .collect();
+        Ok(agents)
+    }
+
+    async fn list_v2(&self) -> RpcResult<Vec<types::AgentInfo>> {
+        let hash = self.client.info().best_hash;
+        let api = self.client.runtime_api();
+        let agents = api
+            .get_all_agents(hash)
+            .expect("Failed to invoke runtime api");
+        let agents = agents
+            .into_iter()
+            .filter(|a| a.url_verified)
+            .map(|agent_info| agent_info.into())
+            .collect();
+        Ok(agents)
+    }
+
+    async fn find_v2(&self, id: NucleusId) -> RpcResult<Option<types::AgentInfo>> {
+        let hash = self.client.info().best_hash;
+        let api = self.client.runtime_api();
+        let agent = api
+            .find_agent(hash, id)
+            .expect("Failed to invoke runtime api")
+            .map(|agent_info| agent_info.into());
+        Ok(agent)
+    }
+
+    async fn list_by_owner_v2(&self, account_id: AccountId) -> RpcResult<Vec<types::AgentInfo>> {
+        let hash = self.client.info().best_hash;
+        let api = self.client.runtime_api();
+        let agents = api
+            .get_all_agents(hash)
+            .expect("Failed to invoke runtime api");
+        let agents = agents
+            .into_iter()
+            .filter(|a| a.owner_id == account_id)
+            .map(|agent_info| agent_info.into())
             .collect();
         Ok(agents)
     }
