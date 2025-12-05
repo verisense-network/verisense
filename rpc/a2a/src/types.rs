@@ -71,16 +71,20 @@ impl Into<a2a_rs::AgentExtension> for AgentExtension {
     }
 }
 
-impl From<a2a_rs::AgentExtension> for AgentExtension {
-    fn from(ext: a2a_rs::AgentExtension) -> Self {
-        Self {
+impl TryFrom<a2a_rs::AgentExtension> for AgentExtension {
+    type Error = String;
+
+    fn try_from(ext: a2a_rs::AgentExtension) -> Result<Self, Self::Error> {
+        Ok(Self {
             uri: ext.uri,
             description: ext.description,
             required: ext.required,
             params: ext
                 .params
-                .map(|p| serde_json::from_str(&p).expect("must be json")),
-        }
+                .map(|p| serde_json::from_str(&p))
+                .transpose()
+                .map_err(|_| "AgentExtension params must be json".to_string())?,
+        })
     }
 }
 
@@ -128,7 +132,7 @@ impl From<a2a_rs::AgentCapabilities> for AgentCapabilities {
             state_transition_history: capabilities.state_transition_history,
             extensions: capabilities.extensions.map(|exts| {
                 exts.into_iter()
-                    .map(|ext| AgentExtension::from(ext))
+                    .filter_map(|ext| AgentExtension::try_from(ext).ok())
                     .collect()
             }),
         }
@@ -289,7 +293,7 @@ impl From<a2a_rs::AgentCard> for AgentCard {
             security_schemes: agent_card.security_schemes.map(|schemes| {
                 schemes
                     .into_iter()
-                    .map(|(k, v)| (k, serde_json::from_str(&v).expect("must be json")))
+                    .filter_map(|(k, v)| serde_json::from_str(&v).ok().map(|s| (k, s)))
                     .collect()
             }),
             security: agent_card.security.map(|security| {
